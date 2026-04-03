@@ -59,15 +59,23 @@ interface ClientForm {
   inicio_contrato: string;
   responsavel_id: string;
   seguranca_social: string;
+  pag_seguranca_social: string;
   iva: string;
   faturacao: string;
   saft: string;
 }
 
+const PAG_SS_OPTIONS = [
+  { value: "", label: "— Selecionar —" },
+  { value: "Referência", label: "Referência" },
+  { value: "Débito Direto", label: "Débito Direto" },
+  { value: "Não Aplicável", label: "Não Aplicável" },
+];
+
 const emptyForm: ClientForm = {
   name: "", nif: "", tipo_contabilidade: "SQ", salarios: "", mensalidade: "",
   inicio_contrato: "", responsavel_id: "",
-  seguranca_social: "", iva: "", faturacao: "", saft: "",
+  seguranca_social: "", pag_seguranca_social: "", iva: "", faturacao: "", saft: "",
 };
 
 const ClientListView = () => {
@@ -106,6 +114,7 @@ const ClientListView = () => {
       inicio_contrato: c.inicio_contrato || "",
       responsavel_id: c.responsavel_id || "",
       seguranca_social: c.seguranca_social || "",
+      pag_seguranca_social: c.pag_seguranca_social || "",
       iva: c.iva || "",
       faturacao: c.faturacao || "",
       saft: c.saft || "",
@@ -125,6 +134,7 @@ const ClientListView = () => {
         inicio_contrato: form.inicio_contrato || null,
         responsavel_id: form.responsavel_id || null,
         seguranca_social: form.seguranca_social || null,
+        pag_seguranca_social: form.pag_seguranca_social || null,
         iva: form.iva || null,
         faturacao: form.faturacao || null,
         saft: form.saft || null,
@@ -306,6 +316,12 @@ const ClientListView = () => {
                   <label className="text-sm font-medium mb-1 block">Segurança Social</label>
                   <select value={form.seguranca_social} onChange={(e) => set("seguranca_social", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                     {SS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Pag. Segurança Social</label>
+                  <select value={form.pag_seguranca_social} onChange={(e) => set("pag_seguranca_social", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                    {PAG_SS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
                 <div>

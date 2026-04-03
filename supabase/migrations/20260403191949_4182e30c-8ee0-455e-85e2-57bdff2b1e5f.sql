@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN pag_seguranca_social text DEFAULT 'Referência';

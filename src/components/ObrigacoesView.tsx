@@ -120,7 +120,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         break;
       case "SS_TI":
         list = activeClients.filter((c: any) => isTI(c) && !hasSalarios(c));
-        if (subFilter !== "all") list = list.filter((c: any) => c.seguranca_social === subFilter);
+        if (subFilter !== "all") list = list.filter((c: any) => c.pag_seguranca_social === subFilter);
         break;
       case "IVA":
         list = activeClients.filter((c: any) => c.iva && c.iva !== "");
@@ -291,7 +291,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 case "SAFT": return activeClients.filter((c: any) => c.saft === opt.value).length;
                 case "salarios": return activeClients.filter((c: any) => c.salarios === opt.value).length;
                 case "IVA": return activeClients.filter((c: any) => c.iva === opt.value).length;
-                case "SS_TI": return activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.seguranca_social === opt.value).length;
+                case "SS_TI": return activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.pag_seguranca_social === opt.value).length;
                 default: return 0;
               }
             })();

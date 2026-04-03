@@ -30,6 +30,7 @@ export type Database = {
           nif: string | null
           notas_internas: string | null
           notes: string | null
+          pag_seguranca_social: string | null
           phone: string | null
           recapitulativa: string | null
           responsavel_id: string | null
@@ -54,6 +55,7 @@ export type Database = {
           nif?: string | null
           notas_internas?: string | null
           notes?: string | null
+          pag_seguranca_social?: string | null
           phone?: string | null
           recapitulativa?: string | null
           responsavel_id?: string | null
@@ -78,6 +80,7 @@ export type Database = {
           nif?: string | null
           notas_internas?: string | null
           notes?: string | null
+          pag_seguranca_social?: string | null
           phone?: string | null
           recapitulativa?: string | null
           responsavel_id?: string | null
