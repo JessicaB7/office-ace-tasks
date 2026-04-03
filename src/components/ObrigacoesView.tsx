@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTasks } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
 import { StatusBadge, PriorityBadge } from "@/components/TaskBadge";
@@ -24,6 +24,10 @@ const ObrigacoesView = ({ subPage, onEditTask }: ObrigacoesViewProps) => {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<TaskStatus | "all">("all");
   const [activeTab, setActiveTab] = useState<string>(subPage || OBRIGACAO_CATEGORIES[0].id);
+
+  useEffect(() => {
+    if (subPage) setActiveTab(subPage);
+  }, [subPage]);
 
   const filtered = tasks.filter((t: any) => {
     if (t.category !== activeTab) return false;
