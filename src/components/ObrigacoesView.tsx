@@ -25,6 +25,10 @@ const ObrigacoesView = ({ subPage, onEditTask }: ObrigacoesViewProps) => {
   const [filterStatus, setFilterStatus] = useState<TaskStatus | "all">("all");
   const [activeTab, setActiveTab] = useState<string>(subPage || OBRIGACAO_CATEGORIES[0].id);
 
+  useEffect(() => {
+    if (subPage) setActiveTab(subPage);
+  }, [subPage]);
+
   const filtered = tasks.filter((t: any) => {
     if (t.category !== activeTab) return false;
     if (filterStatus !== "all" && t.status !== filterStatus) return false;
