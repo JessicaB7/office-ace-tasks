@@ -136,3 +136,53 @@ export function useFiscalDeadlines() {
     },
   });
 }
+
+// ---- MONTHLY OBLIGATIONS ----
+export function useMonthlyObligations(referenceMonth: string) {
+  return useQuery({
+    queryKey: ["monthly_obligations", referenceMonth],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("monthly_obligations")
+        .select("*")
+        .eq("reference_month", referenceMonth);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useUpsertObligation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (obligation: {
+      id?: string;
+      client_id: string;
+      obligation_type: string;
+      reference_month: string;
+      status: string;
+      completed_at?: string | null;
+      completed_by?: string | null;
+      extra_done?: boolean;
+    }) => {
+      if (obligation.id) {
+        const { data, error } = await supabase
+          .from("monthly_obligations")
+          .update(obligation)
+          .eq("id", obligation.id)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
+      const { data, error } = await supabase
+        .from("monthly_obligations")
+        .insert(obligation)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["monthly_obligations"] }),
+  });
+}
