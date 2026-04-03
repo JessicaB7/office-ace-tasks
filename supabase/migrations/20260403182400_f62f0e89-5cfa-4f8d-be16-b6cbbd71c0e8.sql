@@ -1,0 +1,1 @@
+ALTER TABLE public.clients DROP CONSTRAINT IF EXISTS clients_nif_key;
