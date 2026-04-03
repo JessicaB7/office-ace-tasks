@@ -14,7 +14,177 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          active: boolean
+          address: string | null
+          created_at: string
+          email: string | null
+          fiscal_regime: Database["public"]["Enums"]["fiscal_regime"]
+          id: string
+          name: string
+          nif: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          fiscal_regime?: Database["public"]["Enums"]["fiscal_regime"]
+          id?: string
+          name: string
+          nif: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          fiscal_regime?: Database["public"]["Enums"]["fiscal_regime"]
+          id?: string
+          name?: string
+          nif?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      collaborators: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string
+          id: string
+          name: string
+          role: string
+          specialty: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          role?: string
+          specialty?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          role?: string
+          specialty?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      fiscal_deadlines: {
+        Row: {
+          category: Database["public"]["Enums"]["task_category"]
+          created_at: string
+          day_of_month: number
+          description: string | null
+          fiscal_regime: Database["public"]["Enums"]["fiscal_regime"] | null
+          id: string
+          month: number | null
+          recurrent: boolean
+          title: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["task_category"]
+          created_at?: string
+          day_of_month: number
+          description?: string | null
+          fiscal_regime?: Database["public"]["Enums"]["fiscal_regime"] | null
+          id?: string
+          month?: number | null
+          recurrent?: boolean
+          title: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["task_category"]
+          created_at?: string
+          day_of_month?: number
+          description?: string | null
+          fiscal_regime?: Database["public"]["Enums"]["fiscal_regime"] | null
+          id?: string
+          month?: number | null
+          recurrent?: boolean
+          title?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          category: Database["public"]["Enums"]["task_category"]
+          client_id: string | null
+          collaborator_id: string | null
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["task_category"]
+          client_id?: string | null
+          collaborator_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["task_category"]
+          client_id?: string | null
+          collaborator_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "collaborators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +193,17 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      fiscal_regime: "simplificado" | "organizado" | "isento" | "misto"
+      task_category:
+        | "IRS"
+        | "IRC"
+        | "IVA"
+        | "SS"
+        | "contabilidade"
+        | "fiscal"
+        | "outro"
+      task_priority: "baixa" | "media" | "alta" | "urgente"
+      task_status: "pendente" | "em_progresso" | "concluida" | "cancelada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +330,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      fiscal_regime: ["simplificado", "organizado", "isento", "misto"],
+      task_category: [
+        "IRS",
+        "IRC",
+        "IVA",
+        "SS",
+        "contabilidade",
+        "fiscal",
+        "outro",
+      ],
+      task_priority: ["baixa", "media", "alta", "urgente"],
+      task_status: ["pendente", "em_progresso", "concluida", "cancelada"],
+    },
   },
 } as const
