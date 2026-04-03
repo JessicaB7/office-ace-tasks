@@ -32,7 +32,7 @@ const fmtDeadline = (day: number, m0: number, y: number) =>
   `Prazo: ${day}/${String(m0 + 1).padStart(2, "0")}/${y}`;
 
 // Pages where checkboxes go on the RIGHT side
-const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA"]);
+const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "SS_TI"]);
 // Pages where NIF is hidden
 const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte"]);
 
