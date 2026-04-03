@@ -1,4 +1,4 @@
-import { LayoutDashboard, ListTodo, Plus, Users, Building2, CalendarDays, LogOut } from "lucide-react";
+import { LayoutDashboard, ListTodo, Plus, Users, Building2, CalendarDays, LogOut, ClipboardList } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +12,7 @@ interface AppSidebarProps {
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "tasks", label: "Tarefas", icon: ListTodo },
+  { id: "obrigacoes", label: "Obrigações", icon: ClipboardList },
   { id: "clients", label: "Clientes", icon: Building2 },
   { id: "collaborators", label: "Colaboradores", icon: Users },
   { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays },
