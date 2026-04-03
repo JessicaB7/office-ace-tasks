@@ -65,10 +65,17 @@ interface ClientForm {
   saft: string;
 }
 
+const PAG_SS_OPTIONS = [
+  { value: "", label: "— Selecionar —" },
+  { value: "Referência", label: "Referência" },
+  { value: "Débito Direto", label: "Débito Direto" },
+  { value: "Não Aplicável", label: "Não Aplicável" },
+];
+
 const emptyForm: ClientForm = {
   name: "", nif: "", tipo_contabilidade: "SQ", salarios: "", mensalidade: "",
   inicio_contrato: "", responsavel_id: "",
-  seguranca_social: "", iva: "", faturacao: "", saft: "",
+  seguranca_social: "", pag_seguranca_social: "", iva: "", faturacao: "", saft: "",
 };
 
 const ClientListView = () => {
