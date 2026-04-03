@@ -20,12 +20,22 @@ export type Database = {
           address: string | null
           created_at: string
           email: string | null
+          faturacao: string | null
           fiscal_regime: Database["public"]["Enums"]["fiscal_regime"]
           id: string
+          iva: string | null
+          mensalidade: number | null
           name: string
-          nif: string
+          nif: string | null
+          notas_internas: string | null
           notes: string | null
           phone: string | null
+          recapitulativa: string | null
+          responsavel_id: string | null
+          saft: string | null
+          salarios: string | null
+          seguranca_social: string | null
+          tipo_contabilidade: string | null
           updated_at: string
         }
         Insert: {
@@ -33,12 +43,22 @@ export type Database = {
           address?: string | null
           created_at?: string
           email?: string | null
+          faturacao?: string | null
           fiscal_regime?: Database["public"]["Enums"]["fiscal_regime"]
           id?: string
+          iva?: string | null
+          mensalidade?: number | null
           name: string
-          nif: string
+          nif?: string | null
+          notas_internas?: string | null
           notes?: string | null
           phone?: string | null
+          recapitulativa?: string | null
+          responsavel_id?: string | null
+          saft?: string | null
+          salarios?: string | null
+          seguranca_social?: string | null
+          tipo_contabilidade?: string | null
           updated_at?: string
         }
         Update: {
@@ -46,15 +66,33 @@ export type Database = {
           address?: string | null
           created_at?: string
           email?: string | null
+          faturacao?: string | null
           fiscal_regime?: Database["public"]["Enums"]["fiscal_regime"]
           id?: string
+          iva?: string | null
+          mensalidade?: number | null
           name?: string
-          nif?: string
+          nif?: string | null
+          notas_internas?: string | null
           notes?: string | null
           phone?: string | null
+          recapitulativa?: string | null
+          responsavel_id?: string | null
+          saft?: string | null
+          salarios?: string | null
+          seguranca_social?: string | null
+          tipo_contabilidade?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clients_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "collaborators"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       collaborators: {
         Row: {
