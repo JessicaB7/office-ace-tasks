@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useClients, useCollaborators, useUpsertClient, useDeleteClient } from "@/hooks/useSupabaseQuery";
-import { Search, Plus, Building2, X, Euro, Calendar, Users } from "lucide-react";
+import { Search, Plus, Building2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const TIPO_CONTAB_LABELS: Record<string, string> = {
@@ -257,17 +257,6 @@ const ClientListView = () => {
                 <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">
                   {TIPO_CONTAB_LABELS[client.tipo_contabilidade] || client.tipo_contabilidade || "—"}
                 </span>
-              </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                {client.mensalidade && (
-                  <span className="flex items-center gap-1"><Euro className="w-3 h-3" /> {formatMensalidade(client.mensalidade)}</span>
-                )}
-                {client.salarios && client.salarios !== "Não tem" && client.salarios !== "" && (
-                  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Sal: {client.salarios.replace("Sim ", "")}</span>
-                )}
-                {getCollabName(client.responsavel_id) && (
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {getCollabName(client.responsavel_id)}</span>
-                )}
               </div>
             </div>
           ))}

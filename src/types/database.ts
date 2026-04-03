@@ -42,4 +42,10 @@ export const CATEGORY_LABELS: Record<TaskCategory, string> = {
   contabilidade: "Contabilidade",
   fiscal: "Fiscal",
   outro: "Outro",
+  SAFT: "SAFT",
+  salarios: "Salários",
+  DMR: "DMR",
+  SS_TI: "Seg. Social TI",
+  retencao_fonte: "Retenção na Fonte",
+  emissao_faturas: "Emissão de Faturas",
 };
