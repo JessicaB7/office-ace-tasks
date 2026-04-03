@@ -41,8 +41,8 @@ const Auth = () => {
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mb-4">
             <Calculator className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">ContaTask</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gestão de Tarefas Contabilísticas</p>
+          <h1 className="text-2xl font-bold text-foreground">Contabilista Explica</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gestor de Tarefas</p>
         </div>
 
         <div className="bg-card rounded-2xl border p-6 shadow-sm">
