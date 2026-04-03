@@ -93,6 +93,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         const d = addMonths(month, year, 2);
         return fmtDeadline(20, d.m, d.y);
       }
+      case "SS_TI": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
       default: return "";
     }
   };
