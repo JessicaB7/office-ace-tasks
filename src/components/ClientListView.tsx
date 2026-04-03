@@ -134,6 +134,7 @@ const ClientListView = () => {
         inicio_contrato: form.inicio_contrato || null,
         responsavel_id: form.responsavel_id || null,
         seguranca_social: form.seguranca_social || null,
+        pag_seguranca_social: form.pag_seguranca_social || null,
         iva: form.iva || null,
         faturacao: form.faturacao || null,
         saft: form.saft || null,
