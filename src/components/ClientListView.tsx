@@ -44,6 +44,12 @@ const FATURACAO_OPTIONS = [
   { value: "Não Aplicável", label: "Não aplicável" },
 ];
 
+const SAFT_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "Sim", label: "Sim" },
+  { value: "Não", label: "Não" },
+];
+
 interface ClientForm {
   name: string;
   nif: string;
@@ -52,16 +58,16 @@ interface ClientForm {
   mensalidade: string;
   inicio_contrato: string;
   responsavel_id: string;
-  notas_internas: string;
   seguranca_social: string;
   iva: string;
   faturacao: string;
+  saft: string;
 }
 
 const emptyForm: ClientForm = {
   name: "", nif: "", tipo_contabilidade: "SQ", salarios: "", mensalidade: "",
-  inicio_contrato: "", responsavel_id: "", notas_internas: "",
-  seguranca_social: "", iva: "", faturacao: "",
+  inicio_contrato: "", responsavel_id: "",
+  seguranca_social: "", iva: "", faturacao: "", saft: "",
 };
 
 const ClientListView = () => {
@@ -72,12 +78,20 @@ const ClientListView = () => {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("all");
+  const [selectedCollab, setSelectedCollab] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<ClientForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const filtered = clients.filter((c: any) => {
     if (filterTipo !== "all" && c.tipo_contabilidade !== filterTipo) return false;
+    if (selectedCollab !== "all") {
+      if (selectedCollab === "none") {
+        if (c.responsavel_id) return false;
+      } else {
+        if (c.responsavel_id !== selectedCollab) return false;
+      }
+    }
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !(c.nif || "").includes(search)) return false;
     return c.active;
   });
@@ -91,10 +105,10 @@ const ClientListView = () => {
       mensalidade: c.mensalidade ? String(c.mensalidade) : "",
       inicio_contrato: c.inicio_contrato || "",
       responsavel_id: c.responsavel_id || "",
-      notas_internas: c.notas_internas || "",
       seguranca_social: c.seguranca_social || "",
       iva: c.iva || "",
       faturacao: c.faturacao || "",
+      saft: c.saft || "",
     });
     setEditingId(c.id);
     setDialogOpen(true);
@@ -110,10 +124,10 @@ const ClientListView = () => {
         mensalidade: form.mensalidade ? parseFloat(form.mensalidade) : null,
         inicio_contrato: form.inicio_contrato || null,
         responsavel_id: form.responsavel_id || null,
-        notas_internas: form.notas_internas || null,
         seguranca_social: form.seguranca_social || null,
         iva: form.iva || null,
         faturacao: form.faturacao || null,
+        saft: form.saft || null,
       };
       if (editingId) payload.id = editingId;
       await upsert.mutateAsync(payload);
@@ -147,16 +161,70 @@ const ClientListView = () => {
     return `${val.toFixed(2).replace(".", ",")} €`;
   };
 
+  // Count clients per collaborator for tab badges
+  const activeClients = clients.filter((c: any) => c.active);
+  const collabCounts: Record<string, number> = {};
+  let noneCount = 0;
+  activeClients.forEach((c: any) => {
+    if (c.responsavel_id) {
+      collabCounts[c.responsavel_id] = (collabCounts[c.responsavel_id] || 0) + 1;
+    } else {
+      noneCount++;
+    }
+  });
+
+  // Only show collaborators that have clients assigned
+  const collabsWithClients = collaborators.filter((col: any) => collabCounts[col.id]);
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Clientes</h2>
-          <p className="text-muted-foreground text-sm mt-1">{clients.filter((c: any) => c.active).length} clientes ativos</p>
+          <p className="text-muted-foreground text-sm mt-1">{activeClients.length} clientes ativos</p>
         </div>
         <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
           <Plus className="w-4 h-4" /> Novo Cliente
         </button>
+      </div>
+
+      {/* Collaborator tabs */}
+      <div className="flex gap-1 overflow-x-auto pb-1 border-b">
+        <button
+          onClick={() => setSelectedCollab("all")}
+          className={`px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
+            selectedCollab === "all"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          Todos ({activeClients.length})
+        </button>
+        {collabsWithClients.map((col: any) => (
+          <button
+            key={col.id}
+            onClick={() => setSelectedCollab(col.id)}
+            className={`px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
+              selectedCollab === col.id
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            {col.name} ({collabCounts[col.id] || 0})
+          </button>
+        ))}
+        {noneCount > 0 && (
+          <button
+            onClick={() => setSelectedCollab("none")}
+            className={`px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
+              selectedCollab === "none"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            Sem responsável ({noneCount})
+          </button>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -261,6 +329,12 @@ const ClientListView = () => {
                   <label className="text-sm font-medium mb-1 block">Faturação</label>
                   <select value={form.faturacao} onChange={(e) => set("faturacao", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                     {FATURACAO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">SAFT</label>
+                  <select value={form.saft} onChange={(e) => set("saft", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                    {SAFT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
                 <div>
