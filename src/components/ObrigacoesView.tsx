@@ -137,8 +137,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       default:
         list = activeClients;
     }
-    // IVA: filter by collaborator
-    if (isIVA && collabFilter !== "all") {
+    // Filter by collaborator (IVA and global)
+    if (collabFilter !== "all") {
       if (collabFilter === "none") list = list.filter((c: any) => !c.responsavel_id);
       else list = list.filter((c: any) => c.responsavel_id === collabFilter);
     }
@@ -147,7 +147,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       list = list.filter((c: any) => c.name.toLowerCase().includes(s) || (c.nif || "").includes(s));
     }
     return list;
-  }, [activeClients, activeTab, subFilter, search, isIVA, collabFilter]);
+  }, [activeClients, activeTab, subFilter, search, collabFilter]);
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
@@ -311,24 +311,30 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       {/* IVA collaborator tabs */}
       {isIVA && ivaCollabData.length > 0 && (
         <div className="flex gap-1 overflow-x-auto pb-1 border-b">
-          <button onClick={() => setCollabFilter("all")}
-            className={cn("px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
-              collabFilter === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-            Todos
-          </button>
           {ivaCollabData.map((col) => (
-            <button key={col.id} onClick={() => setCollabFilter(col.id)}
+            <button key={col.id} onClick={() => setCollabFilter(collabFilter === col.id ? "all" : col.id)}
               className={cn("px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
                 collabFilter === col.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-              {col.name} ({col.count})
+              {col.name}
             </button>
           ))}
         </div>
       )}
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input type="text" placeholder="Pesquisar por nome..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
+      <div className="flex gap-3 items-center">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input type="text" placeholder="Pesquisar por nome..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
+        </div>
+        {!isIVA && (
+          <select value={collabFilter} onChange={(e) => setCollabFilter(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="all">Todos os responsáveis</option>
+            {collaborators.filter((c: any) => c.active).map((col: any) => (
+              <option key={col.id} value={col.id}>{col.name}</option>
+            ))}
+            <option value="none">Sem responsável</option>
+          </select>
+        )}
       </div>
 
       <div className="bg-card rounded-xl border overflow-hidden">
