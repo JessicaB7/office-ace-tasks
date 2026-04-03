@@ -137,8 +137,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       default:
         list = activeClients;
     }
-    // IVA: filter by collaborator
-    if (isIVA && collabFilter !== "all") {
+    // Filter by collaborator (IVA and global)
+    if (collabFilter !== "all") {
       if (collabFilter === "none") list = list.filter((c: any) => !c.responsavel_id);
       else list = list.filter((c: any) => c.responsavel_id === collabFilter);
     }
@@ -147,7 +147,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       list = list.filter((c: any) => c.name.toLowerCase().includes(s) || (c.nif || "").includes(s));
     }
     return list;
-  }, [activeClients, activeTab, subFilter, search, isIVA, collabFilter]);
+  }, [activeClients, activeTab, subFilter, search, collabFilter]);
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
