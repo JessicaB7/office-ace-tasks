@@ -32,9 +32,9 @@ const fmtDeadline = (day: number, m0: number, y: number) =>
   `Prazo: ${day}/${String(m0 + 1).padStart(2, "0")}/${y}`;
 
 // Pages where checkboxes go on the RIGHT side
-const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "SS_TI"]);
+const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "SS_TI", "SAFT"]);
 // Pages where NIF is hidden
-const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte"]);
+const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte", "SAFT"]);
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
@@ -349,13 +349,14 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 {isSSTI && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Enquadramento SS</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
+                {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Entregue</th>}
                 {showGuiaPagamento && (
                   <>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Guia</th>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Pagamento</th>
                   </>
                 )}
-                {isRight && !showGuiaPagamento && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
+                {isRight && !showGuiaPagamento && !showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
               </tr>
             </thead>
             <tbody>
@@ -396,13 +397,18 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                         ) : <span className="text-muted-foreground/30">—</span>}
                       </td>
                     )}
+                    {showSaftExtra && (
+                      <td className="text-center px-3 py-3">
+                        <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
+                      </td>
+                    )}
                     {showGuiaPagamento && (
                       <>
                         <td className="text-center px-3 py-3"><CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} /></td>
                         <td className="text-center px-3 py-3"><CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} /></td>
                       </>
                     )}
-                    {isRight && !showGuiaPagamento && (
+                    {isRight && !showGuiaPagamento && !showSaftExtra && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>

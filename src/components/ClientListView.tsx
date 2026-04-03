@@ -46,8 +46,9 @@ const FATURACAO_OPTIONS = [
 
 const SAFT_OPTIONS = [
   { value: "", label: "—" },
-  { value: "Sim", label: "Sim" },
-  { value: "Não", label: "Não" },
+  { value: "Automático", label: "Automático" },
+  { value: "A entregar", label: "A entregar" },
+  { value: "Não Aplicável", label: "Não Aplicável" },
 ];
 
 interface ClientForm {
