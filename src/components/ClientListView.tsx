@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useClients, useCollaborators, useUpsertClient, useDeleteClient } from "@/hooks/useSupabaseQuery";
-import { Search, Plus, Building2, X, Euro, Calendar, Briefcase, Users } from "lucide-react";
+import { Search, Plus, Building2, X, Euro, Calendar, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const TIPO_CONTAB_LABELS: Record<string, string> = {
@@ -13,7 +13,6 @@ const SALARIOS_OPTIONS = [
   { value: "", label: "Não aplicável" },
   { value: "Sim até dia 25", label: "Até dia 25" },
   { value: "Sim até ao fim do mês", label: "Até ao fim do mês" },
-  { value: "Não tem", label: "Não tem" },
 ];
 
 const TIPO_CONTAB_OPTIONS = [
@@ -22,25 +21,47 @@ const TIPO_CONTAB_OPTIONS = [
   { value: "TI CO", label: "TI Organizado" },
 ];
 
+const SS_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "Mensal", label: "Mensal" },
+  { value: "Trimestral", label: "Trimestral" },
+  { value: "Contabilidade Organizada", label: "Cont. Organizada" },
+  { value: "TCO", label: "TCO" },
+  { value: "Isento", label: "Isento" },
+];
+
+const IVA_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "Mensal", label: "Mensal" },
+  { value: "Trimestral", label: "Trimestral" },
+  { value: "Art. 9º", label: "Isenção Art. 9º" },
+  { value: "Art.53º", label: "Isenção Art. 53º" },
+];
+
+const FATURACAO_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "Emitir", label: "Emitir" },
+  { value: "Não Aplicável", label: "Não aplicável" },
+];
+
 interface ClientForm {
   name: string;
   nif: string;
-  email: string;
-  phone: string;
-  address: string;
-  notes: string;
   tipo_contabilidade: string;
   salarios: string;
   mensalidade: string;
   inicio_contrato: string;
   responsavel_id: string;
   notas_internas: string;
+  seguranca_social: string;
+  iva: string;
+  faturacao: string;
 }
 
 const emptyForm: ClientForm = {
-  name: "", nif: "", email: "", phone: "", address: "", notes: "",
-  tipo_contabilidade: "SQ", salarios: "", mensalidade: "", inicio_contrato: "",
-  responsavel_id: "", notas_internas: "",
+  name: "", nif: "", tipo_contabilidade: "SQ", salarios: "", mensalidade: "",
+  inicio_contrato: "", responsavel_id: "", notas_internas: "",
+  seguranca_social: "", iva: "", faturacao: "",
 };
 
 const ClientListView = () => {
@@ -64,14 +85,16 @@ const ClientListView = () => {
   const openNew = () => { setForm(emptyForm); setEditingId(null); setDialogOpen(true); };
   const openEdit = (c: any) => {
     setForm({
-      name: c.name, nif: c.nif || "", email: c.email || "", phone: c.phone || "",
-      address: c.address || "", notes: c.notes || "",
+      name: c.name, nif: c.nif || "",
       tipo_contabilidade: c.tipo_contabilidade || "SQ",
       salarios: c.salarios || "",
       mensalidade: c.mensalidade ? String(c.mensalidade) : "",
       inicio_contrato: c.inicio_contrato || "",
       responsavel_id: c.responsavel_id || "",
       notas_internas: c.notas_internas || "",
+      seguranca_social: c.seguranca_social || "",
+      iva: c.iva || "",
+      faturacao: c.faturacao || "",
     });
     setEditingId(c.id);
     setDialogOpen(true);
@@ -81,14 +104,16 @@ const ClientListView = () => {
     e.preventDefault();
     try {
       const payload: any = {
-        name: form.name, nif: form.nif, email: form.email || null, phone: form.phone || null,
-        address: form.address || null, notes: form.notes || null,
+        name: form.name, nif: form.nif || null,
         tipo_contabilidade: form.tipo_contabilidade,
         salarios: form.salarios || null,
         mensalidade: form.mensalidade ? parseFloat(form.mensalidade) : null,
         inicio_contrato: form.inicio_contrato || null,
         responsavel_id: form.responsavel_id || null,
         notas_internas: form.notas_internas || null,
+        seguranca_social: form.seguranca_social || null,
+        iva: form.iva || null,
+        faturacao: form.faturacao || null,
       };
       if (editingId) payload.id = editingId;
       await upsert.mutateAsync(payload);
@@ -167,19 +192,13 @@ const ClientListView = () => {
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                 {client.mensalidade && (
-                  <span className="flex items-center gap-1">
-                    <Euro className="w-3 h-3" /> {formatMensalidade(client.mensalidade)}
-                  </span>
+                  <span className="flex items-center gap-1"><Euro className="w-3 h-3" /> {formatMensalidade(client.mensalidade)}</span>
                 )}
-                {client.salarios && client.salarios !== "Não tem" && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" /> Salários: {client.salarios.replace("Sim ", "")}
-                  </span>
+                {client.salarios && client.salarios !== "Não tem" && client.salarios !== "" && (
+                  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Sal: {client.salarios.replace("Sim ", "")}</span>
                 )}
                 {getCollabName(client.responsavel_id) && (
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3 h-3" /> {getCollabName(client.responsavel_id)}
-                  </span>
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {getCollabName(client.responsavel_id)}</span>
                 )}
               </div>
             </div>
@@ -188,7 +207,6 @@ const ClientListView = () => {
         </div>
       )}
 
-      {/* Dialog */}
       {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={() => setDialogOpen(false)} />
@@ -214,6 +232,10 @@ const ClientListView = () => {
                   </select>
                 </div>
                 <div>
+                  <label className="text-sm font-medium mb-1 block">Início de Contrato</label>
+                  <input type="date" value={form.inicio_contrato} onChange={(e) => set("inicio_contrato", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+                <div>
                   <label className="text-sm font-medium mb-1 block">Mensalidade (€)</label>
                   <input type="number" step="0.01" min="0" value={form.mensalidade} onChange={(e) => set("mensalidade", e.target.value)} placeholder="0,00" className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
                 </div>
@@ -224,8 +246,22 @@ const ClientListView = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Início de Contrato</label>
-                  <input type="date" value={form.inicio_contrato} onChange={(e) => set("inicio_contrato", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                  <label className="text-sm font-medium mb-1 block">Segurança Social</label>
+                  <select value={form.seguranca_social} onChange={(e) => set("seguranca_social", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                    {SS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">IVA</label>
+                  <select value={form.iva} onChange={(e) => set("iva", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                    {IVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Faturação</label>
+                  <select value={form.faturacao} onChange={(e) => set("faturacao", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                    {FATURACAO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">Responsável</label>
@@ -233,18 +269,6 @@ const ClientListView = () => {
                     <option value="">Sem responsável</option>
                     {collaborators.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Email</label>
-                  <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Telefone</label>
-                  <input value={form.phone} onChange={(e) => set("phone", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <div className="col-span-2">
-                  <label className="text-sm font-medium mb-1 block">Morada</label>
-                  <input value={form.address} onChange={(e) => set("address", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm font-medium mb-1 block">Notas Internas</label>
