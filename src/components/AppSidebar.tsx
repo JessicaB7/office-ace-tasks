@@ -1,4 +1,5 @@
-import { LayoutDashboard, ListTodo, Plus, Calculator, Users, Building2, CalendarDays, LogOut } from "lucide-react";
+import { LayoutDashboard, ListTodo, Plus, Users, Building2, CalendarDays, LogOut } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
