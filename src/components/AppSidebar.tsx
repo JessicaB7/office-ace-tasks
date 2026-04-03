@@ -17,6 +17,8 @@ const navItems = [
 ];
 
 const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) => {
+  const { user, signOut } = useAuth();
+
   return (
     <aside className="w-64 bg-primary text-primary-foreground min-h-screen flex flex-col">
       <div className="p-6 flex items-center gap-3">
@@ -53,9 +55,14 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
         ))}
       </nav>
 
-      <div className="p-4 mx-3 mb-4 rounded-lg bg-sidebar-accent/50 text-xs text-primary-foreground/60">
-        <p className="font-medium text-primary-foreground/80 mb-1">Gabinete Contabilidade</p>
+      <div className="p-4 mx-3 mb-2 rounded-lg bg-sidebar-accent/50 text-xs text-primary-foreground/60">
+        <p className="font-medium text-primary-foreground/80 mb-1">{user?.email}</p>
         <p>Período fiscal 2026</p>
+      </div>
+      <div className="px-4 mb-4">
+        <button onClick={signOut} className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-colors">
+          <LogOut className="w-4 h-4" /> Terminar sessão
+        </button>
       </div>
     </aside>
   );
