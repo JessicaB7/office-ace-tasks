@@ -1,5 +1,5 @@
 import { LayoutDashboard, ListTodo, Plus, Users, Building2, CalendarDays, LogOut } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -23,7 +23,7 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
   return (
     <aside className="w-64 bg-primary text-primary-foreground min-h-screen flex flex-col">
       <div className="p-6 flex items-center gap-3">
-        <img src={logo} alt="Contabilista Explica" className="h-8" />
+        <img src={logoWhite} alt="Contabilista Explica" className="h-8" />
       </div>
 
       <div className="px-4 mb-6">
