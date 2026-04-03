@@ -93,12 +93,14 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         const d = addMonths(month, year, 2);
         return fmtDeadline(20, d.m, d.y);
       }
+      case "SS_TI": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
       default: return "";
     }
   };
 
   const isDMR = activeTab === "DMR";
   const isIVA = activeTab === "IVA";
+  const isSSTI = activeTab === "SS_TI";
   const isRight = checkboxRight.has(activeTab);
   const showNif = !hideNif.has(activeTab);
   const showSaftExtra = activeTab === "SAFT";
@@ -338,6 +340,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
                 {showNif && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tipo</th>
+                {isSSTI && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Enquadramento SS</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
                 {showGuiaPagamento && (
@@ -370,6 +373,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <td className="px-4 py-3">
                       <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">{client.tipo_contabilidade || "—"}</span>
                     </td>
+                    {isSSTI && (
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">{client.seguranca_social || "—"}</span>
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
                     {showSaftExtra && (
                       <td className="text-center px-3 py-3">
