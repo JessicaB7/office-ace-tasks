@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useClients, useCollaborators, useUpsertClient, useDeleteClient } from "@/hooks/useSupabaseQuery";
-import { Search, Plus, Building2, X, Euro, Calendar, Users } from "lucide-react";
+import { Search, Plus, Building2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const TIPO_CONTAB_LABELS: Record<string, string> = {
