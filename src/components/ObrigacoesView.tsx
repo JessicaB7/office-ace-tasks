@@ -311,16 +311,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       {/* IVA collaborator tabs */}
       {isIVA && ivaCollabData.length > 0 && (
         <div className="flex gap-1 overflow-x-auto pb-1 border-b">
-          <button onClick={() => setCollabFilter("all")}
-            className={cn("px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
-              collabFilter === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-            Todos
-          </button>
           {ivaCollabData.map((col) => (
-            <button key={col.id} onClick={() => setCollabFilter(col.id)}
+            <button key={col.id} onClick={() => setCollabFilter(collabFilter === col.id ? "all" : col.id)}
               className={cn("px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
                 collabFilter === col.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-              {col.name} ({col.count})
+              {col.name}
             </button>
           ))}
         </div>
