@@ -349,13 +349,14 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 {isSSTI && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Enquadramento SS</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
+                {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Entregue</th>}
                 {showGuiaPagamento && (
                   <>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Guia</th>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Pagamento</th>
                   </>
                 )}
-                {isRight && !showGuiaPagamento && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
+                {isRight && !showGuiaPagamento && !showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
               </tr>
             </thead>
             <tbody>
