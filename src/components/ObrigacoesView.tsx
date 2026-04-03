@@ -100,6 +100,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
   const isDMR = activeTab === "DMR";
   const isIVA = activeTab === "IVA";
+  const isSSTI = activeTab === "SS_TI";
   const isRight = checkboxRight.has(activeTab);
   const showNif = !hideNif.has(activeTab);
   const showSaftExtra = activeTab === "SAFT";
