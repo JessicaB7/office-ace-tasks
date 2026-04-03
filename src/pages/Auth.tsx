@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Calculator, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import logo from "@/assets/logo.png";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -38,10 +39,7 @@ const Auth = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-            <Calculator className="w-6 h-6 text-primary-foreground" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Contabilista Explica</h1>
+          <img src={logo} alt="Contabilista Explica" className="h-16 mb-2" />
           <p className="text-sm text-muted-foreground mt-1">Gestor de Tarefas</p>
         </div>
 
