@@ -114,6 +114,7 @@ const ClientListView = () => {
       inicio_contrato: c.inicio_contrato || "",
       responsavel_id: c.responsavel_id || "",
       seguranca_social: c.seguranca_social || "",
+      pag_seguranca_social: c.pag_seguranca_social || "",
       iva: c.iva || "",
       faturacao: c.faturacao || "",
       saft: c.saft || "",
