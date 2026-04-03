@@ -25,8 +25,6 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
       <div className="p-6 flex items-center gap-3">
         <img src={logo} alt="Contabilista Explica" className="h-8" />
       </div>
-        </div>
-      </div>
 
       <div className="px-4 mb-6">
         <button onClick={onNewTask} className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent text-accent-foreground font-medium text-sm hover:opacity-90 transition-opacity">
