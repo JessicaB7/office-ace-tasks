@@ -258,17 +258,6 @@ const ClientListView = () => {
                   {TIPO_CONTAB_LABELS[client.tipo_contabilidade] || client.tipo_contabilidade || "—"}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                {client.mensalidade && (
-                  <span className="flex items-center gap-1"><Euro className="w-3 h-3" /> {formatMensalidade(client.mensalidade)}</span>
-                )}
-                {client.salarios && client.salarios !== "Não tem" && client.salarios !== "" && (
-                  <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Sal: {client.salarios.replace("Sim ", "")}</span>
-                )}
-                {getCollabName(client.responsavel_id) && (
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {getCollabName(client.responsavel_id)}</span>
-                )}
-              </div>
             </div>
           ))}
           {filtered.length === 0 && <div className="col-span-full text-center py-12 text-muted-foreground">Nenhum cliente encontrado</div>}

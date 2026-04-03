@@ -13,6 +13,12 @@ const categoryColors: Record<TaskCategory, string> = {
   IVA: "bg-emerald-500",
   SS: "bg-orange-500",
   contabilidade: "bg-cyan-500",
+  SAFT: "bg-indigo-500",
+  salarios: "bg-pink-500",
+  DMR: "bg-rose-500",
+  SS_TI: "bg-amber-500",
+  retencao_fonte: "bg-teal-500",
+  emissao_faturas: "bg-lime-500",
   fiscal: "bg-rose-500",
   outro: "bg-gray-500",
 };
