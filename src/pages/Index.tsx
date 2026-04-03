@@ -6,6 +6,7 @@ import TaskFormDialog from "@/components/TaskFormDialog";
 import ClientListView from "@/components/ClientListView";
 import CollaboratorListView from "@/components/CollaboratorListView";
 import FiscalCalendarView from "@/components/FiscalCalendarView";
+import ObrigacoesView from "@/components/ObrigacoesView";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("dashboard");
@@ -28,6 +29,7 @@ const Index = () => {
       <main className="flex-1 p-6 lg:p-8 overflow-auto">
         {activeView === "dashboard" && <DashboardView />}
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} />}
+        {activeView === "obrigacoes" && <ObrigacoesView onEditTask={handleEditTask} />}
         {activeView === "clients" && <ClientListView />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}
