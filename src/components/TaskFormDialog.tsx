@@ -1,0 +1,156 @@
+import { useState, useEffect } from "react";
+import { Task, TaskStatus, TaskPriority, TaskCategory, STATUS_LABELS, PRIORITY_LABELS, CATEGORY_LABELS } from "@/types/task";
+import { X } from "lucide-react";
+
+interface TaskFormDialogProps {
+  open: boolean;
+  task: Task | null;
+  onClose: () => void;
+  onSave: (task: Task) => void;
+  onDelete?: (id: string) => void;
+}
+
+const emptyTask: Omit<Task, "id" | "createdAt"> = {
+  title: "",
+  description: "",
+  client: "",
+  status: "pendente",
+  priority: "media",
+  category: "contabilidade",
+  dueDate: new Date().toISOString().split("T")[0],
+  assignee: "",
+};
+
+const TaskFormDialog = ({ open, task, onClose, onSave, onDelete }: TaskFormDialogProps) => {
+  const [form, setForm] = useState(emptyTask);
+  const isEditing = !!task;
+
+  useEffect(() => {
+    if (task) {
+      setForm(task);
+    } else {
+      setForm(emptyTask);
+    }
+  }, [task, open]);
+
+  if (!open) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      ...form,
+      id: task?.id || crypto.randomUUID(),
+      createdAt: task?.createdAt || new Date().toISOString().split("T")[0],
+    } as Task);
+  };
+
+  const set = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-card rounded-2xl border shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
+        <div className="flex items-center justify-between p-5 border-b">
+          <h3 className="text-lg font-bold">{isEditing ? "Editar Tarefa" : "Nova Tarefa"}</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-muted transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-1 block">Título</label>
+            <input
+              required
+              value={form.title}
+              onChange={(e) => set("title", e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Descrição</label>
+            <textarea
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Cliente</label>
+              <input
+                required
+                value={form.client}
+                onChange={(e) => set("client", e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Responsável</label>
+              <input
+                value={form.assignee}
+                onChange={(e) => set("assignee", e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Estado</label>
+              <select value={form.status} onChange={(e) => set("status", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                {(Object.keys(STATUS_LABELS) as TaskStatus[]).map((s) => (
+                  <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Prioridade</label>
+              <select value={form.priority} onChange={(e) => set("priority", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                {(Object.keys(PRIORITY_LABELS) as TaskPriority[]).map((p) => (
+                  <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Categoria</label>
+              <select value={form.category} onChange={(e) => set("category", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                {(Object.keys(CATEGORY_LABELS) as TaskCategory[]).map((c) => (
+                  <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Prazo</label>
+            <input
+              type="date"
+              required
+              value={form.dueDate}
+              onChange={(e) => set("dueDate", e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity"
+            >
+              {isEditing ? "Guardar" : "Criar Tarefa"}
+            </button>
+            {isEditing && onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(task!.id)}
+                className="px-4 py-2.5 rounded-lg bg-destructive/10 text-destructive font-medium text-sm hover:bg-destructive/20 transition-colors"
+              >
+                Eliminar
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default TaskFormDialog;
