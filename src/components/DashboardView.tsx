@@ -1,9 +1,6 @@
-import { Task, STATUS_LABELS, CATEGORY_LABELS, TaskStatus, TaskCategory } from "@/types/task";
+import { useTasks } from "@/hooks/useSupabaseQuery";
+import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
 import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle } from "lucide-react";
-
-interface DashboardViewProps {
-  tasks: Task[];
-}
 
 const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string }> = {
   pendente: { icon: Clock, colorClass: "bg-warning/15 text-warning" },
@@ -12,25 +9,29 @@ const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string 
   cancelada: { icon: XCircle, colorClass: "bg-destructive/15 text-destructive" },
 };
 
-const DashboardView = ({ tasks }: DashboardViewProps) => {
-  const statusCounts = tasks.reduce((acc, t) => {
+const DashboardView = () => {
+  const { data: tasks = [], isLoading } = useTasks();
+
+  const statusCounts = tasks.reduce((acc, t: any) => {
     acc[t.status] = (acc[t.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const categoryCounts = tasks.reduce((acc, t) => {
+  const categoryCounts = tasks.reduce((acc, t: any) => {
     acc[t.category] = (acc[t.category] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const overdueTasks = tasks.filter(
-    (t) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.dueDate) < new Date()
+    (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
   const upcomingTasks = tasks
-    .filter((t) => t.status !== "concluida" && t.status !== "cancelada")
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .filter((t: any) => t.status !== "concluida" && t.status !== "cancelada")
+    .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
     .slice(0, 5);
+
+  if (isLoading) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
   return (
     <div className="space-y-6">
@@ -39,17 +40,12 @@ const DashboardView = ({ tasks }: DashboardViewProps) => {
         <p className="text-muted-foreground text-sm mt-1">Visão geral das tarefas do gabinete</p>
       </div>
 
-      {/* Status cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {(Object.keys(STATUS_LABELS) as TaskStatus[]).map((status, i) => {
           const config = statusConfig[status];
           const Icon = config.icon;
           return (
-            <div
-              key={status}
-              className="bg-card rounded-xl border p-5 animate-fade-in"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
+            <div key={status} className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-muted-foreground font-medium">{STATUS_LABELS[status]}</span>
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${config.colorClass}`}>
@@ -63,25 +59,22 @@ const DashboardView = ({ tasks }: DashboardViewProps) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Overdue */}
         {overdueTasks.length > 0 && (
           <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "250ms" }}>
             <div className="flex items-center gap-2 mb-4">
               <AlertTriangle className="w-4 h-4 text-destructive" />
               <h3 className="font-semibold">Tarefas em Atraso</h3>
-              <span className="ml-auto text-xs font-medium bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">
-                {overdueTasks.length}
-              </span>
+              <span className="ml-auto text-xs font-medium bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">{overdueTasks.length}</span>
             </div>
             <div className="space-y-3">
-              {overdueTasks.map((task) => (
+              {overdueTasks.map((task: any) => (
                 <div key={task.id} className="flex items-center justify-between text-sm">
                   <div>
                     <p className="font-medium">{task.title}</p>
-                    <p className="text-muted-foreground text-xs">{task.client}</p>
+                    <p className="text-muted-foreground text-xs">{task.clients?.name || "—"}</p>
                   </div>
                   <span className="text-destructive text-xs font-medium whitespace-nowrap ml-3">
-                    {new Date(task.dueDate).toLocaleDateString("pt-PT")}
+                    {new Date(task.due_date).toLocaleDateString("pt-PT")}
                   </span>
                 </div>
               ))}
@@ -89,25 +82,24 @@ const DashboardView = ({ tasks }: DashboardViewProps) => {
           </div>
         )}
 
-        {/* Upcoming */}
         <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "320ms" }}>
           <h3 className="font-semibold mb-4">Próximos Prazos</h3>
           <div className="space-y-3">
-            {upcomingTasks.map((task) => (
+            {upcomingTasks.length === 0 && <p className="text-sm text-muted-foreground">Sem tarefas pendentes</p>}
+            {upcomingTasks.map((task: any) => (
               <div key={task.id} className="flex items-center justify-between text-sm">
                 <div>
                   <p className="font-medium">{task.title}</p>
-                  <p className="text-muted-foreground text-xs">{task.client}</p>
+                  <p className="text-muted-foreground text-xs">{task.clients?.name || "—"}</p>
                 </div>
                 <span className="text-muted-foreground text-xs whitespace-nowrap ml-3">
-                  {new Date(task.dueDate).toLocaleDateString("pt-PT")}
+                  {new Date(task.due_date).toLocaleDateString("pt-PT")}
                 </span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* By category */}
         <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "390ms" }}>
           <h3 className="font-semibold mb-4">Por Categoria</h3>
           <div className="space-y-2">
@@ -119,10 +111,7 @@ const DashboardView = ({ tasks }: DashboardViewProps) => {
                 <div key={cat} className="flex items-center gap-3 text-sm">
                   <span className="w-28 text-muted-foreground">{CATEGORY_LABELS[cat]}</span>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-accent rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%` }}
-                    />
+                    <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
                   </div>
                   <span className="font-medium w-6 text-right">{count}</span>
                 </div>

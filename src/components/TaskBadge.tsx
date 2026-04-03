@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { TaskPriority, TaskStatus, PRIORITY_LABELS, STATUS_LABELS } from "@/types/task";
+import { PRIORITY_LABELS, STATUS_LABELS, type TaskPriority, type TaskStatus } from "@/types/database";
 
 const statusStyles: Record<TaskStatus, string> = {
   pendente: "bg-warning/15 text-warning",

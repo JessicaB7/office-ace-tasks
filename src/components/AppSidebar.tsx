@@ -1,4 +1,4 @@
-import { LayoutDashboard, ListTodo, Plus, Calculator } from "lucide-react";
+import { LayoutDashboard, ListTodo, Plus, Calculator, Users, Building2, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AppSidebarProps {
@@ -10,6 +10,9 @@ interface AppSidebarProps {
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "tasks", label: "Tarefas", icon: ListTodo },
+  { id: "clients", label: "Clientes", icon: Building2 },
+  { id: "collaborators", label: "Colaboradores", icon: Users },
+  { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays },
 ];
 
 const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) => {
@@ -26,12 +29,8 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
       </div>
 
       <div className="px-4 mb-6">
-        <button
-          onClick={onNewTask}
-          className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent text-accent-foreground font-medium text-sm hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />
-          Nova Tarefa
+        <button onClick={onNewTask} className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent text-accent-foreground font-medium text-sm hover:opacity-90 transition-opacity">
+          <Plus className="w-4 h-4" /> Nova Tarefa
         </button>
       </div>
 
