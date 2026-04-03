@@ -319,6 +319,12 @@ const ClientListView = () => {
                   </select>
                 </div>
                 <div>
+                  <label className="text-sm font-medium mb-1 block">Pag. Segurança Social</label>
+                  <select value={form.pag_seguranca_social} onChange={(e) => set("pag_seguranca_social", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                    {PAG_SS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
                   <label className="text-sm font-medium mb-1 block">IVA</label>
                   <select value={form.iva} onChange={(e) => set("iva", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                     {IVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
