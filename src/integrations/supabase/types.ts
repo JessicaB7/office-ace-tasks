@@ -378,6 +378,12 @@ export type Database = {
         | "contabilidade"
         | "fiscal"
         | "outro"
+        | "SAFT"
+        | "salarios"
+        | "DMR"
+        | "SS_TI"
+        | "retencao_fonte"
+        | "emissao_faturas"
       task_priority: "baixa" | "media" | "alta" | "urgente"
       task_status: "pendente" | "em_progresso" | "concluida" | "cancelada"
     }
@@ -516,6 +522,12 @@ export const Constants = {
         "contabilidade",
         "fiscal",
         "outro",
+        "SAFT",
+        "salarios",
+        "DMR",
+        "SS_TI",
+        "retencao_fonte",
+        "emissao_faturas",
       ],
       task_priority: ["baixa", "media", "alta", "urgente"],
       task_status: ["pendente", "em_progresso", "concluida", "cancelada"],
