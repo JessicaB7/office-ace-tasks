@@ -120,7 +120,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         break;
       case "SS_TI":
         list = activeClients.filter((c: any) => isTI(c) && !hasSalarios(c));
-        if (subFilter !== "all") list = list.filter((c: any) => c.seguranca_social === subFilter);
+        if (subFilter !== "all") list = list.filter((c: any) => c.pag_seguranca_social === subFilter);
         break;
       case "IVA":
         list = activeClients.filter((c: any) => c.iva && c.iva !== "");
