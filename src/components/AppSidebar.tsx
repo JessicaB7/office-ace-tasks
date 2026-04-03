@@ -26,8 +26,8 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
           <Calculator className="w-5 h-5 text-accent-foreground" />
         </div>
         <div>
-          <h1 className="font-bold text-lg leading-tight">ContaTask</h1>
-          <p className="text-xs opacity-70">Gestão de Tarefas</p>
+          <h1 className="font-bold text-lg leading-tight">Contabilista Explica</h1>
+          <p className="text-xs opacity-70">Gestor de Tarefas</p>
         </div>
       </div>
 
