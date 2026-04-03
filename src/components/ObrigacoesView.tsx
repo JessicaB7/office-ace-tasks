@@ -373,6 +373,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <td className="px-4 py-3">
                       <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">{client.tipo_contabilidade || "—"}</span>
                     </td>
+                    {isSSTI && (
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">{client.seguranca_social || "—"}</span>
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
                     {showSaftExtra && (
                       <td className="text-center px-3 py-3">
