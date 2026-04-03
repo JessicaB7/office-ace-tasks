@@ -1,51 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 
-const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [email, setEmail] = useState("");
+const ResetPassword = () => {
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) throw error;
-      toast({ title: "Email enviado", description: "Verifique a sua caixa de entrada para repor a password." });
-      setIsForgotPassword(false);
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsRecovery(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      toast({ title: "Erro", description: "As passwords não coincidem.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({ 
-          email, 
-          password,
-          options: { emailRedirectTo: window.location.origin }
-        });
-        if (error) throw error;
-        toast({ title: "Conta criada", description: "Verifique o seu email para confirmar a conta." });
-      }
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      toast({ title: "Password atualizada", description: "A sua password foi alterada com sucesso." });
+      navigate("/");
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
@@ -62,25 +51,14 @@ const Auth = () => {
         </div>
 
         <div className="bg-card rounded-2xl border p-6 shadow-sm">
-          <h2 className="text-lg font-semibold mb-1">{isLogin ? "Entrar" : "Criar Conta"}</h2>
+          <h2 className="text-lg font-semibold mb-1">Nova Password</h2>
           <p className="text-sm text-muted-foreground mb-5">
-            {isLogin ? "Aceda à sua conta de colaborador" : "Registe-se como novo colaborador"}
+            Defina a sua nova password de acesso
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Email</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="nome@gabinete.pt"
-                className="w-full px-3 py-2.5 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Password</label>
+              <label className="text-sm font-medium mb-1.5 block">Nova Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -100,21 +78,33 @@ const Auth = () => {
                 </button>
               </div>
             </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Confirmar Password</label>
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                minLength={6}
+                className="w-full px-3 py-2.5 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
             <button
               type="submit"
               disabled={loading}
               className="w-full px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              {loading ? "A processar..." : isLogin ? "Entrar" : "Criar Conta"}
+              {loading ? "A processar..." : "Atualizar Password"}
             </button>
           </form>
 
           <div className="mt-4 text-center">
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => navigate("/auth")}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              {isLogin ? "Não tem conta? Criar conta" : "Já tem conta? Entrar"}
+              Voltar ao login
             </button>
           </div>
         </div>
@@ -123,4 +113,4 @@ const Auth = () => {
   );
 };
 
-export default Auth;
+export default ResetPassword;
