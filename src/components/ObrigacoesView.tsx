@@ -35,6 +35,10 @@ const fmtDeadline = (day: number, m0: number, y: number) =>
 const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "SS_TI"]);
 // Pages where NIF is hidden
 const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte"]);
+const SS_TI_FILTERS = [
+  { value: "Referência", label: "Referência" },
+  { value: "Débito Direto", label: "Débito Direto" },
+];
 
 const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
