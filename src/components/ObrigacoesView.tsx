@@ -25,6 +25,15 @@ const needsExtra = (client: any) =>
 const hasSalarios = (c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "";
 const isTI = (c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO";
 
+// Helper: add N months to a 0-based month/year, returns { m, y } (0-based month)
+const addMonths = (m: number, y: number, n: number) => {
+  const total = m + n;
+  return { m: ((total % 12) + 12) % 12, y: y + Math.floor(total / 12) };
+};
+
+const fmtDeadline = (day: number, m0: number, y: number) =>
+  `Prazo: ${day}/${String(m0 + 1).padStart(2, "0")}/${y}`;
+
 const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: collaborators = [] } = useCollaborators();
@@ -35,6 +44,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const [month, setMonth] = useState(now.getMonth());
   const [activeTab, setActiveTab] = useState<string>(subPage || "SAFT");
   const [subFilter, setSubFilter] = useState<string>("all");
+  const [dmrTab, setDmrTab] = useState<"DMR_AT" | "DMR_SS">("DMR_AT");
   const [search, setSearch] = useState("");
 
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -46,6 +56,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       setActiveTab(subPage);
       setSubFilter("all");
       setSearch("");
+      if (subPage === "DMR") setDmrTab("DMR_AT");
     }
   }, [subPage]);
 
@@ -69,18 +80,30 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const getDeadlineText = (): string => {
     switch (activeTab) {
       case "SAFT": {
-        const dm = month + 1 > 11 ? 0 : month + 1;
-        const dy = month + 1 > 11 ? year + 1 : year;
-        return `Prazo: 5/${String(dm + 1).padStart(2, "0")}/${dy}`;
+        const d = addMonths(month, year, 1);
+        return fmtDeadline(5, d.m, d.y);
+      }
+      case "IVA": {
+        if (subFilter === "Trimestral") {
+          // Trimestral: deadline day 20 of 2nd month after quarter end
+          // Q1(Jan-Mar)->May 20, Q2(Apr-Jun)->Aug 20, Q3(Jul-Sep)->Nov 20, Q4(Oct-Dec)->Feb 20
+          const quarterEndMonth = [2, 2, 2, 5, 5, 5, 8, 8, 8, 11, 11, 11][month]; // 0-based
+          const d = addMonths(quarterEndMonth, year, 2);
+          return fmtDeadline(20, d.m, d.y);
+        }
+        // Mensal: day 20 of 2nd month after reference
+        const d = addMonths(month, year, 2);
+        return fmtDeadline(20, d.m, d.y);
+      }
+      case "retencao_fonte": {
+        const d = addMonths(month, year, 1);
+        return fmtDeadline(20, d.m, d.y);
       }
       default: return "";
     }
   };
 
-  // DMR has two obligation types stored separately
   const isDMR = activeTab === "DMR";
-  // IVA splits into Mensal/Trimestral as separate views
-  const isIVA = activeTab === "IVA";
 
   const filteredClients = useMemo(() => {
     let list: any[] = [];
@@ -97,21 +120,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         list = activeClients.filter((c: any) => hasSalarios(c));
         break;
       case "SS_TI":
-        // Only TI clients WITHOUT salários
         list = activeClients.filter((c: any) => isTI(c) && !hasSalarios(c));
-        if (subFilter !== "all") list = list.filter((c: any) => c.seguranca_social === subFilter);
         break;
       case "IVA":
         list = activeClients.filter((c: any) => c.iva && c.iva !== "");
-        // Default to Mensal tab
-        if (subFilter === "all") {
-          // show all
-        } else {
-          list = list.filter((c: any) => c.iva === subFilter);
-        }
+        if (subFilter !== "all") list = list.filter((c: any) => c.iva === subFilter);
         break;
       case "retencao_fonte":
-        // Only Empresas (SQ) and TI CO
         list = activeClients.filter((c: any) => c.tipo_contabilidade === "SQ" || c.tipo_contabilidade === "TI CO");
         break;
       case "emissao_faturas":
@@ -127,63 +142,54 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     return list;
   }, [activeClients, activeTab, subFilter, search]);
 
-  // For DMR we need two obligation maps (DMR_AT and DMR_SS)
+  // Build obligation maps
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
+    const type = isDMR ? dmrTab : activeTab;
     obligations.forEach((o: any) => {
-      if (o.obligation_type === activeTab) {
-        map[o.client_id] = o;
-      }
+      if (o.obligation_type === type) map[o.client_id] = o;
     });
     return map;
-  }, [obligations, activeTab]);
+  }, [obligations, activeTab, isDMR, dmrTab]);
 
-  const oblMapDMR_AT = useMemo(() => {
-    if (!isDMR) return {};
-    const map: Record<string, any> = {};
-    obligations.forEach((o: any) => {
-      if (o.obligation_type === "DMR_AT") map[o.client_id] = o;
-    });
-    return map;
-  }, [obligations, isDMR]);
-
-  const oblMapDMR_SS = useMemo(() => {
-    if (!isDMR) return {};
-    const map: Record<string, any> = {};
-    obligations.forEach((o: any) => {
-      if (o.obligation_type === "DMR_SS") map[o.client_id] = o;
-    });
-    return map;
-  }, [obligations, isDMR]);
-
+  // For DMR: guia and pagamento tracked via extra_done
+  // guia = status concluida, pagamento = extra_done
   const toggleObligation = async (clientId: string, oblType: string, currentMap: Record<string, any>) => {
     const existing = currentMap[clientId];
     if (existing) {
       const newStatus = existing.status === "concluida" ? "pendente" : "concluida";
       await upsert.mutateAsync({
-        id: existing.id,
-        client_id: clientId,
-        obligation_type: oblType,
-        reference_month: referenceMonth,
-        status: newStatus,
+        id: existing.id, client_id: clientId, obligation_type: oblType,
+        reference_month: referenceMonth, status: newStatus,
         completed_at: newStatus === "concluida" ? new Date().toISOString() : null,
         completed_by: newStatus === "concluida" ? user?.id || null : null,
       });
     } else {
       await upsert.mutateAsync({
-        client_id: clientId,
-        obligation_type: oblType,
-        reference_month: referenceMonth,
-        status: "concluida",
-        completed_at: new Date().toISOString(),
-        completed_by: user?.id || null,
+        client_id: clientId, obligation_type: oblType,
+        reference_month: referenceMonth, status: "concluida",
+        completed_at: new Date().toISOString(), completed_by: user?.id || null,
       });
     }
   };
 
-  const toggleStatus = (clientId: string) => toggleObligation(clientId, activeTab, oblMap);
-  const toggleDMR_AT = (clientId: string) => toggleObligation(clientId, "DMR_AT", oblMapDMR_AT);
-  const toggleDMR_SS = (clientId: string) => toggleObligation(clientId, "DMR_SS", oblMapDMR_SS);
+  const toggleGuia = (clientId: string) => toggleObligation(clientId, isDMR ? dmrTab : activeTab, oblMap);
+
+  const togglePagamento = async (clientId: string) => {
+    const oblType = isDMR ? dmrTab : activeTab;
+    const existing = oblMap[clientId];
+    if (existing) {
+      await upsert.mutateAsync({
+        id: existing.id, client_id: clientId, obligation_type: oblType,
+        reference_month: referenceMonth, status: existing.status, extra_done: !existing.extra_done,
+      });
+    } else {
+      await upsert.mutateAsync({
+        client_id: clientId, obligation_type: oblType,
+        reference_month: referenceMonth, status: "pendente", extra_done: true,
+      });
+    }
+  };
 
   const toggleExtra = async (clientId: string) => {
     const existing = oblMap[clientId];
@@ -205,7 +211,6 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "SAFT": return SAFT_GROUPS.map(g => ({ value: g, label: g }));
       case "salarios": return SALARIOS_FILTERS;
       case "SS_TI": return [
-        { value: "Mensal", label: "Mensal" },
         { value: "Trimestral", label: "Trimestral" },
         { value: "Contabilidade Organizada", label: "Cont. Organizada" },
         { value: "TCO", label: "TCO" },
@@ -220,19 +225,23 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   };
 
   const subFilterOptions = getSubFilterOptions();
-  const showExtra = activeTab === "SAFT";
+  const showSaftExtra = activeTab === "SAFT";
+  const showGuiaPagamento = isDMR;
   const deadlineText = getDeadlineText();
 
-  const doneCount = isDMR
-    ? filteredClients.filter(c => oblMapDMR_AT[c.id]?.status === "concluida" && oblMapDMR_SS[c.id]?.status === "concluida").length
-    : filteredClients.filter(c => oblMap[c.id]?.status === "concluida").length;
+  const doneCount = filteredClients.filter(c => oblMap[c.id]?.status === "concluida").length;
 
   const pageLabels: Record<string, string> = {
     SAFT: "SAFT", salarios: "Salários", DMR: "DMR", SS_TI: "Segurança Social TI",
     IVA: "IVA", retencao_fonte: "Retenção na Fonte", emissao_faturas: "Emissão de Faturas",
   };
 
-  const totalCols = isDMR ? 6 : (showExtra ? 6 : 5);
+  const totalCols = (() => {
+    let cols = 5; // base: checkbox + name + nif + tipo + responsavel
+    if (showGuiaPagamento) cols += 1; // extra pagamento column
+    if (showSaftExtra) cols += 1; // importado TOC
+    return cols;
+  })();
 
   if (loadingClients || loadingObl) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
@@ -272,7 +281,28 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         </div>
       </div>
 
-      {subFilterOptions.length > 0 && (
+      {/* DMR tabs */}
+      {isDMR && (
+        <div className="flex gap-1 border-b">
+          {(["DMR_AT", "DMR_SS"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setDmrTab(tab)}
+              className={cn(
+                "px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
+                dmrTab === tab
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
+            >
+              {tab === "DMR_AT" ? "DMR AT" : "DMR SS"}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Sub-filter tabs */}
+      {subFilterOptions.length > 0 && !isDMR && (
         <div className="flex gap-1 overflow-x-auto pb-1 border-b">
           {subFilterOptions.map((opt) => {
             const count = (() => {
@@ -312,46 +342,36 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/40">
-                {isDMR ? (
-                  <>
-                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">DMR AT</th>
-                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">DMR SS</th>
-                  </>
-                ) : (
-                  <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>
+                <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">
+                  {showGuiaPagamento ? "Guia" : "✓"}
+                </th>
+                {showGuiaPagamento && (
+                  <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">Pagamento</th>
                 )}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tipo</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
-                {showExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
+                {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
               </tr>
             </thead>
             <tbody>
               {filteredClients.map((client: any) => {
                 const obl = oblMap[client.id];
-                const isDone = obl?.status === "concluida";
+                const guiaDone = obl?.status === "concluida";
+                const pagamentoDone = obl?.extra_done === true;
                 const isExtraDone = obl?.extra_done === true;
-                const showExtraForClient = showExtra && needsExtra(client);
-
-                const dmrATDone = oblMapDMR_AT[client.id]?.status === "concluida";
-                const dmrSSDone = oblMapDMR_SS[client.id]?.status === "concluida";
-                const rowDone = isDMR ? (dmrATDone && dmrSSDone) : isDone;
+                const showExtraForClient = showSaftExtra && needsExtra(client);
+                const rowDone = showGuiaPagamento ? (guiaDone && pagamentoDone) : guiaDone;
 
                 return (
                   <tr key={client.id} className={cn("border-b last:border-0 transition-colors", rowDone ? "bg-green-50 dark:bg-green-950/20" : "hover:bg-muted/30")}>
-                    {isDMR ? (
-                      <>
-                        <td className="text-center px-3 py-3">
-                          <CheckboxCell done={dmrATDone} onClick={() => toggleDMR_AT(client.id)} />
-                        </td>
-                        <td className="text-center px-3 py-3">
-                          <CheckboxCell done={dmrSSDone} onClick={() => toggleDMR_SS(client.id)} />
-                        </td>
-                      </>
-                    ) : (
+                    <td className="text-center px-3 py-3">
+                      <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
+                    </td>
+                    {showGuiaPagamento && (
                       <td className="text-center px-3 py-3">
-                        <CheckboxCell done={isDone} onClick={() => toggleStatus(client.id)} />
+                        <CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} />
                       </td>
                     )}
                     <td className={cn("px-4 py-3 font-medium", rowDone && "line-through text-muted-foreground")}>{client.name}</td>
@@ -362,7 +382,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
-                    {showExtra && (
+                    {showSaftExtra && (
                       <td className="text-center px-3 py-3">
                         {showExtraForClient ? (
                           <button
