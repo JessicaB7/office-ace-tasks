@@ -29,7 +29,7 @@ const Index = () => {
       <main className="flex-1 p-6 lg:p-8 overflow-auto">
         {activeView === "dashboard" && <DashboardView />}
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} />}
-        {activeView === "obrigacoes" && <ObrigacoesView onEditTask={handleEditTask} />}
+        {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
         {activeView === "clients" && <ClientListView />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}
