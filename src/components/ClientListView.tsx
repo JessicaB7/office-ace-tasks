@@ -270,10 +270,6 @@ const ClientListView = () => {
                     {collaborators.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
-                <div className="col-span-2">
-                  <label className="text-sm font-medium mb-1 block">Notas Internas</label>
-                  <textarea value={form.notas_internas} onChange={(e) => set("notas_internas", e.target.value)} rows={2} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
-                </div>
               </div>
               <div className="flex items-center gap-3 pt-2">
                 <button type="submit" disabled={upsert.isPending} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
