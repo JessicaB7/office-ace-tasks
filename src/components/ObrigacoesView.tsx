@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
 const SAFT_GROUPS = ["Automático", "A entregar", "Não Aplicável"];
 const SALARIOS_FILTERS = [
   { value: "Sim até dia 25", label: "Até dia 25" },
@@ -25,14 +24,17 @@ const needsExtra = (client: any) =>
 const hasSalarios = (c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "";
 const isTI = (c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO";
 
-// Helper: add N months to a 0-based month/year, returns { m, y } (0-based month)
 const addMonths = (m: number, y: number, n: number) => {
   const total = m + n;
   return { m: ((total % 12) + 12) % 12, y: y + Math.floor(total / 12) };
 };
-
 const fmtDeadline = (day: number, m0: number, y: number) =>
   `Prazo: ${day}/${String(m0 + 1).padStart(2, "0")}/${y}`;
+
+// Pages where checkboxes go on the RIGHT side
+const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA"]);
+// Pages where NIF is hidden
+const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte"]);
 
 const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
@@ -45,6 +47,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const [activeTab, setActiveTab] = useState<string>(subPage || "SAFT");
   const [subFilter, setSubFilter] = useState<string>("all");
   const [dmrTab, setDmrTab] = useState<"DMR_AT" | "DMR_SS">("DMR_AT");
+  const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -55,19 +58,14 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     if (subPage) {
       setActiveTab(subPage);
       setSubFilter("all");
+      setCollabFilter("all");
       setSearch("");
       if (subPage === "DMR") setDmrTab("DMR_AT");
     }
   }, [subPage]);
 
-  const prevMonth = () => {
-    if (month === 0) { setMonth(11); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 11) { setMonth(0); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
-  };
+  const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
+  const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
 
   const activeClients = useMemo(() => clients.filter((c: any) => c.active), [clients]);
 
@@ -79,24 +77,16 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
   const getDeadlineText = (): string => {
     switch (activeTab) {
-      case "SAFT": {
-        const d = addMonths(month, year, 1);
-        return fmtDeadline(5, d.m, d.y);
-      }
+      case "SAFT": { const d = addMonths(month, year, 1); return fmtDeadline(5, d.m, d.y); }
+      case "DMR": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
+      case "retencao_fonte": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
       case "IVA": {
         if (subFilter === "Trimestral") {
-          // Trimestral: deadline day 20 of 2nd month after quarter end
-          // Q1(Jan-Mar)->May 20, Q2(Apr-Jun)->Aug 20, Q3(Jul-Sep)->Nov 20, Q4(Oct-Dec)->Feb 20
-          const quarterEndMonth = [2, 2, 2, 5, 5, 5, 8, 8, 8, 11, 11, 11][month]; // 0-based
-          const d = addMonths(quarterEndMonth, year, 2);
+          const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
+          const d = addMonths(qEnd, year, 2);
           return fmtDeadline(20, d.m, d.y);
         }
-        // Mensal: day 20 of 2nd month after reference
         const d = addMonths(month, year, 2);
-        return fmtDeadline(20, d.m, d.y);
-      }
-      case "retencao_fonte": {
-        const d = addMonths(month, year, 1);
         return fmtDeadline(20, d.m, d.y);
       }
       default: return "";
@@ -104,6 +94,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   };
 
   const isDMR = activeTab === "DMR";
+  const isIVA = activeTab === "IVA";
+  const isRight = checkboxRight.has(activeTab);
+  const showNif = !hideNif.has(activeTab);
+  const showSaftExtra = activeTab === "SAFT";
+  const showGuiaPagamento = isDMR;
 
   const filteredClients = useMemo(() => {
     let list: any[] = [];
@@ -135,25 +130,25 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       default:
         list = activeClients;
     }
+    // IVA: filter by collaborator
+    if (isIVA && collabFilter !== "all") {
+      if (collabFilter === "none") list = list.filter((c: any) => !c.responsavel_id);
+      else list = list.filter((c: any) => c.responsavel_id === collabFilter);
+    }
     if (search) {
       const s = search.toLowerCase();
       list = list.filter((c: any) => c.name.toLowerCase().includes(s) || (c.nif || "").includes(s));
     }
     return list;
-  }, [activeClients, activeTab, subFilter, search]);
+  }, [activeClients, activeTab, subFilter, search, isIVA, collabFilter]);
 
-  // Build obligation maps
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
     const type = isDMR ? dmrTab : activeTab;
-    obligations.forEach((o: any) => {
-      if (o.obligation_type === type) map[o.client_id] = o;
-    });
+    obligations.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
     return map;
   }, [obligations, activeTab, isDMR, dmrTab]);
 
-  // For DMR: guia and pagamento tracked via extra_done
-  // guia = status concluida, pagamento = extra_done
   const toggleObligation = async (clientId: string, oblType: string, currentMap: Record<string, any>) => {
     const existing = currentMap[clientId];
     if (existing) {
@@ -166,9 +161,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       });
     } else {
       await upsert.mutateAsync({
-        client_id: clientId, obligation_type: oblType,
-        reference_month: referenceMonth, status: "concluida",
-        completed_at: new Date().toISOString(), completed_by: user?.id || null,
+        client_id: clientId, obligation_type: oblType, reference_month: referenceMonth,
+        status: "concluida", completed_at: new Date().toISOString(), completed_by: user?.id || null,
       });
     }
   };
@@ -210,25 +204,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     switch (activeTab) {
       case "SAFT": return SAFT_GROUPS.map(g => ({ value: g, label: g }));
       case "salarios": return SALARIOS_FILTERS;
-      case "SS_TI": return [
-        { value: "Trimestral", label: "Trimestral" },
-        { value: "Contabilidade Organizada", label: "Cont. Organizada" },
-        { value: "TCO", label: "TCO" },
-        { value: "Isento", label: "Isento" },
-      ];
-      case "IVA": return [
-        { value: "Mensal", label: "Mensal" },
-        { value: "Trimestral", label: "Trimestral" },
-      ];
+      case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
       default: return [];
     }
   };
 
   const subFilterOptions = getSubFilterOptions();
-  const showSaftExtra = activeTab === "SAFT";
-  const showGuiaPagamento = isDMR;
   const deadlineText = getDeadlineText();
-
   const doneCount = filteredClients.filter(c => oblMap[c.id]?.status === "concluida").length;
 
   const pageLabels: Record<string, string> = {
@@ -236,27 +218,33 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     IVA: "IVA", retencao_fonte: "Retenção na Fonte", emissao_faturas: "Emissão de Faturas",
   };
 
-  const totalCols = (() => {
-    let cols = 5; // base: checkbox + name + nif + tipo + responsavel
-    if (showGuiaPagamento) cols += 1; // extra pagamento column
-    if (showSaftExtra) cols += 1; // importado TOC
-    return cols;
-  })();
+  // IVA collaborator tabs data
+  const ivaCollabData = useMemo(() => {
+    if (!isIVA) return [];
+    const ivaClients = activeClients.filter((c: any) => c.iva && c.iva !== "" && (subFilter === "all" || c.iva === subFilter));
+    const counts: Record<string, number> = {};
+    let noneCount = 0;
+    ivaClients.forEach((c: any) => {
+      if (c.responsavel_id) counts[c.responsavel_id] = (counts[c.responsavel_id] || 0) + 1;
+      else noneCount++;
+    });
+    const tabs = collaborators.filter((col: any) => counts[col.id]).map((col: any) => ({ id: col.id, name: col.name, count: counts[col.id] }));
+    if (noneCount > 0) tabs.push({ id: "none", name: "Sem responsável", count: noneCount });
+    return tabs;
+  }, [isIVA, activeClients, collaborators, subFilter]);
 
   if (loadingClients || loadingObl) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
   const CheckboxCell = ({ done, onClick }: { done: boolean; onClick: () => void }) => (
-    <button
-      onClick={onClick}
-      disabled={upsert.isPending}
-      className={cn(
-        "w-6 h-6 rounded border-2 flex items-center justify-center transition-colors",
-        done ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30 hover:border-primary"
-      )}
-    >
+    <button onClick={onClick} disabled={upsert.isPending}
+      className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-colors",
+        done ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30 hover:border-primary")}>
       {done && <Check className="w-4 h-4" />}
     </button>
   );
+
+  // Build columns config
+  const leftCheckbox = !isRight && !showGuiaPagamento;
 
   return (
     <div className="space-y-5">
@@ -269,15 +257,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-muted transition-colors">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <span className="text-sm font-semibold min-w-[140px] text-center">
-            {MONTH_NAMES[month]} {year}
-          </span>
-          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-muted transition-colors">
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+          <span className="text-sm font-semibold min-w-[140px] text-center">{MONTH_NAMES[month]} {year}</span>
+          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
 
@@ -285,16 +267,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       {isDMR && (
         <div className="flex gap-1 border-b">
           {(["DMR_AT", "DMR_SS"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setDmrTab(tab)}
-              className={cn(
-                "px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
-                dmrTab === tab
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              )}
-            >
+            <button key={tab} onClick={() => setDmrTab(tab)}
+              className={cn("px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
+                dmrTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
               {tab === "DMR_AT" ? "DMR AT" : "DMR SS"}
             </button>
           ))}
@@ -309,22 +284,14 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
               switch (activeTab) {
                 case "SAFT": return activeClients.filter((c: any) => c.saft === opt.value).length;
                 case "salarios": return activeClients.filter((c: any) => c.salarios === opt.value).length;
-                case "SS_TI": return activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.seguranca_social === opt.value).length;
                 case "IVA": return activeClients.filter((c: any) => c.iva === opt.value).length;
                 default: return 0;
               }
             })();
             return (
-              <button
-                key={opt.value}
-                onClick={() => setSubFilter(subFilter === opt.value ? "all" : opt.value)}
-                className={cn(
-                  "px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
-                  subFilter === opt.value
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
+              <button key={opt.value} onClick={() => { setSubFilter(subFilter === opt.value ? "all" : opt.value); setCollabFilter("all"); }}
+                className={cn("px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
+                  subFilter === opt.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
                 {opt.label} ({count})
               </button>
             );
@@ -332,9 +299,27 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         </div>
       )}
 
+      {/* IVA collaborator tabs */}
+      {isIVA && ivaCollabData.length > 0 && (
+        <div className="flex gap-1 overflow-x-auto pb-1 border-b">
+          <button onClick={() => setCollabFilter("all")}
+            className={cn("px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
+              collabFilter === "all" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+            Todos
+          </button>
+          {ivaCollabData.map((col) => (
+            <button key={col.id} onClick={() => setCollabFilter(col.id)}
+              className={cn("px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
+                collabFilter === col.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+              {col.name} ({col.count})
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input type="text" placeholder="Pesquisar por nome ou NIF..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
+        <input type="text" placeholder="Pesquisar por nome..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
       </div>
 
       <div className="bg-card rounded-xl border overflow-hidden">
@@ -342,17 +327,19 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/40">
-                <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">
-                  {showGuiaPagamento ? "Guia" : "✓"}
-                </th>
-                {showGuiaPagamento && (
-                  <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">Pagamento</th>
-                )}
+                {leftCheckbox && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>
+                {showNif && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tipo</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
+                {showGuiaPagamento && (
+                  <>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Guia</th>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Pagamento</th>
+                  </>
+                )}
+                {isRight && !showGuiaPagamento && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
               </tr>
             </thead>
             <tbody>
@@ -366,45 +353,44 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
                 return (
                   <tr key={client.id} className={cn("border-b last:border-0 transition-colors", rowDone ? "bg-green-50 dark:bg-green-950/20" : "hover:bg-muted/30")}>
-                    <td className="text-center px-3 py-3">
-                      <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
-                    </td>
-                    {showGuiaPagamento && (
+                    {leftCheckbox && (
                       <td className="text-center px-3 py-3">
-                        <CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} />
+                        <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
                     )}
                     <td className={cn("px-4 py-3 font-medium", rowDone && "line-through text-muted-foreground")}>{client.name}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>
+                    {showNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3">
-                      <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">
-                        {client.tipo_contabilidade || "—"}
-                      </span>
+                      <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">{client.tipo_contabilidade || "—"}</span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
                     {showSaftExtra && (
                       <td className="text-center px-3 py-3">
                         {showExtraForClient ? (
-                          <button
-                            onClick={() => toggleExtra(client.id)}
-                            disabled={upsert.isPending}
-                            className={cn(
-                              "w-6 h-6 rounded border-2 flex items-center justify-center transition-colors mx-auto",
-                              isExtraDone ? "bg-blue-500 border-blue-500 text-white" : "border-muted-foreground/30 hover:border-primary"
-                            )}
-                          >
+                          <button onClick={() => toggleExtra(client.id)} disabled={upsert.isPending}
+                            className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-colors mx-auto",
+                              isExtraDone ? "bg-blue-500 border-blue-500 text-white" : "border-muted-foreground/30 hover:border-primary")}>
                             {isExtraDone && <Check className="w-4 h-4" />}
                           </button>
-                        ) : (
-                          <span className="text-muted-foreground/30">—</span>
-                        )}
+                        ) : <span className="text-muted-foreground/30">—</span>}
+                      </td>
+                    )}
+                    {showGuiaPagamento && (
+                      <>
+                        <td className="text-center px-3 py-3"><CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} /></td>
+                        <td className="text-center px-3 py-3"><CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} /></td>
+                      </>
+                    )}
+                    {isRight && !showGuiaPagamento && (
+                      <td className="text-center px-3 py-3">
+                        <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
                     )}
                   </tr>
                 );
               })}
               {filteredClients.length === 0 && (
-                <tr><td colSpan={totalCols} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
               )}
             </tbody>
           </table>
