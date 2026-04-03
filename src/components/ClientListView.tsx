@@ -59,6 +59,7 @@ interface ClientForm {
   inicio_contrato: string;
   responsavel_id: string;
   seguranca_social: string;
+  pag_seguranca_social: string;
   iva: string;
   faturacao: string;
   saft: string;
