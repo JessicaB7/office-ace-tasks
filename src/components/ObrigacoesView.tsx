@@ -32,9 +32,13 @@ const fmtDeadline = (day: number, m0: number, y: number) =>
   `Prazo: ${day}/${String(m0 + 1).padStart(2, "0")}/${y}`;
 
 // Pages where checkboxes go on the RIGHT side
-const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA"]);
+const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "SS_TI"]);
 // Pages where NIF is hidden
 const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte"]);
+const SS_TI_FILTERS = [
+  { value: "Referência", label: "Referência" },
+  { value: "Débito Direto", label: "Débito Direto" },
+];
 
 const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
@@ -116,6 +120,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         break;
       case "SS_TI":
         list = activeClients.filter((c: any) => isTI(c) && !hasSalarios(c));
+        if (subFilter !== "all") list = list.filter((c: any) => c.seguranca_social === subFilter);
         break;
       case "IVA":
         list = activeClients.filter((c: any) => c.iva && c.iva !== "");
@@ -205,6 +210,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "SAFT": return SAFT_GROUPS.map(g => ({ value: g, label: g }));
       case "salarios": return SALARIOS_FILTERS;
       case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
+      case "SS_TI": return SS_TI_FILTERS;
       default: return [];
     }
   };
@@ -285,6 +291,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 case "SAFT": return activeClients.filter((c: any) => c.saft === opt.value).length;
                 case "salarios": return activeClients.filter((c: any) => c.salarios === opt.value).length;
                 case "IVA": return activeClients.filter((c: any) => c.iva === opt.value).length;
+                case "SS_TI": return activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.seguranca_social === opt.value).length;
                 default: return 0;
               }
             })();
