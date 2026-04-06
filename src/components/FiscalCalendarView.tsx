@@ -1,8 +1,10 @@
 import { useState, useMemo } from "react";
-import { useTasks } from "@/hooks/useSupabaseQuery";
-import { type TaskCategory } from "@/types/database";
-import { ChevronLeft, ChevronRight, CalendarDays, AlertTriangle } from "lucide-react";
+import { useTasks, useClients, useCollaborators, useUpsertTask } from "@/hooks/useSupabaseQuery";
+import { CATEGORY_LABELS, type TaskCategory, type TaskStatus, type TaskPriority } from "@/types/database";
+import { ChevronLeft, ChevronRight, CalendarDays, AlertTriangle, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import TaskFormDialog from "./TaskFormDialog";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const WEEKDAY_NAMES = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
@@ -23,28 +25,29 @@ const categoryColors: Record<TaskCategory, string> = {
   outro: "bg-gray-500",
 };
 
-// Deadlines based on obligation rules
 interface FiscalDeadline {
   title: string;
   day: number;
-  months: number[] | null; // null = every month
+  months: number[] | null;
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "SAFT", day: 5, months: null },
+  { title: "DMR AT - Guia", day: 20, months: null },
+  { title: "DMR SS - Guia", day: 20, months: null },
   { title: "IVA Periódica Mensal", day: 20, months: null },
   { title: "Recapitulativa Mensal", day: 20, months: null },
-  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] }, // Feb, May, Aug, Nov
+  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
   { title: "Recapitulativa Trimestral", day: 20, months: [2, 5, 8, 11] },
   { title: "Retenção na Fonte", day: 20, months: null },
   { title: "SS TI - Pagamento", day: 20, months: null },
   { title: "Salários", day: 25, months: null },
-  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] }, // Jan=31, Jul=31, Oct=31
-  { title: "SS TI - Declaração Trimestral", day: 30, months: [4] }, // Apr=30
+  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] },
+  { title: "SS TI - Declaração Trimestral", day: 30, months: [4] },
 ];
 
 const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number) => {
-  const month1 = monthIndex + 1; // 1-based
+  const month1 = monthIndex + 1;
   const result: { day: number; title: string }[] = [];
   FISCAL_DEADLINES.forEach((dl) => {
     if (dl.months === null || dl.months.includes(month1)) {
@@ -57,9 +60,13 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number) => {
 
 const FiscalCalendarView = () => {
   const { data: tasks = [] } = useTasks();
+  const { toast } = useToast();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
@@ -87,16 +94,45 @@ const FiscalCalendarView = () => {
     return map;
   }, [month, daysInMonth]);
 
-  const prev = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
-  const next = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
+  const prev = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); setSelectedDay(null); };
+  const next = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); setSelectedDay(null); };
 
   const isToday = (day: number) => day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
 
+  const handleDayClick = (day: number) => {
+    setSelectedDay(selectedDay === day ? null : day);
+  };
+
+  const handleAddTask = (day: number) => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    setEditingTask({ _prefillDate: dateStr });
+    setTaskDialogOpen(true);
+  };
+
+  const handleEditTask = (task: any) => {
+    setEditingTask(task);
+    setTaskDialogOpen(true);
+  };
+
+  const selectedDayDeadlines = selectedDay ? (deadlinesByDay[selectedDay] || []) : [];
+  const selectedDayTasks = selectedDay ? (tasksByDay[selectedDay] || []) : [];
+
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-2xl font-bold">Calendário Fiscal</h2>
-        <p className="text-muted-foreground text-sm mt-1">Prazos e obrigações fiscais</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Calendário Fiscal</h2>
+          <p className="text-muted-foreground text-sm mt-1">Prazos e obrigações fiscais</p>
+        </div>
+        <button
+          onClick={() => {
+            setEditingTask(null);
+            setTaskDialogOpen(true);
+          }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity"
+        >
+          <Plus className="w-4 h-4" /> Nova Obrigação
+        </button>
       </div>
 
       {/* Month nav */}
@@ -120,8 +156,17 @@ const FiscalCalendarView = () => {
             const dayTasks = tasksByDay[day] || [];
             const dayDeadlines = deadlinesByDay[day] || [];
             const hasOverdue = dayTasks.some((t: any) => (t.status === "pendente" || t.status === "em_progresso") && new Date(t.due_date) < today);
+            const isSelected = selectedDay === day;
             return (
-              <div key={day} className={cn("min-h-[80px] border-b border-r p-1.5 transition-colors hover:bg-muted/30", isToday(day) && "bg-accent/10")}>
+              <div
+                key={day}
+                onClick={() => handleDayClick(day)}
+                className={cn(
+                  "min-h-[80px] border-b border-r p-1.5 transition-colors cursor-pointer hover:bg-muted/30",
+                  isToday(day) && "bg-accent/10",
+                  isSelected && "ring-2 ring-primary ring-inset bg-primary/5"
+                )}
+              >
                 <div className="flex items-center justify-between mb-1">
                   <span className={cn("text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full", isToday(day) && "bg-accent text-accent-foreground")}>
                     {day}
@@ -129,25 +174,93 @@ const FiscalCalendarView = () => {
                   {hasOverdue && <AlertTriangle className="w-3 h-3 text-destructive" />}
                 </div>
                 <div className="space-y-0.5">
-                  {dayDeadlines.map((dl, idx) => (
+                  {dayDeadlines.slice(0, 2).map((dl, idx) => (
                     <div key={idx} className="flex items-center gap-1 text-[10px]">
                       <CalendarDays className="w-2.5 h-2.5 text-destructive shrink-0" />
                       <span className="truncate font-medium text-destructive">{dl.title}</span>
                     </div>
                   ))}
-                  {dayTasks.slice(0, 3).map((t: any) => (
+                  {dayDeadlines.length > 2 && <span className="text-[10px] text-destructive font-medium">+{dayDeadlines.length - 2} prazos</span>}
+                  {dayTasks.slice(0, 2).map((t: any) => (
                     <div key={t.id} className="flex items-center gap-1">
                       <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", categoryColors[t.category as TaskCategory])} />
                       <span className="text-[10px] truncate">{t.title}</span>
                     </div>
                   ))}
-                  {dayTasks.length > 3 && <span className="text-[10px] text-muted-foreground">+{dayTasks.length - 3} mais</span>}
+                  {dayTasks.length > 2 && <span className="text-[10px] text-muted-foreground">+{dayTasks.length - 2} mais</span>}
                 </div>
               </div>
             );
           })}
         </div>
       </div>
+
+      {/* Day detail panel */}
+      {selectedDay && (
+        <div className="bg-card rounded-xl border p-5 animate-fade-in">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg">
+              {selectedDay} de {MONTH_NAMES[month]} {year}
+            </h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleAddTask(selectedDay)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-medium text-xs hover:opacity-90 transition-opacity"
+              >
+                <Plus className="w-3.5 h-3.5" /> Adicionar
+              </button>
+              <button onClick={() => setSelectedDay(null)} className="p-1 rounded-lg hover:bg-muted transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {selectedDayDeadlines.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Prazos Fiscais</h4>
+              <div className="space-y-1.5">
+                {selectedDayDeadlines.map((dl, idx) => (
+                  <div key={idx} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/5 border border-destructive/20">
+                    <CalendarDays className="w-4 h-4 text-destructive shrink-0" />
+                    <span className="text-sm font-medium text-destructive">{dl.title}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedDayTasks.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Tarefas</h4>
+              <div className="space-y-1.5">
+                {selectedDayTasks.map((t: any) => (
+                  <div
+                    key={t.id}
+                    onClick={() => handleEditTask(t)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                  >
+                    <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", categoryColors[t.category as TaskCategory])} />
+                    <span className="text-sm flex-1">{t.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t.status === "concluida" ? "✓" : t.status === "em_progresso" ? "⏳" : "○"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedDayDeadlines.length === 0 && selectedDayTasks.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">Sem prazos ou tarefas neste dia</p>
+          )}
+        </div>
+      )}
+
+      <TaskFormDialog
+        open={taskDialogOpen}
+        task={editingTask?._prefillDate ? { due_date: editingTask._prefillDate } : editingTask?.id ? editingTask : null}
+        onClose={() => { setTaskDialogOpen(false); setEditingTask(null); }}
+      />
     </div>
   );
 };
