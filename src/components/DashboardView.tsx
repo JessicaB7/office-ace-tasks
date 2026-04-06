@@ -151,7 +151,7 @@ const DashboardView = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {overdueTasks.length > 0 && (
-          <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "250ms" }}>
+          <div className="bg-card rounded-xl border p-5 animate-fade-in lg:col-span-2" style={{ animationDelay: "250ms" }}>
             <div className="flex items-center gap-2 mb-4">
               <AlertTriangle className="w-4 h-4 text-destructive" />
               <h3 className="font-semibold">Tarefas em Atraso</h3>
@@ -172,73 +172,114 @@ const DashboardView = () => {
             </div>
           </div>
         )}
+      </div>
 
-        <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "320ms" }}>
-          <div className="flex items-center gap-2 mb-4">
-            <CalendarDays className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold">Prazos desta Semana</h3>
-          </div>
-          <div className="space-y-1">
-            {weekDeadlines.length === 0 && <p className="text-sm text-muted-foreground">Sem prazos fiscais esta semana</p>}
-            {weekDeadlines.map((dl, idx) => {
-              const info = dl.obligationType && obligationData[dl.obligationType]
-                ? obligationData[dl.obligationType]
-                : null;
-              const pending = info ? info.total - info.done : null;
-              const isExpanded = expandedType === `${dl.obligationType}-${idx}`;
-              const expandKey = `${dl.obligationType}-${idx}`;
-              return (
-                <div key={idx}>
-                  <div
-                    className={`flex items-center justify-between text-sm px-3 py-2 rounded-lg transition-colors ${info ? "cursor-pointer hover:bg-muted/50" : ""} ${isExpanded ? "bg-muted/50" : ""}`}
-                    onClick={() => info && setExpandedType(isExpanded ? null : expandKey)}
-                  >
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <CalendarDays className="w-3.5 h-3.5 text-destructive shrink-0" />
-                      <p className="font-medium truncate">{dl.title}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      {info && (
-                        <>
-                          <span className="text-[10px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
-                            {info.done} ✓
+      {/* Prazos desta Semana - full width */}
+      <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "320ms" }}>
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarDays className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold">Prazos desta Semana</h3>
+        </div>
+        <div className="space-y-1">
+          {weekDeadlines.length === 0 && <p className="text-sm text-muted-foreground">Sem prazos fiscais esta semana</p>}
+          {weekDeadlines.map((dl, idx) => {
+            const info = dl.obligationType && obligationData[dl.obligationType]
+              ? obligationData[dl.obligationType]
+              : null;
+            const pending = info ? info.total - info.done : null;
+            const expandKey = `${dl.obligationType}-${idx}`;
+            const isExpanded = expandedType === expandKey;
+            return (
+              <div key={idx}>
+                <div
+                  className={`flex items-center justify-between text-sm px-3 py-2.5 rounded-lg transition-colors cursor-pointer hover:bg-muted/50 ${isExpanded ? "bg-muted/50" : ""}`}
+                  onClick={() => {
+                    if (isExpanded) {
+                      setExpandedType(null);
+                    } else {
+                      setExpandedType(expandKey);
+                      setExpandedTab("pendentes");
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <CalendarDays className="w-3.5 h-3.5 text-destructive shrink-0" />
+                    <p className="font-medium truncate">{dl.title}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    {info && (
+                      <>
+                        <span className="text-[10px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
+                          {info.done} ✓
+                        </span>
+                        {pending !== null && pending > 0 && (
+                          <span className="text-[10px] font-semibold bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">
+                            {pending} ○
                           </span>
-                          {pending !== null && pending > 0 && (
-                            <span className="text-[10px] font-semibold bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">
-                              {pending} ○
-                            </span>
-                          )}
-                        </>
+                        )}
+                      </>
+                    )}
+                    <span className="text-muted-foreground text-xs whitespace-nowrap">
+                      {dl.date.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric" })}
+                    </span>
+                  </div>
+                </div>
+                {isExpanded && info && (
+                  <div className="mt-1 mb-2 border rounded-lg overflow-hidden animate-fade-in">
+                    {/* Tabs */}
+                    <div className="flex border-b">
+                      <button
+                        onClick={() => setExpandedTab("pendentes")}
+                        className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                          expandedTab === "pendentes"
+                            ? "bg-warning/10 text-warning border-b-2 border-warning"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                        }`}
+                      >
+                        Pendentes ({info.pendingClients.length})
+                      </button>
+                      <button
+                        onClick={() => setExpandedTab("concluidos")}
+                        className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                          expandedTab === "concluidos"
+                            ? "bg-success/10 text-success border-b-2 border-success"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                        }`}
+                      >
+                        Concluídos ({info.doneClients.length})
+                      </button>
+                    </div>
+                    <div className="max-h-[250px] overflow-y-auto">
+                      {expandedTab === "pendentes" && (
+                        info.pendingClients.length > 0 ? (
+                          info.pendingClients.map((c) => (
+                            <div key={c.id} className="px-3 py-1.5 text-xs border-b last:border-b-0 flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
+                              {c.name}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-3 text-xs text-success text-center">✓ Todos concluídos</div>
+                        )
                       )}
-                      <span className="text-muted-foreground text-xs whitespace-nowrap">
-                        {dl.date.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric" })}
-                      </span>
+                      {expandedTab === "concluidos" && (
+                        info.doneClients.length > 0 ? (
+                          info.doneClients.map((c) => (
+                            <div key={c.id} className="px-3 py-1.5 text-xs border-b last:border-b-0 flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
+                              {c.name}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-3 text-xs text-muted-foreground text-center">Nenhum concluído</div>
+                        )
+                      )}
                     </div>
                   </div>
-                  {isExpanded && info && info.pendingClients.length > 0 && (
-                    <div className="ml-8 mr-3 mt-1 mb-2 border rounded-lg overflow-hidden animate-fade-in">
-                      <div className="px-3 py-1.5 bg-muted/30 border-b">
-                        <span className="text-xs font-semibold text-muted-foreground">Clientes pendentes ({info.pendingClients.length})</span>
-                      </div>
-                      <div className="max-h-[200px] overflow-y-auto">
-                        {info.pendingClients.map((c) => (
-                          <div key={c.id} className="px-3 py-1.5 text-xs border-b last:border-b-0 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
-                            {c.name}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {isExpanded && info && info.pendingClients.length === 0 && (
-                    <div className="ml-8 mr-3 mt-1 mb-2 px-3 py-2 border rounded-lg bg-success/5 animate-fade-in">
-                      <span className="text-xs text-success font-medium">✓ Todos os clientes concluídos</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
