@@ -388,7 +388,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input type="text" placeholder="Pesquisar por nome..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
-        {!isIVA && (
+        {!isIVA && !isIVARecap && (
           <select value={collabFilter} onChange={(e) => setCollabFilter(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="all">Todos os responsáveis</option>
             {collaborators.filter((c: any) => c.active).map((col: any) => (

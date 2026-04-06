@@ -20,7 +20,8 @@ const obrigacoesSubItems = [
   { id: "obrigacoes_salarios", label: "Salários" },
   { id: "obrigacoes_DMR", label: "DMR" },
   { id: "obrigacoes_SS_TI", label: "Segurança Social TI" },
-  { id: "obrigacoes_IVA", label: "IVA" },
+  { id: "obrigacoes_IVA", label: "IVA - Periódica" },
+  { id: "obrigacoes_IVA_recapitulativa", label: "IVA - Recapitulativa" },
   { id: "obrigacoes_retencao_fonte", label: "Retenção na Fonte" },
   { id: "obrigacoes_emissao_faturas", label: "Emissão de Faturas" },
 ];
