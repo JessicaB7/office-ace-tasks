@@ -47,6 +47,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [activeTab, setActiveTab] = useState<string>(subPage || "TI_isento");
+  const [subFilter, setSubFilter] = useState<string>("all");
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
@@ -55,9 +56,12 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
   const upsert = useUpsertObligation();
 
+  const isTIiva = activeTab === "TI_iva";
+
   useEffect(() => {
     if (subPage) {
       setActiveTab(subPage);
+      setSubFilter(subPage === "TI_iva" ? "Mensal" : "all");
       setCollabFilter("all");
       setSearch("");
     }
