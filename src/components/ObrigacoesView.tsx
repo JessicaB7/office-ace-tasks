@@ -378,7 +378,12 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <td className={cn("px-4 py-3 font-medium", rowDone && "line-through text-muted-foreground")}>{client.name}</td>
                     {showNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3">
-                      <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">{client.tipo_contabilidade || "—"}</span>
+                      <span className={cn("text-xs font-medium px-2 py-0.5 rounded",
+                        client.tipo_contabilidade === "SQ" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
+                        client.tipo_contabilidade === "TI CO" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" :
+                        client.tipo_contabilidade === "TI RS" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" :
+                        "bg-secondary"
+                      )}>{client.tipo_contabilidade || "—"}</span>
                     </td>
                     {isSSTI && (
                       <td className="px-4 py-3">
