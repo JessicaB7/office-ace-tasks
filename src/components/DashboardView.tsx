@@ -1,6 +1,34 @@
+import { useMemo } from "react";
 import { useTasks } from "@/hooks/useSupabaseQuery";
-import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
-import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle } from "lucide-react";
+import { STATUS_LABELS, type TaskStatus } from "@/types/database";
+import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays } from "lucide-react";
+
+const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+const QUARTER_REF: Record<number, string> = { 1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT" };
+
+interface FiscalDeadline {
+  title: string;
+  day: number;
+  months: number[] | null;
+  refType?: "month" | "quarter";
+}
+
+const FISCAL_DEADLINES: FiscalDeadline[] = [
+  { title: "SAFT", day: 5, months: null },
+  { title: "DMR AT - Guia", day: 10, months: null },
+  { title: "DMR SS - Guia", day: 10, months: null },
+  { title: "DMR AT - Pagamento", day: 20, months: null },
+  { title: "DMR SS - Pagamento", day: 20, months: null },
+  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month" },
+  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month" },
+  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
+  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter" },
+  { title: "Retenção na Fonte", day: 20, months: null },
+  { title: "SS TI - Pagamento", day: 20, months: null },
+  { title: "Salários", day: 25, months: null },
+  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] },
+  { title: "SS TI - Declaração Trimestral", day: 30, months: [4] },
+];
 
 const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string }> = {
   pendente: { icon: Clock, colorClass: "bg-warning/15 text-warning" },
@@ -17,19 +45,47 @@ const DashboardView = () => {
     return acc;
   }, {} as Record<string, number>);
 
-  const categoryCounts = tasks.reduce((acc, t: any) => {
-    acc[t.category] = (acc[t.category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
   const overdueTasks = tasks.filter(
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
-  const upcomingTasks = tasks
-    .filter((t: any) => t.status !== "concluida" && t.status !== "cancelada")
-    .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-    .slice(0, 5);
+  // Get current week boundaries (Monday to Sunday)
+  const weekDeadlines = useMemo(() => {
+    const today = new Date();
+    const dayOfWeek = (today.getDay() + 6) % 7; // Monday=0
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - dayOfWeek);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    const monthIndex = today.getMonth();
+    const month1 = monthIndex + 1;
+    const daysInMonth = new Date(today.getFullYear(), monthIndex + 1, 0).getDate();
+
+    const result: { title: string; date: Date }[] = [];
+
+    FISCAL_DEADLINES.forEach((dl) => {
+      if (dl.months === null || dl.months.includes(month1)) {
+        const day = Math.min(dl.day, daysInMonth);
+        const deadlineDate = new Date(today.getFullYear(), monthIndex, day);
+
+        if (deadlineDate >= monday && deadlineDate <= sunday) {
+          let title = dl.title;
+          if (dl.refType === "month") {
+            const refIdx = (monthIndex - 2 + 12) % 12;
+            title = `${dl.title} (${MONTH_NAMES_SHORT[refIdx]})`;
+          } else if (dl.refType === "quarter") {
+            title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
+          }
+          result.push({ title, date: deadlineDate });
+        }
+      }
+    });
+
+    return result.sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, []);
 
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
@@ -83,40 +139,23 @@ const DashboardView = () => {
         )}
 
         <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "320ms" }}>
-          <h3 className="font-semibold mb-4">Próximos Prazos</h3>
+          <div className="flex items-center gap-2 mb-4">
+            <CalendarDays className="w-4 h-4 text-primary" />
+            <h3 className="font-semibold">Prazos desta Semana</h3>
+          </div>
           <div className="space-y-3">
-            {upcomingTasks.length === 0 && <p className="text-sm text-muted-foreground">Sem tarefas pendentes</p>}
-            {upcomingTasks.map((task: any) => (
-              <div key={task.id} className="flex items-center justify-between text-sm">
-                <div>
-                  <p className="font-medium">{task.title}</p>
-                  <p className="text-muted-foreground text-xs">{task.clients?.name || "—"}</p>
+            {weekDeadlines.length === 0 && <p className="text-sm text-muted-foreground">Sem prazos fiscais esta semana</p>}
+            {weekDeadlines.map((dl, idx) => (
+              <div key={idx} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="w-3.5 h-3.5 text-destructive shrink-0" />
+                  <p className="font-medium">{dl.title}</p>
                 </div>
                 <span className="text-muted-foreground text-xs whitespace-nowrap ml-3">
-                  {new Date(task.due_date).toLocaleDateString("pt-PT")}
+                  {dl.date.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric" })}
                 </span>
               </div>
             ))}
-          </div>
-        </div>
-
-        <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "390ms" }}>
-          <h3 className="font-semibold mb-4">Por Categoria</h3>
-          <div className="space-y-2">
-            {(Object.keys(CATEGORY_LABELS) as TaskCategory[]).map((cat) => {
-              const count = categoryCounts[cat] || 0;
-              const total = tasks.length;
-              const pct = total > 0 ? (count / total) * 100 : 0;
-              return (
-                <div key={cat} className="flex items-center gap-3 text-sm">
-                  <span className="w-28 text-muted-foreground">{CATEGORY_LABELS[cat]}</span>
-                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="font-medium w-6 text-right">{count}</span>
-                </div>
-              );
-            })}
           </div>
         </div>
       </div>
