@@ -32,9 +32,9 @@ const fmtDeadline = (day: number, m0: number, y: number) =>
   `Prazo: ${day}/${String(m0 + 1).padStart(2, "0")}/${y}`;
 
 // Pages where checkboxes go on the RIGHT side
-const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "SS_TI", "SAFT", "salarios"]);
+const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "IVA_recapitulativa", "SS_TI", "SAFT", "salarios"]);
 // Pages where NIF is hidden
-const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte", "SAFT", "salarios"]);
+const hideNif = new Set(["DMR", "SS_TI", "IVA", "IVA_recapitulativa", "retencao_fonte", "SAFT", "salarios"]);
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
@@ -102,6 +102,10 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         const d = addMonths(month, year, 2);
         return fmtDeadline(20, d.m, d.y);
       }
+      case "IVA_recapitulativa": {
+        const d = addMonths(month, year, 2);
+        return fmtDeadline(20, d.m, d.y);
+      }
       case "SS_TI": {
         if (ssTiTab === "SS_TI_DT") {
           // Deadline is end of delivery month: Apr 30, Jul 31, Oct 31, Jan 31
@@ -117,6 +121,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
   const isDMR = activeTab === "DMR";
   const isIVA = activeTab === "IVA";
+  const isIVARecap = activeTab === "IVA_recapitulativa";
   const isSSTI = activeTab === "SS_TI";
   const isRight = checkboxRight.has(activeTab);
   const showNif = !hideNif.has(activeTab);
@@ -162,6 +167,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "IVA":
         list = activeClients.filter((c: any) => c.iva && c.iva !== "");
         if (subFilter !== "all") list = list.filter((c: any) => c.iva === subFilter);
+        break;
+      case "IVA_recapitulativa":
+        list = activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "");
         break;
       case "retencao_fonte":
         list = activeClients.filter((c: any) => c.tipo_contabilidade === "SQ" || c.tipo_contabilidade === "TI CO");
@@ -259,13 +267,15 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
   const pageLabels: Record<string, string> = {
     SAFT: "SAFT", salarios: "Salários", DMR: "DMR", SS_TI: "Segurança Social TI",
-    IVA: "IVA", retencao_fonte: "Retenção na Fonte", emissao_faturas: "Emissão de Faturas",
+    IVA: "IVA - Periódica", IVA_recapitulativa: "IVA - Recapitulativa", retencao_fonte: "Retenção na Fonte", emissao_faturas: "Emissão de Faturas",
   };
 
   // IVA collaborator tabs data
   const ivaCollabData = useMemo(() => {
-    if (!isIVA) return [];
-    const ivaClients = activeClients.filter((c: any) => c.iva && c.iva !== "" && (subFilter === "all" || c.iva === subFilter));
+    if (!isIVA && !isIVARecap) return [];
+    const ivaClients = isIVARecap
+      ? activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "")
+      : activeClients.filter((c: any) => c.iva && c.iva !== "" && (subFilter === "all" || c.iva === subFilter));
     const counts: Record<string, number> = {};
     let noneCount = 0;
     ivaClients.forEach((c: any) => {
@@ -275,7 +285,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     const tabs = collaborators.filter((col: any) => counts[col.id]).map((col: any) => ({ id: col.id, name: col.name, count: counts[col.id] }));
     if (noneCount > 0) tabs.push({ id: "none", name: "Sem responsável", count: noneCount });
     return tabs;
-  }, [isIVA, activeClients, collaborators, subFilter]);
+  }, [isIVA, isIVARecap, activeClients, collaborators, subFilter]);
 
   if (loadingClients || loadingObl) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
@@ -361,7 +371,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       )}
 
       {/* IVA collaborator tabs */}
-      {isIVA && ivaCollabData.length > 0 && (
+      {(isIVA || isIVARecap) && ivaCollabData.length > 0 && (
         <div className="flex gap-1 overflow-x-auto pb-1 border-b">
           {ivaCollabData.map((col) => (
             <button key={col.id} onClick={() => setCollabFilter(collabFilter === col.id ? "all" : col.id)}
@@ -378,7 +388,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input type="text" placeholder="Pesquisar por nome..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
-        {!isIVA && (
+        {!isIVA && !isIVARecap && (
           <select value={collabFilter} onChange={(e) => setCollabFilter(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="all">Todos os responsáveis</option>
             {collaborators.filter((c: any) => c.active).map((col: any) => (
