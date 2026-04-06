@@ -96,7 +96,6 @@ const ClientListView = () => {
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("all");
   const [filterIva, setFilterIva] = useState<string>("all");
-  const [selectedCollab, setSelectedCollab] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<ClientForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -104,13 +103,6 @@ const ClientListView = () => {
   const filtered = clients.filter((c: any) => {
     if (filterTipo !== "all" && c.tipo_contabilidade !== filterTipo) return false;
     if (filterIva !== "all" && (c.iva || "") !== filterIva) return false;
-    if (selectedCollab !== "all") {
-      if (selectedCollab === "none") {
-        if (c.responsavel_id) return false;
-      } else {
-        if (c.responsavel_id !== selectedCollab) return false;
-      }
-    }
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !(c.nif || "").includes(search)) return false;
     return c.active;
   });
@@ -184,20 +176,7 @@ const ClientListView = () => {
     return `${val.toFixed(2).replace(".", ",")} €`;
   };
 
-  // Count clients per collaborator for tab badges
   const activeClients = clients.filter((c: any) => c.active);
-  const collabCounts: Record<string, number> = {};
-  let noneCount = 0;
-  activeClients.forEach((c: any) => {
-    if (c.responsavel_id) {
-      collabCounts[c.responsavel_id] = (collabCounts[c.responsavel_id] || 0) + 1;
-    } else {
-      noneCount++;
-    }
-  });
-
-  // Only show collaborators that have clients assigned
-  const collabsWithClients = collaborators.filter((col: any) => collabCounts[col.id]);
 
   return (
     <div className="space-y-5">
@@ -211,44 +190,6 @@ const ClientListView = () => {
         </button>
       </div>
 
-      {/* Collaborator tabs */}
-      <div className="flex gap-1 overflow-x-auto pb-1 border-b">
-        <button
-          onClick={() => setSelectedCollab("all")}
-          className={`px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
-            selectedCollab === "all"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
-          }`}
-        >
-          Todos ({activeClients.length})
-        </button>
-        {collabsWithClients.map((col: any) => (
-          <button
-            key={col.id}
-            onClick={() => setSelectedCollab(col.id)}
-            className={`px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
-              selectedCollab === col.id
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            }`}
-          >
-            {col.name} ({collabCounts[col.id] || 0})
-          </button>
-        ))}
-        {noneCount > 0 && (
-          <button
-            onClick={() => setSelectedCollab("none")}
-            className={`px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
-              selectedCollab === "none"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            }`}
-          >
-            Sem responsável ({noneCount})
-          </button>
-        )}
-      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
