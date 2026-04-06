@@ -57,6 +57,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const [activeTab, setActiveTab] = useState<string>(subPage || "SAFT");
   const [subFilter, setSubFilter] = useState<string>("all");
   const [dmrTab, setDmrTab] = useState<"DMR_AT" | "DMR_SS">("DMR_AT");
+  const [ssTiTab, setSsTiTab] = useState<"SS_TI" | "SS_TI_DT">("SS_TI");
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
