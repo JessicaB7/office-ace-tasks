@@ -44,6 +44,13 @@ const FATURACAO_OPTIONS = [
   { value: "Não Aplicável", label: "Não aplicável" },
 ];
 
+const RECAPITULATIVA_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "Mensal", label: "Mensal" },
+  { value: "Trimestral", label: "Trimestral" },
+  { value: "Não Aplicável", label: "Não Aplicável" },
+];
+
 const SAFT_OPTIONS = [
   { value: "", label: "—" },
   { value: "Automático", label: "Automático" },
@@ -62,6 +69,7 @@ interface ClientForm {
   seguranca_social: string;
   pag_seguranca_social: string;
   iva: string;
+  recapitulativa: string;
   faturacao: string;
   saft: string;
 }
@@ -76,7 +84,7 @@ const PAG_SS_OPTIONS = [
 const emptyForm: ClientForm = {
   name: "", nif: "", tipo_contabilidade: "SQ", salarios: "", mensalidade: "",
   inicio_contrato: "", responsavel_id: "",
-  seguranca_social: "", pag_seguranca_social: "", iva: "", faturacao: "", saft: "",
+  seguranca_social: "", pag_seguranca_social: "", iva: "", recapitulativa: "", faturacao: "", saft: "",
 };
 
 const ClientListView = () => {
@@ -117,6 +125,7 @@ const ClientListView = () => {
       seguranca_social: c.seguranca_social || "",
       pag_seguranca_social: c.pag_seguranca_social || "",
       iva: c.iva || "",
+      recapitulativa: c.recapitulativa || "",
       faturacao: c.faturacao || "",
       saft: c.saft || "",
     });
@@ -137,6 +146,7 @@ const ClientListView = () => {
         seguranca_social: form.seguranca_social || null,
         pag_seguranca_social: form.pag_seguranca_social || null,
         iva: form.iva || null,
+        recapitulativa: form.recapitulativa || null,
         faturacao: form.faturacao || null,
         saft: form.saft || null,
       };
@@ -329,6 +339,12 @@ const ClientListView = () => {
                   <label className="text-sm font-medium mb-1 block">IVA</label>
                   <select value={form.iva} onChange={(e) => set("iva", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                     {IVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">IVA - Recapitulativa</label>
+                  <select value={form.recapitulativa} onChange={(e) => set("recapitulativa", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                    {RECAPITULATIVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
                 <div>
