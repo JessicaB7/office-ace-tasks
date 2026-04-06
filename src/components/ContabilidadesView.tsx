@@ -122,15 +122,15 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         list = list.filter((c: any) => c.responsavel_id === collabFilter);
       }
     }
+    if (isTIiva && subFilter !== "all") {
+      list = list.filter((c: any) => c.iva === subFilter);
+    }
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((c: any) => c.name.toLowerCase().includes(q) || (c.nif || "").includes(q));
     }
     return list.sort((a: any, b: any) => a.name.localeCompare(b.name));
-  }, [activeClients, config, collabFilter, search]);
-
-  const toggleDone = (clientId: string) => {
-    const obl = oblMap[clientId];
+  }, [activeClients, config, collabFilter, search, isTIiva, subFilter]);
     const done = obl?.status === "concluida";
     upsert.mutate({
       client_id: clientId,
