@@ -101,7 +101,15 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         const d = addMonths(month, year, 2);
         return fmtDeadline(20, d.m, d.y);
       }
-      case "SS_TI": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
+      case "SS_TI": {
+        if (ssTiTab === "SS_TI_DT") {
+          // Deadline is end of delivery month: Apr 30, Jul 31, Oct 31, Jan 31
+          const lastDays: Record<number, number> = { 3: 30, 6: 31, 9: 31, 0: 31 };
+          return `Prazo: ${lastDays[month]}/${String(month + 1).padStart(2, "0")}/${year}`;
+        }
+        const d = addMonths(month, year, 1);
+        return fmtDeadline(20, d.m, d.y);
+      }
       default: return "";
     }
   };
@@ -115,9 +123,17 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showGuiaPagamento = isDMR;
   const isSalarios = activeTab === "salarios";
   const showSalariosColumns = isSalarios;
+  const isDT = isSSTI && ssTiTab === "SS_TI_DT";
   const isDTMonth = [0, 3, 6, 9].includes(month);
-  const showDTContent = !(isSSTI && ssTiTab === "SS_TI_DT" && !isDTMonth);
-  const showNotasColumn = isSSTI && ssTiTab === "SS_TI_DT" && subFilter === "Isento";
+  const showDTContent = !(isDT && !isDTMonth);
+  const showNotasColumn = isDT && subFilter === "Isento";
+
+  // Quarter label for DT: Apr=Q1(Jan-Mar), Jul=Q2(Apr-Jun), Oct=Q3(Jul-Sep), Jan=Q4(Oct-Dec)
+  const dtQuarterLabel = (() => {
+    if (!isDT || !isDTMonth) return "";
+    const qMap: Record<number, string> = { 3: "1º Trimestre (Jan–Mar)", 6: "2º Trimestre (Abr–Jun)", 9: "3º Trimestre (Jul–Set)", 0: "4º Trimestre (Out–Dez)" };
+    return qMap[month] || "";
+  })();
 
   const filteredClients = useMemo(() => {
     let list: any[] = [];
@@ -279,8 +295,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         <div>
           <h2 className="text-2xl font-bold">{pageLabels[activeTab] || activeTab}</h2>
           <p className="text-muted-foreground text-sm mt-1">
-            {doneCount}/{filteredClients.length} concluídas
-            {deadlineText && <span className="ml-3 text-orange-500 font-medium">{deadlineText}</span>}
+            {isDT && dtQuarterLabel && <span className="font-medium text-foreground mr-3">{dtQuarterLabel}</span>}
+            {showDTContent && <>{doneCount}/{filteredClients.length} concluídas</>}
+            {deadlineText && showDTContent && <span className="ml-3 text-orange-500 font-medium">{deadlineText}</span>}
           </p>
         </div>
         <div className="flex items-center gap-2">
