@@ -72,6 +72,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       setCollabFilter("all");
       setSearch("");
       if (subPage === "DMR") setDmrTab("DMR_AT");
+      if (subPage === "SS_TI") setSsTiTab("SS_TI");
     }
   }, [subPage]);
 
