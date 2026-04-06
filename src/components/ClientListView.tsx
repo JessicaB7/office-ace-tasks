@@ -69,6 +69,7 @@ interface ClientForm {
   seguranca_social: string;
   pag_seguranca_social: string;
   iva: string;
+  recapitulativa: string;
   faturacao: string;
   saft: string;
 }
