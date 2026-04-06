@@ -430,6 +430,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                       </td>
                     )}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
+                    {showNotasColumn && <td className="px-4 py-3 text-muted-foreground text-xs">{client.notas_internas || "—"}</td>}
                     {showSaftExtra && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
