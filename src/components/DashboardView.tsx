@@ -45,6 +45,7 @@ const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string 
 const DashboardView = () => {
   const { data: tasks = [], isLoading } = useTasks();
   const { data: clients = [] } = useClients();
+  const { data: collaborators = [] } = useCollaborators();
   const [expandedType, setExpandedType] = useState<string | null>(null);
   const [expandedTab, setExpandedTab] = useState<"pendentes" | "concluidos">("pendentes");
 
