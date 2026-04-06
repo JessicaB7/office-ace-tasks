@@ -460,7 +460,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
                     )}
-                    <td className={cn("px-4 py-3 font-medium", rowDone && "line-through text-muted-foreground")}>{client.name}</td>
+                    <td className={cn("px-4 py-3 font-medium", rowDone && "line-through text-muted-foreground")}>
+                      <button type="button" onClick={() => setSelectedClient(client)} className="hover:underline text-left">
+                        {client.name}
+                      </button>
+                    </td>
                     {showNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3">
                       <span className={cn("text-xs font-medium px-2 py-0.5 rounded",
