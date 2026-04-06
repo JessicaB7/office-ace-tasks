@@ -3,6 +3,7 @@ import { useClients, useCollaborators, useUpsertTask, useDeleteTask } from "@/ho
 import { STATUS_LABELS, PRIORITY_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskPriority, type TaskCategory } from "@/types/database";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TaskFormDialogProps {
   open: boolean;
