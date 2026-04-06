@@ -13,6 +13,7 @@ interface TabConfig {
   hasIvaTabs?: boolean;
   hideNif?: boolean;
   columns?: string[];
+  subFilters?: { value: string; label: string; match: (c: any) => boolean }[];
 }
 
 const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
