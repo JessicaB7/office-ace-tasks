@@ -168,6 +168,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         list = activeClients.filter((c: any) => c.iva && c.iva !== "");
         if (subFilter !== "all") list = list.filter((c: any) => c.iva === subFilter);
         break;
+      case "IVA_recapitulativa":
+        list = activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "");
+        break;
       case "retencao_fonte":
         list = activeClients.filter((c: any) => c.tipo_contabilidade === "SQ" || c.tipo_contabilidade === "TI CO");
         break;
