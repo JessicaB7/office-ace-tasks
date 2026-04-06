@@ -370,6 +370,12 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         )}
       </div>
 
+      {!showDTContent ? (
+        <div className="bg-card rounded-xl border p-12 text-center">
+          <p className="text-muted-foreground">A Declaração Trimestral não se aplica ao mês de <strong>{MONTH_NAMES[month]}</strong>.</p>
+          <p className="text-muted-foreground text-sm mt-2">Apenas nos meses de Janeiro, Abril, Julho e Outubro.</p>
+        </div>
+      ) : (
       <div className="bg-card rounded-xl border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
