@@ -105,6 +105,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showNif = !hideNif.has(activeTab);
   const showSaftExtra = activeTab === "SAFT";
   const showGuiaPagamento = isDMR;
+  const isSalarios = activeTab === "salarios";
+  const showSalariosColumns = isSalarios;
 
   const filteredClients = useMemo(() => {
     let list: any[] = [];
