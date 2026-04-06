@@ -3,6 +3,7 @@ import { useClients, useUpsertClient, useCollaborators, useMonthlyObligations, u
 import { Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import ClientDetailDialog from "@/components/ClientDetailDialog";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const SAFT_GROUPS = ["Automático", "A entregar", "Não Aplicável"];
