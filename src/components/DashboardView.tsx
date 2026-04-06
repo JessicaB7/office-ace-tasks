@@ -96,46 +96,68 @@ const DashboardView = () => {
     return data;
   }, [obligations, clients]);
 
-  // Get current week boundaries (Monday to Sunday)
-  const weekDeadlines = useMemo(() => {
-    const dayOfWeek = (today.getDay() + 6) % 7;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - dayOfWeek);
+  // Helper to get deadlines for a specific week
+  const getWeekDeadlines = (mondayDate: Date) => {
+    const monday = new Date(mondayDate);
     monday.setHours(0, 0, 0, 0);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    const monthIndex = today.getMonth();
-    const month1 = monthIndex + 1;
-    const daysInMonth = new Date(today.getFullYear(), monthIndex + 1, 0).getDate();
-
     const result: { title: string; date: Date; obligationKey?: string }[] = [];
 
-    FISCAL_DEADLINES.forEach((dl) => {
-      if (dl.months === null || dl.months.includes(month1)) {
-        let day = dl.overrides?.[month1] ?? dl.day;
-        day = Math.min(day, daysInMonth);
-        const deadlineDate = new Date(today.getFullYear(), monthIndex, day);
+    // Check both months that could fall in this week
+    const monthsToCheck = new Set<number>();
+    for (let d = new Date(monday); d <= sunday; d.setDate(d.getDate() + 1)) {
+      monthsToCheck.add(d.getMonth());
+    }
 
-        if (deadlineDate >= monday && deadlineDate <= sunday) {
-          let title = dl.title;
-          if (dl.refType === "month") {
-            const refIdx = (monthIndex - 2 + 12) % 12;
-            title = `${dl.title} (${MONTH_NAMES_SHORT[refIdx]})`;
-          } else if (dl.refType === "quarter") {
-            title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
+    monthsToCheck.forEach((monthIndex) => {
+      const month1 = monthIndex + 1;
+      const yr = monday.getMonth() === 11 && monthIndex === 0 ? monday.getFullYear() + 1 : monday.getFullYear();
+      const daysInMonth = new Date(yr, monthIndex + 1, 0).getDate();
+
+      FISCAL_DEADLINES.forEach((dl) => {
+        if (dl.months === null || dl.months.includes(month1)) {
+          let day = dl.overrides?.[month1] ?? dl.day;
+          day = Math.min(day, daysInMonth);
+          const deadlineDate = new Date(yr, monthIndex, day);
+
+          if (deadlineDate >= monday && deadlineDate <= sunday) {
+            let title = dl.title;
+            if (dl.refType === "month") {
+              const refIdx = (monthIndex - 2 + 12) % 12;
+              title = `${dl.title} (${MONTH_NAMES_SHORT[refIdx]})`;
+            } else if (dl.refType === "quarter") {
+              title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
+            }
+            const obligationKey = dl.obligationType
+              ? (dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType)
+              : undefined;
+            result.push({ title, date: deadlineDate, obligationKey });
           }
-          const obligationKey = dl.obligationType
-            ? (dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType)
-            : undefined;
-          result.push({ title, date: deadlineDate, obligationKey });
         }
-      }
+      });
     });
 
     return result.sort((a, b) => a.date.getTime() - b.date.getTime());
+  };
+
+  const currentMonday = useMemo(() => {
+    const dayOfWeek = (today.getDay() + 6) % 7;
+    const m = new Date(today);
+    m.setDate(today.getDate() - dayOfWeek);
+    return m;
   }, []);
+
+  const nextMonday = useMemo(() => {
+    const m = new Date(currentMonday);
+    m.setDate(m.getDate() + 7);
+    return m;
+  }, [currentMonday]);
+
+  const weekDeadlines = useMemo(() => getWeekDeadlines(currentMonday), [currentMonday]);
+  const nextWeekDeadlines = useMemo(() => getWeekDeadlines(nextMonday), [nextMonday]);
 
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
