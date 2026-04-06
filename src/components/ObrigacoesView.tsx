@@ -32,9 +32,9 @@ const fmtDeadline = (day: number, m0: number, y: number) =>
   `Prazo: ${day}/${String(m0 + 1).padStart(2, "0")}/${y}`;
 
 // Pages where checkboxes go on the RIGHT side
-const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "SS_TI", "SAFT"]);
+const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "SS_TI", "SAFT", "salarios"]);
 // Pages where NIF is hidden
-const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte", "SAFT"]);
+const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte", "SAFT", "salarios"]);
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
@@ -105,6 +105,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showNif = !hideNif.has(activeTab);
   const showSaftExtra = activeTab === "SAFT";
   const showGuiaPagamento = isDMR;
+  const isSalarios = activeTab === "salarios";
+  const showSalariosColumns = isSalarios;
 
   const filteredClients = useMemo(() => {
     let list: any[] = [];
@@ -252,7 +254,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   );
 
   // Build columns config
-  const leftCheckbox = !isRight && !showGuiaPagamento;
+  const leftCheckbox = !isRight && !showGuiaPagamento && !showSalariosColumns;
 
   return (
     <div className="space-y-5">
@@ -356,7 +358,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Pagamento</th>
                   </>
                 )}
-                {isRight && !showGuiaPagamento && !showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
+                {showSalariosColumns && (
+                  <>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Processado</th>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Enviado</th>
+                  </>
+                )}
+                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
               </tr>
             </thead>
             <tbody>
@@ -366,7 +374,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 const pagamentoDone = obl?.extra_done === true;
                 const isExtraDone = obl?.extra_done === true;
                 const showExtraForClient = showSaftExtra && needsExtra(client);
-                const rowDone = showGuiaPagamento ? (guiaDone && pagamentoDone) : guiaDone;
+                const rowDone = showGuiaPagamento ? (guiaDone && pagamentoDone) : showSalariosColumns ? (guiaDone && pagamentoDone) : guiaDone;
 
                 return (
                   <tr key={client.id} className={cn("border-b last:border-0 transition-colors", rowDone ? "bg-green-50 dark:bg-green-950/20" : "hover:bg-muted/30")}>
@@ -413,7 +421,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                         <td className="text-center px-3 py-3"><CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} /></td>
                       </>
                     )}
-                    {isRight && !showGuiaPagamento && !showSaftExtra && (
+                    {showSalariosColumns && (
+                      <>
+                        <td className="text-center px-3 py-3"><CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} /></td>
+                        <td className="text-center px-3 py-3"><CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} /></td>
+                      </>
+                    )}
+                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
