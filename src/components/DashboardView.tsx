@@ -196,11 +196,11 @@ const DashboardView = () => {
         <div className="space-y-1">
           {weekDeadlines.length === 0 && <p className="text-sm text-muted-foreground">Sem prazos fiscais esta semana</p>}
           {weekDeadlines.map((dl, idx) => {
-            const info = dl.obligationType && obligationData[dl.obligationType]
-              ? obligationData[dl.obligationType]
+            const info = dl.obligationKey && obligationData[dl.obligationKey]
+              ? obligationData[dl.obligationKey]
               : null;
             const pending = info ? info.total - info.done : null;
-            const expandKey = `${dl.obligationType}-${idx}`;
+            const expandKey = `${dl.obligationKey}-${idx}`;
             const isExpanded = expandedType === expandKey;
             return (
               <div key={idx}>
