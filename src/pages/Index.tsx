@@ -31,6 +31,7 @@ const Index = () => {
         {activeView === "dashboard" && <DashboardView />}
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
+        {activeView.startsWith("contabilidades") && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} />}
         {activeView === "clients" && <ClientListView />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}
