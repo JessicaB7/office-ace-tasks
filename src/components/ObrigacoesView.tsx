@@ -115,6 +115,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showGuiaPagamento = isDMR;
   const isSalarios = activeTab === "salarios";
   const showSalariosColumns = isSalarios;
+  const isDTMonth = [0, 3, 6, 9].includes(month);
+  const showDTContent = !(isSSTI && ssTiTab === "SS_TI_DT" && !isDTMonth);
   const showNotasColumn = isSSTI && ssTiTab === "SS_TI_DT" && subFilter === "Isento";
 
   const filteredClients = useMemo(() => {
@@ -369,6 +371,12 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         )}
       </div>
 
+      {!showDTContent ? (
+        <div className="bg-card rounded-xl border p-12 text-center">
+          <p className="text-muted-foreground">A Declaração Trimestral não se aplica ao mês de <strong>{MONTH_NAMES[month]}</strong>.</p>
+          <p className="text-muted-foreground text-sm mt-2">Apenas nos meses de Janeiro, Abril, Julho e Outubro.</p>
+        </div>
+      ) : (
       <div className="bg-card rounded-xl border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -474,6 +482,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 };
