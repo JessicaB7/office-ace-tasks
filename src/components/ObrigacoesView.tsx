@@ -102,6 +102,10 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         const d = addMonths(month, year, 2);
         return fmtDeadline(20, d.m, d.y);
       }
+      case "IVA_recapitulativa": {
+        const d = addMonths(month, year, 2);
+        return fmtDeadline(20, d.m, d.y);
+      }
       case "SS_TI": {
         if (ssTiTab === "SS_TI_DT") {
           // Deadline is end of delivery month: Apr 30, Jul 31, Oct 31, Jan 31
