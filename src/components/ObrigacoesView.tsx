@@ -115,6 +115,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showGuiaPagamento = isDMR;
   const isSalarios = activeTab === "salarios";
   const showSalariosColumns = isSalarios;
+  const showNotasColumn = isSSTI && ssTiTab === "SS_TI_DT" && subFilter === "Isento";
 
   const filteredClients = useMemo(() => {
     let list: any[] = [];
@@ -379,6 +380,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tipo</th>
                 {isSSTI && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Enquadramento SS</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
+                {showNotasColumn && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Entregue</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
                 {showGuiaPagamento && (
@@ -428,6 +430,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                       </td>
                     )}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
+                    {showNotasColumn && <td className="px-4 py-3 text-muted-foreground text-xs">{client.notas_internas || "—"}</td>}
                     {showSaftExtra && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
