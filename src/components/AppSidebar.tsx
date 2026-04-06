@@ -45,11 +45,19 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
   const [contabilidadesOpen, setContabilidadesOpen] = useState(activeView.startsWith("contabilidades"));
 
   const isObrigacoesActive = activeView.startsWith("obrigacoes");
+  const isContabilidadesActive = activeView.startsWith("contabilidades");
 
   const handleObrigacoesClick = () => {
     setObrigacoesOpen((prev) => !prev);
     if (!isObrigacoesActive) {
       onViewChange("obrigacoes_SAFT");
+    }
+  };
+
+  const handleContabilidadesClick = () => {
+    setContabilidadesOpen((prev) => !prev);
+    if (!isContabilidadesActive) {
+      onViewChange("contabilidades_TI_isento");
     }
   };
 
