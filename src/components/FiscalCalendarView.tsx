@@ -42,7 +42,7 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "IVA Periódica Mensal", day: 20, months: null, showRefMonth: true },
   { title: "Recapitulativa Mensal", day: 20, months: null },
   { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
-  { title: "Recapitulativa Trimestral", day: 20, months: [2, 5, 8, 11] },
+  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10] },
   { title: "Retenção na Fonte", day: 20, months: null },
   { title: "SS TI - Pagamento", day: 20, months: null },
   { title: "Salários", day: 25, months: null },
