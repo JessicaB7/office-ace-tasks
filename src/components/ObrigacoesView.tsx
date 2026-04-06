@@ -481,6 +481,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
           </table>
         </div>
       </div>
+      )}
     </div>
   );
 };
