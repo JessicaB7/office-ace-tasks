@@ -190,44 +190,6 @@ const ClientListView = () => {
         </button>
       </div>
 
-      {/* Collaborator tabs */}
-      <div className="flex gap-1 overflow-x-auto pb-1 border-b">
-        <button
-          onClick={() => setSelectedCollab("all")}
-          className={`px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
-            selectedCollab === "all"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
-          }`}
-        >
-          Todos ({activeClients.length})
-        </button>
-        {collabsWithClients.map((col: any) => (
-          <button
-            key={col.id}
-            onClick={() => setSelectedCollab(col.id)}
-            className={`px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
-              selectedCollab === col.id
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            }`}
-          >
-            {col.name} ({collabCounts[col.id] || 0})
-          </button>
-        ))}
-        {noneCount > 0 && (
-          <button
-            onClick={() => setSelectedCollab("none")}
-            className={`px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors ${
-              selectedCollab === "none"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            }`}
-          >
-            Sem responsável ({noneCount})
-          </button>
-        )}
-      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
