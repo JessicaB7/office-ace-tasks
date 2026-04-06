@@ -13,6 +13,7 @@ interface TabConfig {
   hasIvaTabs?: boolean;
   hideNif?: boolean;
   columns?: string[];
+  subFilters?: { value: string; label: string; match: (c: any) => boolean }[];
 }
 
 const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
@@ -26,6 +27,10 @@ const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     hasIvaTabs: true,
     hideNif: true,
     columns: ["Vendas", "Compras", "E-Fatura"],
+    subFilters: [
+      { value: "Mensal", label: "Mensal", match: (c) => c.iva === "Mensal" },
+      { value: "Trimestral", label: "Trimestral", match: (c) => c.iva === "Trimestral" },
+    ],
   },
   organizada: {
     label: "Contabilidade Organizada",
@@ -33,6 +38,10 @@ const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     hasIvaTabs: true,
     hideNif: true,
     columns: ["Vendas", "Compras", "Bancos", "E-Fatura", "Análise"],
+    subFilters: [
+      { value: "Isento", label: "Isento", match: (c) => c.iva === "Art.53º" || c.iva === "Art. 9º" },
+      { value: "Trimestral", label: "Trimestral", match: (c) => c.iva === "Trimestral" },
+    ],
   },
   empresas: {
     label: "Empresas",
@@ -80,7 +89,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     if (subPage) {
       setActiveTab(subPage);
       const cfg = SUB_PAGE_CONFIG[subPage];
-      setSubFilter(cfg?.hasIvaTabs ? "Mensal" : "all");
+      setSubFilter(cfg?.subFilters?.[0]?.value || "all");
       setCollabFilter("all");
       setSearch("");
     }
@@ -132,8 +141,9 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         list = list.filter((c: any) => c.responsavel_id === collabFilter);
       }
     }
-    if (hasIvaTabs && subFilter !== "all") {
-      list = list.filter((c: any) => c.iva === subFilter);
+    if (hasIvaTabs && subFilter !== "all" && config.subFilters) {
+      const sf = config.subFilters.find((f) => f.value === subFilter);
+      if (sf) list = list.filter(sf.match);
     }
     if (search) {
       const q = search.toLowerCase();
@@ -168,8 +178,14 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     if (!hasIvaTabs || !config) return [];
     return activeClients.filter(config.filter);
   }, [activeClients, config, hasIvaTabs]);
-  const mensalCount = baseClients.filter((c: any) => c.iva === "Mensal").length;
-  const trimestralCount = baseClients.filter((c: any) => c.iva === "Trimestral").length;
+
+  const subFilterCounts = useMemo(() => {
+    if (!config?.subFilters) return [];
+    return config.subFilters.map((sf) => ({
+      ...sf,
+      count: baseClients.filter(sf.match).length,
+    }));
+  }, [config, baseClients]);
 
   const totalCols = 2 + (hideNif ? 0 : 1) + (hasMultiColumns ? columns!.length : 1);
 
@@ -189,12 +205,9 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         </div>
       </div>
 
-      {hasIvaTabs && (
+      {hasIvaTabs && subFilterCounts.length > 0 && (
         <div className="flex gap-1 border-b pb-1">
-          {[
-            { value: "Mensal", label: "Mensal", count: mensalCount },
-            { value: "Trimestral", label: "Trimestral", count: trimestralCount },
-          ].map((tab) => (
+          {subFilterCounts.map((tab) => (
             <button key={tab.value} onClick={() => setSubFilter(tab.value)}
               className={cn("px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
                 subFilter === tab.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
