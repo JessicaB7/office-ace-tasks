@@ -267,7 +267,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
   const pageLabels: Record<string, string> = {
     SAFT: "SAFT", salarios: "Salários", DMR: "DMR", SS_TI: "Segurança Social TI",
-    IVA: "IVA", retencao_fonte: "Retenção na Fonte", emissao_faturas: "Emissão de Faturas",
+    IVA: "IVA - Periódica", IVA_recapitulativa: "IVA - Recapitulativa", retencao_fonte: "Retenção na Fonte", emissao_faturas: "Emissão de Faturas",
   };
 
   // IVA collaborator tabs data
