@@ -295,8 +295,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         <div>
           <h2 className="text-2xl font-bold">{pageLabels[activeTab] || activeTab}</h2>
           <p className="text-muted-foreground text-sm mt-1">
-            {doneCount}/{filteredClients.length} concluídas
-            {deadlineText && <span className="ml-3 text-orange-500 font-medium">{deadlineText}</span>}
+            {isDT && dtQuarterLabel && <span className="font-medium text-foreground mr-3">{dtQuarterLabel}</span>}
+            {showDTContent && <>{doneCount}/{filteredClients.length} concluídas</>}
+            {deadlineText && showDTContent && <span className="ml-3 text-orange-500 font-medium">{deadlineText}</span>}
           </p>
         </div>
         <div className="flex items-center gap-2">
