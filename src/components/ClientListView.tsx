@@ -96,7 +96,6 @@ const ClientListView = () => {
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("all");
   const [filterIva, setFilterIva] = useState<string>("all");
-  const [selectedCollab, setSelectedCollab] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<ClientForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
