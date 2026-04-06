@@ -33,6 +33,8 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT" },
 ];
 
+const DASHBOARD_STATUSES: TaskStatus[] = ["pendente", "em_progresso", "concluida"];
+
 const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string }> = {
   pendente: { icon: Clock, colorClass: "bg-warning/15 text-warning" },
   em_progresso: { icon: CalendarClock, colorClass: "bg-info/15 text-info" },
