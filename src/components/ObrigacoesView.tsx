@@ -227,7 +227,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "SAFT": return SAFT_GROUPS.map(g => ({ value: g, label: g }));
       case "salarios": return SALARIOS_FILTERS;
       case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
-      case "SS_TI": return SS_TI_FILTERS;
+      case "SS_TI": return ssTiTab === "SS_TI_DT" ? SS_TI_DT_FILTERS : SS_TI_FILTERS;
       default: return [];
     }
   };
