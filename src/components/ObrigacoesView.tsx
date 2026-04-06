@@ -39,6 +39,12 @@ const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
 ];
+const SS_TI_DT_FILTERS = [
+  { value: "Trimestral", label: "Trimestral" },
+  { value: "Mensal", label: "Mensal" },
+  { value: "TCO", label: "TCO" },
+  { value: "Isento", label: "Isento" },
+];
 
 const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
