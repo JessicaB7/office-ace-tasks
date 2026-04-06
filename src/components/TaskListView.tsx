@@ -1,23 +1,24 @@
 import { useState } from "react";
-import { useTasks, useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
+import { useTasks, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
 import { StatusBadge, PriorityBadge } from "@/components/TaskBadge";
-import { Search, Filter } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Search, Filter, Plus } from "lucide-react";
 
 interface TaskListViewProps {
   onEditTask: (task: any) => void;
+  onNewTask: () => void;
 }
 
-const TaskListView = ({ onEditTask }: TaskListViewProps) => {
+const TaskListView = ({ onEditTask, onNewTask }: TaskListViewProps) => {
   const { data: tasks = [], isLoading } = useTasks();
+  const { data: collaborators = [] } = useCollaborators();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<TaskStatus | "all">("all");
-  const [filterCategory, setFilterCategory] = useState<TaskCategory | "all">("all");
+  const [filterCollaborator, setFilterCollaborator] = useState<string>("all");
 
   const filtered = tasks.filter((t: any) => {
     if (filterStatus !== "all" && t.status !== filterStatus) return false;
-    if (filterCategory !== "all" && t.category !== filterCategory) return false;
+    if (filterCollaborator !== "all" && t.collaborator_id !== filterCollaborator) return false;
     if (search) {
       const s = search.toLowerCase();
       if (!t.title.toLowerCase().includes(s) && !(t.clients?.name || "").toLowerCase().includes(s)) return false;
@@ -29,9 +30,14 @@ const TaskListView = ({ onEditTask }: TaskListViewProps) => {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-2xl font-bold">Tarefas</h2>
-        <p className="text-muted-foreground text-sm mt-1">Gerir todas as tarefas do gabinete</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Tarefas</h2>
+          <p className="text-muted-foreground text-sm mt-1">Gerir todas as tarefas do gabinete</p>
+        </div>
+        <button onClick={onNewTask} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
+          <Plus className="w-4 h-4" /> Nova Tarefa
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -45,9 +51,9 @@ const TaskListView = ({ onEditTask }: TaskListViewProps) => {
             <option value="all">Todos os estados</option>
             {(Object.keys(STATUS_LABELS) as TaskStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
           </select>
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value as TaskCategory | "all")} className="text-sm rounded-lg border bg-card px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="all">Todas as categorias</option>
-            {(Object.keys(CATEGORY_LABELS) as TaskCategory[]).map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
+          <select value={filterCollaborator} onChange={(e) => setFilterCollaborator(e.target.value)} className="text-sm rounded-lg border bg-card px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="all">Todos os responsáveis</option>
+            {collaborators.filter(c => c.active).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
       </div>
