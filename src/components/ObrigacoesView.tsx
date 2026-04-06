@@ -60,6 +60,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const [ssTiTab, setSsTiTab] = useState<"SS_TI" | "SS_TI_DT">("SS_TI");
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [selectedClient, setSelectedClient] = useState<any>(null);
 
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
