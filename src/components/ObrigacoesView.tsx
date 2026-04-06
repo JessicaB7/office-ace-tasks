@@ -43,7 +43,6 @@ const SS_TI_DT_FILTERS = [
   { value: "Trimestral", label: "Trimestral" },
   { value: "Mensal", label: "Mensal" },
   { value: "TCO", label: "TCO" },
-  { value: "Isento", label: "Isento" },
 ];
 
 const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
