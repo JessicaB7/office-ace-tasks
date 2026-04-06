@@ -89,7 +89,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     if (subPage) {
       setActiveTab(subPage);
       const cfg = SUB_PAGE_CONFIG[subPage];
-      setSubFilter(cfg?.hasIvaTabs ? "Mensal" : "all");
+      setSubFilter(cfg?.subFilters?.[0]?.value || "all");
       setCollabFilter("all");
       setSearch("");
     }
