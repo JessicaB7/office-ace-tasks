@@ -31,16 +31,16 @@ interface FiscalDeadline {
   day: number;
   months: number[] | null;
   refType?: "month" | "quarter";
+  overrides?: Record<number, number>;
 }
 
-// Quarter mapping: Jan→Q3(prev year), Apr→Q4(prev year)... but in PT fiscal:
-// Jan=ref Oct-Dez (4ºT), Apr=ref Jan-Mar (1ºT), Jul=ref Abr-Jun (2ºT), Oct=ref Jul-Set (3ºT)
+// Quarter mapping
 const QUARTER_REF: Record<number, string> = {
   1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT",
 };
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
-  { title: "SAFT", day: 5, months: null },
+  { title: "SAFT", day: 5, months: null, overrides: { 4: 8 } },
   { title: "DMR AT - Guia", day: 10, months: null },
   { title: "DMR SS - Guia", day: 10, months: null },
   { title: "DMR AT - Pagamento", day: 20, months: null },
@@ -61,7 +61,8 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number) => {
   const result: { day: number; title: string }[] = [];
   FISCAL_DEADLINES.forEach((dl) => {
     if (dl.months === null || dl.months.includes(month1)) {
-      const day = Math.min(dl.day, daysInMonth);
+      let day = dl.overrides?.[month1] ?? dl.day;
+      day = Math.min(day, daysInMonth);
       let title = dl.title;
       if (dl.refType === "month") {
         // Refers to 2 months prior

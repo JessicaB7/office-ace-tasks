@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useTasks } from "@/hooks/useSupabaseQuery";
+import { useTasks, useMonthlyObligations, useClients } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, type TaskStatus } from "@/types/database";
 import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays } from "lucide-react";
 
@@ -11,10 +11,12 @@ interface FiscalDeadline {
   day: number;
   months: number[] | null;
   refType?: "month" | "quarter";
+  obligationType?: string; // maps to monthly_obligations.obligation_type
+  overrides?: Record<number, number>; // month(1-based) → day override
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
-  { title: "SAFT", day: 5, months: null },
+  { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 } },
   { title: "DMR AT - Guia", day: 10, months: null },
   { title: "DMR SS - Guia", day: 10, months: null },
   { title: "DMR AT - Pagamento", day: 20, months: null },
@@ -23,9 +25,9 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month" },
   { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
   { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter" },
-  { title: "Retenção na Fonte", day: 20, months: null },
-  { title: "SS TI - Pagamento", day: 20, months: null },
-  { title: "Salários", day: 25, months: null },
+  { title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte" },
+  { title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI" },
+  { title: "Salários", day: 25, months: null, obligationType: "salarios" },
   { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] },
   { title: "SS TI - Declaração Trimestral", day: 30, months: [4] },
 ];
@@ -39,6 +41,11 @@ const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string 
 
 const DashboardView = () => {
   const { data: tasks = [], isLoading } = useTasks();
+  const { data: clients = [] } = useClients();
+
+  const today = new Date();
+  const referenceMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+  const { data: obligations = [] } = useMonthlyObligations(referenceMonth);
 
   const statusCounts = tasks.reduce((acc, t: any) => {
     acc[t.status] = (acc[t.status] || 0) + 1;
@@ -49,10 +56,26 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
+  // Count pending obligations per type
+  const pendingByType = useMemo(() => {
+    const counts: Record<string, { total: number; done: number }> = {};
+    const activeClients = clients.filter((c: any) => c.active);
+
+    // For each obligation type, count how many clients should have it vs how many are done
+    FISCAL_DEADLINES.forEach((dl) => {
+      if (!dl.obligationType) return;
+      const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
+      const doneCount = typeObligations.filter((o: any) => o.status === "concluida").length;
+      // Total is based on clients that have this obligation
+      const totalClients = activeClients.length;
+      counts[dl.obligationType] = { total: totalClients, done: doneCount };
+    });
+    return counts;
+  }, [obligations, clients]);
+
   // Get current week boundaries (Monday to Sunday)
   const weekDeadlines = useMemo(() => {
-    const today = new Date();
-    const dayOfWeek = (today.getDay() + 6) % 7; // Monday=0
+    const dayOfWeek = (today.getDay() + 6) % 7;
     const monday = new Date(today);
     monday.setDate(today.getDate() - dayOfWeek);
     monday.setHours(0, 0, 0, 0);
@@ -64,11 +87,12 @@ const DashboardView = () => {
     const month1 = monthIndex + 1;
     const daysInMonth = new Date(today.getFullYear(), monthIndex + 1, 0).getDate();
 
-    const result: { title: string; date: Date }[] = [];
+    const result: { title: string; date: Date; obligationType?: string }[] = [];
 
     FISCAL_DEADLINES.forEach((dl) => {
       if (dl.months === null || dl.months.includes(month1)) {
-        const day = Math.min(dl.day, daysInMonth);
+        let day = dl.overrides?.[month1] ?? dl.day;
+        day = Math.min(day, daysInMonth);
         const deadlineDate = new Date(today.getFullYear(), monthIndex, day);
 
         if (deadlineDate >= monday && deadlineDate <= sunday) {
@@ -79,7 +103,7 @@ const DashboardView = () => {
           } else if (dl.refType === "quarter") {
             title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
           }
-          result.push({ title, date: deadlineDate });
+          result.push({ title, date: deadlineDate, obligationType: dl.obligationType });
         }
       }
     });
@@ -145,17 +169,32 @@ const DashboardView = () => {
           </div>
           <div className="space-y-3">
             {weekDeadlines.length === 0 && <p className="text-sm text-muted-foreground">Sem prazos fiscais esta semana</p>}
-            {weekDeadlines.map((dl, idx) => (
-              <div key={idx} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="w-3.5 h-3.5 text-destructive shrink-0" />
-                  <p className="font-medium">{dl.title}</p>
+            {weekDeadlines.map((dl, idx) => {
+              const pending = dl.obligationType && pendingByType[dl.obligationType]
+                ? pendingByType[dl.obligationType].total - pendingByType[dl.obligationType].done
+                : null;
+              return (
+                <div key={idx} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-3.5 h-3.5 text-destructive shrink-0" />
+                    <p className="font-medium">{dl.title}</p>
+                    {pending !== null && pending > 0 && (
+                      <span className="text-[10px] font-semibold bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">
+                        {pending} pendente{pending !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                    {pending !== null && pending === 0 && (
+                      <span className="text-[10px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
+                        ✓ Concluído
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-muted-foreground text-xs whitespace-nowrap ml-3">
+                    {dl.date.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric" })}
+                  </span>
                 </div>
-                <span className="text-muted-foreground text-xs whitespace-nowrap ml-3">
-                  {dl.date.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric" })}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
