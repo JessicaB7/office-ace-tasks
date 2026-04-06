@@ -58,23 +58,27 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
-  // Count pending obligations per type and track which clients are pending
+  // Count pending obligations per type and track which clients are pending/done
   const obligationData = useMemo(() => {
-    const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string }[] }> = {};
+    const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string }[]; doneClients: { id: string; name: string }[] }> = {};
     const activeClients = clients.filter((c: any) => c.active);
 
     FISCAL_DEADLINES.forEach((dl) => {
       if (!dl.obligationType) return;
-      if (data[dl.obligationType]) return; // already processed
+      if (data[dl.obligationType]) return;
       const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
       const doneClientIds = new Set(typeObligations.filter((o: any) => o.status === "concluida").map((o: any) => o.client_id));
       const pendingClients = activeClients
         .filter((c: any) => !doneClientIds.has(c.id))
         .map((c: any) => ({ id: c.id, name: c.name }));
+      const doneClients = activeClients
+        .filter((c: any) => doneClientIds.has(c.id))
+        .map((c: any) => ({ id: c.id, name: c.name }));
       data[dl.obligationType] = {
         total: activeClients.length,
         done: doneClientIds.size,
         pendingClients,
+        doneClients,
       };
     });
     return data;
