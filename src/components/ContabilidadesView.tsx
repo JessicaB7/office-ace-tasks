@@ -81,6 +81,9 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   };
 
   const oblType = `contabilidade_${activeTab}`;
+  const oblTypeVendas = `contabilidade_${activeTab}_vendas`;
+  const oblTypeCompras = `contabilidade_${activeTab}_compras`;
+  const oblTypeEfatura = `contabilidade_${activeTab}_efatura`;
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
@@ -89,6 +92,24 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     });
     return map;
   }, [obligations, oblType]);
+
+  const oblMapVendas = useMemo(() => {
+    const map: Record<string, any> = {};
+    obligations.forEach((o: any) => { if (o.obligation_type === oblTypeVendas) map[o.client_id] = o; });
+    return map;
+  }, [obligations, oblTypeVendas]);
+
+  const oblMapCompras = useMemo(() => {
+    const map: Record<string, any> = {};
+    obligations.forEach((o: any) => { if (o.obligation_type === oblTypeCompras) map[o.client_id] = o; });
+    return map;
+  }, [obligations, oblTypeCompras]);
+
+  const oblMapEfatura = useMemo(() => {
+    const map: Record<string, any> = {};
+    obligations.forEach((o: any) => { if (o.obligation_type === oblTypeEfatura) map[o.client_id] = o; });
+    return map;
+  }, [obligations, oblTypeEfatura]);
 
   const filteredClients = useMemo(() => {
     if (!config) return [];
