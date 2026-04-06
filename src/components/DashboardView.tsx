@@ -11,25 +11,26 @@ interface FiscalDeadline {
   day: number;
   months: number[] | null;
   refType?: "month" | "quarter";
-  obligationType?: string; // maps to monthly_obligations.obligation_type
-  overrides?: Record<number, number>; // month(1-based) → day override
+  obligationType?: string;
+  checkExtra?: boolean; // true = check extra_done instead of status
+  overrides?: Record<number, number>;
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 } },
-  { title: "DMR AT - Guia", day: 10, months: null },
-  { title: "DMR SS - Guia", day: 10, months: null },
-  { title: "DMR AT - Pagamento", day: 20, months: null },
-  { title: "DMR SS - Pagamento", day: 20, months: null },
-  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month" },
-  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month" },
-  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
-  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter" },
+  { title: "DMR AT - Guia", day: 10, months: null, obligationType: "DMR_AT" },
+  { title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS" },
+  { title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true },
+  { title: "DMR SS - Pagamento", day: 20, months: null, obligationType: "DMR_SS", checkExtra: true },
+  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA" },
+  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa" },
+  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA" },
+  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa" },
   { title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte" },
   { title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI" },
   { title: "Salários", day: 25, months: null, obligationType: "salarios" },
-  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] },
-  { title: "SS TI - Declaração Trimestral", day: 30, months: [4] },
+  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10], obligationType: "SS_TI_DT" },
+  { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT" },
 ];
 
 const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string }> = {
