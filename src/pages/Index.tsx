@@ -29,7 +29,7 @@ const Index = () => {
       <AppSidebar activeView={activeView} onViewChange={setActiveView} onNewTask={handleNewTask} />
       <main className="flex-1 p-6 lg:p-8 overflow-auto">
         {activeView === "dashboard" && <DashboardView />}
-        {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} />}
+        {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
         {activeView.startsWith("contabilidades") && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} />}
         {activeView === "clients" && <ClientListView />}
