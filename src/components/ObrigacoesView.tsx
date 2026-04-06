@@ -115,8 +115,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showGuiaPagamento = isDMR;
   const isSalarios = activeTab === "salarios";
   const showSalariosColumns = isSalarios;
-  const isDTMonth = [0, 3, 6, 9].includes(month); // Jan, Apr, Jul, Oct
+  const isDTMonth = [0, 3, 6, 9].includes(month);
   const showDTContent = !(isSSTI && ssTiTab === "SS_TI_DT" && !isDTMonth);
+  const showNotasColumn = isSSTI && ssTiTab === "SS_TI_DT" && subFilter === "Isento";
 
   const filteredClients = useMemo(() => {
     let list: any[] = [];
