@@ -360,6 +360,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 case "SAFT": return activeClients.filter((c: any) => c.saft === opt.value).length;
                 case "salarios": return activeClients.filter((c: any) => c.salarios === opt.value).length;
                 case "IVA": return activeClients.filter((c: any) => c.iva === opt.value).length;
+                case "IVA_recapitulativa": return activeClients.filter((c: any) => c.recapitulativa === opt.value).length;
                 case "SS_TI": return ssTiTab === "SS_TI_DT"
                   ? activeClients.filter((c: any) => isTI(c) && c.seguranca_social === opt.value).length
                   : activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.pag_seguranca_social === opt.value).length;
