@@ -30,8 +30,14 @@ interface FiscalDeadline {
   title: string;
   day: number;
   months: number[] | null;
-  showRefMonth?: boolean;
+  refType?: "month" | "quarter";
 }
+
+// Quarter mapping: Jan→Q3(prev year), Apr→Q4(prev year)... but in PT fiscal:
+// Jan=ref Oct-Dez (4ºT), Apr=ref Jan-Mar (1ºT), Jul=ref Abr-Jun (2ºT), Oct=ref Jul-Set (3ºT)
+const QUARTER_REF: Record<number, string> = {
+  1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT",
+};
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "SAFT", day: 5, months: null },
@@ -39,10 +45,10 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "DMR SS - Guia", day: 10, months: null },
   { title: "DMR AT - Pagamento", day: 20, months: null },
   { title: "DMR SS - Pagamento", day: 20, months: null },
-  { title: "IVA Periódica Mensal", day: 20, months: null, showRefMonth: true },
-  { title: "Recapitulativa Mensal", day: 20, months: null },
+  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month" },
+  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month" },
   { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
-  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10] },
+  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter" },
   { title: "Retenção na Fonte", day: 20, months: null },
   { title: "SS TI - Pagamento", day: 20, months: null },
   { title: "Salários", day: 25, months: null },
@@ -56,11 +62,13 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number) => {
   FISCAL_DEADLINES.forEach((dl) => {
     if (dl.months === null || dl.months.includes(month1)) {
       const day = Math.min(dl.day, daysInMonth);
-      // For IVA Periódica Mensal, show which month it refers to (2 months prior)
       let title = dl.title;
-      if (dl.showRefMonth) {
+      if (dl.refType === "month") {
+        // Refers to 2 months prior
         const refMonthIdx = (monthIndex - 2 + 12) % 12;
         title = `${dl.title} (${MONTH_NAMES_SHORT[refMonthIdx]})`;
+      } else if (dl.refType === "quarter") {
+        title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
       }
       result.push({ day, title });
     }
