@@ -176,20 +176,7 @@ const ClientListView = () => {
     return `${val.toFixed(2).replace(".", ",")} €`;
   };
 
-  // Count clients per collaborator for tab badges
   const activeClients = clients.filter((c: any) => c.active);
-  const collabCounts: Record<string, number> = {};
-  let noneCount = 0;
-  activeClients.forEach((c: any) => {
-    if (c.responsavel_id) {
-      collabCounts[c.responsavel_id] = (collabCounts[c.responsavel_id] || 0) + 1;
-    } else {
-      noneCount++;
-    }
-  });
-
-  // Only show collaborators that have clients assigned
-  const collabsWithClients = collaborators.filter((col: any) => collabCounts[col.id]);
 
   return (
     <div className="space-y-5">
