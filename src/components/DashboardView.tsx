@@ -43,6 +43,7 @@ const DashboardView = () => {
   const { data: tasks = [], isLoading } = useTasks();
   const { data: clients = [] } = useClients();
   const [expandedType, setExpandedType] = useState<string | null>(null);
+  const [expandedTab, setExpandedTab] = useState<"pendentes" | "concluidos">("pendentes");
 
   const today = new Date();
   const referenceMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
