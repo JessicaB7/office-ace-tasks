@@ -169,7 +169,7 @@ const DashboardView = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {(Object.keys(STATUS_LABELS) as TaskStatus[]).map((status, i) => {
+        {DASHBOARD_STATUSES.map((status, i) => {
           const config = statusConfig[status];
           const Icon = config.icon;
           return (
