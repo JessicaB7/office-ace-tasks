@@ -299,6 +299,19 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         </div>
       )}
 
+      {/* SS TI tabs */}
+      {isSSTI && (
+        <div className="flex gap-1 border-b">
+          {(["SS_TI", "SS_TI_DT"] as const).map((tab) => (
+            <button key={tab} onClick={() => { setSsTiTab(tab); setSubFilter("all"); }}
+              className={cn("px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
+                ssTiTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+              {tab === "SS_TI" ? "Pagamento" : "Declaração Trimestral"}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Sub-filter tabs */}
       {subFilterOptions.length > 0 && !isDMR && (
         <div className="flex gap-1 overflow-x-auto pb-1 border-b">
