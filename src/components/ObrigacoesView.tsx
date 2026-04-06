@@ -39,6 +39,12 @@ const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
 ];
+const SS_TI_DT_FILTERS = [
+  { value: "Trimestral", label: "Trimestral" },
+  { value: "Mensal", label: "Mensal" },
+  { value: "TCO", label: "TCO" },
+  { value: "Isento", label: "Isento" },
+];
 
 const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
@@ -51,6 +57,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const [activeTab, setActiveTab] = useState<string>(subPage || "SAFT");
   const [subFilter, setSubFilter] = useState<string>("all");
   const [dmrTab, setDmrTab] = useState<"DMR_AT" | "DMR_SS">("DMR_AT");
+  const [ssTiTab, setSsTiTab] = useState<"SS_TI" | "SS_TI_DT">("SS_TI");
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
@@ -65,6 +72,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       setCollabFilter("all");
       setSearch("");
       if (subPage === "DMR") setDmrTab("DMR_AT");
+      if (subPage === "SS_TI") setSsTiTab("SS_TI");
     }
   }, [subPage]);
 
@@ -123,8 +131,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         list = activeClients.filter((c: any) => hasSalarios(c));
         break;
       case "SS_TI":
-        list = activeClients.filter((c: any) => isTI(c) && !hasSalarios(c));
-        if (subFilter !== "all") list = list.filter((c: any) => c.pag_seguranca_social === subFilter);
+        if (ssTiTab === "SS_TI_DT") {
+          list = activeClients.filter((c: any) => isTI(c));
+          if (subFilter !== "all") list = list.filter((c: any) => c.seguranca_social === subFilter);
+        } else {
+          list = activeClients.filter((c: any) => isTI(c) && !hasSalarios(c));
+          if (subFilter !== "all") list = list.filter((c: any) => c.pag_seguranca_social === subFilter);
+        }
         break;
       case "IVA":
         list = activeClients.filter((c: any) => c.iva && c.iva !== "");
@@ -149,14 +162,14 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       list = list.filter((c: any) => c.name.toLowerCase().includes(s) || (c.nif || "").includes(s));
     }
     return list;
-  }, [activeClients, activeTab, subFilter, search, collabFilter]);
+  }, [activeClients, activeTab, subFilter, search, collabFilter, ssTiTab]);
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
-    const type = isDMR ? dmrTab : activeTab;
+    const type = isDMR ? dmrTab : isSSTI ? ssTiTab : activeTab;
     obligations.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
     return map;
-  }, [obligations, activeTab, isDMR, dmrTab]);
+  }, [obligations, activeTab, isDMR, dmrTab, isSSTI, ssTiTab]);
 
   const toggleObligation = async (clientId: string, oblType: string, currentMap: Record<string, any>) => {
     const existing = currentMap[clientId];
@@ -176,10 +189,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     }
   };
 
-  const toggleGuia = (clientId: string) => toggleObligation(clientId, isDMR ? dmrTab : activeTab, oblMap);
+  const getOblType = () => isDMR ? dmrTab : isSSTI ? ssTiTab : activeTab;
+  const toggleGuia = (clientId: string) => toggleObligation(clientId, getOblType(), oblMap);
 
   const togglePagamento = async (clientId: string) => {
-    const oblType = isDMR ? dmrTab : activeTab;
+    const oblType = getOblType();
     const existing = oblMap[clientId];
     if (existing) {
       await upsert.mutateAsync({
@@ -214,7 +228,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "SAFT": return SAFT_GROUPS.map(g => ({ value: g, label: g }));
       case "salarios": return SALARIOS_FILTERS;
       case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
-      case "SS_TI": return SS_TI_FILTERS;
+      case "SS_TI": return ssTiTab === "SS_TI_DT" ? SS_TI_DT_FILTERS : SS_TI_FILTERS;
       default: return [];
     }
   };
@@ -286,6 +300,19 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         </div>
       )}
 
+      {/* SS TI tabs */}
+      {isSSTI && (
+        <div className="flex gap-1 border-b">
+          {(["SS_TI", "SS_TI_DT"] as const).map((tab) => (
+            <button key={tab} onClick={() => { setSsTiTab(tab); setSubFilter("all"); }}
+              className={cn("px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
+                ssTiTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+              {tab === "SS_TI" ? "Pagamento" : "Declaração Trimestral"}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Sub-filter tabs */}
       {subFilterOptions.length > 0 && !isDMR && (
         <div className="flex gap-1 overflow-x-auto pb-1 border-b">
@@ -295,7 +322,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 case "SAFT": return activeClients.filter((c: any) => c.saft === opt.value).length;
                 case "salarios": return activeClients.filter((c: any) => c.salarios === opt.value).length;
                 case "IVA": return activeClients.filter((c: any) => c.iva === opt.value).length;
-                case "SS_TI": return activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.pag_seguranca_social === opt.value).length;
+                case "SS_TI": return ssTiTab === "SS_TI_DT"
+                  ? activeClients.filter((c: any) => isTI(c) && c.seguranca_social === opt.value).length
+                  : activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.pag_seguranca_social === opt.value).length;
                 default: return 0;
               }
             })();
