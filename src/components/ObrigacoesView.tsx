@@ -166,10 +166,10 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
-    const type = isDMR ? dmrTab : activeTab;
+    const type = isDMR ? dmrTab : isSSTI ? ssTiTab : activeTab;
     obligations.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
     return map;
-  }, [obligations, activeTab, isDMR, dmrTab]);
+  }, [obligations, activeTab, isDMR, dmrTab, isSSTI, ssTiTab]);
 
   const toggleObligation = async (clientId: string, oblType: string, currentMap: Record<string, any>) => {
     const existing = currentMap[clientId];
