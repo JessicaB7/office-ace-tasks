@@ -32,9 +32,9 @@ const fmtDeadline = (day: number, m0: number, y: number) =>
   `Prazo: ${day}/${String(m0 + 1).padStart(2, "0")}/${y}`;
 
 // Pages where checkboxes go on the RIGHT side
-const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "SS_TI", "SAFT"]);
+const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "SS_TI", "SAFT", "salarios"]);
 // Pages where NIF is hidden
-const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte", "SAFT"]);
+const hideNif = new Set(["DMR", "SS_TI", "IVA", "retencao_fonte", "SAFT", "salarios"]);
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
