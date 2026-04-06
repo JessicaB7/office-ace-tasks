@@ -34,9 +34,11 @@ interface FiscalDeadline {
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "SAFT", day: 5, months: null },
-  { title: "DMR AT - Guia", day: 20, months: null },
-  { title: "DMR SS - Guia", day: 20, months: null },
-  { title: "IVA Periódica Mensal", day: 20, months: null },
+  { title: "DMR AT - Guia", day: 10, months: null },
+  { title: "DMR SS - Guia", day: 10, months: null },
+  { title: "DMR AT - Pagamento", day: 20, months: null },
+  { title: "DMR SS - Pagamento", day: 20, months: null },
+  { title: "IVA Periódica Mensal", day: 20, months: null, showRefMonth: true },
   { title: "Recapitulativa Mensal", day: 20, months: null },
   { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
   { title: "Recapitulativa Trimestral", day: 20, months: [2, 5, 8, 11] },
@@ -53,7 +55,13 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number) => {
   FISCAL_DEADLINES.forEach((dl) => {
     if (dl.months === null || dl.months.includes(month1)) {
       const day = Math.min(dl.day, daysInMonth);
-      result.push({ day, title: dl.title });
+      // For IVA Periódica Mensal, show which month it refers to (2 months prior)
+      let title = dl.title;
+      if (dl.showRefMonth) {
+        const refMonthIdx = (monthIndex - 2 + 12) % 12;
+        title = `${dl.title} (${MONTH_NAMES_SHORT[refMonthIdx]})`;
+      }
+      result.push({ day, title });
     }
   });
   return result;
