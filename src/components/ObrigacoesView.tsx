@@ -123,9 +123,17 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showGuiaPagamento = isDMR;
   const isSalarios = activeTab === "salarios";
   const showSalariosColumns = isSalarios;
+  const isDT = isSSTI && ssTiTab === "SS_TI_DT";
   const isDTMonth = [0, 3, 6, 9].includes(month);
-  const showDTContent = !(isSSTI && ssTiTab === "SS_TI_DT" && !isDTMonth);
-  const showNotasColumn = isSSTI && ssTiTab === "SS_TI_DT" && subFilter === "Isento";
+  const showDTContent = !(isDT && !isDTMonth);
+  const showNotasColumn = isDT && subFilter === "Isento";
+
+  // Quarter label for DT: Apr=Q1(Jan-Mar), Jul=Q2(Apr-Jun), Oct=Q3(Jul-Sep), Jan=Q4(Oct-Dec)
+  const dtQuarterLabel = (() => {
+    if (!isDT || !isDTMonth) return "";
+    const qMap: Record<number, string> = { 3: "1º Trimestre (Jan–Mar)", 6: "2º Trimestre (Abr–Jun)", 9: "3º Trimestre (Jul–Set)", 0: "4º Trimestre (Out–Dez)" };
+    return qMap[month] || "";
+  })();
 
   const filteredClients = useMemo(() => {
     let list: any[] = [];
