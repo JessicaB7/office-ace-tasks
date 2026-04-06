@@ -162,7 +162,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       list = list.filter((c: any) => c.name.toLowerCase().includes(s) || (c.nif || "").includes(s));
     }
     return list;
-  }, [activeClients, activeTab, subFilter, search, collabFilter]);
+  }, [activeClients, activeTab, subFilter, search, collabFilter, ssTiTab]);
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
