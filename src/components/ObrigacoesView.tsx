@@ -189,10 +189,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     }
   };
 
-  const toggleGuia = (clientId: string) => toggleObligation(clientId, isDMR ? dmrTab : activeTab, oblMap);
+  const getOblType = () => isDMR ? dmrTab : isSSTI ? ssTiTab : activeTab;
+  const toggleGuia = (clientId: string) => toggleObligation(clientId, getOblType(), oblMap);
 
   const togglePagamento = async (clientId: string) => {
-    const oblType = isDMR ? dmrTab : activeTab;
+    const oblType = getOblType();
     const existing = oblMap[clientId];
     if (existing) {
       await upsert.mutateAsync({
