@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useTasks, useMonthlyObligations, useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, CATEGORY_LABELS, PRIORITY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
-import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays, Users } from "lucide-react";
+import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays, ClipboardList } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const QUARTER_REF: Record<number, string> = { 1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT" };
@@ -43,6 +44,7 @@ const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string 
 };
 
 const DashboardView = () => {
+  const { user } = useAuth();
   const { data: tasks = [], isLoading } = useTasks();
   const { data: clients = [] } = useClients();
   const { data: collaborators = [] } = useCollaborators();
@@ -53,12 +55,24 @@ const DashboardView = () => {
   const referenceMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
   const { data: obligations = [] } = useMonthlyObligations(referenceMonth);
 
-  const statusCounts = tasks.reduce((acc, t: any) => {
+  // Find the collaborator matching the logged-in user's email
+  const currentCollaborator = useMemo(() => {
+    if (!user?.email) return null;
+    return collaborators.find(c => c.email.toLowerCase() === user.email!.toLowerCase()) || null;
+  }, [user, collaborators]);
+
+  // Filter tasks to only show the current collaborator's tasks
+  const myTasks = useMemo(() => {
+    if (!currentCollaborator) return [];
+    return tasks.filter((t: any) => t.collaborator_id === currentCollaborator.id);
+  }, [tasks, currentCollaborator]);
+
+  const statusCounts = myTasks.reduce((acc, t: any) => {
     acc[t.status] = (acc[t.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const overdueTasks = tasks.filter(
+  const overdueTasks = myTasks.filter(
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
@@ -362,54 +376,43 @@ const DashboardView = () => {
           })}
         </div>
       </div>
-      {/* Tarefas por Responsável */}
+      {/* As Minhas Tarefas */}
       <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "480ms" }}>
         <div className="flex items-center gap-2 mb-4">
-          <Users className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold">Tarefas por Responsável</h3>
+          <ClipboardList className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold">As Minhas Tarefas</h3>
+          {currentCollaborator && <span className="text-xs text-muted-foreground ml-1">({currentCollaborator.name})</span>}
         </div>
-        <div className="space-y-4">
-          {collaborators.filter(c => c.active).map((collab) => {
-            const collabTasks = tasks.filter((t: any) => t.collaborator_id === collab.id && t.status !== "cancelada");
-            const pending = collabTasks.filter((t: any) => t.status === "pendente").length;
-            const inProgress = collabTasks.filter((t: any) => t.status === "em_progresso").length;
-            const done = collabTasks.filter((t: any) => t.status === "concluida").length;
-            if (collabTasks.length === 0) return null;
-            return (
-              <div key={collab.id} className="border rounded-lg overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-3 bg-muted/30">
-                  <span className="font-medium text-sm">{collab.name}</span>
-                  <div className="flex items-center gap-2">
-                    {pending > 0 && <span className="text-[10px] font-semibold bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">{pending} pendente{pending > 1 ? "s" : ""}</span>}
-                    {inProgress > 0 && <span className="text-[10px] font-semibold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">{inProgress} em progresso</span>}
-                    {done > 0 && <span className="text-[10px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-full">{done} concluída{done > 1 ? "s" : ""}</span>}
-                  </div>
-                </div>
-                <div className="divide-y">
-                  {collabTasks.filter((t: any) => t.status !== "concluida").map((task: any) => (
-                    <div key={task.id} className="flex items-center justify-between px-4 py-2 text-sm">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium truncate">{task.title}</p>
-                        <p className="text-xs text-muted-foreground">{task.clients?.name || "—"} · {CATEGORY_LABELS[task.category as TaskCategory]}</p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${task.status === "pendente" ? "bg-warning/15 text-warning" : "bg-blue-100 text-blue-600"}`}>
-                          {STATUS_LABELS[task.status as TaskStatus]}
-                        </span>
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {new Date(task.due_date).toLocaleDateString("pt-PT")}
-                        </span>
-                      </div>
+        {!currentCollaborator ? (
+          <p className="text-sm text-muted-foreground">O seu email não está associado a nenhum colaborador.</p>
+        ) : myTasks.filter((t: any) => t.status !== "concluida" && t.status !== "cancelada").length === 0 ? (
+          <p className="text-sm text-muted-foreground">Sem tarefas pendentes</p>
+        ) : (
+          <div className="divide-y border rounded-lg overflow-hidden">
+            {myTasks
+              .filter((t: any) => t.status !== "concluida" && t.status !== "cancelada")
+              .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+              .map((task: any) => {
+                const isOverdue = new Date(task.due_date) < new Date();
+                return (
+                  <div key={task.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{task.title}</p>
+                      <p className="text-xs text-muted-foreground">{task.clients?.name || "—"} · {CATEGORY_LABELS[task.category as TaskCategory]}</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-          {collaborators.filter(c => c.active).every((collab) => 
-            tasks.filter((t: any) => t.collaborator_id === collab.id && t.status !== "cancelada").length === 0
-          ) && <p className="text-sm text-muted-foreground">Sem tarefas atribuídas</p>}
-        </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${task.status === "pendente" ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary"}`}>
+                        {STATUS_LABELS[task.status as TaskStatus]}
+                      </span>
+                      <span className={`text-xs whitespace-nowrap ${isOverdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                        {new Date(task.due_date).toLocaleDateString("pt-PT")}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </div>
     </div>
   );
