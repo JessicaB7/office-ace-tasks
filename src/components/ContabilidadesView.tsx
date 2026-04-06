@@ -7,7 +7,15 @@ import ClientDetailDialog from "@/components/ClientDetailDialog";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-const SUB_PAGE_CONFIG: Record<string, { label: string; filter: (c: any) => boolean }> = {
+interface TabConfig {
+  label: string;
+  filter: (c: any) => boolean;
+  hasIvaTabs?: boolean;
+  hideNif?: boolean;
+  columns?: string[];
+}
+
+const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
   TI_isento: {
     label: "TI Simplificado - Isento IVA",
     filter: (c) => c.tipo_contabilidade === "TI RS" && (c.iva === "Art.53º" || c.iva === "Art. 9º"),
@@ -15,10 +23,16 @@ const SUB_PAGE_CONFIG: Record<string, { label: string; filter: (c: any) => boole
   TI_iva: {
     label: "TI Simplificado - Reg. IVA",
     filter: (c) => c.tipo_contabilidade === "TI RS" && c.iva !== "Art.53º" && c.iva !== "Art. 9º" && c.iva !== "" && c.iva != null,
+    hasIvaTabs: true,
+    hideNif: true,
+    columns: ["Vendas", "Compras", "E-Fatura"],
   },
   organizada: {
     label: "Contabilidade Organizada",
     filter: (c) => c.tipo_contabilidade === "TI CO",
+    hasIvaTabs: true,
+    hideNif: true,
+    columns: ["Vendas", "Compras", "Bancos", "E-Fatura", "Análise"],
   },
   empresas: {
     label: "Empresas",
@@ -56,12 +70,17 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
   const upsert = useUpsertObligation();
 
-  const isTIiva = activeTab === "TI_iva";
+  const config = SUB_PAGE_CONFIG[activeTab];
+  const hasIvaTabs = config?.hasIvaTabs ?? false;
+  const hideNif = config?.hideNif ?? false;
+  const columns = config?.columns;
+  const hasMultiColumns = !!columns && columns.length > 0;
 
   useEffect(() => {
     if (subPage) {
       setActiveTab(subPage);
-      setSubFilter(subPage === "TI_iva" ? "Mensal" : "all");
+      const cfg = SUB_PAGE_CONFIG[subPage];
+      setSubFilter(cfg?.hasIvaTabs ? "Mensal" : "all");
       setCollabFilter("all");
       setSearch("");
     }
@@ -72,44 +91,35 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
 
   const activeClients = useMemo(() => clients.filter((c: any) => c.active), [clients]);
 
-  const config = SUB_PAGE_CONFIG[activeTab];
-
   const getCollabName = (id: string | null) => {
     if (!id) return "—";
     const col = collaborators.find((c: any) => c.id === id);
     return col ? col.name : "—";
   };
 
-  const oblType = `contabilidade_${activeTab}`;
-  const oblTypeVendas = `contabilidade_${activeTab}_vendas`;
-  const oblTypeCompras = `contabilidade_${activeTab}_compras`;
-  const oblTypeEfatura = `contabilidade_${activeTab}_efatura`;
+  // Build obligation type keys for each column
+  const colOblTypes = useMemo(() => {
+    if (!columns) return [];
+    return columns.map((col) => `contabilidade_${activeTab}_${col.toLowerCase().replace(/[- ]/g, "_")}`);
+  }, [columns, activeTab]);
 
+  const oblType = `contabilidade_${activeTab}`;
+
+  // Build maps for each column
+  const colMaps = useMemo(() => {
+    return colOblTypes.map((type) => {
+      const map: Record<string, any> = {};
+      obligations.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
+      return map;
+    });
+  }, [obligations, colOblTypes]);
+
+  // Single column map (for simple tabs)
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
-    obligations.forEach((o: any) => {
-      if (o.obligation_type === oblType) map[o.client_id] = o;
-    });
+    obligations.forEach((o: any) => { if (o.obligation_type === oblType) map[o.client_id] = o; });
     return map;
   }, [obligations, oblType]);
-
-  const oblMapVendas = useMemo(() => {
-    const map: Record<string, any> = {};
-    obligations.forEach((o: any) => { if (o.obligation_type === oblTypeVendas) map[o.client_id] = o; });
-    return map;
-  }, [obligations, oblTypeVendas]);
-
-  const oblMapCompras = useMemo(() => {
-    const map: Record<string, any> = {};
-    obligations.forEach((o: any) => { if (o.obligation_type === oblTypeCompras) map[o.client_id] = o; });
-    return map;
-  }, [obligations, oblTypeCompras]);
-
-  const oblMapEfatura = useMemo(() => {
-    const map: Record<string, any> = {};
-    obligations.forEach((o: any) => { if (o.obligation_type === oblTypeEfatura) map[o.client_id] = o; });
-    return map;
-  }, [obligations, oblTypeEfatura]);
 
   const filteredClients = useMemo(() => {
     if (!config) return [];
@@ -122,7 +132,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         list = list.filter((c: any) => c.responsavel_id === collabFilter);
       }
     }
-    if (isTIiva && subFilter !== "all") {
+    if (hasIvaTabs && subFilter !== "all") {
       list = list.filter((c: any) => c.iva === subFilter);
     }
     if (search) {
@@ -130,7 +140,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
       list = list.filter((c: any) => c.name.toLowerCase().includes(q) || (c.nif || "").includes(q));
     }
     return list.sort((a: any, b: any) => a.name.localeCompare(b.name));
-  }, [activeClients, config, collabFilter, search, isTIiva, subFilter]);
+  }, [activeClients, config, collabFilter, search, hasIvaTabs, subFilter]);
 
   const toggleObl = (clientId: string, type: string, map: Record<string, any>) => {
     const obl = map[clientId];
@@ -146,16 +156,22 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     });
   };
 
-  const toggleDone = (clientId: string) => toggleObl(clientId, oblType, oblMap);
+  const doneCount = filteredClients.filter((c: any) => {
+    if (hasMultiColumns) {
+      return colMaps.every((map) => map[c.id]?.status === "concluida");
+    }
+    return oblMap[c.id]?.status === "concluida";
+  }).length;
 
-  const doneCount = filteredClients.filter((c: any) => oblMap[c.id]?.status === "concluida").length;
-
-  const tiIvaClients = useMemo(() => {
-    if (!isTIiva || !config) return [];
+  // Sub-filter counts
+  const baseClients = useMemo(() => {
+    if (!hasIvaTabs || !config) return [];
     return activeClients.filter(config.filter);
-  }, [activeClients, config, isTIiva]);
-  const mensalCount = tiIvaClients.filter((c: any) => c.iva === "Mensal").length;
-  const trimestralCount = tiIvaClients.filter((c: any) => c.iva === "Trimestral").length;
+  }, [activeClients, config, hasIvaTabs]);
+  const mensalCount = baseClients.filter((c: any) => c.iva === "Mensal").length;
+  const trimestralCount = baseClients.filter((c: any) => c.iva === "Trimestral").length;
+
+  const totalCols = 2 + (hideNif ? 0 : 1) + (hasMultiColumns ? columns!.length : 1);
 
   return (
     <div className="space-y-5">
@@ -173,8 +189,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         </div>
       </div>
 
-      {/* Sub-filter tabs for TI_iva */}
-      {isTIiva && (
+      {hasIvaTabs && (
         <div className="flex gap-1 border-b pb-1">
           {[
             { value: "Mensal", label: "Mensal", count: mensalCount },
@@ -209,14 +224,12 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
             <thead>
               <tr className="border-b bg-muted/40">
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
-                {!isTIiva && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>}
+                {!hideNif && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
-                {isTIiva ? (
-                  <>
-                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Vendas</th>
-                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Compras</th>
-                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">E-Fatura</th>
-                  </>
+                {hasMultiColumns ? (
+                  columns!.map((col) => (
+                    <th key={col} className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">{col}</th>
+                  ))
                 ) : (
                   <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>
                 )}
@@ -224,11 +237,10 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
             </thead>
             <tbody>
               {filteredClients.map((client: any) => {
-                const done = oblMap[client.id]?.status === "concluida";
-                const vendasDone = oblMapVendas[client.id]?.status === "concluida";
-                const comprasDone = oblMapCompras[client.id]?.status === "concluida";
-                const efaturaDone = oblMapEfatura[client.id]?.status === "concluida";
-                const allDone = isTIiva ? (vendasDone && comprasDone && efaturaDone) : done;
+                const singleDone = oblMap[client.id]?.status === "concluida";
+                const allDone = hasMultiColumns
+                  ? colMaps.every((map) => map[client.id]?.status === "concluida")
+                  : singleDone;
 
                 return (
                   <tr key={client.id} className={cn("border-b last:border-0 transition-colors", allDone ? "bg-green-50 dark:bg-green-950/20" : "hover:bg-muted/30")}>
@@ -237,30 +249,27 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                         {client.name}
                       </button>
                     </td>
-                    {!isTIiva && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
+                    {!hideNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
-                    {isTIiva ? (
-                      <>
-                        <td className="text-center px-3 py-3">
-                          <CheckboxCell done={vendasDone} onClick={() => toggleObl(client.id, oblTypeVendas, oblMapVendas)} />
-                        </td>
-                        <td className="text-center px-3 py-3">
-                          <CheckboxCell done={comprasDone} onClick={() => toggleObl(client.id, oblTypeCompras, oblMapCompras)} />
-                        </td>
-                        <td className="text-center px-3 py-3">
-                          <CheckboxCell done={efaturaDone} onClick={() => toggleObl(client.id, oblTypeEfatura, oblMapEfatura)} />
-                        </td>
-                      </>
+                    {hasMultiColumns ? (
+                      colMaps.map((map, i) => {
+                        const done = map[client.id]?.status === "concluida";
+                        return (
+                          <td key={colOblTypes[i]} className="text-center px-3 py-3">
+                            <CheckboxCell done={done} onClick={() => toggleObl(client.id, colOblTypes[i], map)} />
+                          </td>
+                        );
+                      })
                     ) : (
                       <td className="text-center px-3 py-3">
-                        <CheckboxCell done={done} onClick={() => toggleDone(client.id)} />
+                        <CheckboxCell done={singleDone} onClick={() => toggleObl(client.id, oblType, oblMap)} />
                       </td>
                     )}
                   </tr>
                 );
               })}
               {filteredClients.length === 0 && (
-                <tr><td colSpan={isTIiva ? 5 : 4} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
+                <tr><td colSpan={totalCols} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
               )}
             </tbody>
           </table>
