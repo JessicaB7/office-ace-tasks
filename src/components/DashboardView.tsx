@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useTasks, useMonthlyObligations, useClients } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, type TaskStatus } from "@/types/database";
 import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays } from "lucide-react";
@@ -42,6 +42,7 @@ const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string 
 const DashboardView = () => {
   const { data: tasks = [], isLoading } = useTasks();
   const { data: clients = [] } = useClients();
+  const [expandedType, setExpandedType] = useState<string | null>(null);
 
   const today = new Date();
   const referenceMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
@@ -56,21 +57,26 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
-  // Count pending obligations per type
-  const pendingByType = useMemo(() => {
-    const counts: Record<string, { total: number; done: number }> = {};
+  // Count pending obligations per type and track which clients are pending
+  const obligationData = useMemo(() => {
+    const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string }[] }> = {};
     const activeClients = clients.filter((c: any) => c.active);
 
-    // For each obligation type, count how many clients should have it vs how many are done
     FISCAL_DEADLINES.forEach((dl) => {
       if (!dl.obligationType) return;
+      if (data[dl.obligationType]) return; // already processed
       const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
-      const doneCount = typeObligations.filter((o: any) => o.status === "concluida").length;
-      // Total is based on clients that have this obligation
-      const totalClients = activeClients.length;
-      counts[dl.obligationType] = { total: totalClients, done: doneCount };
+      const doneClientIds = new Set(typeObligations.filter((o: any) => o.status === "concluida").map((o: any) => o.client_id));
+      const pendingClients = activeClients
+        .filter((c: any) => !doneClientIds.has(c.id))
+        .map((c: any) => ({ id: c.id, name: c.name }));
+      data[dl.obligationType] = {
+        total: activeClients.length,
+        done: doneClientIds.size,
+        pendingClients,
+      };
     });
-    return counts;
+    return data;
   }, [obligations, clients]);
 
   // Get current week boundaries (Monday to Sunday)
@@ -167,31 +173,63 @@ const DashboardView = () => {
             <CalendarDays className="w-4 h-4 text-primary" />
             <h3 className="font-semibold">Prazos desta Semana</h3>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-1">
             {weekDeadlines.length === 0 && <p className="text-sm text-muted-foreground">Sem prazos fiscais esta semana</p>}
             {weekDeadlines.map((dl, idx) => {
-              const pending = dl.obligationType && pendingByType[dl.obligationType]
-                ? pendingByType[dl.obligationType].total - pendingByType[dl.obligationType].done
+              const info = dl.obligationType && obligationData[dl.obligationType]
+                ? obligationData[dl.obligationType]
                 : null;
+              const pending = info ? info.total - info.done : null;
+              const isExpanded = expandedType === `${dl.obligationType}-${idx}`;
+              const expandKey = `${dl.obligationType}-${idx}`;
               return (
-                <div key={idx} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="w-3.5 h-3.5 text-destructive shrink-0" />
-                    <p className="font-medium">{dl.title}</p>
-                    {pending !== null && pending > 0 && (
-                      <span className="text-[10px] font-semibold bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">
-                        {pending} pendente{pending !== 1 ? "s" : ""}
+                <div key={idx}>
+                  <div
+                    className={`flex items-center justify-between text-sm px-3 py-2 rounded-lg transition-colors ${info ? "cursor-pointer hover:bg-muted/50" : ""} ${isExpanded ? "bg-muted/50" : ""}`}
+                    onClick={() => info && setExpandedType(isExpanded ? null : expandKey)}
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <CalendarDays className="w-3.5 h-3.5 text-destructive shrink-0" />
+                      <p className="font-medium truncate">{dl.title}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      {info && (
+                        <>
+                          <span className="text-[10px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
+                            {info.done} ✓
+                          </span>
+                          {pending !== null && pending > 0 && (
+                            <span className="text-[10px] font-semibold bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">
+                              {pending} ○
+                            </span>
+                          )}
+                        </>
+                      )}
+                      <span className="text-muted-foreground text-xs whitespace-nowrap">
+                        {dl.date.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric" })}
                       </span>
-                    )}
-                    {pending !== null && pending === 0 && (
-                      <span className="text-[10px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
-                        ✓ Concluído
-                      </span>
-                    )}
+                    </div>
                   </div>
-                  <span className="text-muted-foreground text-xs whitespace-nowrap ml-3">
-                    {dl.date.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric" })}
-                  </span>
+                  {isExpanded && info && info.pendingClients.length > 0 && (
+                    <div className="ml-8 mr-3 mt-1 mb-2 border rounded-lg overflow-hidden animate-fade-in">
+                      <div className="px-3 py-1.5 bg-muted/30 border-b">
+                        <span className="text-xs font-semibold text-muted-foreground">Clientes pendentes ({info.pendingClients.length})</span>
+                      </div>
+                      <div className="max-h-[200px] overflow-y-auto">
+                        {info.pendingClients.map((c) => (
+                          <div key={c.id} className="px-3 py-1.5 text-xs border-b last:border-b-0 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
+                            {c.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {isExpanded && info && info.pendingClients.length === 0 && (
+                    <div className="ml-8 mr-3 mt-1 mb-2 px-3 py-2 border rounded-lg bg-success/5 animate-fade-in">
+                      <span className="text-xs text-success font-medium">✓ Todos os clientes concluídos</span>
+                    </div>
+                  )}
                 </div>
               );
             })}
