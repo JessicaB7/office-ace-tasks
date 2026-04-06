@@ -285,7 +285,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     const tabs = collaborators.filter((col: any) => counts[col.id]).map((col: any) => ({ id: col.id, name: col.name, count: counts[col.id] }));
     if (noneCount > 0) tabs.push({ id: "none", name: "Sem responsável", count: noneCount });
     return tabs;
-  }, [isIVA, activeClients, collaborators, subFilter]);
+  }, [isIVA, isIVARecap, activeClients, collaborators, subFilter]);
 
   if (loadingClients || loadingObl) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
