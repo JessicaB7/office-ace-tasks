@@ -57,21 +57,26 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
-  // Count pending obligations per type
-  const pendingByType = useMemo(() => {
-    const counts: Record<string, { total: number; done: number }> = {};
+  // Count pending obligations per type and track which clients are pending
+  const obligationData = useMemo(() => {
+    const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string }[] }> = {};
     const activeClients = clients.filter((c: any) => c.active);
 
-    // For each obligation type, count how many clients should have it vs how many are done
     FISCAL_DEADLINES.forEach((dl) => {
       if (!dl.obligationType) return;
+      if (data[dl.obligationType]) return; // already processed
       const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
-      const doneCount = typeObligations.filter((o: any) => o.status === "concluida").length;
-      // Total is based on clients that have this obligation
-      const totalClients = activeClients.length;
-      counts[dl.obligationType] = { total: totalClients, done: doneCount };
+      const doneClientIds = new Set(typeObligations.filter((o: any) => o.status === "concluida").map((o: any) => o.client_id));
+      const pendingClients = activeClients
+        .filter((c: any) => !doneClientIds.has(c.id))
+        .map((c: any) => ({ id: c.id, name: c.name }));
+      data[dl.obligationType] = {
+        total: activeClients.length,
+        done: doneClientIds.size,
+        pendingClients,
+      };
     });
-    return counts;
+    return data;
   }, [obligations, clients]);
 
   // Get current week boundaries (Monday to Sunday)
