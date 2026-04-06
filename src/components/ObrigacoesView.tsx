@@ -273,7 +273,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   // IVA collaborator tabs data
   const ivaCollabData = useMemo(() => {
     if (!isIVA && !isIVARecap) return [];
-    const ivaClients = activeClients.filter((c: any) => c.iva && c.iva !== "" && (subFilter === "all" || c.iva === subFilter));
+    const ivaClients = isIVARecap
+      ? activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "")
+      : activeClients.filter((c: any) => c.iva && c.iva !== "" && (subFilter === "all" || c.iva === subFilter));
     const counts: Record<string, number> = {};
     let noneCount = 0;
     ivaClients.forEach((c: any) => {
