@@ -421,7 +421,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                         <td className="text-center px-3 py-3"><CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} /></td>
                       </>
                     )}
-                    {isRight && !showGuiaPagamento && !showSaftExtra && (
+                    {showSalariosColumns && (
+                      <>
+                        <td className="text-center px-3 py-3"><CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} /></td>
+                        <td className="text-center px-3 py-3"><CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} /></td>
+                      </>
+                    )}
+                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
