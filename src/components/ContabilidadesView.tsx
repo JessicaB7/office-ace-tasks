@@ -131,10 +131,13 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     }
     return list.sort((a: any, b: any) => a.name.localeCompare(b.name));
   }, [activeClients, config, collabFilter, search, isTIiva, subFilter]);
+
+  const toggleObl = (clientId: string, type: string, map: Record<string, any>) => {
+    const obl = map[clientId];
     const done = obl?.status === "concluida";
     upsert.mutate({
       client_id: clientId,
-      obligation_type: oblType,
+      obligation_type: type,
       reference_month: referenceMonth,
       status: done ? "pendente" : "concluida",
       completed_at: done ? null : new Date().toISOString(),
@@ -143,7 +146,16 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     });
   };
 
+  const toggleDone = (clientId: string) => toggleObl(clientId, oblType, oblMap);
+
   const doneCount = filteredClients.filter((c: any) => oblMap[c.id]?.status === "concluida").length;
+
+  const tiIvaClients = useMemo(() => {
+    if (!isTIiva || !config) return [];
+    return activeClients.filter(config.filter);
+  }, [activeClients, config, isTIiva]);
+  const mensalCount = tiIvaClients.filter((c: any) => c.iva === "Mensal").length;
+  const trimestralCount = tiIvaClients.filter((c: any) => c.iva === "Trimestral").length;
 
   return (
     <div className="space-y-5">
@@ -160,6 +172,22 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
           <button onClick={nextMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
+
+      {/* Sub-filter tabs for TI_iva */}
+      {isTIiva && (
+        <div className="flex gap-1 border-b pb-1">
+          {[
+            { value: "Mensal", label: "Mensal", count: mensalCount },
+            { value: "Trimestral", label: "Trimestral", count: trimestralCount },
+          ].map((tab) => (
+            <button key={tab.value} onClick={() => setSubFilter(tab.value)}
+              className={cn("px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
+                subFilter === tab.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex gap-3 items-center">
         <div className="relative max-w-sm flex-1">
@@ -181,31 +209,58 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
             <thead>
               <tr className="border-b bg-muted/40">
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>
+                {!isTIiva && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
-                <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>
+                {isTIiva ? (
+                  <>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Vendas</th>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Compras</th>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">E-Fatura</th>
+                  </>
+                ) : (
+                  <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {filteredClients.map((client: any) => {
                 const done = oblMap[client.id]?.status === "concluida";
+                const vendasDone = oblMapVendas[client.id]?.status === "concluida";
+                const comprasDone = oblMapCompras[client.id]?.status === "concluida";
+                const efaturaDone = oblMapEfatura[client.id]?.status === "concluida";
+                const allDone = isTIiva ? (vendasDone && comprasDone && efaturaDone) : done;
+
                 return (
-                  <tr key={client.id} className={cn("border-b last:border-0 transition-colors", done ? "bg-green-50 dark:bg-green-950/20" : "hover:bg-muted/30")}>
-                    <td className={cn("px-4 py-3 font-medium", done && "line-through text-muted-foreground")}>
+                  <tr key={client.id} className={cn("border-b last:border-0 transition-colors", allDone ? "bg-green-50 dark:bg-green-950/20" : "hover:bg-muted/30")}>
+                    <td className={cn("px-4 py-3 font-medium", allDone && "line-through text-muted-foreground")}>
                       <button type="button" onClick={() => setSelectedClient(client)} className="hover:underline text-left">
                         {client.name}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>
+                    {!isTIiva && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
-                    <td className="text-center px-3 py-3">
-                      <CheckboxCell done={done} onClick={() => toggleDone(client.id)} />
-                    </td>
+                    {isTIiva ? (
+                      <>
+                        <td className="text-center px-3 py-3">
+                          <CheckboxCell done={vendasDone} onClick={() => toggleObl(client.id, oblTypeVendas, oblMapVendas)} />
+                        </td>
+                        <td className="text-center px-3 py-3">
+                          <CheckboxCell done={comprasDone} onClick={() => toggleObl(client.id, oblTypeCompras, oblMapCompras)} />
+                        </td>
+                        <td className="text-center px-3 py-3">
+                          <CheckboxCell done={efaturaDone} onClick={() => toggleObl(client.id, oblTypeEfatura, oblMapEfatura)} />
+                        </td>
+                      </>
+                    ) : (
+                      <td className="text-center px-3 py-3">
+                        <CheckboxCell done={done} onClick={() => toggleDone(client.id)} />
+                      </td>
+                    )}
                   </tr>
                 );
               })}
               {filteredClients.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
+                <tr><td colSpan={isTIiva ? 5 : 4} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
               )}
             </tbody>
           </table>
