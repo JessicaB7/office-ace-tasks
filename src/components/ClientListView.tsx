@@ -146,6 +146,7 @@ const ClientListView = () => {
         seguranca_social: form.seguranca_social || null,
         pag_seguranca_social: form.pag_seguranca_social || null,
         iva: form.iva || null,
+        recapitulativa: form.recapitulativa || null,
         faturacao: form.faturacao || null,
         saft: form.saft || null,
       };
