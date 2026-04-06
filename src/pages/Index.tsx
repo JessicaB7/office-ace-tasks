@@ -7,6 +7,7 @@ import ClientListView from "@/components/ClientListView";
 import CollaboratorListView from "@/components/CollaboratorListView";
 import FiscalCalendarView from "@/components/FiscalCalendarView";
 import ObrigacoesView from "@/components/ObrigacoesView";
+import ContabilidadesView from "@/components/ContabilidadesView";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("dashboard");
@@ -30,6 +31,7 @@ const Index = () => {
         {activeView === "dashboard" && <DashboardView />}
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
+        {activeView.startsWith("contabilidades") && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} />}
         {activeView === "clients" && <ClientListView />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}
