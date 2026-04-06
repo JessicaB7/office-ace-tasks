@@ -131,8 +131,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         list = activeClients.filter((c: any) => hasSalarios(c));
         break;
       case "SS_TI":
-        list = activeClients.filter((c: any) => isTI(c) && !hasSalarios(c));
-        if (subFilter !== "all") list = list.filter((c: any) => c.pag_seguranca_social === subFilter);
+        if (ssTiTab === "SS_TI_DT") {
+          list = activeClients.filter((c: any) => isTI(c));
+          if (subFilter !== "all") list = list.filter((c: any) => c.seguranca_social === subFilter);
+        } else {
+          list = activeClients.filter((c: any) => isTI(c) && !hasSalarios(c));
+          if (subFilter !== "all") list = list.filter((c: any) => c.pag_seguranca_social === subFilter);
+        }
         break;
       case "IVA":
         list = activeClients.filter((c: any) => c.iva && c.iva !== "");
