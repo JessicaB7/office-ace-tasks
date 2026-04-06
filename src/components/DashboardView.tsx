@@ -11,25 +11,26 @@ interface FiscalDeadline {
   day: number;
   months: number[] | null;
   refType?: "month" | "quarter";
-  obligationType?: string; // maps to monthly_obligations.obligation_type
-  overrides?: Record<number, number>; // month(1-based) → day override
+  obligationType?: string;
+  checkExtra?: boolean; // true = check extra_done instead of status
+  overrides?: Record<number, number>;
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 } },
-  { title: "DMR AT - Guia", day: 10, months: null },
-  { title: "DMR SS - Guia", day: 10, months: null },
-  { title: "DMR AT - Pagamento", day: 20, months: null },
-  { title: "DMR SS - Pagamento", day: 20, months: null },
-  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month" },
-  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month" },
-  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
-  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter" },
+  { title: "DMR AT - Guia", day: 10, months: null, obligationType: "DMR_AT" },
+  { title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS" },
+  { title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true },
+  { title: "DMR SS - Pagamento", day: 20, months: null, obligationType: "DMR_SS", checkExtra: true },
+  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA" },
+  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa" },
+  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA" },
+  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa" },
   { title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte" },
   { title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI" },
   { title: "Salários", day: 25, months: null, obligationType: "salarios" },
-  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] },
-  { title: "SS TI - Declaração Trimestral", day: 30, months: [4] },
+  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10], obligationType: "SS_TI_DT" },
+  { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT" },
 ];
 
 const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string }> = {
@@ -59,22 +60,31 @@ const DashboardView = () => {
   );
 
   // Count pending obligations per type and track which clients are pending/done
+  // Build a unique key per deadline entry (type + checkExtra) for obligation data
   const obligationData = useMemo(() => {
     const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string }[]; doneClients: { id: string; name: string }[] }> = {};
     const activeClients = clients.filter((c: any) => c.active);
 
     FISCAL_DEADLINES.forEach((dl) => {
       if (!dl.obligationType) return;
-      if (data[dl.obligationType]) return;
+      const key = dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType;
+      if (data[key]) return;
       const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
-      const doneClientIds = new Set(typeObligations.filter((o: any) => o.status === "concluida").map((o: any) => o.client_id));
+
+      let doneClientIds: Set<string>;
+      if (dl.checkExtra) {
+        doneClientIds = new Set(typeObligations.filter((o: any) => o.extra_done).map((o: any) => o.client_id));
+      } else {
+        doneClientIds = new Set(typeObligations.filter((o: any) => o.status === "concluida").map((o: any) => o.client_id));
+      }
+
       const pendingClients = activeClients
         .filter((c: any) => !doneClientIds.has(c.id))
         .map((c: any) => ({ id: c.id, name: c.name }));
       const doneClients = activeClients
         .filter((c: any) => doneClientIds.has(c.id))
         .map((c: any) => ({ id: c.id, name: c.name }));
-      data[dl.obligationType] = {
+      data[key] = {
         total: activeClients.length,
         done: doneClientIds.size,
         pendingClients,
@@ -98,7 +108,7 @@ const DashboardView = () => {
     const month1 = monthIndex + 1;
     const daysInMonth = new Date(today.getFullYear(), monthIndex + 1, 0).getDate();
 
-    const result: { title: string; date: Date; obligationType?: string }[] = [];
+    const result: { title: string; date: Date; obligationKey?: string }[] = [];
 
     FISCAL_DEADLINES.forEach((dl) => {
       if (dl.months === null || dl.months.includes(month1)) {
@@ -114,7 +124,10 @@ const DashboardView = () => {
           } else if (dl.refType === "quarter") {
             title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
           }
-          result.push({ title, date: deadlineDate, obligationType: dl.obligationType });
+          const obligationKey = dl.obligationType
+            ? (dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType)
+            : undefined;
+          result.push({ title, date: deadlineDate, obligationKey });
         }
       }
     });
@@ -183,11 +196,11 @@ const DashboardView = () => {
         <div className="space-y-1">
           {weekDeadlines.length === 0 && <p className="text-sm text-muted-foreground">Sem prazos fiscais esta semana</p>}
           {weekDeadlines.map((dl, idx) => {
-            const info = dl.obligationType && obligationData[dl.obligationType]
-              ? obligationData[dl.obligationType]
+            const info = dl.obligationKey && obligationData[dl.obligationKey]
+              ? obligationData[dl.obligationKey]
               : null;
             const pending = info ? info.total - info.done : null;
-            const expandKey = `${dl.obligationType}-${idx}`;
+            const expandKey = `${dl.obligationKey}-${idx}`;
             const isExpanded = expandedType === expandKey;
             return (
               <div key={idx}>
