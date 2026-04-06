@@ -26,6 +26,13 @@ const obrigacoesSubItems = [
   { id: "obrigacoes_emissao_faturas", label: "Emissão de Faturas" },
 ];
 
+const contabilidadesSubItems = [
+  { id: "contabilidades_TI_isento", label: "TI Simplificado - Isento IVA" },
+  { id: "contabilidades_TI_iva", label: "TI Simplificado - Reg. IVA" },
+  { id: "contabilidades_organizada", label: "Contabilidade Organizada" },
+  { id: "contabilidades_empresas", label: "Empresas" },
+];
+
 const bottomNavItems = [
   { id: "clients", label: "Clientes", icon: Building2 },
   { id: "collaborators", label: "Colaboradores", icon: Users },
