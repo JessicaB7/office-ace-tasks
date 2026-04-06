@@ -64,6 +64,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
   const upsert = useUpsertObligation();
+  const upsertClient = useUpsertClient();
 
   useEffect(() => {
     if (subPage) {
