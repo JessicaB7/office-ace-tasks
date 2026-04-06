@@ -362,6 +362,55 @@ const DashboardView = () => {
           })}
         </div>
       </div>
+      {/* Tarefas por Responsável */}
+      <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "480ms" }}>
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold">Tarefas por Responsável</h3>
+        </div>
+        <div className="space-y-4">
+          {collaborators.filter(c => c.active).map((collab) => {
+            const collabTasks = tasks.filter((t: any) => t.collaborator_id === collab.id && t.status !== "cancelada");
+            const pending = collabTasks.filter((t: any) => t.status === "pendente").length;
+            const inProgress = collabTasks.filter((t: any) => t.status === "em_progresso").length;
+            const done = collabTasks.filter((t: any) => t.status === "concluida").length;
+            if (collabTasks.length === 0) return null;
+            return (
+              <div key={collab.id} className="border rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 bg-muted/30">
+                  <span className="font-medium text-sm">{collab.name}</span>
+                  <div className="flex items-center gap-2">
+                    {pending > 0 && <span className="text-[10px] font-semibold bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">{pending} pendente{pending > 1 ? "s" : ""}</span>}
+                    {inProgress > 0 && <span className="text-[10px] font-semibold bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">{inProgress} em progresso</span>}
+                    {done > 0 && <span className="text-[10px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-full">{done} concluída{done > 1 ? "s" : ""}</span>}
+                  </div>
+                </div>
+                <div className="divide-y">
+                  {collabTasks.filter((t: any) => t.status !== "concluida").map((task: any) => (
+                    <div key={task.id} className="flex items-center justify-between px-4 py-2 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{task.title}</p>
+                        <p className="text-xs text-muted-foreground">{task.clients?.name || "—"} · {CATEGORY_LABELS[task.category as TaskCategory]}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${task.status === "pendente" ? "bg-warning/15 text-warning" : "bg-blue-100 text-blue-600"}`}>
+                          {STATUS_LABELS[task.status as TaskStatus]}
+                        </span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(task.due_date).toLocaleDateString("pt-PT")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {collaborators.filter(c => c.active).every((collab) => 
+            tasks.filter((t: any) => t.collaborator_id === collab.id && t.status !== "cancelada").length === 0
+          ) && <p className="text-sm text-muted-foreground">Sem tarefas atribuídas</p>}
+        </div>
+      </div>
     </div>
   );
 };
