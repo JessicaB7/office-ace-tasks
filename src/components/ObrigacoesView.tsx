@@ -103,6 +103,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         return fmtDeadline(20, d.m, d.y);
       }
       case "IVA_recapitulativa": {
+        if (subFilter === "Trimestral") {
+          const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
+          const d = addMonths(qEnd, year, 2);
+          return fmtDeadline(20, d.m, d.y);
+        }
         const d = addMonths(month, year, 2);
         return fmtDeadline(20, d.m, d.y);
       }
