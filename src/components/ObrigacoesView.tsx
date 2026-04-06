@@ -371,7 +371,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       )}
 
       {/* IVA collaborator tabs */}
-      {isIVA && ivaCollabData.length > 0 && (
+      {(isIVA || isIVARecap) && ivaCollabData.length > 0 && (
         <div className="flex gap-1 overflow-x-auto pb-1 border-b">
           {ivaCollabData.map((col) => (
             <button key={col.id} onClick={() => setCollabFilter(collabFilter === col.id ? "all" : col.id)}
