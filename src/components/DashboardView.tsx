@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
-import { useTasks, useMonthlyObligations, useClients } from "@/hooks/useSupabaseQuery";
-import { STATUS_LABELS, type TaskStatus } from "@/types/database";
-import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays } from "lucide-react";
+import { useTasks, useMonthlyObligations, useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
+import { STATUS_LABELS, CATEGORY_LABELS, PRIORITY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
+import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays, Users } from "lucide-react";
 
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const QUARTER_REF: Record<number, string> = { 1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT" };
