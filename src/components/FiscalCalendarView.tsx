@@ -258,7 +258,7 @@ const FiscalCalendarView = () => {
 
       <TaskFormDialog
         open={taskDialogOpen}
-        task={editingTask?._prefillDate ? { ...null, due_date: editingTask._prefillDate } : editingTask?.id ? editingTask : null}
+        task={editingTask?._prefillDate ? { due_date: editingTask._prefillDate } : editingTask?.id ? editingTask : null}
         onClose={() => { setTaskDialogOpen(false); setEditingTask(null); }}
       />
     </div>
