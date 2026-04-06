@@ -44,6 +44,13 @@ const FATURACAO_OPTIONS = [
   { value: "Não Aplicável", label: "Não aplicável" },
 ];
 
+const RECAPITULATIVA_OPTIONS = [
+  { value: "", label: "—" },
+  { value: "Mensal", label: "Mensal" },
+  { value: "Trimestral", label: "Trimestral" },
+  { value: "Não Aplicável", label: "Não Aplicável" },
+];
+
 const SAFT_OPTIONS = [
   { value: "", label: "—" },
   { value: "Automático", label: "Automático" },
