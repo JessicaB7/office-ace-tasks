@@ -53,12 +53,39 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const previousCollaboratorId = task?.collaborator_id || null;
+      const newCollaboratorId = form.collaborator_id || null;
+
       await upsert.mutateAsync({
         ...form,
         client_id: form.client_id || null,
-        collaborator_id: form.collaborator_id || null,
+        collaborator_id: newCollaboratorId,
         ...(task?.id ? { id: task.id } : {}),
       });
+
+      // Send email if collaborator was newly assigned or changed
+      if (newCollaboratorId && newCollaboratorId !== previousCollaboratorId) {
+        const collaborator = collaborators.find(c => c.id === newCollaboratorId);
+        const client = clients.find(c => c.id === form.client_id);
+        if (collaborator?.email) {
+          supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "task-assignment",
+              recipientEmail: collaborator.email,
+              idempotencyKey: `task-assign-${task?.id || crypto.randomUUID()}-${newCollaboratorId}`,
+              templateData: {
+                collaboratorName: collaborator.name,
+                taskTitle: form.title,
+                clientName: client?.name || undefined,
+                dueDate: new Date(form.due_date).toLocaleDateString("pt-PT"),
+                priority: PRIORITY_LABELS[form.priority],
+                category: CATEGORY_LABELS[form.category],
+              },
+            },
+          }).catch(err => console.error("Failed to send assignment email:", err));
+        }
+      }
+
       onClose();
       toast({ title: isEditing ? "Tarefa atualizada" : "Tarefa criada", description: form.title });
     } catch (err: any) {
