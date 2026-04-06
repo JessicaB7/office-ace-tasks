@@ -393,6 +393,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
                     {showSaftExtra && (
                       <td className="text-center px-3 py-3">
+                        <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
+                      </td>
+                    )}
+                    {showSaftExtra && (
+                      <td className="text-center px-3 py-3">
                         {showExtraForClient ? (
                           <button onClick={() => toggleExtra(client.id)} disabled={upsert.isPending}
                             className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-colors mx-auto",
@@ -400,11 +405,6 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                             {isExtraDone && <Check className="w-4 h-4" />}
                           </button>
                         ) : <span className="text-muted-foreground/30">—</span>}
-                      </td>
-                    )}
-                    {showSaftExtra && (
-                      <td className="text-center px-3 py-3">
-                        <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
                     )}
                     {showGuiaPagamento && (
