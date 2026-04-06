@@ -319,6 +319,48 @@ const DashboardView = () => {
           })}
         </div>
       </div>
+
+      {/* Prazos da Próxima Semana */}
+      <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "400ms" }}>
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarDays className="w-4 h-4 text-muted-foreground" />
+          <h3 className="font-semibold">Prazos da Próxima Semana</h3>
+        </div>
+        <div className="space-y-1">
+          {nextWeekDeadlines.length === 0 && <p className="text-sm text-muted-foreground">Sem prazos fiscais na próxima semana</p>}
+          {nextWeekDeadlines.map((dl, idx) => {
+            const info = dl.obligationKey && obligationData[dl.obligationKey]
+              ? obligationData[dl.obligationKey]
+              : null;
+            const pending = info ? info.total - info.done : null;
+            return (
+              <div key={idx} className="flex items-center justify-between text-sm px-3 py-2.5 rounded-lg">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <CalendarDays className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <p className="font-medium truncate">{dl.title}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  {info && (
+                    <>
+                      <span className="text-[10px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
+                        {info.done} ✓
+                      </span>
+                      {pending !== null && pending > 0 && (
+                        <span className="text-[10px] font-semibold bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">
+                          {pending} ○
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <span className="text-muted-foreground text-xs whitespace-nowrap">
+                    {dl.date.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric" })}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
