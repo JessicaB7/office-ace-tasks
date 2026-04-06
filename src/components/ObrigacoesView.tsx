@@ -541,6 +541,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         </div>
       </div>
       )}
+      <ClientDetailDialog client={selectedClient} open={!!selectedClient} onClose={() => setSelectedClient(null)} allowDelete={false} />
     </div>
   );
 };
