@@ -254,7 +254,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   );
 
   // Build columns config
-  const leftCheckbox = !isRight && !showGuiaPagamento;
+  const leftCheckbox = !isRight && !showGuiaPagamento && !showSalariosColumns;
 
   return (
     <div className="space-y-5">
