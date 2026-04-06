@@ -44,6 +44,7 @@ const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string 
 };
 
 const DashboardView = () => {
+  const { user } = useAuth();
   const { data: tasks = [], isLoading } = useTasks();
   const { data: clients = [] } = useClients();
   const { data: collaborators = [] } = useCollaborators();
@@ -54,12 +55,24 @@ const DashboardView = () => {
   const referenceMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
   const { data: obligations = [] } = useMonthlyObligations(referenceMonth);
 
-  const statusCounts = tasks.reduce((acc, t: any) => {
+  // Find the collaborator matching the logged-in user's email
+  const currentCollaborator = useMemo(() => {
+    if (!user?.email) return null;
+    return collaborators.find(c => c.email.toLowerCase() === user.email!.toLowerCase()) || null;
+  }, [user, collaborators]);
+
+  // Filter tasks to only show the current collaborator's tasks
+  const myTasks = useMemo(() => {
+    if (!currentCollaborator) return [];
+    return tasks.filter((t: any) => t.collaborator_id === currentCollaborator.id);
+  }, [tasks, currentCollaborator]);
+
+  const statusCounts = myTasks.reduce((acc, t: any) => {
     acc[t.status] = (acc[t.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const overdueTasks = tasks.filter(
+  const overdueTasks = myTasks.filter(
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
