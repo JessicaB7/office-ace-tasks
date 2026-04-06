@@ -364,7 +364,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Enviado</th>
                   </>
                 )}
-                {isRight && !showGuiaPagamento && !showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
+                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
               </tr>
             </thead>
             <tbody>
