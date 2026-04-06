@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
+import { useClients, useUpsertClient, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
 import { Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -64,6 +64,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
   const upsert = useUpsertObligation();
+  const upsertClient = useUpsertClient();
 
   useEffect(() => {
     if (subPage) {
@@ -455,7 +456,23 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                       </td>
                     )}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
-                    {showNotasColumn && <td className="px-4 py-3 text-muted-foreground text-xs">{client.notas_internas || "—"}</td>}
+                    {showNotasColumn && (
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          defaultValue={client.notas_internas || ""}
+                          placeholder="Adicionar nota..."
+                          className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                          onBlur={(e) => {
+                            const val = e.target.value;
+                            if (val !== (client.notas_internas || "")) {
+                              upsertClient.mutate({ id: client.id, name: client.name, notas_internas: val || null });
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                        />
+                      </td>
+                    )}
                     {showSaftExtra && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
