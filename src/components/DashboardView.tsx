@@ -33,6 +33,8 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT" },
 ];
 
+const DASHBOARD_STATUSES: TaskStatus[] = ["pendente", "em_progresso", "concluida"];
+
 const statusConfig: Record<TaskStatus, { icon: typeof Clock; colorClass: string }> = {
   pendente: { icon: Clock, colorClass: "bg-warning/15 text-warning" },
   em_progresso: { icon: CalendarClock, colorClass: "bg-info/15 text-info" },
@@ -94,46 +96,68 @@ const DashboardView = () => {
     return data;
   }, [obligations, clients]);
 
-  // Get current week boundaries (Monday to Sunday)
-  const weekDeadlines = useMemo(() => {
-    const dayOfWeek = (today.getDay() + 6) % 7;
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - dayOfWeek);
+  // Helper to get deadlines for a specific week
+  const getWeekDeadlines = (mondayDate: Date) => {
+    const monday = new Date(mondayDate);
     monday.setHours(0, 0, 0, 0);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    const monthIndex = today.getMonth();
-    const month1 = monthIndex + 1;
-    const daysInMonth = new Date(today.getFullYear(), monthIndex + 1, 0).getDate();
-
     const result: { title: string; date: Date; obligationKey?: string }[] = [];
 
-    FISCAL_DEADLINES.forEach((dl) => {
-      if (dl.months === null || dl.months.includes(month1)) {
-        let day = dl.overrides?.[month1] ?? dl.day;
-        day = Math.min(day, daysInMonth);
-        const deadlineDate = new Date(today.getFullYear(), monthIndex, day);
+    // Check both months that could fall in this week
+    const monthsToCheck = new Set<number>();
+    for (let d = new Date(monday); d <= sunday; d.setDate(d.getDate() + 1)) {
+      monthsToCheck.add(d.getMonth());
+    }
 
-        if (deadlineDate >= monday && deadlineDate <= sunday) {
-          let title = dl.title;
-          if (dl.refType === "month") {
-            const refIdx = (monthIndex - 2 + 12) % 12;
-            title = `${dl.title} (${MONTH_NAMES_SHORT[refIdx]})`;
-          } else if (dl.refType === "quarter") {
-            title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
+    monthsToCheck.forEach((monthIndex) => {
+      const month1 = monthIndex + 1;
+      const yr = monday.getMonth() === 11 && monthIndex === 0 ? monday.getFullYear() + 1 : monday.getFullYear();
+      const daysInMonth = new Date(yr, monthIndex + 1, 0).getDate();
+
+      FISCAL_DEADLINES.forEach((dl) => {
+        if (dl.months === null || dl.months.includes(month1)) {
+          let day = dl.overrides?.[month1] ?? dl.day;
+          day = Math.min(day, daysInMonth);
+          const deadlineDate = new Date(yr, monthIndex, day);
+
+          if (deadlineDate >= monday && deadlineDate <= sunday) {
+            let title = dl.title;
+            if (dl.refType === "month") {
+              const refIdx = (monthIndex - 2 + 12) % 12;
+              title = `${dl.title} (${MONTH_NAMES_SHORT[refIdx]})`;
+            } else if (dl.refType === "quarter") {
+              title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
+            }
+            const obligationKey = dl.obligationType
+              ? (dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType)
+              : undefined;
+            result.push({ title, date: deadlineDate, obligationKey });
           }
-          const obligationKey = dl.obligationType
-            ? (dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType)
-            : undefined;
-          result.push({ title, date: deadlineDate, obligationKey });
         }
-      }
+      });
     });
 
     return result.sort((a, b) => a.date.getTime() - b.date.getTime());
+  };
+
+  const currentMonday = useMemo(() => {
+    const dayOfWeek = (today.getDay() + 6) % 7;
+    const m = new Date(today);
+    m.setDate(today.getDate() - dayOfWeek);
+    return m;
   }, []);
+
+  const nextMonday = useMemo(() => {
+    const m = new Date(currentMonday);
+    m.setDate(m.getDate() + 7);
+    return m;
+  }, [currentMonday]);
+
+  const weekDeadlines = useMemo(() => getWeekDeadlines(currentMonday), [currentMonday]);
+  const nextWeekDeadlines = useMemo(() => getWeekDeadlines(nextMonday), [nextMonday]);
 
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
@@ -145,7 +169,7 @@ const DashboardView = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {(Object.keys(STATUS_LABELS) as TaskStatus[]).map((status, i) => {
+        {DASHBOARD_STATUSES.map((status, i) => {
           const config = statusConfig[status];
           const Icon = config.icon;
           return (
@@ -290,6 +314,48 @@ const DashboardView = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Prazos da Próxima Semana */}
+      <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "400ms" }}>
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarDays className="w-4 h-4 text-muted-foreground" />
+          <h3 className="font-semibold">Prazos da Próxima Semana</h3>
+        </div>
+        <div className="space-y-1">
+          {nextWeekDeadlines.length === 0 && <p className="text-sm text-muted-foreground">Sem prazos fiscais na próxima semana</p>}
+          {nextWeekDeadlines.map((dl, idx) => {
+            const info = dl.obligationKey && obligationData[dl.obligationKey]
+              ? obligationData[dl.obligationKey]
+              : null;
+            const pending = info ? info.total - info.done : null;
+            return (
+              <div key={idx} className="flex items-center justify-between text-sm px-3 py-2.5 rounded-lg">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <CalendarDays className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <p className="font-medium truncate">{dl.title}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  {info && (
+                    <>
+                      <span className="text-[10px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
+                        {info.done} ✓
+                      </span>
+                      {pending !== null && pending > 0 && (
+                        <span className="text-[10px] font-semibold bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">
+                          {pending} ○
+                        </span>
+                      )}
+                    </>
+                  )}
+                  <span className="text-muted-foreground text-xs whitespace-nowrap">
+                    {dl.date.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric" })}
+                  </span>
+                </div>
               </div>
             );
           })}
