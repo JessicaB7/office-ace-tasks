@@ -108,7 +108,7 @@ const DashboardView = () => {
     const month1 = monthIndex + 1;
     const daysInMonth = new Date(today.getFullYear(), monthIndex + 1, 0).getDate();
 
-    const result: { title: string; date: Date; obligationType?: string }[] = [];
+    const result: { title: string; date: Date; obligationKey?: string }[] = [];
 
     FISCAL_DEADLINES.forEach((dl) => {
       if (dl.months === null || dl.months.includes(month1)) {
@@ -124,7 +124,10 @@ const DashboardView = () => {
           } else if (dl.refType === "quarter") {
             title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
           }
-          result.push({ title, date: deadlineDate, obligationType: dl.obligationType });
+          const obligationKey = dl.obligationType
+            ? (dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType)
+            : undefined;
+          result.push({ title, date: deadlineDate, obligationKey });
         }
       }
     });
