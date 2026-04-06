@@ -30,6 +30,7 @@ interface FiscalDeadline {
   title: string;
   day: number;
   months: number[] | null;
+  showRefMonth?: boolean;
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
