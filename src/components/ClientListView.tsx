@@ -103,13 +103,6 @@ const ClientListView = () => {
   const filtered = clients.filter((c: any) => {
     if (filterTipo !== "all" && c.tipo_contabilidade !== filterTipo) return false;
     if (filterIva !== "all" && (c.iva || "") !== filterIva) return false;
-    if (selectedCollab !== "all") {
-      if (selectedCollab === "none") {
-        if (c.responsavel_id) return false;
-      } else {
-        if (c.responsavel_id !== selectedCollab) return false;
-      }
-    }
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !(c.nif || "").includes(search)) return false;
     return c.active;
   });
