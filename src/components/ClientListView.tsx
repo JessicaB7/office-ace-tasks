@@ -125,6 +125,7 @@ const ClientListView = () => {
       seguranca_social: c.seguranca_social || "",
       pag_seguranca_social: c.pag_seguranca_social || "",
       iva: c.iva || "",
+      recapitulativa: c.recapitulativa || "",
       faturacao: c.faturacao || "",
       saft: c.saft || "",
     });
