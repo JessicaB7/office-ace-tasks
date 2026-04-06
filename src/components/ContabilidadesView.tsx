@@ -141,8 +141,9 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         list = list.filter((c: any) => c.responsavel_id === collabFilter);
       }
     }
-    if (hasIvaTabs && subFilter !== "all") {
-      list = list.filter((c: any) => c.iva === subFilter);
+    if (hasIvaTabs && subFilter !== "all" && config.subFilters) {
+      const sf = config.subFilters.find((f) => f.value === subFilter);
+      if (sf) list = list.filter(sf.match);
     }
     if (search) {
       const q = search.toLowerCase();
