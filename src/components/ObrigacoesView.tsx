@@ -348,8 +348,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tipo</th>
                 {isSSTI && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Enquadramento SS</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
-                {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Entregue</th>}
+                {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
                 {showGuiaPagamento && (
                   <>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Guia</th>
@@ -378,7 +378,12 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <td className={cn("px-4 py-3 font-medium", rowDone && "line-through text-muted-foreground")}>{client.name}</td>
                     {showNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3">
-                      <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">{client.tipo_contabilidade || "—"}</span>
+                      <span className={cn("text-xs font-medium px-2 py-0.5 rounded",
+                        client.tipo_contabilidade === "SQ" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
+                        client.tipo_contabilidade === "TI CO" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" :
+                        client.tipo_contabilidade === "TI RS" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" :
+                        "bg-secondary"
+                      )}>{client.tipo_contabilidade || "—"}</span>
                     </td>
                     {isSSTI && (
                       <td className="px-4 py-3">
@@ -388,6 +393,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
                     {showSaftExtra && (
                       <td className="text-center px-3 py-3">
+                        <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
+                      </td>
+                    )}
+                    {showSaftExtra && (
+                      <td className="text-center px-3 py-3">
                         {showExtraForClient ? (
                           <button onClick={() => toggleExtra(client.id)} disabled={upsert.isPending}
                             className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-colors mx-auto",
@@ -395,11 +405,6 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                             {isExtraDone && <Check className="w-4 h-4" />}
                           </button>
                         ) : <span className="text-muted-foreground/30">—</span>}
-                      </td>
-                    )}
-                    {showSaftExtra && (
-                      <td className="text-center px-3 py-3">
-                        <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
                     )}
                     {showGuiaPagamento && (
