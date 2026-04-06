@@ -69,7 +69,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   useEffect(() => {
     if (subPage) {
       setActiveTab(subPage);
-      setSubFilter("all");
+      setSubFilter(subPage === "IVA_recapitulativa" || subPage === "IVA" ? "Mensal" : "all");
       setCollabFilter("all");
       setSearch("");
       if (subPage === "DMR") setDmrTab("DMR_AT");
