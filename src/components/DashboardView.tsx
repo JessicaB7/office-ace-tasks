@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useTasks, useMonthlyObligations, useClients } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, type TaskStatus } from "@/types/database";
 import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays } from "lucide-react";
