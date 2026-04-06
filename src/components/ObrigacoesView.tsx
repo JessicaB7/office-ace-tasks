@@ -3,6 +3,7 @@ import { useClients, useUpsertClient, useCollaborators, useMonthlyObligations, u
 import { Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import ClientDetailDialog from "@/components/ClientDetailDialog";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const SAFT_GROUPS = ["Automático", "A entregar", "Não Aplicável"];
@@ -59,6 +60,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const [ssTiTab, setSsTiTab] = useState<"SS_TI" | "SS_TI_DT">("SS_TI");
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [selectedClient, setSelectedClient] = useState<any>(null);
 
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
@@ -458,7 +460,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
                     )}
-                    <td className={cn("px-4 py-3 font-medium", rowDone && "line-through text-muted-foreground")}>{client.name}</td>
+                    <td className={cn("px-4 py-3 font-medium", rowDone && "line-through text-muted-foreground")}>
+                      <button type="button" onClick={() => setSelectedClient(client)} className="hover:underline text-left">
+                        {client.name}
+                      </button>
+                    </td>
                     {showNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3">
                       <span className={cn("text-xs font-medium px-2 py-0.5 rounded",
@@ -535,6 +541,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         </div>
       </div>
       )}
+      <ClientDetailDialog client={selectedClient} open={!!selectedClient} onClose={() => setSelectedClient(null)} allowDelete={false} />
     </div>
   );
 };
