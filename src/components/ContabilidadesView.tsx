@@ -27,6 +27,10 @@ const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     hasIvaTabs: true,
     hideNif: true,
     columns: ["Vendas", "Compras", "E-Fatura"],
+    subFilters: [
+      { value: "Mensal", label: "Mensal", match: (c) => c.iva === "Mensal" },
+      { value: "Trimestral", label: "Trimestral", match: (c) => c.iva === "Trimestral" },
+    ],
   },
   organizada: {
     label: "Contabilidade Organizada",
