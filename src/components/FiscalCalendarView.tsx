@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { useTasks, useFiscalDeadlines } from "@/hooks/useSupabaseQuery";
-import { CATEGORY_LABELS, STATUS_LABELS, type TaskCategory } from "@/types/database";
+import { useTasks } from "@/hooks/useSupabaseQuery";
+import { type TaskCategory } from "@/types/database";
 import { ChevronLeft, ChevronRight, CalendarDays, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,15 +23,46 @@ const categoryColors: Record<TaskCategory, string> = {
   outro: "bg-gray-500",
 };
 
+// Deadlines based on obligation rules
+interface FiscalDeadline {
+  title: string;
+  day: number;
+  months: number[] | null; // null = every month
+}
+
+const FISCAL_DEADLINES: FiscalDeadline[] = [
+  { title: "SAFT", day: 5, months: null },
+  { title: "IVA Periódica Mensal", day: 20, months: null },
+  { title: "Recapitulativa Mensal", day: 20, months: null },
+  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] }, // Feb, May, Aug, Nov
+  { title: "Recapitulativa Trimestral", day: 20, months: [2, 5, 8, 11] },
+  { title: "Retenção na Fonte", day: 20, months: null },
+  { title: "SS TI - Pagamento", day: 20, months: null },
+  { title: "Salários", day: 25, months: null },
+  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] }, // Jan=31, Jul=31, Oct=31
+  { title: "SS TI - Declaração Trimestral", day: 30, months: [4] }, // Apr=30
+];
+
+const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number) => {
+  const month1 = monthIndex + 1; // 1-based
+  const result: { day: number; title: string }[] = [];
+  FISCAL_DEADLINES.forEach((dl) => {
+    if (dl.months === null || dl.months.includes(month1)) {
+      const day = Math.min(dl.day, daysInMonth);
+      result.push({ day, title: dl.title });
+    }
+  });
+  return result;
+};
+
 const FiscalCalendarView = () => {
   const { data: tasks = [] } = useTasks();
-  const { data: deadlines = [] } = useFiscalDeadlines();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7; // Monday=0
+  const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
 
   const tasksByDay = useMemo(() => {
     const map: Record<number, any[]> = {};
@@ -47,17 +78,14 @@ const FiscalCalendarView = () => {
   }, [tasks, year, month]);
 
   const deadlinesByDay = useMemo(() => {
-    const map: Record<number, any[]> = {};
-    deadlines.forEach((dl) => {
-      if (dl.month === null || dl.month === month + 1) {
-        if (dl.day_of_month <= daysInMonth) {
-          if (!map[dl.day_of_month]) map[dl.day_of_month] = [];
-          map[dl.day_of_month].push(dl);
-        }
-      }
+    const map: Record<number, { day: number; title: string }[]> = {};
+    const dls = getDeadlinesForMonth(month, daysInMonth);
+    dls.forEach((dl) => {
+      if (!map[dl.day]) map[dl.day] = [];
+      map[dl.day].push(dl);
     });
     return map;
-  }, [deadlines, month, daysInMonth]);
+  }, [month, daysInMonth]);
 
   const prev = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const next = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
@@ -69,16 +97,6 @@ const FiscalCalendarView = () => {
       <div>
         <h2 className="text-2xl font-bold">Calendário Fiscal</h2>
         <p className="text-muted-foreground text-sm mt-1">Prazos e obrigações fiscais</p>
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-3">
-        {(Object.keys(CATEGORY_LABELS) as TaskCategory[]).map((cat) => (
-          <div key={cat} className="flex items-center gap-1.5 text-xs">
-            <span className={cn("w-2.5 h-2.5 rounded-full", categoryColors[cat])} />
-            <span className="text-muted-foreground">{CATEGORY_LABELS[cat]}</span>
-          </div>
-        ))}
       </div>
 
       {/* Month nav */}
@@ -111,9 +129,9 @@ const FiscalCalendarView = () => {
                   {hasOverdue && <AlertTriangle className="w-3 h-3 text-destructive" />}
                 </div>
                 <div className="space-y-0.5">
-                  {dayDeadlines.map((dl) => (
-                    <div key={dl.id} className="flex items-center gap-1 text-[10px]">
-                      <CalendarDays className="w-2.5 h-2.5 text-destructive" />
+                  {dayDeadlines.map((dl, idx) => (
+                    <div key={idx} className="flex items-center gap-1 text-[10px]">
+                      <CalendarDays className="w-2.5 h-2.5 text-destructive shrink-0" />
                       <span className="truncate font-medium text-destructive">{dl.title}</span>
                     </div>
                   ))}
