@@ -374,7 +374,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 const pagamentoDone = obl?.extra_done === true;
                 const isExtraDone = obl?.extra_done === true;
                 const showExtraForClient = showSaftExtra && needsExtra(client);
-                const rowDone = showGuiaPagamento ? (guiaDone && pagamentoDone) : guiaDone;
+                const rowDone = showGuiaPagamento ? (guiaDone && pagamentoDone) : showSalariosColumns ? (guiaDone && pagamentoDone) : guiaDone;
 
                 return (
                   <tr key={client.id} className={cn("border-b last:border-0 transition-colors", rowDone ? "bg-green-50 dark:bg-green-950/20" : "hover:bg-muted/30")}>
