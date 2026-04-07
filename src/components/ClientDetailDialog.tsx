@@ -237,6 +237,14 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                 {FATURACAO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
+            {form.faturacao === "Emitir" && (
+              <div>
+                <label className="text-sm font-medium mb-1 block">Frequência <span className="text-destructive">*</span></label>
+                <select required value={form.faturacao_frequencia} onChange={(e) => set("faturacao_frequencia", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                  {FATURACAO_FREQ_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium mb-1 block">SAFT <span className="text-destructive">*</span></label>
               <select required value={form.saft} onChange={(e) => set("saft", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
