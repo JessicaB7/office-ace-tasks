@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useClients, useCollaborators, useUpsertClient, useDeleteClient } from "@/hooks/useSupabaseQuery";
-import { Search, Plus, Building2, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useClients } from "@/hooks/useSupabaseQuery";
+import { Search, Plus, Building2 } from "lucide-react";
+import ClientDetailDialog from "@/components/ClientDetailDialog";
+import { cn } from "@/lib/utils";
 
 const TIPO_CONTAB_LABELS: Record<string, string> = {
   SQ: "Empresa",
@@ -9,104 +10,35 @@ const TIPO_CONTAB_LABELS: Record<string, string> = {
   "TI CO": "TI Organizado",
 };
 
-const SALARIOS_OPTIONS = [
-  { value: "", label: "Não aplicável" },
-  { value: "Sim até dia 25", label: "Até dia 25" },
-  { value: "Sim até ao fim do mês", label: "Até ao fim do mês" },
-];
-
 const TIPO_CONTAB_OPTIONS = [
   { value: "SQ", label: "Empresa (SQ)" },
   { value: "TI RS", label: "TI Simplificado" },
   { value: "TI CO", label: "TI Organizado" },
 ];
 
-const SS_OPTIONS = [
-  { value: "", label: "— Selecionar —" },
-  { value: "Mensal", label: "Mensal" },
-  { value: "Trimestral", label: "Trimestral" },
-  { value: "Contabilidade Organizada", label: "Cont. Organizada" },
-  { value: "TCO", label: "TCO" },
-  { value: "Isento", label: "Isento" },
-];
-
 const IVA_OPTIONS = [
-  { value: "", label: "— Selecionar —" },
   { value: "Mensal", label: "Mensal" },
   { value: "Trimestral", label: "Trimestral" },
   { value: "Art. 9º", label: "Isenção Art. 9º" },
   { value: "Art.53º", label: "Isenção Art. 53º" },
 ];
 
-const FATURACAO_OPTIONS = [
-  { value: "", label: "— Selecionar —" },
-  { value: "Emitir", label: "Emitir" },
-  { value: "Não Aplicável", label: "Não aplicável" },
-];
-
-const FATURACAO_FREQ_OPTIONS = [
-  { value: "", label: "— Selecionar —" },
-  { value: "Semanal", label: "Semanal" },
-  { value: "Mensal", label: "Mensal" },
-  { value: "Pontual", label: "Pontual" },
-];
-
-const RECAPITULATIVA_OPTIONS = [
-  { value: "", label: "— Selecionar —" },
-  { value: "Mensal", label: "Mensal" },
-  { value: "Trimestral", label: "Trimestral" },
-  { value: "Não Aplicável", label: "Não Aplicável" },
-];
-
-const SAFT_OPTIONS = [
-  { value: "", label: "— Selecionar —" },
-  { value: "Automático", label: "Automático" },
-  { value: "A entregar", label: "A entregar" },
-  { value: "Não Aplicável", label: "Não Aplicável" },
-];
-
-interface ClientForm {
-  name: string;
-  nif: string;
-  tipo_contabilidade: string;
-  salarios: string;
-  mensalidade: string;
-  inicio_contrato: string;
-  responsavel_id: string;
-  seguranca_social: string;
-  pag_seguranca_social: string;
-  iva: string;
-  recapitulativa: string;
-  faturacao: string;
-  faturacao_frequencia: string;
-  saft: string;
-}
-
-const PAG_SS_OPTIONS = [
-  { value: "", label: "— Selecionar —" },
-  { value: "Referência", label: "Referência" },
-  { value: "Débito Direto", label: "Débito Direto" },
-  { value: "Não Aplicável", label: "Não Aplicável" },
-];
-
-const emptyForm: ClientForm = {
-  name: "", nif: "", tipo_contabilidade: "SQ", salarios: "", mensalidade: "",
-  inicio_contrato: "", responsavel_id: "",
-  seguranca_social: "", pag_seguranca_social: "", iva: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "", saft: "",
+const tipoContabColor = (tipo: string) => {
+  switch (tipo) {
+    case "SQ": return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300";
+    case "TI CO": return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
+    case "TI RS": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300";
+    default: return "bg-muted text-muted-foreground";
+  }
 };
 
 const ClientListView = () => {
   const { data: clients = [], isLoading } = useClients();
-  const { data: collaborators = [] } = useCollaborators();
-  const upsert = useUpsertClient();
-  const remove = useDeleteClient();
-  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("all");
   const [filterIva, setFilterIva] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState<ClientForm>(emptyForm);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedClient, setSelectedClient] = useState<any | null>(null);
 
   const filtered = clients.filter((c: any) => {
     if (filterTipo !== "all" && c.tipo_contabilidade !== filterTipo) return false;
@@ -115,76 +47,8 @@ const ClientListView = () => {
     return c.active;
   });
 
-  const openNew = () => { setForm(emptyForm); setEditingId(null); setDialogOpen(true); };
-  const openEdit = (c: any) => {
-    setForm({
-      name: c.name, nif: c.nif || "",
-      tipo_contabilidade: c.tipo_contabilidade || "SQ",
-      salarios: c.salarios || "",
-      mensalidade: c.mensalidade ? String(c.mensalidade) : "",
-      inicio_contrato: c.inicio_contrato || "",
-      responsavel_id: c.responsavel_id || "",
-      seguranca_social: c.seguranca_social || "",
-      pag_seguranca_social: c.pag_seguranca_social || "",
-      iva: c.iva || "",
-      recapitulativa: c.recapitulativa || "",
-      faturacao: c.faturacao || "",
-      faturacao_frequencia: c.faturacao_frequencia || "",
-      saft: c.saft || "",
-    });
-    setEditingId(c.id);
-    setDialogOpen(true);
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload: any = {
-        name: form.name, nif: form.nif || null,
-        tipo_contabilidade: form.tipo_contabilidade,
-        salarios: form.salarios || null,
-        mensalidade: form.mensalidade ? parseFloat(form.mensalidade) : null,
-        inicio_contrato: form.inicio_contrato || null,
-        responsavel_id: form.responsavel_id || null,
-        seguranca_social: form.seguranca_social || null,
-        pag_seguranca_social: form.pag_seguranca_social || null,
-        iva: form.iva || null,
-        recapitulativa: form.recapitulativa || null,
-        faturacao: form.faturacao || null,
-        faturacao_frequencia: form.faturacao === "Emitir" ? (form.faturacao_frequencia || null) : null,
-        saft: form.saft || null,
-      };
-      if (editingId) payload.id = editingId;
-      await upsert.mutateAsync(payload);
-      setDialogOpen(false);
-      toast({ title: editingId ? "Cliente atualizado" : "Cliente criado", description: form.name });
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      await remove.mutateAsync(id);
-      setDialogOpen(false);
-      toast({ title: "Cliente eliminado" });
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
-    }
-  };
-
-  const set = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
-
-  const getCollabName = (id: string | null) => {
-    if (!id) return null;
-    const c = collaborators.find((col: any) => col.id === id);
-    return c ? c.name : null;
-  };
-
-  const formatMensalidade = (val: number | null) => {
-    if (!val) return null;
-    return `${val.toFixed(2).replace(".", ",")} €`;
-  };
+  const openNew = () => { setSelectedClient(null); setDialogOpen(true); };
+  const openEdit = (c: any) => { setSelectedClient(c); setDialogOpen(true); };
 
   const activeClients = clients.filter((c: any) => c.active);
 
@@ -200,7 +64,6 @@ const ClientListView = () => {
         </button>
       </div>
 
-
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -212,7 +75,7 @@ const ClientListView = () => {
         </select>
         <select value={filterIva} onChange={(e) => setFilterIva(e.target.value)} className="text-sm rounded-lg border bg-card px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="all">Todos os IVA</option>
-          {IVA_OPTIONS.filter(o => o.value).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {IVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       </div>
 
@@ -232,7 +95,7 @@ const ClientListView = () => {
                     {client.nif && <p className="text-xs text-muted-foreground">NIF: {client.nif}</p>}
                   </div>
                 </div>
-                <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">
+                <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", tipoContabColor(client.tipo_contabilidade))}>
                   {TIPO_CONTAB_LABELS[client.tipo_contabilidade] || client.tipo_contabilidade || "—"}
                 </span>
               </div>
@@ -242,110 +105,11 @@ const ClientListView = () => {
         </div>
       )}
 
-      {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={() => setDialogOpen(false)} />
-          <div className="relative bg-card rounded-2xl border shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
-            <div className="flex items-center justify-between p-5 border-b">
-              <h3 className="text-lg font-bold">{editingId ? "Ficha de Cliente" : "Novo Cliente"}</h3>
-              <button onClick={() => setDialogOpen(false)} className="p-1 rounded-lg hover:bg-muted transition-colors"><X className="w-5 h-5" /></button>
-            </div>
-            <form onSubmit={handleSave} className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="text-sm font-medium mb-1 block">Nome <span className="text-destructive">*</span></label>
-                  <input required value={form.name} onChange={(e) => set("name", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">NIF <span className="text-destructive">*</span></label>
-                  <input required maxLength={9} value={form.nif} onChange={(e) => set("nif", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Tipo de Contabilidade <span className="text-destructive">*</span></label>
-                  <select required value={form.tipo_contabilidade} onChange={(e) => set("tipo_contabilidade", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                    {TIPO_CONTAB_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Início de Contrato <span className="text-destructive">*</span></label>
-                  <input required type="date" value={form.inicio_contrato} onChange={(e) => set("inicio_contrato", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Mensalidade (€) <span className="text-destructive">*</span></label>
-                  <input required type="number" step="0.01" min="0" value={form.mensalidade} onChange={(e) => set("mensalidade", e.target.value)} placeholder="0,00" className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Salários <span className="text-destructive">*</span></label>
-                  <select required value={form.salarios} onChange={(e) => set("salarios", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                    {SALARIOS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Segurança Social <span className="text-destructive">*</span></label>
-                  <select required value={form.seguranca_social} onChange={(e) => set("seguranca_social", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                    {SS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Pag. Segurança Social <span className="text-destructive">*</span></label>
-                  <select required value={form.pag_seguranca_social} onChange={(e) => set("pag_seguranca_social", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                    {PAG_SS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">IVA <span className="text-destructive">*</span></label>
-                  <select required value={form.iva} onChange={(e) => set("iva", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                    {IVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">IVA - Recapitulativa <span className="text-destructive">*</span></label>
-                  <select required value={form.recapitulativa} onChange={(e) => set("recapitulativa", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                    {RECAPITULATIVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Faturação <span className="text-destructive">*</span></label>
-                  <select required value={form.faturacao} onChange={(e) => set("faturacao", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                    {FATURACAO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-                {form.faturacao === "Emitir" && (
-                  <div>
-                    <label className="text-sm font-medium mb-1 block">Frequência <span className="text-destructive">*</span></label>
-                    <select required value={form.faturacao_frequencia} onChange={(e) => set("faturacao_frequencia", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                      {FATURACAO_FREQ_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                  </div>
-                )}
-                <div>
-                  <label className="text-sm font-medium mb-1 block">SAFT <span className="text-destructive">*</span></label>
-                  <select required value={form.saft} onChange={(e) => set("saft", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                    {SAFT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Responsável <span className="text-destructive">*</span></label>
-                  <select required value={form.responsavel_id} onChange={(e) => set("responsavel_id", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                    <option value="">— Selecionar —</option>
-                    {collaborators.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 pt-2">
-                <button type="submit" disabled={upsert.isPending} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
-                  {upsert.isPending ? "A guardar..." : editingId ? "Guardar" : "Criar Cliente"}
-                </button>
-                {editingId && (
-                  <button type="button" onClick={() => handleDelete(editingId)} className="px-4 py-2.5 rounded-lg bg-destructive/10 text-destructive font-medium text-sm hover:bg-destructive/20 transition-colors">
-                    Eliminar
-                  </button>
-                )}
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ClientDetailDialog
+        client={selectedClient}
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+      />
     </div>
   );
 };
