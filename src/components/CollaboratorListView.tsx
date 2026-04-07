@@ -180,6 +180,13 @@ const CollaboratorListView = () => {
                   <input value={form.specialty} onChange={(e) => set("specialty", e.target.value)} placeholder="IRS, IVA, IRC..." className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
                 </div>
               </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5" /> Código de Acesso
+                </label>
+                <input value={form.access_code} onChange={(e) => set("access_code", e.target.value)} placeholder="Código para entrar na plataforma" className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                <p className="text-[11px] text-muted-foreground mt-1">Defina um código para o colaborador aceder à plataforma</p>
+              </div>
               <div className="flex items-center gap-3 pt-2">
                 <button type="submit" disabled={upsert.isPending} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
                   {upsert.isPending ? "A guardar..." : editingId ? "Guardar" : "Criar Colaborador"}
