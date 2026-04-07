@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTasks } from "@/hooks/useSupabaseQuery";
+import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTasks, useClients } from "@/hooks/useSupabaseQuery";
 import type { Collaborator } from "@/types/database";
 import { Search, Plus, UserCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
