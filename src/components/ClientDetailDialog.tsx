@@ -16,7 +16,7 @@ const SALARIOS_OPTIONS = [
 ];
 
 const SS_OPTIONS = [
-  { value: "", label: "—" },
+  { value: "", label: "— Selecionar —" },
   { value: "Mensal", label: "Mensal" },
   { value: "Trimestral", label: "Trimestral" },
   { value: "Contabilidade Organizada", label: "Cont. Organizada" },
@@ -25,7 +25,7 @@ const SS_OPTIONS = [
 ];
 
 const IVA_OPTIONS = [
-  { value: "", label: "—" },
+  { value: "", label: "— Selecionar —" },
   { value: "Mensal", label: "Mensal" },
   { value: "Trimestral", label: "Trimestral" },
   { value: "Art. 9º", label: "Isenção Art. 9º" },
@@ -33,20 +33,20 @@ const IVA_OPTIONS = [
 ];
 
 const RECAPITULATIVA_OPTIONS = [
-  { value: "", label: "—" },
+  { value: "", label: "— Selecionar —" },
   { value: "Mensal", label: "Mensal" },
   { value: "Trimestral", label: "Trimestral" },
   { value: "Não Aplicável", label: "Não Aplicável" },
 ];
 
 const FATURACAO_OPTIONS = [
-  { value: "", label: "—" },
+  { value: "", label: "— Selecionar —" },
   { value: "Emitir", label: "Emitir" },
   { value: "Não Aplicável", label: "Não aplicável" },
 ];
 
 const SAFT_OPTIONS = [
-  { value: "", label: "—" },
+  { value: "", label: "— Selecionar —" },
   { value: "Automático", label: "Automático" },
   { value: "A entregar", label: "A entregar" },
   { value: "Não Aplicável", label: "Não Aplicável" },
