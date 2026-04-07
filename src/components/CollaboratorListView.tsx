@@ -114,7 +114,7 @@ const CollaboratorListView = () => {
             const counts = getTaskCounts(collab.id);
             const clientCounts = getClientCountsByType(collab.id);
             return (
-              <div key={collab.id} onClick={() => openEdit(collab)} className="bg-card rounded-xl border p-5 cursor-pointer hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
+              <div key={collab.id} onClick={() => handleCardClick(collab)} className="bg-card rounded-xl border p-5 cursor-pointer hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
                 <div className="flex items-start gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
                     <UserCircle className="w-5 h-5 text-accent" />
