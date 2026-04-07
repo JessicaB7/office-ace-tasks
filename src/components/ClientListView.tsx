@@ -243,7 +243,7 @@ const ClientListView = () => {
             <form onSubmit={handleSave} className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="text-sm font-medium mb-1 block">Nome</label>
+                  <label className="text-sm font-medium mb-1 block">Nome <span className="text-destructive">*</span></label>
                   <input required value={form.name} onChange={(e) => set("name", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
                 </div>
                 <div>
