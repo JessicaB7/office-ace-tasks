@@ -45,6 +45,13 @@ const FATURACAO_OPTIONS = [
   { value: "Não Aplicável", label: "Não aplicável" },
 ];
 
+const FATURACAO_FREQ_OPTIONS = [
+  { value: "", label: "— Selecionar —" },
+  { value: "Semanal", label: "Semanal" },
+  { value: "Mensal", label: "Mensal" },
+  { value: "Pontual", label: "Pontual" },
+];
+
 const SAFT_OPTIONS = [
   { value: "", label: "— Selecionar —" },
   { value: "Automático", label: "Automático" },
