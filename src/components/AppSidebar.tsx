@@ -34,7 +34,6 @@ const contabilidadesSubItems = [
 ];
 
 const bottomNavItems = [
-  { id: "clients", label: "Clientes", icon: Building2 },
   { id: "collaborators", label: "Colaboradores", icon: Users },
   { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays },
 ];
