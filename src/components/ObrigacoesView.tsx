@@ -376,6 +376,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 case "SS_TI": return ssTiTab === "SS_TI_DT"
                   ? activeClients.filter((c: any) => isTI(c) && c.seguranca_social === opt.value).length
                   : activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.pag_seguranca_social === opt.value).length;
+                case "emissao_faturas": return activeClients.filter((c: any) => c.faturacao === "Emitir" && c.faturacao_frequencia === opt.value).length;
                 default: return 0;
               }
             })();
