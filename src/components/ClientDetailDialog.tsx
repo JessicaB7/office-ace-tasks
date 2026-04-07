@@ -79,6 +79,7 @@ interface ClientForm {
   iva: string;
   recapitulativa: string;
   faturacao: string;
+  faturacao_frequencia: string;
   saft: string;
 }
 
