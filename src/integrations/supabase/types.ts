@@ -102,6 +102,7 @@ export type Database = {
       }
       collaborators: {
         Row: {
+          access_code: string | null
           active: boolean
           created_at: string
           email: string
@@ -113,6 +114,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          access_code?: string | null
           active?: boolean
           created_at?: string
           email: string
@@ -124,6 +126,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          access_code?: string | null
           active?: boolean
           created_at?: string
           email?: string

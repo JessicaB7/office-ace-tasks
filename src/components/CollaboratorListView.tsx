@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTasks, useClients } from "@/hooks/useSupabaseQuery";
+import { supabase } from "@/integrations/supabase/client";
 import type { Collaborator } from "@/types/database";
-import { Search, Plus, UserCircle, X } from "lucide-react";
+import { Search, Plus, UserCircle, X, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const emptyCollab = { name: "", email: "", role: "técnico", specialty: "" };
+const emptyCollab = { name: "", email: "", role: "técnico", specialty: "", access_code: "" };
 
 const CollaboratorListView = () => {
   const { data: collaborators = [], isLoading } = useCollaborators();
@@ -42,12 +43,24 @@ const CollaboratorListView = () => {
   };
 
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
-  const openEdit = (c: Collaborator) => { setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "" }); setEditingId(c.id); setDialogOpen(true); };
+  const openEdit = (c: Collaborator) => { setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "", access_code: (c as any).access_code || "" }); setEditingId(c.id); setDialogOpen(true); };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await upsert.mutateAsync({ ...form, ...(editingId ? { id: editingId } : {}) });
+      const { access_code, ...collabData } = form;
+      const result = await upsert.mutateAsync({ ...collabData, ...(editingId ? { id: editingId } : {}) });
+      const collabId = editingId || result?.id;
+
+      // If access code is set, sync auth user
+      if (access_code && collabId) {
+        const { data, error: fnError } = await supabase.functions.invoke("manage-collaborator-auth", {
+          body: { email: form.email, access_code, collaborator_id: collabId },
+        });
+        if (fnError) throw fnError;
+        if (data?.error) throw new Error(data.error);
+      }
+
       setDialogOpen(false);
       toast({ title: editingId ? "Colaborador atualizado" : "Colaborador criado", description: form.name });
     } catch (err: any) {
@@ -166,6 +179,13 @@ const CollaboratorListView = () => {
                   <label className="text-sm font-medium mb-1 block">Especialidade</label>
                   <input value={form.specialty} onChange={(e) => set("specialty", e.target.value)} placeholder="IRS, IVA, IRC..." className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
                 </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5" /> Código de Acesso
+                </label>
+                <input value={form.access_code} onChange={(e) => set("access_code", e.target.value)} placeholder="Código para entrar na plataforma" className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+                <p className="text-[11px] text-muted-foreground mt-1">Defina um código para o colaborador aceder à plataforma</p>
               </div>
               <div className="flex items-center gap-3 pt-2">
                 <button type="submit" disabled={upsert.isPending} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
