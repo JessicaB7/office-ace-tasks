@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,18 +33,8 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({ 
-          email, 
-          password,
-          options: { emailRedirectTo: window.location.origin }
-        });
-        if (error) throw error;
-        toast({ title: "Conta criada", description: "Verifique o seu email para confirmar a conta." });
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
@@ -99,9 +88,9 @@ const Auth = () => {
             </>
           ) : (
             <>
-              <h2 className="text-lg font-semibold mb-1">{isLogin ? "Entrar" : "Criar Conta"}</h2>
+              <h2 className="text-lg font-semibold mb-1">Entrar</h2>
               <p className="text-sm text-muted-foreground mb-5">
-                {isLogin ? "Aceda à sua conta de colaborador" : "Registe-se como novo colaborador"}
+                Aceda à sua conta de administrador
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -136,33 +125,22 @@ const Auth = () => {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  {isLogin && (
-                    <button
-                      type="button"
-                      onClick={() => setIsForgotPassword(true)}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1.5"
-                    >
-                      Esqueceu a password?
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(true)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1.5"
+                  >
+                    Esqueceu a password?
+                  </button>
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
                   className="w-full px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  {loading ? "A processar..." : isLogin ? "Entrar" : "Criar Conta"}
+                  {loading ? "A processar..." : "Entrar"}
                 </button>
               </form>
-
-              <div className="mt-4 text-center">
-                <button
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {isLogin ? "Não tem conta? Criar conta" : "Já tem conta? Entrar"}
-                </button>
-              </div>
             </>
           )}
         </div>
