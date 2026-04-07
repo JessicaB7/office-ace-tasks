@@ -31,6 +31,16 @@ const CollaboratorListView = () => {
     return { total: collabTasks.length, pending, done };
   };
 
+  const getClientCountsByType = (collabId: string) => {
+    const collabClients = clients.filter(c => c.responsavel_id === collabId && c.active);
+    const byType: Record<string, number> = {};
+    for (const c of collabClients) {
+      const tipo = c.tipo_contabilidade || "Sem tipo";
+      byType[tipo] = (byType[tipo] || 0) + 1;
+    }
+    return { total: collabClients.length, byType };
+  };
+
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
   const openEdit = (c: Collaborator) => { setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "" }); setEditingId(c.id); setDialogOpen(true); };
 
