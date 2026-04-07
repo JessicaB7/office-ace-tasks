@@ -170,73 +170,73 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         <form onSubmit={handleSave} className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="text-sm font-medium mb-1 block">Nome</label>
+              <label className="text-sm font-medium mb-1 block">Nome <span className="text-destructive">*</span></label>
               <input required value={form.name} onChange={(e) => set("name", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">NIF</label>
-              <input maxLength={9} value={form.nif} onChange={(e) => set("nif", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <label className="text-sm font-medium mb-1 block">NIF <span className="text-destructive">*</span></label>
+              <input required maxLength={9} value={form.nif} onChange={(e) => set("nif", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Tipo de Contabilidade</label>
-              <select value={form.tipo_contabilidade} onChange={(e) => set("tipo_contabilidade", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+              <label className="text-sm font-medium mb-1 block">Tipo de Contabilidade <span className="text-destructive">*</span></label>
+              <select required value={form.tipo_contabilidade} onChange={(e) => set("tipo_contabilidade", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 {TIPO_CONTAB_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Início de Contrato</label>
-              <input type="date" value={form.inicio_contrato} onChange={(e) => set("inicio_contrato", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <label className="text-sm font-medium mb-1 block">Início de Contrato <span className="text-destructive">*</span></label>
+              <input required type="date" value={form.inicio_contrato} onChange={(e) => set("inicio_contrato", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Mensalidade (€)</label>
-              <input type="number" step="0.01" min="0" value={form.mensalidade} onChange={(e) => set("mensalidade", e.target.value)} placeholder="0,00" className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
+              <label className="text-sm font-medium mb-1 block">Mensalidade (€) <span className="text-destructive">*</span></label>
+              <input required type="number" step="0.01" min="0" value={form.mensalidade} onChange={(e) => set("mensalidade", e.target.value)} placeholder="0,00" className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Salários</label>
-              <select value={form.salarios} onChange={(e) => set("salarios", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+              <label className="text-sm font-medium mb-1 block">Salários <span className="text-destructive">*</span></label>
+              <select required value={form.salarios} onChange={(e) => set("salarios", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 {SALARIOS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Segurança Social</label>
-              <select value={form.seguranca_social} onChange={(e) => set("seguranca_social", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+              <label className="text-sm font-medium mb-1 block">Segurança Social <span className="text-destructive">*</span></label>
+              <select required value={form.seguranca_social} onChange={(e) => set("seguranca_social", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 {SS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Pag. Segurança Social</label>
-              <select value={form.pag_seguranca_social} onChange={(e) => set("pag_seguranca_social", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+              <label className="text-sm font-medium mb-1 block">Pag. Segurança Social <span className="text-destructive">*</span></label>
+              <select required value={form.pag_seguranca_social} onChange={(e) => set("pag_seguranca_social", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 {PAG_SS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">IVA</label>
-              <select value={form.iva} onChange={(e) => set("iva", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+              <label className="text-sm font-medium mb-1 block">IVA <span className="text-destructive">*</span></label>
+              <select required value={form.iva} onChange={(e) => set("iva", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 {IVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">IVA - Recapitulativa</label>
-              <select value={form.recapitulativa} onChange={(e) => set("recapitulativa", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+              <label className="text-sm font-medium mb-1 block">IVA - Recapitulativa <span className="text-destructive">*</span></label>
+              <select required value={form.recapitulativa} onChange={(e) => set("recapitulativa", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 {RECAPITULATIVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Faturação</label>
-              <select value={form.faturacao} onChange={(e) => set("faturacao", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+              <label className="text-sm font-medium mb-1 block">Faturação <span className="text-destructive">*</span></label>
+              <select required value={form.faturacao} onChange={(e) => set("faturacao", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 {FATURACAO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">SAFT</label>
-              <select value={form.saft} onChange={(e) => set("saft", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+              <label className="text-sm font-medium mb-1 block">SAFT <span className="text-destructive">*</span></label>
+              <select required value={form.saft} onChange={(e) => set("saft", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 {SAFT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Responsável</label>
-              <select value={form.responsavel_id} onChange={(e) => set("responsavel_id", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                <option value="">Sem responsável</option>
+              <label className="text-sm font-medium mb-1 block">Responsável <span className="text-destructive">*</span></label>
+              <select required value={form.responsavel_id} onChange={(e) => set("responsavel_id", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="">— Selecionar —</option>
                 {collaborators.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
