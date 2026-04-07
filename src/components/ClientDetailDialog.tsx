@@ -146,6 +146,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         iva: form.iva || null,
         recapitulativa: form.recapitulativa || null,
         faturacao: form.faturacao || null,
+        faturacao_frequencia: form.faturacao === "Emitir" ? (form.faturacao_frequencia || null) : null,
         saft: form.saft || null,
       };
       if (isEditing) payload.id = client.id;
