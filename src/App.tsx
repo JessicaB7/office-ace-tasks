@@ -13,20 +13,9 @@ import Unsubscribe from "./pages/Unsubscribe.tsx";
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">A carregar...</div>;
   if (!user) return <Navigate to="/auth" replace />;
-  if (!isAdmin) return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="bg-card rounded-2xl border p-8 shadow-sm max-w-sm text-center">
-        <h2 className="text-lg font-semibold mb-2">Acesso Restrito</h2>
-        <p className="text-sm text-muted-foreground mb-4">A sua conta não tem permissões de administrador para aceder a esta aplicação.</p>
-        <button onClick={() => { import("@/integrations/supabase/client").then(m => m.supabase.auth.signOut()); }} className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90">
-          Terminar Sessão
-        </button>
-      </div>
-    </div>
-  );
   return <>{children}</>;
 };
 
