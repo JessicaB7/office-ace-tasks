@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTasks, useClients } from "@/hooks/useSupabaseQuery";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import type { Collaborator } from "@/types/database";
 import { Search, Plus, UserCircle, X, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import CollaboratorDetailDialog from "./CollaboratorDetailDialog";
 
 const emptyCollab = { name: "", email: "", role: "técnico", specialty: "", access_code: "" };
 
