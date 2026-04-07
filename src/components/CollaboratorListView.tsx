@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTasks } from "@/hooks/useSupabaseQuery";
+import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTasks, useClients } from "@/hooks/useSupabaseQuery";
 import type { Collaborator } from "@/types/database";
 import { Search, Plus, UserCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +9,7 @@ const emptyCollab = { name: "", email: "", role: "técnico", specialty: "" };
 const CollaboratorListView = () => {
   const { data: collaborators = [], isLoading } = useCollaborators();
   const { data: tasks = [] } = useTasks();
+  const { data: clients = [] } = useClients();
   const upsert = useUpsertCollaborator();
   const remove = useDeleteCollaborator();
   const { toast } = useToast();
@@ -28,6 +29,16 @@ const CollaboratorListView = () => {
     const pending = collabTasks.filter((t: any) => t.status === "pendente" || t.status === "em_progresso").length;
     const done = collabTasks.filter((t: any) => t.status === "concluida").length;
     return { total: collabTasks.length, pending, done };
+  };
+
+  const getClientCountsByType = (collabId: string) => {
+    const collabClients = clients.filter(c => c.responsavel_id === collabId && c.active);
+    const byType: Record<string, number> = {};
+    for (const c of collabClients) {
+      const tipo = c.tipo_contabilidade || "Sem tipo";
+      byType[tipo] = (byType[tipo] || 0) + 1;
+    }
+    return { total: collabClients.length, byType };
   };
 
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
@@ -79,6 +90,7 @@ const CollaboratorListView = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((collab, i) => {
             const counts = getTaskCounts(collab.id);
+            const clientCounts = getClientCountsByType(collab.id);
             return (
               <div key={collab.id} onClick={() => openEdit(collab)} className="bg-card rounded-xl border p-5 cursor-pointer hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
                 <div className="flex items-start gap-3 mb-4">
@@ -92,6 +104,20 @@ const CollaboratorListView = () => {
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">{collab.email}</p>
                 {collab.specialty && <p className="text-xs text-muted-foreground mb-3">Especialidade: {collab.specialty}</p>}
+                
+                {clientCounts.total > 0 && (
+                  <div className="mb-3 p-2.5 rounded-lg bg-muted/50">
+                    <p className="text-xs font-medium mb-1.5">{clientCounts.total} cliente{clientCounts.total !== 1 ? "s" : ""}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {Object.entries(clientCounts.byType).map(([tipo, count]) => (
+                        <span key={tipo} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-background border text-[11px] text-muted-foreground">
+                          {tipo} <span className="font-semibold text-foreground">{count}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-4 text-xs">
                   <div className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-warning" />
