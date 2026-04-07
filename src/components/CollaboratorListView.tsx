@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTasks, useClients } from "@/hooks/useSupabaseQuery";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import type { Collaborator } from "@/types/database";
 import { Search, Plus, UserCircle, X, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import CollaboratorDetailDialog from "./CollaboratorDetailDialog";
 
 const emptyCollab = { name: "", email: "", role: "técnico", specialty: "", access_code: "" };
 
@@ -11,6 +13,7 @@ const CollaboratorListView = () => {
   const { data: collaborators = [], isLoading } = useCollaborators();
   const { data: tasks = [] } = useTasks();
   const { data: clients = [] } = useClients();
+  const { isAdmin } = useAuth();
   const upsert = useUpsertCollaborator();
   const remove = useDeleteCollaborator();
   const { toast } = useToast();
@@ -18,6 +21,7 @@ const CollaboratorListView = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyCollab);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [detailCollab, setDetailCollab] = useState<Collaborator | null>(null);
 
   const activeCollabs = collaborators.filter(c => c.active);
   const filtered = activeCollabs.filter((c) => {
@@ -46,6 +50,7 @@ const CollaboratorListView = () => {
 
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
   const openEdit = (c: Collaborator) => { setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "", access_code: (c as any).access_code || "" }); setEditingId(c.id); setDialogOpen(true); };
+  const handleCardClick = (c: Collaborator) => { if (isAdmin) { openEdit(c); } else { setDetailCollab(c); } };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,9 +94,11 @@ const CollaboratorListView = () => {
           <h2 className="text-2xl font-bold">Colaboradores</h2>
           <p className="text-muted-foreground text-sm mt-1">{activeCollabs.length} colaboradores ativos</p>
         </div>
-        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
-          <Plus className="w-4 h-4" /> Novo Colaborador
-        </button>
+        {isAdmin && (
+          <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
+            <Plus className="w-4 h-4" /> Novo Colaborador
+          </button>
+        )}
       </div>
 
       <div className="relative max-w-sm">
@@ -107,7 +114,7 @@ const CollaboratorListView = () => {
             const counts = getTaskCounts(collab.id);
             const clientCounts = getClientCountsByType(collab.id);
             return (
-              <div key={collab.id} onClick={() => openEdit(collab)} className="bg-card rounded-xl border p-5 cursor-pointer hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
+              <div key={collab.id} onClick={() => handleCardClick(collab)} className="bg-card rounded-xl border p-5 cursor-pointer hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
                 <div className="flex items-start gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
                     <UserCircle className="w-5 h-5 text-accent" />
@@ -207,6 +214,10 @@ const CollaboratorListView = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {detailCollab && (
+        <CollaboratorDetailDialog collaborator={detailCollab} onClose={() => setDetailCollab(null)} />
       )}
     </div>
   );
