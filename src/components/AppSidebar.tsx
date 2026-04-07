@@ -157,6 +157,7 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
           </div>
         )}
 
+        {isAdmin && renderNavButton({ id: "clients", label: "Clientes", icon: Building2 })}
         {bottomNavItems.map(renderNavButton)}
       </nav>
 
