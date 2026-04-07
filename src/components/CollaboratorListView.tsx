@@ -48,7 +48,19 @@ const CollaboratorListView = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await upsert.mutateAsync({ ...form, ...(editingId ? { id: editingId } : {}) });
+      const { access_code, ...collabData } = form;
+      const result = await upsert.mutateAsync({ ...collabData, ...(editingId ? { id: editingId } : {}) });
+      const collabId = editingId || result?.id;
+
+      // If access code is set, sync auth user
+      if (access_code && collabId) {
+        const { data, error: fnError } = await supabase.functions.invoke("manage-collaborator-auth", {
+          body: { email: form.email, access_code, collaborator_id: collabId },
+        });
+        if (fnError) throw fnError;
+        if (data?.error) throw new Error(data.error);
+      }
+
       setDialogOpen(false);
       toast({ title: editingId ? "Colaborador atualizado" : "Colaborador criado", description: form.name });
     } catch (err: any) {
