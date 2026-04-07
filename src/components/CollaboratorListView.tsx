@@ -43,7 +43,7 @@ const CollaboratorListView = () => {
   };
 
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
-  const openEdit = (c: Collaborator) => { setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "" }); setEditingId(c.id); setDialogOpen(true); };
+  const openEdit = (c: Collaborator) => { setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "", access_code: (c as any).access_code || "" }); setEditingId(c.id); setDialogOpen(true); };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
