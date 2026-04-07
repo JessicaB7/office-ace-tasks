@@ -90,6 +90,15 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   };
 
   const getDeadlineText = (): string => {
+    if (activeTab === "emissao_faturas") {
+      // Always Friday - find next Friday from start of reference month
+      const refDate = new Date(year, month, 1);
+      const dayOfWeek = refDate.getDay();
+      const daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+      const firstFriday = new Date(refDate);
+      firstFriday.setDate(refDate.getDate() + daysUntilFriday);
+      return `Prazo: Sexta-feira`;
+    }
     switch (activeTab) {
       case "SAFT": { const d = addMonths(month, year, 1); return fmtDeadline(5, d.m, d.y); }
       case "DMR": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
@@ -114,7 +123,6 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       }
       case "SS_TI": {
         if (ssTiTab === "SS_TI_DT") {
-          // Deadline is end of delivery month: Apr 30, Jul 31, Oct 31, Jan 31
           const lastDays: Record<number, number> = { 3: 30, 6: 31, 9: 31, 0: 31 };
           return `Prazo: ${lastDays[month]}/${String(month + 1).padStart(2, "0")}/${year}`;
         }
