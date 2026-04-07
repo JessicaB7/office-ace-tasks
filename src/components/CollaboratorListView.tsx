@@ -94,9 +94,11 @@ const CollaboratorListView = () => {
           <h2 className="text-2xl font-bold">Colaboradores</h2>
           <p className="text-muted-foreground text-sm mt-1">{activeCollabs.length} colaboradores ativos</p>
         </div>
-        <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
-          <Plus className="w-4 h-4" /> Novo Colaborador
-        </button>
+        {isAdmin && (
+          <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity">
+            <Plus className="w-4 h-4" /> Novo Colaborador
+          </button>
+        )}
       </div>
 
       <div className="relative max-w-sm">
