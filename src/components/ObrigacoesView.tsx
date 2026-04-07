@@ -192,6 +192,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         break;
       case "emissao_faturas":
         list = activeClients.filter((c: any) => c.faturacao === "Emitir");
+        if (subFilter !== "all") list = list.filter((c: any) => c.faturacao_frequencia === subFilter);
         break;
       default:
         list = activeClients;
