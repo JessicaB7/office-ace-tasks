@@ -45,6 +45,13 @@ const FATURACAO_OPTIONS = [
   { value: "Não Aplicável", label: "Não aplicável" },
 ];
 
+const FATURACAO_FREQ_OPTIONS = [
+  { value: "", label: "— Selecionar —" },
+  { value: "Semanal", label: "Semanal" },
+  { value: "Mensal", label: "Mensal" },
+  { value: "Pontual", label: "Pontual" },
+];
+
 const SAFT_OPTIONS = [
   { value: "", label: "— Selecionar —" },
   { value: "Automático", label: "Automático" },
@@ -72,13 +79,14 @@ interface ClientForm {
   iva: string;
   recapitulativa: string;
   faturacao: string;
+  faturacao_frequencia: string;
   saft: string;
 }
 
 const emptyForm: ClientForm = {
   name: "", nif: "", tipo_contabilidade: "SQ", salarios: "", mensalidade: "",
   inicio_contrato: "", responsavel_id: "",
-  seguranca_social: "", pag_seguranca_social: "", iva: "", recapitulativa: "", faturacao: "", saft: "",
+  seguranca_social: "", pag_seguranca_social: "", iva: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "", saft: "",
 };
 
 interface ClientDetailDialogProps {
@@ -111,6 +119,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         iva: client.iva || "",
         recapitulativa: client.recapitulativa || "",
         faturacao: client.faturacao || "",
+        faturacao_frequencia: client.faturacao_frequencia || "",
         saft: client.saft || "",
       });
     } else {
@@ -137,6 +146,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         iva: form.iva || null,
         recapitulativa: form.recapitulativa || null,
         faturacao: form.faturacao || null,
+        faturacao_frequencia: form.faturacao === "Emitir" ? (form.faturacao_frequencia || null) : null,
         saft: form.saft || null,
       };
       if (isEditing) payload.id = client.id;
@@ -227,6 +237,14 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                 {FATURACAO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
+            {form.faturacao === "Emitir" && (
+              <div>
+                <label className="text-sm font-medium mb-1 block">Frequência <span className="text-destructive">*</span></label>
+                <select required value={form.faturacao_frequencia} onChange={(e) => set("faturacao_frequencia", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                  {FATURACAO_FREQ_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium mb-1 block">SAFT <span className="text-destructive">*</span></label>
               <select required value={form.saft} onChange={(e) => set("saft", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">

@@ -44,6 +44,13 @@ const FATURACAO_OPTIONS = [
   { value: "Não Aplicável", label: "Não aplicável" },
 ];
 
+const FATURACAO_FREQ_OPTIONS = [
+  { value: "", label: "— Selecionar —" },
+  { value: "Semanal", label: "Semanal" },
+  { value: "Mensal", label: "Mensal" },
+  { value: "Pontual", label: "Pontual" },
+];
+
 const RECAPITULATIVA_OPTIONS = [
   { value: "", label: "— Selecionar —" },
   { value: "Mensal", label: "Mensal" },
@@ -71,6 +78,7 @@ interface ClientForm {
   iva: string;
   recapitulativa: string;
   faturacao: string;
+  faturacao_frequencia: string;
   saft: string;
 }
 
@@ -84,7 +92,7 @@ const PAG_SS_OPTIONS = [
 const emptyForm: ClientForm = {
   name: "", nif: "", tipo_contabilidade: "SQ", salarios: "", mensalidade: "",
   inicio_contrato: "", responsavel_id: "",
-  seguranca_social: "", pag_seguranca_social: "", iva: "", recapitulativa: "", faturacao: "", saft: "",
+  seguranca_social: "", pag_seguranca_social: "", iva: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "", saft: "",
 };
 
 const ClientListView = () => {
@@ -121,6 +129,7 @@ const ClientListView = () => {
       iva: c.iva || "",
       recapitulativa: c.recapitulativa || "",
       faturacao: c.faturacao || "",
+      faturacao_frequencia: c.faturacao_frequencia || "",
       saft: c.saft || "",
     });
     setEditingId(c.id);
@@ -142,6 +151,7 @@ const ClientListView = () => {
         iva: form.iva || null,
         recapitulativa: form.recapitulativa || null,
         faturacao: form.faturacao || null,
+        faturacao_frequencia: form.faturacao === "Emitir" ? (form.faturacao_frequencia || null) : null,
         saft: form.saft || null,
       };
       if (editingId) payload.id = editingId;
@@ -300,6 +310,14 @@ const ClientListView = () => {
                     {FATURACAO_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
+                {form.faturacao === "Emitir" && (
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Frequência <span className="text-destructive">*</span></label>
+                    <select required value={form.faturacao_frequencia} onChange={(e) => set("faturacao_frequencia", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                      {FATURACAO_FREQ_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="text-sm font-medium mb-1 block">SAFT <span className="text-destructive">*</span></label>
                   <select required value={form.saft} onChange={(e) => set("saft", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">

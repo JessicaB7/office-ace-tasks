@@ -90,6 +90,15 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   };
 
   const getDeadlineText = (): string => {
+    if (activeTab === "emissao_faturas") {
+      // Always Friday - find next Friday from start of reference month
+      const refDate = new Date(year, month, 1);
+      const dayOfWeek = refDate.getDay();
+      const daysUntilFriday = (5 - dayOfWeek + 7) % 7;
+      const firstFriday = new Date(refDate);
+      firstFriday.setDate(refDate.getDate() + daysUntilFriday);
+      return `Prazo: Sexta-feira`;
+    }
     switch (activeTab) {
       case "SAFT": { const d = addMonths(month, year, 1); return fmtDeadline(5, d.m, d.y); }
       case "DMR": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
@@ -114,7 +123,6 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       }
       case "SS_TI": {
         if (ssTiTab === "SS_TI_DT") {
-          // Deadline is end of delivery month: Apr 30, Jul 31, Oct 31, Jan 31
           const lastDays: Record<number, number> = { 3: 30, 6: 31, 9: 31, 0: 31 };
           return `Prazo: ${lastDays[month]}/${String(month + 1).padStart(2, "0")}/${year}`;
         }
@@ -184,6 +192,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         break;
       case "emissao_faturas":
         list = activeClients.filter((c: any) => c.faturacao === "Emitir");
+        if (subFilter !== "all") list = list.filter((c: any) => c.faturacao_frequencia === subFilter);
         break;
       default:
         list = activeClients;
@@ -266,6 +275,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
       case "IVA_recapitulativa": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
       case "SS_TI": return ssTiTab === "SS_TI_DT" ? SS_TI_DT_FILTERS : SS_TI_FILTERS;
+      case "emissao_faturas": return [{ value: "Semanal", label: "Semanal" }, { value: "Mensal", label: "Mensal" }, { value: "Pontual", label: "Pontual" }];
       default: return [];
     }
   };
@@ -366,6 +376,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 case "SS_TI": return ssTiTab === "SS_TI_DT"
                   ? activeClients.filter((c: any) => isTI(c) && c.seguranca_social === opt.value).length
                   : activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.pag_seguranca_social === opt.value).length;
+                case "emissao_faturas": return activeClients.filter((c: any) => c.faturacao === "Emitir" && c.faturacao_frequencia === opt.value).length;
                 default: return 0;
               }
             })();
