@@ -158,7 +158,8 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
         )}
 
         {isAdmin && renderNavButton({ id: "clients", label: "Clientes", icon: Building2 })}
-        {bottomNavItems.map(renderNavButton)}
+        {isAdmin && renderNavButton({ id: "collaborators", label: "Colaboradores", icon: Users })}
+        {renderNavButton({ id: "calendar", label: "Calendário Fiscal", icon: CalendarDays })}
       </nav>
 
       <div className="p-4 mx-3 mb-2 rounded-lg bg-sidebar-accent/50 text-xs text-primary-foreground/60">
