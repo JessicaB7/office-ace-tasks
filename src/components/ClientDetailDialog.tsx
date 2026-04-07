@@ -119,6 +119,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         iva: client.iva || "",
         recapitulativa: client.recapitulativa || "",
         faturacao: client.faturacao || "",
+        faturacao_frequencia: client.faturacao_frequencia || "",
         saft: client.saft || "",
       });
     } else {
