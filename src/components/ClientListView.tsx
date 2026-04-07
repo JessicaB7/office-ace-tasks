@@ -129,6 +129,7 @@ const ClientListView = () => {
       iva: c.iva || "",
       recapitulativa: c.recapitulativa || "",
       faturacao: c.faturacao || "",
+      faturacao_frequencia: c.faturacao_frequencia || "",
       saft: c.saft || "",
     });
     setEditingId(c.id);
