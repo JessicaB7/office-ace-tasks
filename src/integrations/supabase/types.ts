@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           email: string | null
           faturacao: string | null
+          faturacao_frequencia: string | null
           fiscal_regime: Database["public"]["Enums"]["fiscal_regime"]
           id: string
           inicio_contrato: string | null
@@ -46,6 +47,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           faturacao?: string | null
+          faturacao_frequencia?: string | null
           fiscal_regime?: Database["public"]["Enums"]["fiscal_regime"]
           id?: string
           inicio_contrato?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           faturacao?: string | null
+          faturacao_frequencia?: string | null
           fiscal_regime?: Database["public"]["Enums"]["fiscal_regime"]
           id?: string
           inicio_contrato?: string | null

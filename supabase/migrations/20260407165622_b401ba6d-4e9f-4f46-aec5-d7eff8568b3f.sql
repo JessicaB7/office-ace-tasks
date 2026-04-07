@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN faturacao_frequencia text DEFAULT NULL;
