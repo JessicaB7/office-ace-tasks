@@ -39,7 +39,7 @@ const bottomNavItems = [
 ];
 
 const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) => {
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const [obrigacoesOpen, setObrigacoesOpen] = useState(activeView.startsWith("obrigacoes"));
   const [contabilidadesOpen, setContabilidadesOpen] = useState(activeView.startsWith("contabilidades"));
 
