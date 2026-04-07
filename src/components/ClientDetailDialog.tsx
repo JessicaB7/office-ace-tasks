@@ -86,7 +86,7 @@ interface ClientForm {
 const emptyForm: ClientForm = {
   name: "", nif: "", tipo_contabilidade: "SQ", salarios: "", mensalidade: "",
   inicio_contrato: "", responsavel_id: "",
-  seguranca_social: "", pag_seguranca_social: "", iva: "", recapitulativa: "", faturacao: "", saft: "",
+  seguranca_social: "", pag_seguranca_social: "", iva: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "", saft: "",
 };
 
 interface ClientDetailDialogProps {
