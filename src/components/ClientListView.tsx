@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useClients, useCollaborators, useUpsertClient, useDeleteClient } from "@/hooks/useSupabaseQuery";
-import { Search, Plus, Building2, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useClients } from "@/hooks/useSupabaseQuery";
+import { Search, Plus, Building2 } from "lucide-react";
+import ClientDetailDialog from "@/components/ClientDetailDialog";
 
 const TIPO_CONTAB_LABELS: Record<string, string> = {
   SQ: "Empresa",
