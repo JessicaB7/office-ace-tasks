@@ -35,11 +35,13 @@ const CollaboratorListView = () => {
   const getClientCountsByType = (collabId: string) => {
     const collabClients = clients.filter(c => c.responsavel_id === collabId && c.active);
     const byType: Record<string, number> = {};
+    let totalMensalidade = 0;
     for (const c of collabClients) {
       const tipo = c.tipo_contabilidade || "Sem tipo";
       byType[tipo] = (byType[tipo] || 0) + 1;
+      if (c.mensalidade) totalMensalidade += Number(c.mensalidade);
     }
-    return { total: collabClients.length, byType };
+    return { total: collabClients.length, byType, totalMensalidade };
   };
 
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
@@ -120,7 +122,12 @@ const CollaboratorListView = () => {
                 
                 {clientCounts.total > 0 && (
                   <div className="mb-3 p-2.5 rounded-lg bg-muted/50">
-                    <p className="text-xs font-medium mb-1.5">{clientCounts.total} cliente{clientCounts.total !== 1 ? "s" : ""}</p>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-xs font-medium">{clientCounts.total} cliente{clientCounts.total !== 1 ? "s" : ""}</p>
+                      {clientCounts.totalMensalidade > 0 && (
+                        <p className="text-xs font-semibold text-primary">{clientCounts.totalMensalidade.toFixed(2).replace(".", ",")} €</p>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-1.5">
                       {Object.entries(clientCounts.byType).map(([tipo, count]) => (
                         <span key={tipo} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-background border text-[11px] text-muted-foreground">

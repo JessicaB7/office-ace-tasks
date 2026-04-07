@@ -34,13 +34,12 @@ const contabilidadesSubItems = [
 ];
 
 const bottomNavItems = [
-  { id: "clients", label: "Clientes", icon: Building2 },
   { id: "collaborators", label: "Colaboradores", icon: Users },
   { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays },
 ];
 
 const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) => {
-  const { user, signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const [obrigacoesOpen, setObrigacoesOpen] = useState(activeView.startsWith("obrigacoes"));
   const [contabilidadesOpen, setContabilidadesOpen] = useState(activeView.startsWith("contabilidades"));
 
@@ -158,6 +157,7 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
           </div>
         )}
 
+        {isAdmin && renderNavButton({ id: "clients", label: "Clientes", icon: Building2 })}
         {bottomNavItems.map(renderNavButton)}
       </nav>
 
