@@ -13,6 +13,7 @@ const CollaboratorListView = () => {
   const { data: collaborators = [], isLoading } = useCollaborators();
   const { data: tasks = [] } = useTasks();
   const { data: clients = [] } = useClients();
+  const { isAdmin } = useAuth();
   const upsert = useUpsertCollaborator();
   const remove = useDeleteCollaborator();
   const { toast } = useToast();
@@ -20,6 +21,7 @@ const CollaboratorListView = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyCollab);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [detailCollab, setDetailCollab] = useState<Collaborator | null>(null);
 
   const activeCollabs = collaborators.filter(c => c.active);
   const filtered = activeCollabs.filter((c) => {
