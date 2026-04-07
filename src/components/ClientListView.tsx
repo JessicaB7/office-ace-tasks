@@ -151,6 +151,7 @@ const ClientListView = () => {
         iva: form.iva || null,
         recapitulativa: form.recapitulativa || null,
         faturacao: form.faturacao || null,
+        faturacao_frequencia: form.faturacao === "Emitir" ? (form.faturacao_frequencia || null) : null,
         saft: form.saft || null,
       };
       if (editingId) payload.id = editingId;
