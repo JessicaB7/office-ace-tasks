@@ -275,6 +275,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
       case "IVA_recapitulativa": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
       case "SS_TI": return ssTiTab === "SS_TI_DT" ? SS_TI_DT_FILTERS : SS_TI_FILTERS;
+      case "emissao_faturas": return [{ value: "Semanal", label: "Semanal" }, { value: "Mensal", label: "Mensal" }, { value: "Pontual", label: "Pontual" }];
       default: return [];
     }
   };
