@@ -157,7 +157,7 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
           </div>
         )}
 
-        {isAdmin && renderNavButton({ id: "clients", label: "Clientes", icon: Building2 })}
+        {renderNavButton({ id: "clients", label: "Clientes", icon: Building2 })}
         {isAdmin && renderNavButton({ id: "collaborators", label: "Colaboradores", icon: Users })}
         {renderNavButton({ id: "calendar", label: "Calendário Fiscal", icon: CalendarDays })}
       </nav>
