@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTasks, useClients } from "@/hooks/useSupabaseQuery";
+import { supabase } from "@/integrations/supabase/client";
 import type { Collaborator } from "@/types/database";
-import { Search, Plus, UserCircle, X } from "lucide-react";
+import { Search, Plus, UserCircle, X, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const emptyCollab = { name: "", email: "", role: "técnico", specialty: "" };
+const emptyCollab = { name: "", email: "", role: "técnico", specialty: "", access_code: "" };
 
 const CollaboratorListView = () => {
   const { data: collaborators = [], isLoading } = useCollaborators();
