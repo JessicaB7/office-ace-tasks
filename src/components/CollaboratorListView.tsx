@@ -35,11 +35,13 @@ const CollaboratorListView = () => {
   const getClientCountsByType = (collabId: string) => {
     const collabClients = clients.filter(c => c.responsavel_id === collabId && c.active);
     const byType: Record<string, number> = {};
+    let totalMensalidade = 0;
     for (const c of collabClients) {
       const tipo = c.tipo_contabilidade || "Sem tipo";
       byType[tipo] = (byType[tipo] || 0) + 1;
+      if (c.mensalidade) totalMensalidade += Number(c.mensalidade);
     }
-    return { total: collabClients.length, byType };
+    return { total: collabClients.length, byType, totalMensalidade };
   };
 
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
