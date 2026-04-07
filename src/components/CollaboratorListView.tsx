@@ -9,6 +9,7 @@ const emptyCollab = { name: "", email: "", role: "técnico", specialty: "" };
 const CollaboratorListView = () => {
   const { data: collaborators = [], isLoading } = useCollaborators();
   const { data: tasks = [] } = useTasks();
+  const { data: clients = [] } = useClients();
   const upsert = useUpsertCollaborator();
   const remove = useDeleteCollaborator();
   const { toast } = useToast();
