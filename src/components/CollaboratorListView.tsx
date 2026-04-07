@@ -137,8 +137,13 @@ const CollaboratorListView = () => {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {Object.entries(clientCounts.byType).map(([tipo, count]) => (
-                        <span key={tipo} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-background border text-[11px] text-muted-foreground">
-                          {tipo} <span className="font-semibold text-foreground">{count}</span>
+                         <span key={tipo} className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium",
+                          tipo === "SQ" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
+                          tipo === "TI CO" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" :
+                          tipo === "TI RS" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" :
+                          "bg-background border text-muted-foreground"
+                        )}>
+                          {tipo} <span className="font-semibold">{count}</span>
                         </span>
                       ))}
                     </div>
