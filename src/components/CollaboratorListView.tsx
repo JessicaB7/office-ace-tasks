@@ -215,6 +215,10 @@ const CollaboratorListView = () => {
           </div>
         </div>
       )}
+
+      {detailCollab && (
+        <CollaboratorDetailDialog collaborator={detailCollab} onClose={() => setDetailCollab(null)} />
+      )}
     </div>
   );
 };
