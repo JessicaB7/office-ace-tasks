@@ -29,17 +29,24 @@ export type Database = {
           mensalidade: number | null
           name: string
           nif: string | null
+          niss: string | null
           notas_internas: string | null
           notes: string | null
           pag_seguranca_social: string | null
           phone: string | null
+          programa_faturacao: string | null
           recapitulativa: string | null
           responsavel_id: string | null
           saft: string | null
           salarios: string | null
           seguranca_social: string | null
+          senha_at: string | null
+          senha_faturacao: string | null
+          senha_ss: string | null
           tipo_contabilidade: string | null
           updated_at: string
+          utilizador_faturacao: string | null
+          via_ctt: string | null
         }
         Insert: {
           active?: boolean
@@ -55,17 +62,24 @@ export type Database = {
           mensalidade?: number | null
           name: string
           nif?: string | null
+          niss?: string | null
           notas_internas?: string | null
           notes?: string | null
           pag_seguranca_social?: string | null
           phone?: string | null
+          programa_faturacao?: string | null
           recapitulativa?: string | null
           responsavel_id?: string | null
           saft?: string | null
           salarios?: string | null
           seguranca_social?: string | null
+          senha_at?: string | null
+          senha_faturacao?: string | null
+          senha_ss?: string | null
           tipo_contabilidade?: string | null
           updated_at?: string
+          utilizador_faturacao?: string | null
+          via_ctt?: string | null
         }
         Update: {
           active?: boolean
@@ -81,17 +95,24 @@ export type Database = {
           mensalidade?: number | null
           name?: string
           nif?: string | null
+          niss?: string | null
           notas_internas?: string | null
           notes?: string | null
           pag_seguranca_social?: string | null
           phone?: string | null
+          programa_faturacao?: string | null
           recapitulativa?: string | null
           responsavel_id?: string | null
           saft?: string | null
           salarios?: string | null
           seguranca_social?: string | null
+          senha_at?: string | null
+          senha_faturacao?: string | null
+          senha_ss?: string | null
           tipo_contabilidade?: string | null
           updated_at?: string
+          utilizador_faturacao?: string | null
+          via_ctt?: string | null
         }
         Relationships: [
           {
