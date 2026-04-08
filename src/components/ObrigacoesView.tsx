@@ -52,8 +52,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const { user } = useAuth();
 
   const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
+  // Default to previous month (whose deadlines fall in the current month)
+  const defaultMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const defaultYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const [year, setYear] = useState(defaultYear);
+  const [month, setMonth] = useState(defaultMonth);
   const [activeTab, setActiveTab] = useState<string>(subPage || "SAFT");
   const [subFilter, setSubFilter] = useState<string>("all");
   const [dmrTab, setDmrTab] = useState<"DMR_AT" | "DMR_SS">("DMR_AT");
