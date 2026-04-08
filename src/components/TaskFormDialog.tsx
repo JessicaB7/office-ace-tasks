@@ -171,7 +171,7 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-1 block">Estado</label>
               <select value={form.status} onChange={(e) => set("status", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
@@ -182,12 +182,6 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
               <label className="text-sm font-medium mb-1 block">Prioridade</label>
               <select value={form.priority} onChange={(e) => set("priority", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 {(Object.keys(PRIORITY_LABELS) as TaskPriority[]).map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Categoria</label>
-              <select value={form.category} onChange={(e) => set("category", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                {(Object.keys(CATEGORY_LABELS) as TaskCategory[]).map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
               </select>
             </div>
           </div>

@@ -54,9 +54,19 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "Salários", day: 25, months: null },
   { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] },
   { title: "SS TI - Declaração Trimestral", day: 30, months: [4] },
+  { title: "Pedir documentação clientes", day: 15, months: null },
 ];
 
-const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number) => {
+const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
+  const fridays: number[] = [];
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    if (new Date(year, monthIndex, d).getDay() === 5) fridays.push(d);
+  }
+  return fridays;
+};
+
+const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number, year: number) => {
   const month1 = monthIndex + 1;
   const result: { day: number; title: string }[] = [];
   FISCAL_DEADLINES.forEach((dl) => {
@@ -65,7 +75,6 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number) => {
       day = Math.min(day, daysInMonth);
       let title = dl.title;
       if (dl.refType === "month") {
-        // Refers to 2 months prior
         const refMonthIdx = (monthIndex - 2 + 12) % 12;
         title = `${dl.title} (${MONTH_NAMES_SHORT[refMonthIdx]})`;
       } else if (dl.refType === "quarter") {
@@ -73,6 +82,10 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number) => {
       }
       result.push({ day, title });
     }
+  });
+  // Weekly: Emissão de faturas on every Friday
+  getFridaysInMonth(year, monthIndex).forEach((fri) => {
+    result.push({ day: fri, title: "Emissão de faturas" });
   });
   return result;
 };
@@ -105,7 +118,7 @@ const FiscalCalendarView = () => {
 
   const deadlinesByDay = useMemo(() => {
     const map: Record<number, { day: number; title: string }[]> = {};
-    const dls = getDeadlinesForMonth(month, daysInMonth);
+    const dls = getDeadlinesForMonth(month, daysInMonth, year);
     dls.forEach((dl) => {
       if (!map[dl.day]) map[dl.day] = [];
       map[dl.day].push(dl);

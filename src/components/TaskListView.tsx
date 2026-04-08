@@ -124,7 +124,7 @@ const TaskListView = ({ onEditTask, onNewTask }: TaskListViewProps) => {
               <tr className="border-b bg-muted/40">
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tarefa</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Categoria</th>
+                
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Estado</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Prioridade</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Prazo</th>
@@ -136,7 +136,7 @@ const TaskListView = ({ onEditTask, onNewTask }: TaskListViewProps) => {
                 <tr key={task.id} onClick={() => onEditTask(task)} className="border-b last:border-0 cursor-pointer hover:bg-muted/30 transition-colors animate-fade-in" style={{ animationDelay: `${i * 40}ms` }}>
                   <td className="px-4 py-3 font-medium max-w-[250px] truncate">{task.title}</td>
                   <td className="px-4 py-3 text-muted-foreground">{task.clients?.name || "—"}</td>
-                  <td className="px-4 py-3"><span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">{CATEGORY_LABELS[task.category as TaskCategory]}</span></td>
+                  
                   <td className="px-4 py-3"><StatusBadge status={task.status} /></td>
                   <td className="px-4 py-3"><PriorityBadge priority={task.priority} /></td>
                   <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(task.due_date).toLocaleDateString("pt-PT")}</td>
@@ -144,7 +144,7 @@ const TaskListView = ({ onEditTask, onNewTask }: TaskListViewProps) => {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">Nenhuma tarefa encontrada</td></tr>
+                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Nenhuma tarefa encontrada</td></tr>
               )}
             </tbody>
           </table>
