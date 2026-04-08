@@ -117,11 +117,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       }
       case "IVA_recapitulativa": {
         if (subFilter === "Trimestral") {
+          // Trimestral: dia 20 do mês seguinte ao fim do trimestre
           const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
-          const d = addMonths(qEnd, year, 2);
+          const d = addMonths(qEnd, year, 1);
           return fmtDeadline(20, d.m, d.y);
         }
-        const d = addMonths(month, year, 2);
+        // Mensal: dia 20 do mês seguinte
+        const d = addMonths(month, year, 1);
         return fmtDeadline(20, d.m, d.y);
       }
       case "SS_TI": {
