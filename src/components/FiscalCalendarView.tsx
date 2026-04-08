@@ -174,7 +174,37 @@ const FiscalCalendarView = () => {
       <div className="bg-card rounded-xl border overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
           <button onClick={prev} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-          <h3 className="font-bold text-lg">{MONTH_NAMES[month]} {year}</h3>
+          <div className="relative">
+            <button
+              onClick={() => setShowMonthPicker(!showMonthPicker)}
+              className="font-bold text-lg hover:text-primary transition-colors cursor-pointer"
+            >
+              {MONTH_NAMES[month]} {year}
+            </button>
+            {showMonthPicker && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 bg-card border rounded-xl shadow-lg p-4 w-[280px] animate-fade-in">
+                <div className="flex items-center justify-between mb-3">
+                  <button onClick={() => setYear(y => y - 1)} className="p-1 rounded hover:bg-muted"><ChevronLeft className="w-4 h-4" /></button>
+                  <span className="font-bold">{year}</span>
+                  <button onClick={() => setYear(y => y + 1)} className="p-1 rounded hover:bg-muted"><ChevronRight className="w-4 h-4" /></button>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {MONTH_NAMES_SHORT.map((m, idx) => (
+                    <button
+                      key={m}
+                      onClick={() => { setMonth(idx); setShowMonthPicker(false); setSelectedDay(null); }}
+                      className={cn(
+                        "px-2 py-2 rounded-lg text-sm font-medium transition-colors",
+                        idx === month ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                      )}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <button onClick={next} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronRight className="w-4 h-4" /></button>
         </div>
 
