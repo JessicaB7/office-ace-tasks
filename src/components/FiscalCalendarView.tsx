@@ -51,7 +51,7 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter" },
   { title: "Retenção na Fonte", day: 20, months: null },
   { title: "SS TI - Pagamento", day: 20, months: null },
-  { title: "Salários", day: 25, months: null },
+  { title: "Salários - Processamento", day: 25, months: null },
   { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] },
   { title: "SS TI - Declaração Trimestral", day: 30, months: [4] },
   { title: "Pedir documentação clientes", day: 15, months: null },
@@ -83,6 +83,8 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number, year: num
       result.push({ day, title });
     }
   });
+  // Salários - Envio on last day of month
+  result.push({ day: daysInMonth, title: "Salários - Envio" });
   // Weekly: Emissão de faturas on every Friday
   getFridaysInMonth(year, monthIndex).forEach((fri) => {
     result.push({ day: fri, title: "Emissão de faturas" });
@@ -97,6 +99,7 @@ const FiscalCalendarView = () => {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any>(null);
 
@@ -171,7 +174,37 @@ const FiscalCalendarView = () => {
       <div className="bg-card rounded-xl border overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
           <button onClick={prev} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-          <h3 className="font-bold text-lg">{MONTH_NAMES[month]} {year}</h3>
+          <div className="relative">
+            <button
+              onClick={() => setShowMonthPicker(!showMonthPicker)}
+              className="font-bold text-lg hover:text-primary transition-colors cursor-pointer"
+            >
+              {MONTH_NAMES[month]} {year}
+            </button>
+            {showMonthPicker && (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 bg-card border rounded-xl shadow-lg p-4 w-[280px] animate-fade-in">
+                <div className="flex items-center justify-between mb-3">
+                  <button onClick={() => setYear(y => y - 1)} className="p-1 rounded hover:bg-muted"><ChevronLeft className="w-4 h-4" /></button>
+                  <span className="font-bold">{year}</span>
+                  <button onClick={() => setYear(y => y + 1)} className="p-1 rounded hover:bg-muted"><ChevronRight className="w-4 h-4" /></button>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {MONTH_NAMES_SHORT.map((m, idx) => (
+                    <button
+                      key={m}
+                      onClick={() => { setMonth(idx); setShowMonthPicker(false); setSelectedDay(null); }}
+                      className={cn(
+                        "px-2 py-2 rounded-lg text-sm font-medium transition-colors",
+                        idx === month ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                      )}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <button onClick={next} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronRight className="w-4 h-4" /></button>
         </div>
 
