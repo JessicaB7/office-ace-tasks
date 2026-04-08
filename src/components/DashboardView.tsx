@@ -60,10 +60,14 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
-  // Count pending obligations per type and track which clients are pending/done
+  // Count pending obligations per type — filtered to current collaborator's clients only
   const obligationData = useMemo(() => {
     const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string; responsavel_id: string | null }[]; doneClients: { id: string; name: string; responsavel_id: string | null }[] }> = {};
     const activeClients = clients.filter((c: any) => c.active);
+    // Filter to only the current collaborator's clients
+    const myClients = currentCollaborator
+      ? activeClients.filter((c: any) => c.responsavel_id === currentCollaborator.id)
+      : activeClients;
 
     FISCAL_DEADLINES.forEach((dl) => {
       if (!dl.obligationType) return;
@@ -78,21 +82,21 @@ const DashboardView = () => {
         doneClientIds = new Set(typeObligations.filter((o: any) => o.status === "concluida").map((o: any) => o.client_id));
       }
 
-      const pendingClients = activeClients
+      const pendingClients = myClients
         .filter((c: any) => !doneClientIds.has(c.id))
         .map((c: any) => ({ id: c.id, name: c.name, responsavel_id: c.responsavel_id }));
-      const doneClients = activeClients
+      const doneClients = myClients
         .filter((c: any) => doneClientIds.has(c.id))
         .map((c: any) => ({ id: c.id, name: c.name, responsavel_id: c.responsavel_id }));
       data[key] = {
-        total: activeClients.length,
-        done: doneClientIds.size,
+        total: myClients.length,
+        done: doneClients.length,
         pendingClients,
         doneClients,
       };
     });
     return data;
-  }, [obligations, clients]);
+  }, [obligations, clients, currentCollaborator]);
 
   const getWeekDeadlines = (mondayDate: Date) => {
     const monday = new Date(mondayDate);
