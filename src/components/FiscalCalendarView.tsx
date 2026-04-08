@@ -83,6 +83,8 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number, year: num
       result.push({ day, title });
     }
   });
+  // Salários - Envio on last day of month
+  result.push({ day: daysInMonth, title: "Salários - Envio" });
   // Weekly: Emissão de faturas on every Friday
   getFridaysInMonth(year, monthIndex).forEach((fri) => {
     result.push({ day: fri, title: "Emissão de faturas" });
