@@ -171,7 +171,7 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-1 block">Estado</label>
               <select value={form.status} onChange={(e) => set("status", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
