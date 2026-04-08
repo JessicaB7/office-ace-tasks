@@ -126,7 +126,7 @@ const CollaboratorListView = () => {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">{collab.email}</p>
-                {collab.specialty && <p className="text-xs text-muted-foreground mb-3">Especialidade: {collab.specialty}</p>}
+                
                 
                 {clientCounts.total > 0 && (
                   <div className="mb-3 p-2.5 rounded-lg bg-muted/50">
