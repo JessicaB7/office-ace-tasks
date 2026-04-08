@@ -166,6 +166,7 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
               <label className="text-sm font-medium mb-1 block">Responsável</label>
               <select value={form.collaborator_id} onChange={(e) => set("collaborator_id", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Sem responsável</option>
+                {!isEditing && <option value="__todos__">Todos os colaboradores</option>}
                 {collaborators.filter(c => c.active).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
