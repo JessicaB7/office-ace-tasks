@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Bell, Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNotifications, useUnreadCount, useMarkRead, useMarkAllRead } from "@/hooks/useNotifications";
+import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { pt } from "date-fns/locale";
 
