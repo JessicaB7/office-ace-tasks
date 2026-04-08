@@ -8,6 +8,7 @@ import CollaboratorListView from "@/components/CollaboratorListView";
 import FiscalCalendarView from "@/components/FiscalCalendarView";
 import ObrigacoesView from "@/components/ObrigacoesView";
 import ContabilidadesView from "@/components/ContabilidadesView";
+import NotificationBell from "@/components/NotificationBell";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("dashboard");
@@ -28,6 +29,9 @@ const Index = () => {
     <div className="flex min-h-screen">
       <AppSidebar activeView={activeView} onViewChange={setActiveView} onNewTask={handleNewTask} />
       <main className="flex-1 p-6 lg:p-8 overflow-auto">
+        <div className="flex justify-end mb-4">
+          <NotificationBell />
+        </div>
         {activeView === "dashboard" && <DashboardView />}
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
