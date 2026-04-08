@@ -60,10 +60,14 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
-  // Count pending obligations per type and track which clients are pending/done
+  // Count pending obligations per type — filtered to current collaborator's clients only
   const obligationData = useMemo(() => {
     const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string; responsavel_id: string | null }[]; doneClients: { id: string; name: string; responsavel_id: string | null }[] }> = {};
     const activeClients = clients.filter((c: any) => c.active);
+    // Filter to only the current collaborator's clients
+    const myClients = currentCollaborator
+      ? activeClients.filter((c: any) => c.responsavel_id === currentCollaborator.id)
+      : activeClients;
 
     FISCAL_DEADLINES.forEach((dl) => {
       if (!dl.obligationType) return;
@@ -78,21 +82,21 @@ const DashboardView = () => {
         doneClientIds = new Set(typeObligations.filter((o: any) => o.status === "concluida").map((o: any) => o.client_id));
       }
 
-      const pendingClients = activeClients
+      const pendingClients = myClients
         .filter((c: any) => !doneClientIds.has(c.id))
         .map((c: any) => ({ id: c.id, name: c.name, responsavel_id: c.responsavel_id }));
-      const doneClients = activeClients
+      const doneClients = myClients
         .filter((c: any) => doneClientIds.has(c.id))
         .map((c: any) => ({ id: c.id, name: c.name, responsavel_id: c.responsavel_id }));
       data[key] = {
-        total: activeClients.length,
-        done: doneClientIds.size,
+        total: myClients.length,
+        done: doneClients.length,
         pendingClients,
         doneClients,
       };
     });
     return data;
-  }, [obligations, clients]);
+  }, [obligations, clients, currentCollaborator]);
 
   const getWeekDeadlines = (mondayDate: Date) => {
     const monday = new Date(mondayDate);
@@ -334,43 +338,73 @@ const DashboardView = () => {
       {renderDeadlineSection(nextWeekDeadlines, "Prazos da Próxima Semana", "muted", "200ms")}
 
       {/* As Minhas Tarefas */}
-      <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "280ms" }}>
-        <div className="flex items-center gap-2 mb-4">
-          <ClipboardList className="w-4 h-4 text-primary" />
-          <h3 className="font-semibold">As Minhas Tarefas</h3>
-          {currentCollaborator && <span className="text-xs text-muted-foreground ml-1">({currentCollaborator.name})</span>}
-        </div>
-        {!currentCollaborator ? (
-          <p className="text-sm text-muted-foreground">O seu email não está associado a nenhum colaborador.</p>
-        ) : myTasks.filter((t: any) => t.status !== "concluida" && t.status !== "cancelada").length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sem tarefas pendentes</p>
-        ) : (
-          <div className="divide-y border rounded-lg overflow-hidden">
-            {myTasks
-              .filter((t: any) => t.status !== "concluida" && t.status !== "cancelada")
-              .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-              .map((task: any) => {
-                const isOverdue = new Date(task.due_date) < new Date();
-                return (
-                  <div key={task.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">{task.title}</p>
-                      <p className="text-xs text-muted-foreground">{task.clients?.name || "—"} · {CATEGORY_LABELS[task.category as TaskCategory]}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-3">
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${task.status === "pendente" ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary"}`}>
-                        {STATUS_LABELS[task.status as TaskStatus]}
-                      </span>
-                      <span className={`text-xs whitespace-nowrap ${isOverdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
-                        {new Date(task.due_date).toLocaleDateString("pt-PT")}
-                      </span>
-                    </div>
+      {(() => {
+        const myPendente = myTasks.filter((t: any) => t.status === "pendente").length;
+        const myEmProgresso = myTasks.filter((t: any) => t.status === "em_progresso").length;
+        const myConcluida = myTasks.filter((t: any) => t.status === "concluida").length;
+        const myAtrasada = myTasks.filter((t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()).length;
+        return (
+          <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "280ms" }}>
+            <div className="flex items-center gap-2 mb-4">
+              <ClipboardList className="w-4 h-4 text-primary" />
+              <h3 className="font-semibold">As Minhas Tarefas</h3>
+              {currentCollaborator && <span className="text-xs text-muted-foreground ml-1">({currentCollaborator.name})</span>}
+            </div>
+            {!currentCollaborator ? (
+              <p className="text-sm text-muted-foreground">O seu email não está associado a nenhum colaborador.</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  <div className="text-center p-2 rounded-lg bg-warning/10">
+                    <p className="text-lg font-bold text-warning">{myPendente}</p>
+                    <p className="text-[10px] text-muted-foreground">Pendente</p>
                   </div>
-                );
-              })}
+                  <div className="text-center p-2 rounded-lg bg-info/10">
+                    <p className="text-lg font-bold text-info">{myEmProgresso}</p>
+                    <p className="text-[10px] text-muted-foreground">Em Progresso</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-success/10">
+                    <p className="text-lg font-bold text-success">{myConcluida}</p>
+                    <p className="text-[10px] text-muted-foreground">Concluída</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-destructive/10">
+                    <p className="text-lg font-bold text-destructive">{myAtrasada}</p>
+                    <p className="text-[10px] text-muted-foreground">Atrasada</p>
+                  </div>
+                </div>
+                {myTasks.filter((t: any) => t.status !== "concluida" && t.status !== "cancelada").length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sem tarefas pendentes</p>
+                ) : (
+                  <div className="divide-y border rounded-lg overflow-hidden">
+                    {myTasks
+                      .filter((t: any) => t.status !== "concluida" && t.status !== "cancelada")
+                      .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+                      .map((task: any) => {
+                        const isOverdue = new Date(task.due_date) < new Date();
+                        return (
+                          <div key={task.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium truncate">{task.title}</p>
+                              <p className="text-xs text-muted-foreground">{task.clients?.name || "—"} · {CATEGORY_LABELS[task.category as TaskCategory]}</p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 ml-3">
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${task.status === "pendente" ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary"}`}>
+                                {STATUS_LABELS[task.status as TaskStatus]}
+                              </span>
+                              <span className={`text-xs whitespace-nowrap ${isOverdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                                {new Date(task.due_date).toLocaleDateString("pt-PT")}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </>
+            )}
           </div>
-        )}
-      </div>
+        );
+      })()}
     </div>
   );
 };

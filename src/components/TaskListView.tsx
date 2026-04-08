@@ -3,6 +3,7 @@ import { useTasks, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
 import { StatusBadge, PriorityBadge } from "@/components/TaskBadge";
 import { Search, Filter, Plus, Clock, CalendarClock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TaskListViewProps {
   onEditTask: (task: any) => void;
@@ -10,21 +11,41 @@ interface TaskListViewProps {
 }
 
 const TaskListView = ({ onEditTask, onNewTask }: TaskListViewProps) => {
+  const { user } = useAuth();
   const { data: tasks = [], isLoading } = useTasks();
   const { data: collaborators = [] } = useCollaborators();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<TaskStatus | "all" | "atrasada">("all");
+  const [filterInitialized, setFilterInitialized] = useState(false);
   const [filterCollaborator, setFilterCollaborator] = useState<string>("all");
+
+  // Default filter to current collaborator
+  const currentCollaborator = useMemo(() => {
+    if (!user?.email) return null;
+    return collaborators.find(c => c.email.toLowerCase() === user.email!.toLowerCase()) || null;
+  }, [user, collaborators]);
+
+  // Set default filter once collaborators load
+  if (!filterInitialized && currentCollaborator) {
+    setFilterCollaborator(currentCollaborator.id);
+    setFilterInitialized(true);
+  }
 
   const now = new Date();
 
+  // Counts based on filtered collaborator's tasks
+  const filteredByCollab = useMemo(() => {
+    if (filterCollaborator === "all") return tasks;
+    return tasks.filter((t: any) => t.collaborator_id === filterCollaborator);
+  }, [tasks, filterCollaborator]);
+
   const counts = useMemo(() => {
-    const pendente = tasks.filter((t: any) => t.status === "pendente").length;
-    const em_progresso = tasks.filter((t: any) => t.status === "em_progresso").length;
-    const concluida = tasks.filter((t: any) => t.status === "concluida").length;
-    const atrasada = tasks.filter((t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < now).length;
+    const pendente = filteredByCollab.filter((t: any) => t.status === "pendente").length;
+    const em_progresso = filteredByCollab.filter((t: any) => t.status === "em_progresso").length;
+    const concluida = filteredByCollab.filter((t: any) => t.status === "concluida").length;
+    const atrasada = filteredByCollab.filter((t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < now).length;
     return { pendente, em_progresso, concluida, atrasada };
-  }, [tasks]);
+  }, [filteredByCollab]);
 
   const filtered = tasks.filter((t: any) => {
     if (filterStatus === "atrasada") {
