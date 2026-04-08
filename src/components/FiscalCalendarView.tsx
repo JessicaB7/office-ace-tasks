@@ -54,6 +54,7 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "Salários", day: 25, months: null },
   { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] },
   { title: "SS TI - Declaração Trimestral", day: 30, months: [4] },
+  { title: "Pedir documentação clientes", day: 15, months: null },
 ];
 
 const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number) => {

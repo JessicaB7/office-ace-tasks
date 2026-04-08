@@ -184,12 +184,6 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
                 {(Object.keys(PRIORITY_LABELS) as TaskPriority[]).map((p) => <option key={p} value={p}>{PRIORITY_LABELS[p]}</option>)}
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Categoria</label>
-              <select value={form.category} onChange={(e) => set("category", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
-                {(Object.keys(CATEGORY_LABELS) as TaskCategory[]).map((c) => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
-              </select>
-            </div>
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">Prazo</label>
