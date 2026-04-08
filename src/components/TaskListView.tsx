@@ -124,7 +124,7 @@ const TaskListView = ({ onEditTask, onNewTask }: TaskListViewProps) => {
               <tr className="border-b bg-muted/40">
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tarefa</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Categoria</th>
+                
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Estado</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Prioridade</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Prazo</th>
