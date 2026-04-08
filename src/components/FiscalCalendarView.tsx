@@ -118,7 +118,7 @@ const FiscalCalendarView = () => {
 
   const deadlinesByDay = useMemo(() => {
     const map: Record<number, { day: number; title: string }[]> = {};
-    const dls = getDeadlinesForMonth(month, daysInMonth);
+    const dls = getDeadlinesForMonth(month, daysInMonth, year);
     dls.forEach((dl) => {
       if (!map[dl.day]) map[dl.day] = [];
       map[dl.day].push(dl);
