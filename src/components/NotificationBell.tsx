@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { pt } from "date-fns/locale";
 
 const NotificationBell = () => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { data: notifications = [] } = useNotifications();
