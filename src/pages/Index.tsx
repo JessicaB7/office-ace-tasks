@@ -8,6 +8,7 @@ import CollaboratorListView from "@/components/CollaboratorListView";
 import FiscalCalendarView from "@/components/FiscalCalendarView";
 import ObrigacoesView from "@/components/ObrigacoesView";
 import ContabilidadesView from "@/components/ContabilidadesView";
+import NotificationBell from "@/components/NotificationBell";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("dashboard");
