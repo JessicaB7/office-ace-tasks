@@ -124,6 +124,15 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
               },
             }).catch(err => console.error("Failed to send assignment email:", err));
           }
+          // In-app notification
+          if (collaborator?.user_id) {
+            supabase.from("notifications").insert({
+              user_id: collaborator.user_id,
+              title: "Nova tarefa atribuída",
+              message: `${form.title}${client?.name ? ` — ${client.name}` : ""}`,
+              type: "task_assigned",
+            }).then(({ error }) => { if (error) console.error("Notification error:", error); });
+          }
         }
       }
 
