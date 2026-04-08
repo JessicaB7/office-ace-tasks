@@ -2,10 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { Bell, Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNotifications, useUnreadCount, useMarkRead, useMarkAllRead } from "@/hooks/useNotifications";
+import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { pt } from "date-fns/locale";
 
 const NotificationBell = () => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { data: notifications = [] } = useNotifications();
@@ -63,7 +65,13 @@ const NotificationBell = () => {
               notifications.map((n: any) => (
                 <div
                   key={n.id}
-                  onClick={() => { if (!n.read) markRead.mutate(n.id); }}
+                  onClick={() => {
+                    if (!n.read) markRead.mutate(n.id);
+                    if (n.link) {
+                      setOpen(false);
+                      navigate(n.link);
+                    }
+                  }}
                   className={cn(
                     "flex items-start gap-3 px-4 py-3 border-b last:border-0 cursor-pointer transition-colors hover:bg-muted/50",
                     !n.read && "bg-primary/5"
