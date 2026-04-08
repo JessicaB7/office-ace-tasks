@@ -148,6 +148,20 @@ const DashboardView = () => {
           }
         }
       });
+
+      // Salários - Envio on last day of month
+      const lastDayDate = new Date(yr, monthIndex, daysInMonth);
+      if (lastDayDate >= monday && lastDayDate <= sunday) {
+        result.push({ title: "Salários - Envio", date: lastDayDate, obligationKey: "salarios" });
+      }
+
+      // Emissão de faturas on every Friday
+      getFridaysInMonth(yr, monthIndex).forEach((fri) => {
+        const friDate = new Date(yr, monthIndex, fri);
+        if (friDate >= monday && friDate <= sunday) {
+          result.push({ title: "Emissão de faturas", date: friDate });
+        }
+      });
     });
 
     return result.sort((a, b) => a.date.getTime() - b.date.getTime());
