@@ -54,40 +54,72 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
     e.preventDefault();
     try {
       const previousCollaboratorId = task?.collaborator_id || null;
-      const newCollaboratorId = form.collaborator_id || null;
-
-      await upsert.mutateAsync({
-        ...form,
-        client_id: form.client_id || null,
-        collaborator_id: newCollaboratorId,
-        ...(task?.id ? { id: task.id } : {}),
-      });
-
-      // Send email if collaborator was newly assigned or changed
-      if (newCollaboratorId && newCollaboratorId !== previousCollaboratorId) {
-        const collaborator = collaborators.find(c => c.id === newCollaboratorId);
-        const client = clients.find(c => c.id === form.client_id);
-        if (collaborator?.email) {
-          supabase.functions.invoke("send-transactional-email", {
-            body: {
-              templateName: "task-assignment",
-              recipientEmail: collaborator.email,
-              idempotencyKey: `task-assign-${task?.id || crypto.randomUUID()}-${newCollaboratorId}`,
-              templateData: {
-                collaboratorName: collaborator.name,
-                taskTitle: form.title,
-                clientName: client?.name || undefined,
-                dueDate: new Date(form.due_date).toLocaleDateString("pt-PT"),
-                priority: PRIORITY_LABELS[form.priority],
-                category: CATEGORY_LABELS[form.category],
+      const isTodos = form.collaborator_id === "__todos__";
+      
+      if (isTodos && !task?.id) {
+        // Create one task per active collaborator
+        const activeCollabs = collaborators.filter(c => c.active);
+        for (const collab of activeCollabs) {
+          await upsert.mutateAsync({
+            ...form,
+            client_id: form.client_id || null,
+            collaborator_id: collab.id,
+          });
+          // Send email notification
+          const client = clients.find(c => c.id === form.client_id);
+          if (collab.email) {
+            supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "task-assignment",
+                recipientEmail: collab.email,
+                idempotencyKey: `task-assign-${crypto.randomUUID()}-${collab.id}`,
+                templateData: {
+                  collaboratorName: collab.name,
+                  taskTitle: form.title,
+                  clientName: client?.name || undefined,
+                  dueDate: new Date(form.due_date).toLocaleDateString("pt-PT"),
+                  priority: PRIORITY_LABELS[form.priority],
+                  category: CATEGORY_LABELS[form.category],
+                },
               },
-            },
-          }).catch(err => console.error("Failed to send assignment email:", err));
+            }).catch(err => console.error("Failed to send assignment email:", err));
+          }
+        }
+      } else {
+        const newCollaboratorId = isTodos ? null : (form.collaborator_id || null);
+        await upsert.mutateAsync({
+          ...form,
+          client_id: form.client_id || null,
+          collaborator_id: newCollaboratorId,
+          ...(task?.id ? { id: task.id } : {}),
+        });
+
+        // Send email if collaborator was newly assigned or changed
+        if (newCollaboratorId && newCollaboratorId !== previousCollaboratorId) {
+          const collaborator = collaborators.find(c => c.id === newCollaboratorId);
+          const client = clients.find(c => c.id === form.client_id);
+          if (collaborator?.email) {
+            supabase.functions.invoke("send-transactional-email", {
+              body: {
+                templateName: "task-assignment",
+                recipientEmail: collaborator.email,
+                idempotencyKey: `task-assign-${task?.id || crypto.randomUUID()}-${newCollaboratorId}`,
+                templateData: {
+                  collaboratorName: collaborator.name,
+                  taskTitle: form.title,
+                  clientName: client?.name || undefined,
+                  dueDate: new Date(form.due_date).toLocaleDateString("pt-PT"),
+                  priority: PRIORITY_LABELS[form.priority],
+                  category: CATEGORY_LABELS[form.category],
+                },
+              },
+            }).catch(err => console.error("Failed to send assignment email:", err));
+          }
         }
       }
 
       onClose();
-      toast({ title: isEditing ? "Tarefa atualizada" : "Tarefa criada", description: form.title });
+      toast({ title: isTodos && !task?.id ? "Tarefas criadas para todos" : isEditing ? "Tarefa atualizada" : "Tarefa criada", description: form.title });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
