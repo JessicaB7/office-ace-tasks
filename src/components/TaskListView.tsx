@@ -3,6 +3,7 @@ import { useTasks, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
 import { StatusBadge, PriorityBadge } from "@/components/TaskBadge";
 import { Search, Filter, Plus, Clock, CalendarClock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TaskListViewProps {
   onEditTask: (task: any) => void;
