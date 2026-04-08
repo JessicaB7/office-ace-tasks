@@ -51,7 +51,7 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter" },
   { title: "Retenção na Fonte", day: 20, months: null },
   { title: "SS TI - Pagamento", day: 20, months: null },
-  { title: "Salários", day: 25, months: null },
+  { title: "Salários - Processamento", day: 25, months: null },
   { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] },
   { title: "SS TI - Declaração Trimestral", day: 30, months: [4] },
   { title: "Pedir documentação clientes", day: 15, months: null },

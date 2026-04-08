@@ -21,6 +21,7 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 } },
   { title: "DMR AT - Guia", day: 10, months: null, obligationType: "DMR_AT" },
   { title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS" },
+  { title: "Pedir documentação clientes", day: 15, months: null },
   { title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true },
   { title: "DMR SS - Pagamento", day: 20, months: null, obligationType: "DMR_SS", checkExtra: true },
   { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA" },
@@ -29,10 +30,19 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa" },
   { title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte" },
   { title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI" },
-  { title: "Salários", day: 25, months: null, obligationType: "salarios" },
+  { title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios" },
   { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10], obligationType: "SS_TI_DT" },
   { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT" },
 ];
+
+const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
+  const fridays: number[] = [];
+  const dim = new Date(year, monthIndex + 1, 0).getDate();
+  for (let d = 1; d <= dim; d++) {
+    if (new Date(year, monthIndex, d).getDay() === 5) fridays.push(d);
+  }
+  return fridays;
+};
 
 const DashboardView = () => {
   const { user } = useAuth();
