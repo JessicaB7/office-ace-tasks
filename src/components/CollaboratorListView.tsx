@@ -190,15 +190,9 @@ const CollaboratorListView = () => {
                 <label className="text-sm font-medium mb-1 block">Email</label>
                 <input required type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Cargo</label>
-                  <input value={form.role} onChange={(e) => set("role", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Especialidade</label>
-                  <input value={form.specialty} onChange={(e) => set("specialty", e.target.value)} placeholder="IRS, IVA, IRC..." className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Cargo</label>
+                <input value={form.role} onChange={(e) => set("role", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block flex items-center gap-1.5">
