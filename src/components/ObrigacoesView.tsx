@@ -191,7 +191,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "IVA_recapitulativa":
         list = activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "");
         if (subFilter === "Mensal") list = list.filter((c: any) => c.iva === "Mensal");
-        else if (subFilter === "Trimestral") list = list.filter((c: any) => c.iva !== "Mensal");
+        else if (subFilter === "Trimestral") list = list.filter((c: any) => c.iva !== "Mensal" && c.recapitulativa !== "Não Aplicável");
+        else if (subFilter === "Não Aplicável") list = list.filter((c: any) => c.recapitulativa === "Não Aplicável");
         break;
       case "retencao_fonte":
         list = activeClients.filter((c: any) => c.tipo_contabilidade === "SQ" || c.tipo_contabilidade === "TI CO");
@@ -279,7 +280,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "SAFT": return SAFT_GROUPS.map(g => ({ value: g, label: g }));
       case "salarios": return SALARIOS_FILTERS;
       case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
-      case "IVA_recapitulativa": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
+      case "IVA_recapitulativa": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }, { value: "Não Aplicável", label: "Não Aplicável" }];
       case "SS_TI": return ssTiTab === "SS_TI_DT" ? SS_TI_DT_FILTERS : SS_TI_FILTERS;
       case "emissao_faturas": return [{ value: "Semanal", label: "Semanal" }, { value: "Mensal", label: "Mensal" }, { value: "Pontual", label: "Pontual" }];
       default: return [];
