@@ -54,11 +54,11 @@ const ClientMonthlyHistoryDialog = ({ client, open, onClose, activeTab, columns 
           const obl = monthObls.find((o: any) => o.obligation_type === type);
           return obl?.status === "concluida";
         });
-        return { ...monthInfo, colStatus, allDone: colStatus.every(Boolean) };
+        return { ...monthInfo, colStatus, done: colStatus.every(Boolean), allDone: colStatus.every(Boolean) };
       } else {
         const obl = monthObls.find((o: any) => o.obligation_type === oblPrefix);
         const done = obl?.status === "concluida";
-        return { ...monthInfo, done, allDone: done };
+        return { ...monthInfo, colStatus: [] as boolean[], done, allDone: done };
       }
     });
   }, [obligations, oblPrefix, hasMultiColumns, colOblTypes]);
