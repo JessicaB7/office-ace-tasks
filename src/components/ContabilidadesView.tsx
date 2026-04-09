@@ -4,6 +4,7 @@ import { Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
+import ClientMonthlyHistoryDialog from "@/components/ClientMonthlyHistoryDialog";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -289,7 +290,17 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         </div>
       </div>
 
-      <ClientDetailDialog client={selectedClient} open={!!selectedClient} onClose={() => setSelectedClient(null)} allowDelete={false} />
+      {(activeTab === "TI_iva" || activeTab === "organizada") ? (
+        <ClientMonthlyHistoryDialog
+          client={selectedClient}
+          open={!!selectedClient}
+          onClose={() => setSelectedClient(null)}
+          activeTab={activeTab}
+          columns={columns}
+        />
+      ) : (
+        <ClientDetailDialog client={selectedClient} open={!!selectedClient} onClose={() => setSelectedClient(null)} allowDelete={false} />
+      )}
     </div>
   );
 };
