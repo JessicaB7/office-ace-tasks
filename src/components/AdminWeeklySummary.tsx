@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useClients, useCollaborators, useTasks, useMonthlyObligations } from "@/hooks/useSupabaseQuery";
 import { Users, CheckCircle2, AlertTriangle, UserPlus, UserMinus, ChevronLeft, ChevronRight, Building2, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from "recharts";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -58,6 +59,44 @@ const AdminWeeklySummary = () => {
 
   // Total active clients
   const totalActiveClients = useMemo(() => clients.filter((c: any) => c.active).length, [clients]);
+
+  // Annual chart data
+  const annualData = useMemo(() => {
+    const MONTH_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    return Array.from({ length: 12 }, (_, m) => {
+      const mStart = new Date(year, m, 1);
+      const mEnd = new Date(year, m + 1, 0, 23, 59, 59, 999);
+
+      const entradas = clients.filter((c: any) => {
+        if (!c.inicio_contrato) return false;
+        const d = new Date(c.inicio_contrato);
+        return d >= mStart && d <= mEnd;
+      }).length;
+
+      const saidas = clients.filter((c: any) => {
+        if (c.active) return false;
+        const d = new Date(c.updated_at);
+        return d >= mStart && d <= mEnd;
+      }).length;
+
+      // Mensalidade: sum of active clients with inicio_contrato <= end of month
+      const mensalidade = clients
+        .filter((c: any) => {
+          if (!c.mensalidade || c.mensalidade <= 0) return false;
+          if (!c.inicio_contrato) return c.active;
+          const inicio = new Date(c.inicio_contrato);
+          if (inicio > mEnd) return false;
+          if (!c.active) {
+            const deactivated = new Date(c.updated_at);
+            return deactivated >= mStart;
+          }
+          return true;
+        })
+        .reduce((sum: number, c: any) => sum + (Number(c.mensalidade) || 0), 0);
+
+      return { name: MONTH_SHORT[m], entradas, saidas, mensalidade: Math.round(mensalidade) };
+    });
+  }, [clients, year]);
 
   // Tasks by collaborator
   const collabTaskStats = useMemo(() => {
@@ -145,21 +184,47 @@ const AdminWeeklySummary = () => {
 
       {/* Clientes Tab */}
       {activeTab === "clientes" && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-card rounded-xl border p-5 text-center">
-            <UserPlus className="w-6 h-6 text-primary mx-auto mb-2" />
-            <p className="text-3xl font-bold">{newClientsCount}</p>
-            <p className="text-sm text-muted-foreground mt-1">Entradas</p>
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-card rounded-xl border p-5 text-center">
+              <UserPlus className="w-6 h-6 text-primary mx-auto mb-2" />
+              <p className="text-3xl font-bold">{newClientsCount}</p>
+              <p className="text-sm text-muted-foreground mt-1">Entradas</p>
+            </div>
+            <div className="bg-card rounded-xl border p-5 text-center">
+              <UserMinus className="w-6 h-6 text-destructive mx-auto mb-2" />
+              <p className="text-3xl font-bold">{exitClientsCount}</p>
+              <p className="text-sm text-muted-foreground mt-1">Saídas</p>
+            </div>
+            <div className="bg-card rounded-xl border p-5 text-center">
+              <Building2 className="w-6 h-6 text-foreground mx-auto mb-2" />
+              <p className="text-3xl font-bold">{totalActiveClients}</p>
+              <p className="text-sm text-muted-foreground mt-1">Total Atual</p>
+            </div>
           </div>
-          <div className="bg-card rounded-xl border p-5 text-center">
-            <UserMinus className="w-6 h-6 text-destructive mx-auto mb-2" />
-            <p className="text-3xl font-bold">{exitClientsCount}</p>
-            <p className="text-sm text-muted-foreground mt-1">Saídas</p>
-          </div>
-          <div className="bg-card rounded-xl border p-5 text-center">
-            <Building2 className="w-6 h-6 text-foreground mx-auto mb-2" />
-            <p className="text-3xl font-bold">{totalActiveClients}</p>
-            <p className="text-sm text-muted-foreground mt-1">Total Atual</p>
+
+          <div className="bg-card rounded-xl border p-5">
+            <h3 className="font-semibold mb-4">Evolução Anual — {year}</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={annualData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="name" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                <YAxis yAxisId="left" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                <YAxis yAxisId="right" orientation="right" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                  labelStyle={{ color: 'hsl(var(--foreground))' }}
+                  formatter={(value: number, name: string) => {
+                    if (name === "mensalidade") return [`${value.toLocaleString("pt-PT")} €`, "Mensalidade"];
+                    return [value, name === "entradas" ? "Entradas" : "Saídas"];
+                  }}
+                />
+                <Legend formatter={(value) => value === "entradas" ? "Entradas" : value === "saidas" ? "Saídas" : "Mensalidade (€)"} />
+                <Bar yAxisId="left" dataKey="entradas" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left" dataKey="saidas" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="mensalidade" stroke="hsl(var(--success))" strokeWidth={2} dot={{ r: 3 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}
