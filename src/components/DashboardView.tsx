@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useTasks, useMonthlyObligations, useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
 import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays, ClipboardList } from "lucide-react";
+import AdminWeeklySummary from "@/components/AdminWeeklySummary";
 import { useAuth } from "@/hooks/useAuth";
 
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -429,6 +430,8 @@ const DashboardView = () => {
           </div>
         );
       })()}
+
+      <AdminWeeklySummary />
     </div>
   );
 };
