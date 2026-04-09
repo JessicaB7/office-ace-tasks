@@ -29,7 +29,7 @@ const obrigacoesSubItems = [
 const contabilidadesSubItems = [
   { id: "contabilidades_TI_isento", label: "TI Simplificado - Isento IVA" },
   { id: "contabilidades_TI_iva", label: "TI Simplificado - Reg. IVA" },
-  { id: "contabilidades_organizada", label: "Contabilidade Organizada" },
+  { id: "contabilidades_organizada", label: "TI Contabilidade Organizada" },
   { id: "contabilidades_empresas", label: "Empresas" },
 ];
 
@@ -79,7 +79,7 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
   return (
     <aside className="w-64 bg-primary text-primary-foreground min-h-screen flex flex-col">
       <div className="p-6 flex items-center justify-center">
-        <img src={logoWhite} alt="Contabilista Explica" className="w-full max-w-[200px]" />
+        <img src={logoWhite} alt="Contabilista Explica" className="w-full max-w-[240px]" />
       </div>
 
 

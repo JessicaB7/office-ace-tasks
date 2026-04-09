@@ -33,7 +33,7 @@ const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     ],
   },
   organizada: {
-    label: "Contabilidade Organizada",
+    label: "TI Contabilidade Organizada",
     filter: (c) => c.tipo_contabilidade === "TI CO",
     hasIvaTabs: true,
     hideNif: true,
