@@ -79,7 +79,7 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
   return (
     <aside className="w-64 bg-primary text-primary-foreground min-h-screen flex flex-col">
       <div className="p-6 flex items-center gap-3">
-        <img src={logoWhite} alt="Contabilista Explica" className="h-8" />
+        <img src={logoWhite} alt="Contabilista Explica" className="h-14" />
       </div>
 
 
