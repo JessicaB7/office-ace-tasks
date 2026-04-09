@@ -186,3 +186,22 @@ export function useUpsertObligation() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["monthly_obligations"] }),
   });
 }
+
+// ---- CLIENT OBLIGATIONS HISTORY ----
+export function useClientObligationsHistory(clientId: string | null, obligationTypePrefix: string) {
+  return useQuery({
+    queryKey: ["client_obligations_history", clientId, obligationTypePrefix],
+    queryFn: async () => {
+      if (!clientId) return [];
+      const { data, error } = await supabase
+        .from("monthly_obligations")
+        .select("*")
+        .eq("client_id", clientId)
+        .like("obligation_type", `${obligationTypePrefix}%`)
+        .order("reference_month", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!clientId,
+  });
+}
