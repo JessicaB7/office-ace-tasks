@@ -82,11 +82,6 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
         <img src={logoWhite} alt="Contabilista Explica" className="h-8" />
       </div>
 
-      <div className="px-4 mb-6">
-        <button onClick={onNewTask} className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent text-accent-foreground font-medium text-sm hover:opacity-90 transition-opacity">
-          <Plus className="w-4 h-4" /> Nova Tarefa
-        </button>
-      </div>
 
       <nav className="flex-1 px-3">
         {mainNavItems.map(renderNavButton)}
