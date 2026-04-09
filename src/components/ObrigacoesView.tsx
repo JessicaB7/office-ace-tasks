@@ -152,6 +152,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const isDTMonth = [0, 3, 6, 9].includes(month);
   const showDTContent = !(isDT && !isDTMonth);
   const showNotasColumn = isDT && subFilter === "Isento";
+  const isEmissaoFaturas = activeTab === "emissao_faturas";
 
   // Quarter label for DT: Apr=Q1(Jan-Mar), Jul=Q2(Apr-Jun), Oct=Q3(Jul-Sep), Jan=Q4(Oct-Dec)
   const dtQuarterLabel = (() => {
@@ -442,6 +443,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tipo</th>
                 {isSSTI && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Enquadramento SS</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
+                {isEmissaoFaturas && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Programa Faturação</th>}
                 {showNotasColumn && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Entregue</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
@@ -496,6 +498,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                       </td>
                     )}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
+                    {isEmissaoFaturas && <td className="px-4 py-3 text-muted-foreground text-xs">{client.programa_faturacao || "—"}</td>}
                     {showNotasColumn && (
                       <td className="px-4 py-3">
                         <input
