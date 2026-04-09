@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function useNotifications() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const query = useQuery({
     queryKey: ["notifications", user?.id],
@@ -23,18 +24,26 @@ export function useNotifications() {
     enabled: !!user?.id,
   });
 
-  // Realtime subscription
+  // Realtime subscription - single instance
   useEffect(() => {
     if (!user?.id) return;
+    // Remove previous channel if exists
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
     const channel = supabase
-      .channel("notifications-realtime")
+      .channel(`notifications-${user.id}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
         () => qc.invalidateQueries({ queryKey: ["notifications"] })
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    channelRef.current = channel;
+    return () => {
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
   }, [user?.id, qc]);
 
   return query;
