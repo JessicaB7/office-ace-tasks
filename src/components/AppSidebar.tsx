@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, ListTodo, Plus, Users, Building2, CalendarDays, LogOut, ClipboardList, ChevronDown, BookOpen } from "lucide-react";
+import { LayoutDashboard, ListTodo, Plus, Users, Building2, CalendarDays, LogOut, ClipboardList, ChevronDown, BookOpen, BarChart3 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -153,6 +153,7 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
         )}
 
         {renderNavButton({ id: "clients", label: "Clientes", icon: Building2 })}
+        {isAdmin && renderNavButton({ id: "resumo", label: "Resumo Mensal", icon: BarChart3 })}
         {isAdmin && renderNavButton({ id: "collaborators", label: "Colaboradores", icon: Users })}
         {renderNavButton({ id: "calendar", label: "Calendário Fiscal", icon: CalendarDays })}
       </nav>
