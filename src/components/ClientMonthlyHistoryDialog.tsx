@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { X, Check } from "lucide-react";
+import { useState, useMemo } from "react";
+import { X, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useClientObligationsHistory } from "@/hooks/useSupabaseQuery";
 import { cn } from "@/lib/utils";
 
@@ -29,19 +29,17 @@ const ClientMonthlyHistoryDialog = ({ client, open, onClose, activeTab, columns 
   }, [columns, activeTab]);
 
   // Group obligations by month
+  const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
+
   const monthlyData = useMemo(() => {
-    const now = new Date();
     const months: { key: string; label: string; year: number; month: number }[] = [];
     
-    // Show last 12 months
-    for (let i = 0; i < 12; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const y = d.getFullYear();
-      const m = d.getMonth();
+    // Show Jan-Dec for selected year
+    for (let m = 0; m < 12; m++) {
       months.push({
-        key: `${y}-${String(m + 1).padStart(2, "0")}-01`,
-        label: `${MONTH_NAMES[m]} ${y}`,
-        year: y,
+        key: `${historyYear}-${String(m + 1).padStart(2, "0")}-01`,
+        label: `${MONTH_NAMES[m]} ${historyYear}`,
+        year: historyYear,
         month: m,
       });
     }
@@ -61,7 +59,7 @@ const ClientMonthlyHistoryDialog = ({ client, open, onClose, activeTab, columns 
         return { ...monthInfo, colStatus: [] as boolean[], done, allDone: done };
       }
     });
-  }, [obligations, oblPrefix, hasMultiColumns, colOblTypes]);
+  }, [obligations, oblPrefix, hasMultiColumns, colOblTypes, historyYear]);
 
   if (!open || !client) return null;
 
@@ -72,11 +70,18 @@ const ClientMonthlyHistoryDialog = ({ client, open, onClose, activeTab, columns 
         <div className="flex items-center justify-between p-5 border-b">
           <div>
             <h3 className="text-lg font-bold">{client.name}</h3>
-            <p className="text-sm text-muted-foreground">Histórico de tarefas realizadas</p>
+           <p className="text-sm text-muted-foreground">Histórico de tarefas realizadas</p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-muted transition-colors">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-muted rounded-lg px-2 py-1">
+              <button onClick={() => setHistoryYear(y => y - 1)} className="p-0.5 hover:bg-background rounded transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+              <span className="text-sm font-medium min-w-[50px] text-center">{historyYear}</span>
+              <button onClick={() => setHistoryYear(y => y + 1)} className="p-0.5 hover:bg-background rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
+            </div>
+            <button onClick={onClose} className="p-1 rounded-lg hover:bg-muted transition-colors">
             <X className="w-5 h-5" />
-          </button>
+            </button>
+          </div>
         </div>
 
         <div className="p-5">
