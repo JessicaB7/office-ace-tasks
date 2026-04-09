@@ -290,7 +290,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         </div>
       </div>
 
-      {(activeTab === "TI_iva" || activeTab === "organizada") ? (
+      {(activeTab === "TI_iva" || activeTab === "organizada" || activeTab === "empresas") ? (
         <ClientMonthlyHistoryDialog
           client={selectedClient}
           open={!!selectedClient}
