@@ -448,6 +448,13 @@ export type Database = {
             referencedRelation: "collaborators"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "collaborators"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
