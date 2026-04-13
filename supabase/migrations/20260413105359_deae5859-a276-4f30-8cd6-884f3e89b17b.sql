@@ -1,0 +1,1 @@
+ALTER TABLE public.tasks ADD COLUMN created_by uuid REFERENCES auth.users(id) DEFAULT NULL;
