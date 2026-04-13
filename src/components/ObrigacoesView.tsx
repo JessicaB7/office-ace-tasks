@@ -228,7 +228,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
-    const type = isDMR ? dmrTab : isSSTI ? ssTiTab : activeTab;
+    const type = isDMR ? dmrTab : isSSTI ? ssTiTab : (activeTab === "IVA" && subFilter === "OSS") ? "IVA_OSS" : activeTab;
     obligations.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
     return map;
   }, [obligations, activeTab, isDMR, dmrTab, isSSTI, ssTiTab]);
@@ -251,7 +251,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     }
   };
 
-  const getOblType = () => isDMR ? dmrTab : isSSTI ? ssTiTab : activeTab;
+  const getOblType = () => isDMR ? dmrTab : isSSTI ? ssTiTab : (activeTab === "IVA" && subFilter === "OSS") ? "IVA_OSS" : activeTab;
   const toggleGuia = (clientId: string) => toggleObligation(clientId, getOblType(), oblMap);
 
   const togglePagamento = async (clientId: string) => {
