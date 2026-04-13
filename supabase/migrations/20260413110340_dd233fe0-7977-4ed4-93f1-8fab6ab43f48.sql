@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN iva_oss text DEFAULT NULL;
