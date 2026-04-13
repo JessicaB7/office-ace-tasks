@@ -231,7 +231,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     const type = isDMR ? dmrTab : isSSTI ? ssTiTab : (activeTab === "IVA" && subFilter === "OSS") ? "IVA_OSS" : activeTab;
     obligations.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
     return map;
-  }, [obligations, activeTab, isDMR, dmrTab, isSSTI, ssTiTab]);
+  }, [obligations, activeTab, isDMR, dmrTab, isSSTI, ssTiTab, subFilter]);
 
   const toggleObligation = async (clientId: string, oblType: string, currentMap: Record<string, any>) => {
     const existing = currentMap[clientId];
