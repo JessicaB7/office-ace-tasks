@@ -107,6 +107,12 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "DMR": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
       case "retencao_fonte": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
       case "IVA": {
+        if (subFilter === "OSS") {
+          // OSS: dia 15 do mês seguinte ao fim do trimestre
+          const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
+          const d = addMonths(qEnd, year, 1);
+          return fmtDeadline(15, d.m, d.y);
+        }
         if (subFilter === "Trimestral") {
           const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
           const d = addMonths(qEnd, year, 2);
@@ -382,7 +388,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
               switch (activeTab) {
                 case "SAFT": return activeClients.filter((c: any) => c.saft === opt.value).length;
                 case "salarios": return activeClients.filter((c: any) => c.salarios === opt.value).length;
-                case "IVA": return activeClients.filter((c: any) => c.iva === opt.value).length;
+                case "IVA": return opt.value === "OSS" ? activeClients.filter((c: any) => c.iva_oss === "Sim").length : activeClients.filter((c: any) => c.iva === opt.value).length;
                 case "IVA_recapitulativa": return activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && (opt.value === "Mensal" ? c.iva === "Mensal" : opt.value === "Trimestral" ? (c.iva !== "Mensal" && c.recapitulativa !== "Não Aplicável") : c.recapitulativa === "Não Aplicável")).length;
                 case "SS_TI": return ssTiTab === "SS_TI_DT"
                   ? activeClients.filter((c: any) => isTI(c) && c.seguranca_social === opt.value).length
