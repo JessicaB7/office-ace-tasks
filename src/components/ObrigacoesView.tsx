@@ -107,6 +107,12 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "DMR": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
       case "retencao_fonte": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
       case "IVA": {
+        if (subFilter === "OSS") {
+          // OSS: dia 15 do mês seguinte ao fim do trimestre
+          const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
+          const d = addMonths(qEnd, year, 1);
+          return fmtDeadline(15, d.m, d.y);
+        }
         if (subFilter === "Trimestral") {
           const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
           const d = addMonths(qEnd, year, 2);
@@ -185,8 +191,12 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         }
         break;
       case "IVA":
-        list = activeClients.filter((c: any) => c.iva && c.iva !== "");
-        if (subFilter !== "all") list = list.filter((c: any) => c.iva === subFilter);
+        if (subFilter === "OSS") {
+          list = activeClients.filter((c: any) => c.iva_oss === "Sim");
+        } else {
+          list = activeClients.filter((c: any) => c.iva && c.iva !== "");
+          if (subFilter !== "all") list = list.filter((c: any) => c.iva === subFilter);
+        }
         break;
       case "IVA_recapitulativa":
         list = activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "");
@@ -218,10 +228,10 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
-    const type = isDMR ? dmrTab : isSSTI ? ssTiTab : activeTab;
+    const type = isDMR ? dmrTab : isSSTI ? ssTiTab : (activeTab === "IVA" && subFilter === "OSS") ? "IVA_OSS" : activeTab;
     obligations.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
     return map;
-  }, [obligations, activeTab, isDMR, dmrTab, isSSTI, ssTiTab]);
+  }, [obligations, activeTab, isDMR, dmrTab, isSSTI, ssTiTab, subFilter]);
 
   const toggleObligation = async (clientId: string, oblType: string, currentMap: Record<string, any>) => {
     const existing = currentMap[clientId];
@@ -241,7 +251,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     }
   };
 
-  const getOblType = () => isDMR ? dmrTab : isSSTI ? ssTiTab : activeTab;
+  const getOblType = () => isDMR ? dmrTab : isSSTI ? ssTiTab : (activeTab === "IVA" && subFilter === "OSS") ? "IVA_OSS" : activeTab;
   const toggleGuia = (clientId: string) => toggleObligation(clientId, getOblType(), oblMap);
 
   const togglePagamento = async (clientId: string) => {
@@ -279,7 +289,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     switch (activeTab) {
       case "SAFT": return SAFT_GROUPS.map(g => ({ value: g, label: g }));
       case "salarios": return SALARIOS_FILTERS;
-      case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
+      case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }, { value: "OSS", label: "OSS" }];
       case "IVA_recapitulativa": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }, { value: "Não Aplicável", label: "Não Aplicável" }];
       case "SS_TI": return ssTiTab === "SS_TI_DT" ? SS_TI_DT_FILTERS : SS_TI_FILTERS;
       case "emissao_faturas": return [{ value: "Semanal", label: "Semanal" }, { value: "Mensal", label: "Mensal" }, { value: "Pontual", label: "Pontual" }];
@@ -378,7 +388,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
               switch (activeTab) {
                 case "SAFT": return activeClients.filter((c: any) => c.saft === opt.value).length;
                 case "salarios": return activeClients.filter((c: any) => c.salarios === opt.value).length;
-                case "IVA": return activeClients.filter((c: any) => c.iva === opt.value).length;
+                case "IVA": return opt.value === "OSS" ? activeClients.filter((c: any) => c.iva_oss === "Sim").length : activeClients.filter((c: any) => c.iva === opt.value).length;
                 case "IVA_recapitulativa": return activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && (opt.value === "Mensal" ? c.iva === "Mensal" : opt.value === "Trimestral" ? (c.iva !== "Mensal" && c.recapitulativa !== "Não Aplicável") : c.recapitulativa === "Não Aplicável")).length;
                 case "SS_TI": return ssTiTab === "SS_TI_DT"
                   ? activeClients.filter((c: any) => isTI(c) && c.seguranca_social === opt.value).length

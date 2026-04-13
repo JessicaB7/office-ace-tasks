@@ -26,6 +26,7 @@ export type Database = {
           id: string
           inicio_contrato: string | null
           iva: string | null
+          iva_oss: string | null
           mensalidade: number | null
           name: string
           nif: string | null
@@ -59,6 +60,7 @@ export type Database = {
           id?: string
           inicio_contrato?: string | null
           iva?: string | null
+          iva_oss?: string | null
           mensalidade?: number | null
           name: string
           nif?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           id?: string
           inicio_contrato?: string | null
           iva?: string | null
+          iva_oss?: string | null
           mensalidade?: number | null
           name?: string
           nif?: string | null
