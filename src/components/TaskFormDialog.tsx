@@ -28,13 +28,16 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
   const upsert = useUpsertTask();
   const remove = useDeleteTask();
   const { toast } = useToast();
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentCollaboratorId, setCurrentCollaboratorId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setCurrentUserId(data.user.id);
+      if (data.user) {
+        const collab = collaborators.find(c => c.user_id === data.user.id);
+        setCurrentCollaboratorId(collab?.id || null);
+      }
     });
-  }, []);
+  }, [collaborators]);
   const [form, setForm] = useState(emptyForm);
   const isEditing = !!task;
 
@@ -71,7 +74,8 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
             ...form,
             client_id: form.client_id || null,
             collaborator_id: collab.id,
-          });
+            created_by: currentCollaboratorId,
+          } as any);
           // Send email notification
           const client = clients.find(c => c.id === form.client_id);
           if (collab.email) {
@@ -107,6 +111,7 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
           ...form,
           client_id: form.client_id || null,
           collaborator_id: newCollaboratorId,
+          ...(!task?.id ? { created_by: currentCollaboratorId } : {}),
           ...(task?.id ? { id: task.id } : {}),
         });
 
