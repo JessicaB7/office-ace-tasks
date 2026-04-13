@@ -185,8 +185,12 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         }
         break;
       case "IVA":
-        list = activeClients.filter((c: any) => c.iva && c.iva !== "");
-        if (subFilter !== "all") list = list.filter((c: any) => c.iva === subFilter);
+        if (subFilter === "OSS") {
+          list = activeClients.filter((c: any) => c.iva_oss === "Sim");
+        } else {
+          list = activeClients.filter((c: any) => c.iva && c.iva !== "");
+          if (subFilter !== "all") list = list.filter((c: any) => c.iva === subFilter);
+        }
         break;
       case "IVA_recapitulativa":
         list = activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "");
