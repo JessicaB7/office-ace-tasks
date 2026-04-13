@@ -279,7 +279,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     switch (activeTab) {
       case "SAFT": return SAFT_GROUPS.map(g => ({ value: g, label: g }));
       case "salarios": return SALARIOS_FILTERS;
-      case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }];
+      case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }, { value: "OSS", label: "OSS" }];
       case "IVA_recapitulativa": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }, { value: "Não Aplicável", label: "Não Aplicável" }];
       case "SS_TI": return ssTiTab === "SS_TI_DT" ? SS_TI_DT_FILTERS : SS_TI_FILTERS;
       case "emissao_faturas": return [{ value: "Semanal", label: "Semanal" }, { value: "Mensal", label: "Mensal" }, { value: "Pontual", label: "Pontual" }];
