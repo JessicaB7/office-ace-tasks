@@ -219,6 +219,11 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
             <label className="text-sm font-medium mb-1 block">Prazo</label>
             <input type="date" required value={form.due_date} onChange={(e) => set("due_date", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
+          {isEditing && task?.created_by_collaborator?.name && (
+            <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+              Atribuída por: <span className="font-medium text-foreground">{task.created_by_collaborator.name}</span>
+            </div>
+          )}
           <div className="flex items-center gap-3 pt-2">
             <button type="submit" disabled={upsert.isPending} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
               {upsert.isPending ? "A guardar..." : isEditing ? "Guardar" : "Criar Tarefa"}
