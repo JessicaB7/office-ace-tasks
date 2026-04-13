@@ -28,6 +28,13 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
   const upsert = useUpsertTask();
   const remove = useDeleteTask();
   const { toast } = useToast();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
+  }, []);
   const [form, setForm] = useState(emptyForm);
   const isEditing = !!task;
 
