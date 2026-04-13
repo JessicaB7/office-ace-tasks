@@ -396,6 +396,7 @@ export type Database = {
           client_id: string | null
           collaborator_id: string | null
           created_at: string
+          created_by: string | null
           description: string | null
           due_date: string
           id: string
@@ -409,6 +410,7 @@ export type Database = {
           client_id?: string | null
           collaborator_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           due_date: string
           id?: string
@@ -422,6 +424,7 @@ export type Database = {
           client_id?: string | null
           collaborator_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           due_date?: string
           id?: string
@@ -441,6 +444,13 @@ export type Database = {
           {
             foreignKeyName: "tasks_collaborator_id_fkey"
             columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "collaborators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "collaborators"
             referencedColumns: ["id"]

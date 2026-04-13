@@ -28,6 +28,16 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
   const upsert = useUpsertTask();
   const remove = useDeleteTask();
   const { toast } = useToast();
+  const [currentCollaboratorId, setCurrentCollaboratorId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        const collab = collaborators.find(c => c.user_id === data.user.id);
+        setCurrentCollaboratorId(collab?.id || null);
+      }
+    });
+  }, [collaborators]);
   const [form, setForm] = useState(emptyForm);
   const isEditing = !!task;
 
@@ -64,7 +74,8 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
             ...form,
             client_id: form.client_id || null,
             collaborator_id: collab.id,
-          });
+            created_by: currentCollaboratorId,
+          } as any);
           // Send email notification
           const client = clients.find(c => c.id === form.client_id);
           if (collab.email) {
@@ -100,6 +111,7 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
           ...form,
           client_id: form.client_id || null,
           collaborator_id: newCollaboratorId,
+          ...(!task?.id ? { created_by: currentCollaboratorId } : {}),
           ...(task?.id ? { id: task.id } : {}),
         });
 
@@ -207,6 +219,11 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
             <label className="text-sm font-medium mb-1 block">Prazo</label>
             <input type="date" required value={form.due_date} onChange={(e) => set("due_date", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
+          {isEditing && task?.created_by_collaborator?.name && (
+            <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+              Atribuída por: <span className="font-medium text-foreground">{task.created_by_collaborator.name}</span>
+            </div>
+          )}
           <div className="flex items-center gap-3 pt-2">
             <button type="submit" disabled={upsert.isPending} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
               {upsert.isPending ? "A guardar..." : isEditing ? "Guardar" : "Criar Tarefa"}
