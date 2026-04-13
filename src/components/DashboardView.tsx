@@ -33,6 +33,7 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios" },
   { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10], obligationType: "SS_TI_DT" },
   { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT" },
+  { title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS" },
 ];
 
 const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
