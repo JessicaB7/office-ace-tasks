@@ -88,6 +88,7 @@ interface ClientForm {
   seguranca_social: string;
   pag_seguranca_social: string;
   iva: string;
+  iva_oss: string;
   recapitulativa: string;
   faturacao: string;
   faturacao_frequencia: string;
@@ -99,7 +100,7 @@ const emptyForm: ClientForm = {
   programa_faturacao: "", utilizador_faturacao: "", senha_faturacao: "",
   saft: "", via_ctt: "", mensalidade: "", inicio_contrato: "",
   tipo_contabilidade: "SQ", seguranca_social: "", pag_seguranca_social: "",
-  iva: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "",
+  iva: "", iva_oss: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "",
   responsavel_id: "",
 };
 
@@ -140,6 +141,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         seguranca_social: client.seguranca_social || "",
         pag_seguranca_social: client.pag_seguranca_social || "",
         iva: client.iva || "",
+        iva_oss: client.iva_oss || "",
         recapitulativa: client.recapitulativa || "",
         faturacao: client.faturacao || "",
         faturacao_frequencia: client.faturacao_frequencia || "",
@@ -175,6 +177,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         seguranca_social: form.seguranca_social || null,
         pag_seguranca_social: form.pag_seguranca_social || null,
         iva: form.iva || null,
+        iva_oss: form.iva_oss || null,
         recapitulativa: form.recapitulativa || null,
         faturacao: form.faturacao || null,
         faturacao_frequencia: form.faturacao === "Emitir" ? (form.faturacao_frequencia || null) : null,
@@ -306,6 +309,14 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                   <label className="text-sm font-medium mb-1 block">IVA</label>
                   <select value={form.iva} onChange={(e) => set("iva", e.target.value)} className={inputClass}>
                     {IVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">IVA OSS</label>
+                  <select value={form.iva_oss} onChange={(e) => set("iva_oss", e.target.value)} className={inputClass}>
+                    <option value="">— Selecionar —</option>
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
                   </select>
                 </div>
                 <div>
