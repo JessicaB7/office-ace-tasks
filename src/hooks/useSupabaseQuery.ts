@@ -89,7 +89,7 @@ export function useTasks() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tasks")
-        .select("*, clients(name), collaborators(name), created_by_collaborator:collaborators!tasks_created_by_fkey(name)")
+        .select("*, clients(name), collaborators!tasks_collaborator_id_fkey(name), created_by_collaborator:collaborators!tasks_created_by_fkey(name)")
         .order("due_date");
       if (error) throw error;
       return data;
