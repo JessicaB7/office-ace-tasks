@@ -190,6 +190,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         recapitulativa: form.recapitulativa || null,
         faturacao: form.faturacao || null,
         faturacao_frequencia: form.faturacao === "Emitir" ? (form.faturacao_frequencia || null) : null,
+        salarios: form.salarios || null,
         responsavel_id: form.responsavel_id || null,
       };
       if (isEditing) payload.id = client.id;
