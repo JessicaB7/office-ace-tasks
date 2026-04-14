@@ -251,12 +251,13 @@ const DashboardView = () => {
             ? obligationData[dl.obligationKey]
             : null;
           const pending = info ? info.total - info.done : null;
+          const allDone = info ? info.total > 0 && info.done === info.total : false;
           const expandKey = `${title}-${dl.obligationKey}-${idx}`;
           const isExpanded = expandedType === expandKey;
           return (
             <div key={idx}>
               <div
-                className={`flex items-center justify-between text-sm px-3 py-2.5 rounded-lg transition-colors cursor-pointer hover:bg-muted/50 ${isExpanded ? "bg-muted/50" : ""}`}
+                className={`flex items-center justify-between text-sm px-3 py-2.5 rounded-lg transition-colors cursor-pointer hover:bg-muted/50 ${isExpanded ? "bg-muted/50" : ""} ${allDone ? "bg-green-50 dark:bg-green-950/20" : ""}`}
                 onClick={() => {
                   if (isExpanded) {
                     setExpandedType(null);
@@ -267,8 +268,8 @@ const DashboardView = () => {
                 }}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <CalendarDays className="w-3.5 h-3.5 text-destructive shrink-0" />
-                  <p className="font-medium truncate">{dl.title}</p>
+                  <CalendarDays className={`w-3.5 h-3.5 shrink-0 ${allDone ? "text-success" : "text-destructive"}`} />
+                  <p className={`font-medium truncate ${allDone ? "line-through text-muted-foreground" : ""}`}>{dl.title}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-2">
                   {info && (
