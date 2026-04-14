@@ -59,11 +59,22 @@ const DashboardView = () => {
   const [expandedTab, setExpandedTab] = useState<"pendentes" | "concluidos">("pendentes");
 
   const today = new Date();
-  // Reference month = previous month (deadlines in current month refer to previous month's obligations)
-  const prevMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
-  const prevYear = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-  const referenceMonth = `${prevYear}-${String(prevMonth + 1).padStart(2, "0")}-01`;
-  const { data: obligations = [] } = useMonthlyObligations(referenceMonth);
+  const curMonth = today.getMonth();
+  const curYear = today.getFullYear();
+
+  // Build reference months for offsets 1, 2, 3
+  const getRefMonth = (offset: number) => {
+    const m = (curMonth - offset + 12) % 12;
+    const y = curYear + Math.floor((curMonth - offset) / 12);
+    return `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  };
+  const refMonth1 = getRefMonth(1);
+  const refMonth2 = getRefMonth(2);
+  const refMonth3 = getRefMonth(3);
+
+  const { data: obligations1 = [] } = useMonthlyObligations(refMonth1);
+  const { data: obligations2 = [] } = useMonthlyObligations(refMonth2);
+  const { data: obligations3 = [] } = useMonthlyObligations(refMonth3);
 
   const currentCollaborator = useMemo(() => {
     if (!user?.email) return null;
