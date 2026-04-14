@@ -162,9 +162,10 @@ const DashboardView = () => {
       });
 
       // Salários - Envio on last day of month
+      const salariosIdx = FISCAL_DEADLINES.findIndex(d => d.obligationType === "salarios" && !d.checkExtra);
       const lastDayDate = new Date(yr, monthIndex, daysInMonth);
       if (lastDayDate >= monday && lastDayDate <= sunday) {
-        result.push({ title: "Salários - Envio", date: lastDayDate, obligationKey: "salarios" });
+        result.push({ title: "Salários - Envio", date: lastDayDate, obligationKey: salariosIdx >= 0 ? `salarios_${salariosIdx}` : undefined });
       }
 
       // Emissão de faturas on every Friday
