@@ -96,8 +96,7 @@ const DashboardView = () => {
           ((c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO") && c.iva && c.iva !== "" && c.iva !== "Art.53º"));
       case "DMR_AT":
       case "DMR_SS":
-        return allClients.filter((c: any) => c.tipo_contabilidade === "SQ" || 
-          ((c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO") && c.iva && c.iva !== "" && c.iva !== "Art.53º"));
+        return allClients.filter((c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "");
       default:
         return allClients;
     }
