@@ -78,51 +78,24 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
-  // Helper: filter clients relevant to each obligation type
-  const getClientsForObligation = (allClients: any[], obligationType: string) => {
-    switch (obligationType) {
-      case "IVA_OSS":
-        return allClients.filter((c: any) => c.iva_oss === "Sim");
-      case "SAFT":
-        return allClients.filter((c: any) => c.saft && c.saft !== "");
-      case "IVA":
-        return allClients.filter((c: any) => c.iva && c.iva !== "");
-      case "IVA_recapitulativa":
-        return allClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && c.recapitulativa !== "Não Aplicável");
-      case "salarios":
-        return allClients.filter((c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "");
-      case "SS_TI":
-        return allClients.filter((c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO");
-      case "SS_TI_DT":
-        return allClients.filter((c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO");
-      case "retencao_fonte":
-        return allClients.filter((c: any) => c.tipo_contabilidade === "SQ" || 
-          ((c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO") && c.iva && c.iva !== "" && c.iva !== "Art.53º"));
-      case "DMR_AT":
-      case "DMR_SS":
-        return allClients.filter((c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "");
-      default:
-        return allClients;
-    }
-  };
-
   // Count pending obligations per type — filtered to current collaborator's clients only
   const obligationData = useMemo(() => {
     const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string; responsavel_id: string | null }[]; doneClients: { id: string; name: string; responsavel_id: string | null }[] }> = {};
     const activeClients = clients.filter((c: any) => c.active);
-    // Filter to only the current collaborator's clients
     const myActiveClients = currentCollaborator
       ? activeClients.filter((c: any) => c.responsavel_id === currentCollaborator.id)
       : activeClients;
 
-    FISCAL_DEADLINES.forEach((dl) => {
+    FISCAL_DEADLINES.forEach((dl, idx) => {
       if (!dl.obligationType) return;
-      const key = dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType;
+      const key = dl.checkExtra ? `${dl.obligationType}_extra_${idx}` : `${dl.obligationType}_${idx}`;
       if (data[key]) return;
       const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
 
-      // Filter clients relevant to this obligation type
-      const myClients = getClientsForObligation(myActiveClients, dl.obligationType);
+      // Use per-deadline clientFilter for accurate counts
+      const myClients = dl.clientFilter
+        ? myActiveClients.filter(dl.clientFilter)
+        : myActiveClients;
 
       let doneClientIds: Set<string>;
       if (dl.checkExtra) {
