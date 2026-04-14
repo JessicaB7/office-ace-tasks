@@ -19,6 +19,7 @@ interface FiscalDeadline {
   checkExtra?: boolean;
   overrides?: Record<number, number>;
   clientFilter?: (c: any) => boolean;
+  refMonthOffset?: number; // how many months back from current month is the reference (default 1)
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
@@ -28,16 +29,16 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "Pedir documentação clientes", day: 15, months: null },
   { title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
   { title: "DMR SS - Pagamento", day: 20, months: null, obligationType: "DMR_SS", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
-  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA", clientFilter: (c) => c.iva === "Mensal" },
-  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa && c.recapitulativa !== "" && c.iva === "Mensal" },
-  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA", clientFilter: (c) => c.iva === "Trimestral" },
-  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa && c.recapitulativa !== "" && c.recapitulativa !== "Não Aplicável" && c.iva !== "Mensal" },
+  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA", clientFilter: (c) => c.iva === "Mensal", refMonthOffset: 2 },
+  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa && c.recapitulativa !== "" && c.iva === "Mensal", refMonthOffset: 2 },
+  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA", clientFilter: (c) => c.iva === "Trimestral", refMonthOffset: 2 },
+  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa && c.recapitulativa !== "" && c.recapitulativa !== "Não Aplicável" && c.iva !== "Mensal", refMonthOffset: 2 },
   { title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte", clientFilter: (c) => c.tipo_contabilidade === "SQ" || c.tipo_contabilidade === "TI CO" },
   { title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI", clientFilter: (c) => isTI(c) && !hasSalarios(c) },
   { title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios", clientFilter: (c) => hasSalarios(c) },
   { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
   { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
-  { title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS", clientFilter: (c) => c.iva_oss === "Sim" },
+  { title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS", clientFilter: (c) => c.iva_oss === "Sim", refMonthOffset: 3 },
 ];
 
 const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
@@ -58,11 +59,22 @@ const DashboardView = () => {
   const [expandedTab, setExpandedTab] = useState<"pendentes" | "concluidos">("pendentes");
 
   const today = new Date();
-  // Reference month = previous month (deadlines in current month refer to previous month's obligations)
-  const prevMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
-  const prevYear = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-  const referenceMonth = `${prevYear}-${String(prevMonth + 1).padStart(2, "0")}-01`;
-  const { data: obligations = [] } = useMonthlyObligations(referenceMonth);
+  const curMonth = today.getMonth();
+  const curYear = today.getFullYear();
+
+  // Build reference months for offsets 1, 2, 3
+  const getRefMonth = (offset: number) => {
+    const m = (curMonth - offset + 12) % 12;
+    const y = curYear + Math.floor((curMonth - offset) / 12);
+    return `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  };
+  const refMonth1 = getRefMonth(1);
+  const refMonth2 = getRefMonth(2);
+  const refMonth3 = getRefMonth(3);
+
+  const { data: obligations1 = [] } = useMonthlyObligations(refMonth1);
+  const { data: obligations2 = [] } = useMonthlyObligations(refMonth2);
+  const { data: obligations3 = [] } = useMonthlyObligations(refMonth3);
 
   const currentCollaborator = useMemo(() => {
     if (!user?.email) return null;
@@ -78,6 +90,12 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
+  const obligationsByOffset: Record<number, any[]> = useMemo(() => ({
+    1: obligations1,
+    2: obligations2,
+    3: obligations3,
+  }), [obligations1, obligations2, obligations3]);
+
   // Count pending obligations per type — filtered to current collaborator's clients only
   const obligationData = useMemo(() => {
     const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string; responsavel_id: string | null }[]; doneClients: { id: string; name: string; responsavel_id: string | null }[] }> = {};
@@ -90,9 +108,11 @@ const DashboardView = () => {
       if (!dl.obligationType) return;
       const key = dl.checkExtra ? `${dl.obligationType}_extra_${idx}` : `${dl.obligationType}_${idx}`;
       if (data[key]) return;
+      
+      const offset = dl.refMonthOffset ?? 1;
+      const obligations = obligationsByOffset[offset] || obligations1;
       const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
 
-      // Use per-deadline clientFilter for accurate counts
       const myClients = dl.clientFilter
         ? myActiveClients.filter(dl.clientFilter)
         : myActiveClients;
@@ -118,7 +138,7 @@ const DashboardView = () => {
       };
     });
     return data;
-  }, [obligations, clients, currentCollaborator]);
+  }, [obligations1, obligations2, obligations3, clients, currentCollaborator]);
 
   const getWeekDeadlines = (mondayDate: Date) => {
     const monday = new Date(mondayDate);
@@ -231,12 +251,13 @@ const DashboardView = () => {
             ? obligationData[dl.obligationKey]
             : null;
           const pending = info ? info.total - info.done : null;
+          const allDone = info ? info.total > 0 && info.done === info.total : false;
           const expandKey = `${title}-${dl.obligationKey}-${idx}`;
           const isExpanded = expandedType === expandKey;
           return (
             <div key={idx}>
               <div
-                className={`flex items-center justify-between text-sm px-3 py-2.5 rounded-lg transition-colors cursor-pointer hover:bg-muted/50 ${isExpanded ? "bg-muted/50" : ""}`}
+                className={`flex items-center justify-between text-sm px-3 py-2.5 rounded-lg transition-colors cursor-pointer hover:bg-muted/50 ${isExpanded ? "bg-muted/50" : ""} ${allDone ? "bg-green-50 dark:bg-green-950/20" : ""}`}
                 onClick={() => {
                   if (isExpanded) {
                     setExpandedType(null);
@@ -247,8 +268,8 @@ const DashboardView = () => {
                 }}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <CalendarDays className="w-3.5 h-3.5 text-destructive shrink-0" />
-                  <p className="font-medium truncate">{dl.title}</p>
+                  <CalendarDays className={`w-3.5 h-3.5 shrink-0 ${allDone ? "text-success" : "text-destructive"}`} />
+                  <p className={`font-medium truncate ${allDone ? "line-through text-muted-foreground" : ""}`}>{dl.title}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-2">
                   {info && (
