@@ -153,6 +153,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         recapitulativa: client.recapitulativa || "",
         faturacao: client.faturacao || "",
         faturacao_frequencia: client.faturacao_frequencia || "",
+        salarios: client.salarios || "",
         responsavel_id: client.responsavel_id || "",
       });
     } else {
