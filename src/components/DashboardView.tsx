@@ -7,6 +7,9 @@ import { useAuth } from "@/hooks/useAuth";
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const QUARTER_REF: Record<number, string> = { 1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT" };
 
+const hasSalarios = (c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "";
+const isTI = (c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO";
+
 interface FiscalDeadline {
   title: string;
   day: number;
@@ -15,25 +18,26 @@ interface FiscalDeadline {
   obligationType?: string;
   checkExtra?: boolean;
   overrides?: Record<number, number>;
+  clientFilter?: (c: any) => boolean;
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
-  { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 } },
-  { title: "DMR AT - Guia", day: 10, months: null, obligationType: "DMR_AT" },
-  { title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS" },
+  { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 }, clientFilter: (c) => c.saft && c.saft !== "" },
+  { title: "DMR AT - Guia", day: 10, months: null, obligationType: "DMR_AT", clientFilter: (c) => hasSalarios(c) },
+  { title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS", clientFilter: (c) => hasSalarios(c) },
   { title: "Pedir documentação clientes", day: 15, months: null },
-  { title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true },
-  { title: "DMR SS - Pagamento", day: 20, months: null, obligationType: "DMR_SS", checkExtra: true },
-  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA" },
-  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa" },
-  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA" },
-  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa" },
-  { title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte" },
-  { title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI" },
-  { title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios" },
-  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10], obligationType: "SS_TI_DT" },
-  { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT" },
-  { title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS" },
+  { title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
+  { title: "DMR SS - Pagamento", day: 20, months: null, obligationType: "DMR_SS", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
+  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA", clientFilter: (c) => c.iva === "Mensal" },
+  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa && c.recapitulativa !== "" && c.iva === "Mensal" },
+  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA", clientFilter: (c) => c.iva === "Trimestral" },
+  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa && c.recapitulativa !== "" && c.recapitulativa !== "Não Aplicável" && c.iva !== "Mensal" },
+  { title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte", clientFilter: (c) => c.tipo_contabilidade === "SQ" || c.tipo_contabilidade === "TI CO" },
+  { title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI", clientFilter: (c) => isTI(c) && !hasSalarios(c) },
+  { title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios", clientFilter: (c) => hasSalarios(c) },
+  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
+  { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
+  { title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS", clientFilter: (c) => c.iva_oss === "Sim" },
 ];
 
 const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
@@ -74,51 +78,24 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
-  // Helper: filter clients relevant to each obligation type
-  const getClientsForObligation = (allClients: any[], obligationType: string) => {
-    switch (obligationType) {
-      case "IVA_OSS":
-        return allClients.filter((c: any) => c.iva_oss === "Sim");
-      case "SAFT":
-        return allClients.filter((c: any) => c.saft && c.saft !== "");
-      case "IVA":
-        return allClients.filter((c: any) => c.iva && c.iva !== "");
-      case "IVA_recapitulativa":
-        return allClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && c.recapitulativa !== "Não Aplicável");
-      case "salarios":
-        return allClients.filter((c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "");
-      case "SS_TI":
-        return allClients.filter((c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO");
-      case "SS_TI_DT":
-        return allClients.filter((c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO");
-      case "retencao_fonte":
-        return allClients.filter((c: any) => c.tipo_contabilidade === "SQ" || 
-          ((c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO") && c.iva && c.iva !== "" && c.iva !== "Art.53º"));
-      case "DMR_AT":
-      case "DMR_SS":
-        return allClients.filter((c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "");
-      default:
-        return allClients;
-    }
-  };
-
   // Count pending obligations per type — filtered to current collaborator's clients only
   const obligationData = useMemo(() => {
     const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string; responsavel_id: string | null }[]; doneClients: { id: string; name: string; responsavel_id: string | null }[] }> = {};
     const activeClients = clients.filter((c: any) => c.active);
-    // Filter to only the current collaborator's clients
     const myActiveClients = currentCollaborator
       ? activeClients.filter((c: any) => c.responsavel_id === currentCollaborator.id)
       : activeClients;
 
-    FISCAL_DEADLINES.forEach((dl) => {
+    FISCAL_DEADLINES.forEach((dl, idx) => {
       if (!dl.obligationType) return;
-      const key = dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType;
+      const key = dl.checkExtra ? `${dl.obligationType}_extra_${idx}` : `${dl.obligationType}_${idx}`;
       if (data[key]) return;
       const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
 
-      // Filter clients relevant to this obligation type
-      const myClients = getClientsForObligation(myActiveClients, dl.obligationType);
+      // Use per-deadline clientFilter for accurate counts
+      const myClients = dl.clientFilter
+        ? myActiveClients.filter(dl.clientFilter)
+        : myActiveClients;
 
       let doneClientIds: Set<string>;
       if (dl.checkExtra) {
@@ -162,7 +139,7 @@ const DashboardView = () => {
       const yr = monday.getMonth() === 11 && monthIndex === 0 ? monday.getFullYear() + 1 : monday.getFullYear();
       const daysInMonth = new Date(yr, monthIndex + 1, 0).getDate();
 
-      FISCAL_DEADLINES.forEach((dl) => {
+      FISCAL_DEADLINES.forEach((dl, dlIdx) => {
         if (dl.months === null || dl.months.includes(month1)) {
           let day = dl.overrides?.[month1] ?? dl.day;
           day = Math.min(day, daysInMonth);
@@ -177,7 +154,7 @@ const DashboardView = () => {
               title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
             }
             const obligationKey = dl.obligationType
-              ? (dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType)
+              ? (dl.checkExtra ? `${dl.obligationType}_extra_${dlIdx}` : `${dl.obligationType}_${dlIdx}`)
               : undefined;
             result.push({ title, date: deadlineDate, obligationKey });
           }
@@ -185,9 +162,10 @@ const DashboardView = () => {
       });
 
       // Salários - Envio on last day of month
+      const salariosIdx = FISCAL_DEADLINES.findIndex(d => d.obligationType === "salarios" && !d.checkExtra);
       const lastDayDate = new Date(yr, monthIndex, daysInMonth);
       if (lastDayDate >= monday && lastDayDate <= sunday) {
-        result.push({ title: "Salários - Envio", date: lastDayDate, obligationKey: "salarios" });
+        result.push({ title: "Salários - Envio", date: lastDayDate, obligationKey: salariosIdx >= 0 ? `salarios_${salariosIdx}` : undefined });
       }
 
       // Emissão de faturas on every Friday
