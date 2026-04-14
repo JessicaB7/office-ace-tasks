@@ -18,6 +18,7 @@ const SALARIOS_OPTIONS = [
   { value: "Não tem", label: "Não tem" },
 ];
 
+const SS_OPTIONS = [
   { value: "", label: "— Selecionar —" },
   { value: "Mensal", label: "Mensal" },
   { value: "Trimestral", label: "Trimestral" },
