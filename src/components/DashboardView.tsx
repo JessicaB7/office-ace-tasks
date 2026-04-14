@@ -90,6 +90,12 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
+  const obligationsByOffset: Record<number, any[]> = useMemo(() => ({
+    1: obligations1,
+    2: obligations2,
+    3: obligations3,
+  }), [obligations1, obligations2, obligations3]);
+
   // Count pending obligations per type — filtered to current collaborator's clients only
   const obligationData = useMemo(() => {
     const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string; responsavel_id: string | null }[]; doneClients: { id: string; name: string; responsavel_id: string | null }[] }> = {};
@@ -102,9 +108,11 @@ const DashboardView = () => {
       if (!dl.obligationType) return;
       const key = dl.checkExtra ? `${dl.obligationType}_extra_${idx}` : `${dl.obligationType}_${idx}`;
       if (data[key]) return;
+      
+      const offset = dl.refMonthOffset ?? 1;
+      const obligations = obligationsByOffset[offset] || obligations1;
       const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
 
-      // Use per-deadline clientFilter for accurate counts
       const myClients = dl.clientFilter
         ? myActiveClients.filter(dl.clientFilter)
         : myActiveClients;
@@ -130,7 +138,7 @@ const DashboardView = () => {
       };
     });
     return data;
-  }, [obligations, clients, currentCollaborator]);
+  }, [obligations1, obligations2, obligations3, clients, currentCollaborator]);
 
   const getWeekDeadlines = (mondayDate: Date) => {
     const monday = new Date(mondayDate);
