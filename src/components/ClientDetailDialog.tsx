@@ -11,6 +11,13 @@ const TIPO_CONTAB_OPTIONS = [
   { value: "TI CO", label: "TI Organizado" },
 ];
 
+const SALARIOS_OPTIONS = [
+  { value: "", label: "— Selecionar —" },
+  { value: "Sim até dia 25", label: "Sim até dia 25" },
+  { value: "Sim até ao fim do mês", label: "Sim até ao fim do mês" },
+  { value: "Não tem", label: "Não tem" },
+];
+
 const SS_OPTIONS = [
   { value: "", label: "— Selecionar —" },
   { value: "Mensal", label: "Mensal" },
@@ -92,6 +99,7 @@ interface ClientForm {
   recapitulativa: string;
   faturacao: string;
   faturacao_frequencia: string;
+  salarios: string;
   responsavel_id: string;
 }
 
@@ -101,7 +109,7 @@ const emptyForm: ClientForm = {
   saft: "", via_ctt: "", mensalidade: "", inicio_contrato: "",
   tipo_contabilidade: "SQ", seguranca_social: "", pag_seguranca_social: "",
   iva: "", iva_oss: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "",
-  responsavel_id: "",
+  salarios: "", responsavel_id: "",
 };
 
 interface ClientDetailDialogProps {
@@ -145,6 +153,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         recapitulativa: client.recapitulativa || "",
         faturacao: client.faturacao || "",
         faturacao_frequencia: client.faturacao_frequencia || "",
+        salarios: client.salarios || "",
         responsavel_id: client.responsavel_id || "",
       });
     } else {
@@ -181,6 +190,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         recapitulativa: form.recapitulativa || null,
         faturacao: form.faturacao || null,
         faturacao_frequencia: form.faturacao === "Emitir" ? (form.faturacao_frequencia || null) : null,
+        salarios: form.salarios || null,
         responsavel_id: form.responsavel_id || null,
       };
       if (isEditing) payload.id = client.id;
@@ -339,6 +349,12 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                     </select>
                   </div>
                 )}
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Salários</label>
+                  <select value={form.salarios} onChange={(e) => set("salarios", e.target.value)} className={inputClass}>
+                    {SALARIOS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">SAFT (Enquadramento)</label>
                   <select value={form.saft} onChange={(e) => set("saft", e.target.value)} className={inputClass}>
