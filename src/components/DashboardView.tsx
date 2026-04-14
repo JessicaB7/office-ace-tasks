@@ -54,7 +54,10 @@ const DashboardView = () => {
   const [expandedTab, setExpandedTab] = useState<"pendentes" | "concluidos">("pendentes");
 
   const today = new Date();
-  const referenceMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+  // Reference month = previous month (deadlines in current month refer to previous month's obligations)
+  const prevMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
+  const prevYear = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+  const referenceMonth = `${prevYear}-${String(prevMonth + 1).padStart(2, "0")}-01`;
   const { data: obligations = [] } = useMonthlyObligations(referenceMonth);
 
   const currentCollaborator = useMemo(() => {
@@ -71,12 +74,41 @@ const DashboardView = () => {
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
 
+  // Helper: filter clients relevant to each obligation type
+  const getClientsForObligation = (allClients: any[], obligationType: string) => {
+    switch (obligationType) {
+      case "IVA_OSS":
+        return allClients.filter((c: any) => c.iva_oss === "Sim");
+      case "SAFT":
+        return allClients.filter((c: any) => c.saft && c.saft !== "");
+      case "IVA":
+        return allClients.filter((c: any) => c.iva && c.iva !== "");
+      case "IVA_recapitulativa":
+        return allClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && c.recapitulativa !== "Não Aplicável");
+      case "salarios":
+        return allClients.filter((c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "");
+      case "SS_TI":
+        return allClients.filter((c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO");
+      case "SS_TI_DT":
+        return allClients.filter((c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO");
+      case "retencao_fonte":
+        return allClients.filter((c: any) => c.tipo_contabilidade === "SQ" || 
+          ((c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO") && c.iva && c.iva !== "" && c.iva !== "Art.53º"));
+      case "DMR_AT":
+      case "DMR_SS":
+        return allClients.filter((c: any) => c.tipo_contabilidade === "SQ" || 
+          ((c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO") && c.iva && c.iva !== "" && c.iva !== "Art.53º"));
+      default:
+        return allClients;
+    }
+  };
+
   // Count pending obligations per type — filtered to current collaborator's clients only
   const obligationData = useMemo(() => {
     const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string; responsavel_id: string | null }[]; doneClients: { id: string; name: string; responsavel_id: string | null }[] }> = {};
     const activeClients = clients.filter((c: any) => c.active);
     // Filter to only the current collaborator's clients
-    const myClients = currentCollaborator
+    const myActiveClients = currentCollaborator
       ? activeClients.filter((c: any) => c.responsavel_id === currentCollaborator.id)
       : activeClients;
 
@@ -85,6 +117,9 @@ const DashboardView = () => {
       const key = dl.checkExtra ? `${dl.obligationType}_extra` : dl.obligationType;
       if (data[key]) return;
       const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
+
+      // Filter clients relevant to this obligation type
+      const myClients = getClientsForObligation(myActiveClients, dl.obligationType);
 
       let doneClientIds: Set<string>;
       if (dl.checkExtra) {
