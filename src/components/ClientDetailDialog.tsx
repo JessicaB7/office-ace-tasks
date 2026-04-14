@@ -99,6 +99,7 @@ interface ClientForm {
   recapitulativa: string;
   faturacao: string;
   faturacao_frequencia: string;
+  salarios: string;
   responsavel_id: string;
 }
 
@@ -108,7 +109,7 @@ const emptyForm: ClientForm = {
   saft: "", via_ctt: "", mensalidade: "", inicio_contrato: "",
   tipo_contabilidade: "SQ", seguranca_social: "", pag_seguranca_social: "",
   iva: "", iva_oss: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "",
-  responsavel_id: "",
+  salarios: "", responsavel_id: "",
 };
 
 interface ClientDetailDialogProps {
