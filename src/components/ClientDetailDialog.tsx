@@ -11,7 +11,13 @@ const TIPO_CONTAB_OPTIONS = [
   { value: "TI CO", label: "TI Organizado" },
 ];
 
-const SS_OPTIONS = [
+const SALARIOS_OPTIONS = [
+  { value: "", label: "— Selecionar —" },
+  { value: "Sim até dia 25", label: "Sim até dia 25" },
+  { value: "Sim até ao fim do mês", label: "Sim até ao fim do mês" },
+  { value: "Não tem", label: "Não tem" },
+];
+
   { value: "", label: "— Selecionar —" },
   { value: "Mensal", label: "Mensal" },
   { value: "Trimestral", label: "Trimestral" },
