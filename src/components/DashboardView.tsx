@@ -7,6 +7,9 @@ import { useAuth } from "@/hooks/useAuth";
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const QUARTER_REF: Record<number, string> = { 1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT" };
 
+const hasSalarios = (c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "";
+const isTI = (c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO";
+
 interface FiscalDeadline {
   title: string;
   day: number;
@@ -15,25 +18,26 @@ interface FiscalDeadline {
   obligationType?: string;
   checkExtra?: boolean;
   overrides?: Record<number, number>;
+  clientFilter?: (c: any) => boolean;
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
-  { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 } },
-  { title: "DMR AT - Guia", day: 10, months: null, obligationType: "DMR_AT" },
-  { title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS" },
+  { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 }, clientFilter: (c) => c.saft && c.saft !== "" },
+  { title: "DMR AT - Guia", day: 10, months: null, obligationType: "DMR_AT", clientFilter: (c) => hasSalarios(c) },
+  { title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS", clientFilter: (c) => hasSalarios(c) },
   { title: "Pedir documentação clientes", day: 15, months: null },
-  { title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true },
-  { title: "DMR SS - Pagamento", day: 20, months: null, obligationType: "DMR_SS", checkExtra: true },
-  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA" },
-  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa" },
-  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA" },
-  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa" },
-  { title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte" },
-  { title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI" },
-  { title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios" },
-  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10], obligationType: "SS_TI_DT" },
-  { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT" },
-  { title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS" },
+  { title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
+  { title: "DMR SS - Pagamento", day: 20, months: null, obligationType: "DMR_SS", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
+  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA", clientFilter: (c) => c.iva === "Mensal" },
+  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa && c.recapitulativa !== "" && c.iva === "Mensal" },
+  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA", clientFilter: (c) => c.iva === "Trimestral" },
+  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa && c.recapitulativa !== "" && c.recapitulativa !== "Não Aplicável" && c.iva !== "Mensal" },
+  { title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte", clientFilter: (c) => c.tipo_contabilidade === "SQ" || c.tipo_contabilidade === "TI CO" },
+  { title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI", clientFilter: (c) => isTI(c) && !hasSalarios(c) },
+  { title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios", clientFilter: (c) => hasSalarios(c) },
+  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
+  { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
+  { title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS", clientFilter: (c) => c.iva_oss === "Sim" },
 ];
 
 const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
