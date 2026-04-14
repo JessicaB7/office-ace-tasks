@@ -350,6 +350,12 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                   </div>
                 )}
                 <div>
+                  <label className="text-sm font-medium mb-1 block">Salários</label>
+                  <select value={form.salarios} onChange={(e) => set("salarios", e.target.value)} className={inputClass}>
+                    {SALARIOS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div>
                   <label className="text-sm font-medium mb-1 block">SAFT (Enquadramento)</label>
                   <select value={form.saft} onChange={(e) => set("saft", e.target.value)} className={inputClass}>
                     {SAFT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
