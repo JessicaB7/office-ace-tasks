@@ -276,7 +276,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                     </td>
                     {!hideNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
-                    {activeTab === "empresas" && (
+                    {showNotes && (
                       <td className="px-4 py-3 align-top">
                         <MonthlyNoteCell
                           clientId={client.id}
