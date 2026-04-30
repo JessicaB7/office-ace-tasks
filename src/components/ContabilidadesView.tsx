@@ -47,6 +47,7 @@ const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
   empresas: {
     label: "Empresas",
     filter: (c) => c.tipo_contabilidade === "SQ",
+    hideNif: true,
   },
 };
 
