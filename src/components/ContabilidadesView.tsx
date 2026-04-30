@@ -197,7 +197,8 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     }));
   }, [config, baseClients]);
 
-  const totalCols = 2 + (hideNif ? 0 : 1) + (activeTab === "empresas" ? 1 : 0) + (hasMultiColumns ? columns!.length : 1);
+  const showNotes = activeTab === "empresas" || activeTab === "organizada";
+  const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length : 1);
 
   return (
     <div className="space-y-5">
@@ -249,7 +250,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
                 {!hideNif && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
-                {activeTab === "empresas" && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
+                {showNotes && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {hasMultiColumns ? (
                   columns!.map((col) => (
                     <th key={col} className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">{col}</th>
@@ -275,7 +276,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                     </td>
                     {!hideNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
-                    {activeTab === "empresas" && (
+                    {showNotes && (
                       <td className="px-4 py-3 align-top">
                         <MonthlyNoteCell
                           clientId={client.id}
