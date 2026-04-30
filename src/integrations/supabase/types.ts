@@ -297,6 +297,7 @@ export type Database = {
           created_at: string
           extra_done: boolean | null
           id: string
+          notes: string | null
           obligation_type: string
           reference_month: string
           status: string
@@ -309,6 +310,7 @@ export type Database = {
           created_at?: string
           extra_done?: boolean | null
           id?: string
+          notes?: string | null
           obligation_type: string
           reference_month: string
           status?: string
@@ -321,6 +323,7 @@ export type Database = {
           created_at?: string
           extra_done?: boolean | null
           id?: string
+          notes?: string | null
           obligation_type?: string
           reference_month?: string
           status?: string
