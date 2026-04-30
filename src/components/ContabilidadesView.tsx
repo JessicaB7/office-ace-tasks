@@ -267,6 +267,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                     </td>
                     {!hideNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
+                    {activeTab === "empresas" && <td className="px-4 py-3 text-muted-foreground text-xs max-w-xs whitespace-pre-wrap">{client.notas_internas || "—"}</td>}
                     {hasMultiColumns ? (
                       colMaps.map((map, i) => {
                         const done = map[client.id]?.status === "concluida";
