@@ -133,6 +133,13 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     return map;
   }, [obligations, oblType]);
 
+  // Notes map for empresas tab (one row per client/month with obligation_type = 'empresa_notes')
+  const notesMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    obligations.forEach((o: any) => { if (o.obligation_type === "empresa_notes") map[o.client_id] = o; });
+    return map;
+  }, [obligations]);
+
   const filteredClients = useMemo(() => {
     if (!config) return [];
     let list = activeClients.filter(config.filter);
