@@ -189,7 +189,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     }));
   }, [config, baseClients]);
 
-  const totalCols = 2 + (hideNif ? 0 : 1) + (hasMultiColumns ? columns!.length : 1);
+  const totalCols = 2 + (hideNif ? 0 : 1) + (activeTab === "empresas" ? 1 : 0) + (hasMultiColumns ? columns!.length : 1);
 
   return (
     <div className="space-y-5">
