@@ -39,7 +39,7 @@ const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     filter: (c) => c.tipo_contabilidade === "TI CO",
     hasIvaTabs: true,
     hideNif: true,
-    columns: ["Vendas", "Compras", "Bancos", "E-Fatura", "Análise"],
+    columns: ["Vendas", "Compras", "Bancos", "E-Fatura", "Análise", "Notas"],
     subFilters: [
       { value: "Isento", label: "Isento", match: (c) => c.iva === "Art.53º" || c.iva === "Art. 9º" },
       { value: "Trimestral", label: "Trimestral", match: (c) => c.iva === "Trimestral" },
