@@ -250,7 +250,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
                 {!hideNif && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
-                {activeTab === "empresas" && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
+                {showNotes && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {hasMultiColumns ? (
                   columns!.map((col) => (
                     <th key={col} className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">{col}</th>
