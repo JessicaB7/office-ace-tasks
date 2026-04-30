@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import ClientMonthlyHistoryDialog from "@/components/ClientMonthlyHistoryDialog";
+import MonthlyNoteCell from "@/components/MonthlyNoteCell";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -131,6 +132,13 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     obligations.forEach((o: any) => { if (o.obligation_type === oblType) map[o.client_id] = o; });
     return map;
   }, [obligations, oblType]);
+
+  // Notes map for empresas tab (one row per client/month with obligation_type = 'empresa_notes')
+  const notesMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    obligations.forEach((o: any) => { if (o.obligation_type === "empresa_notes") map[o.client_id] = o; });
+    return map;
+  }, [obligations]);
 
   const filteredClients = useMemo(() => {
     if (!config) return [];
@@ -267,7 +275,16 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                     </td>
                     {!hideNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
-                    {activeTab === "empresas" && <td className="px-4 py-3 text-muted-foreground text-xs max-w-xs whitespace-pre-wrap">{client.notas_internas || "—"}</td>}
+                    {activeTab === "empresas" && (
+                      <td className="px-4 py-3 align-top">
+                        <MonthlyNoteCell
+                          clientId={client.id}
+                          referenceMonth={referenceMonth}
+                          obligationId={notesMap[client.id]?.id}
+                          initialNotes={notesMap[client.id]?.notes || ""}
+                        />
+                      </td>
+                    )}
                     {hasMultiColumns ? (
                       colMaps.map((map, i) => {
                         const done = map[client.id]?.status === "concluida";

@@ -1,0 +1,1 @@
+ALTER TABLE public.monthly_obligations ADD COLUMN IF NOT EXISTS notes text;
