@@ -164,6 +164,7 @@ export function useUpsertObligation() {
       completed_at?: string | null;
       completed_by?: string | null;
       extra_done?: boolean;
+      notes?: string | null;
     }) => {
       if (obligation.id) {
         const { data, error } = await supabase
