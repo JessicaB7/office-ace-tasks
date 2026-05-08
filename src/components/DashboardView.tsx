@@ -3,6 +3,7 @@ import { useTasks, useMonthlyObligations, useClients, useCollaborators } from "@
 import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
 import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays, ClipboardList } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import ClientDetailDialog from "@/components/ClientDetailDialog";
 
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const QUARTER_REF: Record<number, string> = { 1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT" };
@@ -57,6 +58,7 @@ const DashboardView = () => {
   const { data: collaborators = [] } = useCollaborators();
   const [expandedType, setExpandedType] = useState<string | null>(null);
   const [expandedTab, setExpandedTab] = useState<"pendentes" | "concluidos">("pendentes");
+  const [selectedClient, setSelectedClient] = useState<any | null>(null);
 
   const today = new Date();
   const curMonth = today.getMonth();
@@ -322,7 +324,11 @@ const DashboardView = () => {
                               {group.collabName} ({group.clients.length})
                             </div>
                             {group.clients.map((c) => (
-                              <div key={c.id} className="px-3 py-1.5 text-xs border-b last:border-b-0 flex items-center gap-2 pl-5">
+                              <div
+                                key={c.id}
+                                onClick={() => setSelectedClient(clients.find((cc: any) => cc.id === c.id) || null)}
+                                className="px-3 py-1.5 text-xs border-b last:border-b-0 flex items-center gap-2 pl-5 cursor-pointer hover:bg-muted/40"
+                              >
                                 <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
                                 {c.name}
                               </div>
@@ -341,7 +347,11 @@ const DashboardView = () => {
                               {group.collabName} ({group.clients.length})
                             </div>
                             {group.clients.map((c) => (
-                              <div key={c.id} className="px-3 py-1.5 text-xs border-b last:border-b-0 flex items-center gap-2 pl-5">
+                              <div
+                                key={c.id}
+                                onClick={() => setSelectedClient(clients.find((cc: any) => cc.id === c.id) || null)}
+                                className="px-3 py-1.5 text-xs border-b last:border-b-0 flex items-center gap-2 pl-5 cursor-pointer hover:bg-muted/40"
+                              >
                                 <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
                                 {c.name}
                               </div>
@@ -463,6 +473,12 @@ const DashboardView = () => {
           </div>
         );
       })()}
+      <ClientDetailDialog
+        client={selectedClient}
+        open={!!selectedClient}
+        onClose={() => setSelectedClient(null)}
+        allowDelete={false}
+      />
     </div>
   );
 };
