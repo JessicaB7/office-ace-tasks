@@ -472,7 +472,14 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Enviado</th>
                   </>
                 )}
-                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
+                {isIVAPeriodica && (
+                  <>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-20">Entregue</th>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-24">Flexibilização</th>
+                    <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Método de Pagamento</th>
+                  </>
+                )}
+                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
               </tr>
             </thead>
             <tbody>
