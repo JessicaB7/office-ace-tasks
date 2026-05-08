@@ -23,7 +23,7 @@ interface FiscalDeadline {
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
-  { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 }, clientFilter: (c) => c.saft && c.saft !== "" },
+  { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 }, clientFilter: (c) => c.saft && c.saft !== "" && c.saft !== "Não Aplicável" },
   { title: "DMR AT - Guia", day: 10, months: null, obligationType: "DMR_AT", clientFilter: (c) => hasSalarios(c) },
   { title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS", clientFilter: (c) => hasSalarios(c) },
   { title: "Pedir documentação clientes", day: 15, months: null },
