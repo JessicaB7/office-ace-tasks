@@ -171,7 +171,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     let list: any[] = [];
     switch (activeTab) {
       case "SAFT":
-        list = activeClients.filter((c: any) => c.saft && c.saft !== "");
+        list = activeClients.filter((c: any) => c.saft && c.saft !== "" && c.saft !== "Não Aplicável");
         if (subFilter !== "all") list = list.filter((c: any) => c.saft === subFilter);
         break;
       case "salarios":
