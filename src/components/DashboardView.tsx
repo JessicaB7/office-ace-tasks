@@ -347,7 +347,11 @@ const DashboardView = () => {
                               {group.collabName} ({group.clients.length})
                             </div>
                             {group.clients.map((c) => (
-                              <div key={c.id} className="px-3 py-1.5 text-xs border-b last:border-b-0 flex items-center gap-2 pl-5">
+                              <div
+                                key={c.id}
+                                onClick={() => setSelectedClient(clients.find((cc: any) => cc.id === c.id) || null)}
+                                className="px-3 py-1.5 text-xs border-b last:border-b-0 flex items-center gap-2 pl-5 cursor-pointer hover:bg-muted/40"
+                              >
                                 <span className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
                                 {c.name}
                               </div>
