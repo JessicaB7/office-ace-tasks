@@ -146,6 +146,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
   const isDMR = activeTab === "DMR";
   const isIVA = activeTab === "IVA";
+  const isIVAPeriodica = isIVA && subFilter !== "OSS";
   const isIVARecap = activeTab === "IVA_recapitulativa";
   const isSSTI = activeTab === "SS_TI";
   const isRight = checkboxRight.has(activeTab);
@@ -159,6 +160,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showDTContent = !(isDT && !isDTMonth);
   const showNotasColumn = isDT && subFilter === "Isento";
   const isEmissaoFaturas = activeTab === "emissao_faturas";
+  const showIvaPeriodicaCols = isIVAPeriodica;
 
   // Quarter label for DT: Apr=Q1(Jan-Mar), Jul=Q2(Apr-Jun), Oct=Q3(Jul-Sep), Jan=Q4(Oct-Dec)
   const dtQuarterLabel = (() => {
