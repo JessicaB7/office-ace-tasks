@@ -58,6 +58,7 @@ const DashboardView = () => {
   const { data: collaborators = [] } = useCollaborators();
   const [expandedType, setExpandedType] = useState<string | null>(null);
   const [expandedTab, setExpandedTab] = useState<"pendentes" | "concluidos">("pendentes");
+  const [selectedClient, setSelectedClient] = useState<any | null>(null);
 
   const today = new Date();
   const curMonth = today.getMonth();
