@@ -564,7 +564,37 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                         <td className="text-center px-3 py-3"><CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} /></td>
                       </>
                     )}
-                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && (
+                    {isIVAPeriodica && (
+                      <>
+                        <td className="text-center px-3 py-3"><CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} /></td>
+                        <td className="text-center px-3 py-3">
+                          <button onClick={() => toggleExtra(client.id)} disabled={upsert.isPending}
+                            className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-colors mx-auto",
+                              isExtraDone ? "bg-blue-500 border-blue-500 text-white" : "border-muted-foreground/30 hover:border-primary")}>
+                            {isExtraDone && <Check className="w-4 h-4" />}
+                          </button>
+                        </td>
+                        <td className="px-3 py-3">
+                          <input
+                            type="text"
+                            defaultValue={obl?.notes || ""}
+                            placeholder="Adicionar método..."
+                            className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                            onBlur={async (e) => {
+                              const val = e.target.value;
+                              if (val === (obl?.notes || "")) return;
+                              if (obl?.id) {
+                                await upsert.mutateAsync({ id: obl.id, client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: obl.status, notes: val || null });
+                              } else {
+                                await upsert.mutateAsync({ client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: "pendente", notes: val || null });
+                              }
+                            }}
+                            onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                          />
+                        </td>
+                      </>
+                    )}
+                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
