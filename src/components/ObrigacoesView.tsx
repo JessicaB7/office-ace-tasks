@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-const SAFT_GROUPS = ["Automático", "A entregar", "Não Aplicável"];
+const SAFT_GROUPS = ["Automático", "A entregar"];
 const SALARIOS_FILTERS = [
   { value: "Sim até dia 25", label: "Até dia 25" },
   { value: "Sim até ao fim do mês", label: "Até ao fim do mês" },
