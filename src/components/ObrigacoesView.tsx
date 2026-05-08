@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-const SAFT_GROUPS = ["Automático", "A entregar", "Não Aplicável"];
+const SAFT_GROUPS = ["Automático", "A entregar"];
 const SALARIOS_FILTERS = [
   { value: "Sim até dia 25", label: "Até dia 25" },
   { value: "Sim até ao fim do mês", label: "Até ao fim do mês" },
@@ -146,6 +146,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
 
   const isDMR = activeTab === "DMR";
   const isIVA = activeTab === "IVA";
+  const isIVAPeriodica = isIVA && subFilter !== "OSS";
   const isIVARecap = activeTab === "IVA_recapitulativa";
   const isSSTI = activeTab === "SS_TI";
   const isRight = checkboxRight.has(activeTab);
@@ -159,6 +160,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showDTContent = !(isDT && !isDTMonth);
   const showNotasColumn = isDT && subFilter === "Isento";
   const isEmissaoFaturas = activeTab === "emissao_faturas";
+  const showIvaPeriodicaCols = isIVAPeriodica;
 
   // Quarter label for DT: Apr=Q1(Jan-Mar), Jul=Q2(Apr-Jun), Oct=Q3(Jul-Sep), Jan=Q4(Oct-Dec)
   const dtQuarterLabel = (() => {
@@ -171,7 +173,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     let list: any[] = [];
     switch (activeTab) {
       case "SAFT":
-        list = activeClients.filter((c: any) => c.saft && c.saft !== "");
+        list = activeClients.filter((c: any) => c.saft && c.saft !== "" && c.saft !== "Não Aplicável");
         if (subFilter !== "all") list = list.filter((c: any) => c.saft === subFilter);
         break;
       case "salarios":
@@ -470,7 +472,14 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Enviado</th>
                   </>
                 )}
-                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
+                {isIVAPeriodica && (
+                  <>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-20">Entregue</th>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-24">Flexibilização</th>
+                    <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Método de Pagamento</th>
+                  </>
+                )}
+                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
               </tr>
             </thead>
             <tbody>
@@ -555,7 +564,37 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                         <td className="text-center px-3 py-3"><CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} /></td>
                       </>
                     )}
-                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && (
+                    {isIVAPeriodica && (
+                      <>
+                        <td className="text-center px-3 py-3"><CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} /></td>
+                        <td className="text-center px-3 py-3">
+                          <button onClick={() => toggleExtra(client.id)} disabled={upsert.isPending}
+                            className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-colors mx-auto",
+                              isExtraDone ? "bg-blue-500 border-blue-500 text-white" : "border-muted-foreground/30 hover:border-primary")}>
+                            {isExtraDone && <Check className="w-4 h-4" />}
+                          </button>
+                        </td>
+                        <td className="px-3 py-3">
+                          <input
+                            type="text"
+                            defaultValue={obl?.notes || ""}
+                            placeholder="Adicionar método..."
+                            className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                            onBlur={async (e) => {
+                              const val = e.target.value;
+                              if (val === (obl?.notes || "")) return;
+                              if (obl?.id) {
+                                await upsert.mutateAsync({ id: obl.id, client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: obl.status, notes: val || null });
+                              } else {
+                                await upsert.mutateAsync({ client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: "pendente", notes: val || null });
+                              }
+                            }}
+                            onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                          />
+                        </td>
+                      </>
+                    )}
+                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
