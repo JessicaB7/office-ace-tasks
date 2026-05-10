@@ -15,7 +15,7 @@ const TaskListView = ({ onEditTask, onNewTask }: TaskListViewProps) => {
   const { data: tasks = [], isLoading } = useTasks();
   const { data: collaborators = [] } = useCollaborators();
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<TaskStatus | "all" | "atrasada">("all");
+  const [filterStatus, setFilterStatus] = useState<TaskStatus | "all" | "atrasada">("pendente");
   const [filterInitialized, setFilterInitialized] = useState(false);
   const [filterCollaborator, setFilterCollaborator] = useState<string>("all");
 
