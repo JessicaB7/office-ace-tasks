@@ -27,23 +27,23 @@ const ExtratosBancariosView = () => {
   const [saldoFinal, setSaldoFinal] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const [pendingPdf, setPendingPdf] = useState<File | null>(null);
+  const [pdfPassword, setPdfPassword] = useState<string>("");
+
+  const processFile = async (file: File, password?: string) => {
     setLoading(true);
     setFileName(file.name);
     try {
       const ext = file.name.toLowerCase().split(".").pop();
       let result;
       if (ext === "pdf") {
-        const text = await extractPdfText(file);
+        const text = await extractPdfText(file, password);
         result = parseBankText(text, bankHint === "Auto" ? null : bankHint);
       } else if (ext === "xlsx" || ext === "xls" || ext === "csv") {
         result = await parseSpreadsheet(file);
         if (bankHint !== "Auto") result.bank = bankHint;
       } else {
         toast.error("Formato não suportado. Use PDF, Excel ou CSV.");
-        setLoading(false);
         return;
       }
 
@@ -51,6 +51,8 @@ const ExtratosBancariosView = () => {
       setTransactions(result.transactions);
       if (result.saldoInicial !== undefined) setSaldoInicial(String(result.saldoInicial));
       if (result.saldoFinal !== undefined) setSaldoFinal(String(result.saldoFinal));
+      setPendingPdf(null);
+      setPdfPassword("");
 
       if (result.transactions.length === 0) {
         toast.warning("Nenhum movimento detetado. Verifique o ficheiro ou ajuste o banco selecionado.");
@@ -58,12 +60,30 @@ const ExtratosBancariosView = () => {
         toast.success(`${result.transactions.length} movimentos importados (${result.bank})`);
       }
     } catch (err: any) {
-      console.error(err);
-      toast.error("Erro a processar o ficheiro: " + (err?.message || ""));
+      const msg = err?.message || String(err);
+      const name = err?.name || "";
+      if (name === "PasswordException" || /password/i.test(msg)) {
+        setPendingPdf(file);
+        toast.info("Este PDF está protegido. Introduza a palavra-passe.");
+      } else {
+        console.error(err);
+        toast.error("Erro a processar o ficheiro: " + msg);
+      }
     } finally {
       setLoading(false);
-      e.target.value = "";
     }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    await processFile(file);
+  };
+
+  const handleUnlockPdf = async () => {
+    if (!pendingPdf || !pdfPassword) return;
+    await processFile(pendingPdf, pdfPassword);
   };
 
   const updateTx = (idx: number, field: keyof BankTransaction, value: string) => {
