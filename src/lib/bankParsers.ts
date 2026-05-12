@@ -170,6 +170,9 @@ function parseMillennium(text: string): ParsedStatement {
   const sIniPatterns = [
     /SALDO\s+INICIAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
     /SALDO\s+ANTERIOR[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
+    // Number BEFORE the label (some PDFs render saldo column first)
+    /(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})\s*\n?\s*SALDO\s+INICIAL/i,
+    /(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})\s*\n?\s*SALDO\s+ANTERIOR/i,
   ];
   for (const re of sIniPatterns) {
     const m = text.match(re);
@@ -195,10 +198,26 @@ function parseMillennium(text: string): ParsedStatement {
     return [s, `${withSep}.${dec}`];
   };
 
+  // Reject only standalone header/meta lines, not real descriptions that happen to start with these words
+  const isHeaderOrMeta = (s: string) => {
+    if (/^(DATA\s+(LANC|VALOR)|DESCRITIVO|D[EÉ]BITO\s*$|CR[EÉ]DITO\s*$|SALDO\s*$|TRANSPORTE\s*$|A\s+TRANSPORTAR|SUCURSAL|EXTRATO\b|MOEDA\b|RESUMO|MENSAGEM\b|NIB\b|IBAN\b|BIC|Banco\s+Comercial|Capital\s+Social|Nos\s+termos|Poder|www\.|\(\+|^\d{2}\/\d{2}\/\d{2,4})/i.test(s)) return true;
+    // Pure header tokens or page markers
+    if (/^(DATA|VALOR|LANC\.?|DEBITO|CREDITO|SALDO|PAG|CONTA|N\.)\s*$/i.test(s)) return true;
+    if (/^\d{2}\/\d{2}\/\d{2}\s/.test(s)) return true;
+    return false;
+  };
+
+  let pendingDesc = "";
   for (const line of lines) {
-    if (!line || isNoise(line)) continue;
+    if (!line || isNoise(line)) { pendingDesc = ""; continue; }
     const m = line.match(reLine);
-    if (!m) continue;
+    if (!m) {
+      // Buffer as potential description for next tx line
+      if (!isHeaderOrMeta(line) && !/^\d/.test(line) && line.length >= 3 && line.length < 120) {
+        pendingDesc = line.replace(/\s+/g, " ").trim();
+      }
+      continue;
+    }
 
     const movM = parseInt(m[1]);
     const movD = parseInt(m[2]);
@@ -242,15 +261,18 @@ function parseMillennium(text: string): ParsedStatement {
       descricaoEnd = nums[nums.length - 2].index;
     }
 
-    const descricao = rest.slice(0, descricaoEnd).trim().replace(/\s+/g, " ");
+    let descricao = rest.slice(0, descricaoEnd).trim().replace(/\s+/g, " ");
+    if (!descricao || descricao.length < 3) {
+      descricao = pendingDesc || (signed >= 0 ? "Crédito" : "Débito");
+    }
+    pendingDesc = "";
     prevBalance = balance;
 
-    let valYear = year;
-    if (valM > movM + 6) valYear = year - 1;
-
+    // Per user requirement: both dates = data lançamento (first column)
+    const dataLanc = new Date(year, movM - 1, movD);
     txs.push({
-      dataMov: new Date(year, movM - 1, movD),
-      dataValor: new Date(valYear, valM - 1, valD),
+      dataMov: dataLanc,
+      dataValor: dataLanc,
       descricao,
       movimento: signed,
     });
@@ -260,6 +282,7 @@ function parseMillennium(text: string): ParsedStatement {
   const sFinPatterns = [
     /SALDO\s+FINAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
     /SALDO\s+(?:ATUAL|ACTUAL|CONTABIL[IÍ]STICO|DISPON[IÍ]VEL)[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
+    /(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})\s*\n?\s*SALDO\s+FINAL/i,
   ];
   for (const re of sFinPatterns) {
     const m = text.match(re);
