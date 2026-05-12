@@ -8,6 +8,7 @@ import CollaboratorListView from "@/components/CollaboratorListView";
 import FiscalCalendarView from "@/components/FiscalCalendarView";
 import ObrigacoesView from "@/components/ObrigacoesView";
 import ContabilidadesView from "@/components/ContabilidadesView";
+import ExtratosBancariosView from "@/components/ExtratosBancariosView";
 import AdminWeeklySummary from "@/components/AdminWeeklySummary";
 import NotificationBell from "@/components/NotificationBell";
 
@@ -38,6 +39,7 @@ const Index = () => {
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
         {activeView.startsWith("contabilidades") && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} />}
         {activeView === "clients" && <ClientListView />}
+        {activeView === "extratos" && <ExtratosBancariosView />}
         {activeView === "resumo" && <AdminWeeklySummary />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}
