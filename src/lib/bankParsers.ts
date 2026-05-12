@@ -160,14 +160,21 @@ function parseMillennium(text: string): ParsedStatement {
 
   let saldoInicial: number | undefined;
   // Try several patterns: "SALDO INICIAL 10 373.06", "SALDO ANTERIOR ...", with possible newlines/extra whitespace
+  const parseAmt = (raw: string): number => {
+    let s = raw.replace(/\s/g, "");
+    // If contains both '.' and ',' → '.' is thousand sep, ',' is decimal
+    if (s.includes(",") && s.includes(".")) s = s.replace(/\./g, "").replace(",", ".");
+    else if (s.includes(",")) s = s.replace(",", ".");
+    return parseFloat(s);
+  };
   const sIniPatterns = [
-    /SALDO\s+INICIAL[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
-    /SALDO\s+ANTERIOR[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
+    /SALDO\s+INICIAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
+    /SALDO\s+ANTERIOR[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
   ];
   for (const re of sIniPatterns) {
     const m = text.match(re);
     if (m) {
-      saldoInicial = parseFloat(m[1].replace(/\s/g, ""));
+      saldoInicial = parseAmt(m[1]);
       break;
     }
   }
