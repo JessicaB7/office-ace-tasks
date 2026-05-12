@@ -170,6 +170,9 @@ function parseMillennium(text: string): ParsedStatement {
   const sIniPatterns = [
     /SALDO\s+INICIAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
     /SALDO\s+ANTERIOR[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
+    // Number BEFORE the label (some PDFs render saldo column first)
+    /(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})\s*\n?\s*SALDO\s+INICIAL/i,
+    /(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})\s*\n?\s*SALDO\s+ANTERIOR/i,
   ];
   for (const re of sIniPatterns) {
     const m = text.match(re);
