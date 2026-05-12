@@ -34,7 +34,14 @@ const fmtDate = (d: Date) => {
 
 const ExtratosBancariosView = () => {
   const [loading, setLoading] = useState(false);
-  const [bankHint, setBankHint] = useState<string>("Auto");
+  const [bankHint, setBankHint] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem("extratos-bank-hint");
+      return saved && BANCOS.includes(saved) ? saved : "Auto";
+    } catch {
+      return "Auto";
+    }
+  });
   const [bank, setBank] = useState<string>("");
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [saldoInicial, setSaldoInicial] = useState<string>("");
