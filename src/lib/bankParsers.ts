@@ -160,14 +160,21 @@ function parseMillennium(text: string): ParsedStatement {
 
   let saldoInicial: number | undefined;
   // Try several patterns: "SALDO INICIAL 10 373.06", "SALDO ANTERIOR ...", with possible newlines/extra whitespace
+  const parseAmt = (raw: string): number => {
+    let s = raw.replace(/\s/g, "");
+    // If contains both '.' and ',' → '.' is thousand sep, ',' is decimal
+    if (s.includes(",") && s.includes(".")) s = s.replace(/\./g, "").replace(",", ".");
+    else if (s.includes(",")) s = s.replace(",", ".");
+    return parseFloat(s);
+  };
   const sIniPatterns = [
-    /SALDO\s+INICIAL[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
-    /SALDO\s+ANTERIOR[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
+    /SALDO\s+INICIAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
+    /SALDO\s+ANTERIOR[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
   ];
   for (const re of sIniPatterns) {
     const m = text.match(re);
     if (m) {
-      saldoInicial = parseFloat(m[1].replace(/\s/g, ""));
+      saldoInicial = parseAmt(m[1]);
       break;
     }
   }
@@ -251,13 +258,13 @@ function parseMillennium(text: string): ParsedStatement {
 
   let saldoFinal: number | undefined;
   const sFinPatterns = [
-    /SALDO\s+FINAL[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
-    /SALDO\s+(?:ATUAL|ACTUAL|CONTABIL[IÍ]STICO|DISPON[IÍ]VEL)[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
+    /SALDO\s+FINAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
+    /SALDO\s+(?:ATUAL|ACTUAL|CONTABIL[IÍ]STICO|DISPON[IÍ]VEL)[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
   ];
   for (const re of sFinPatterns) {
     const m = text.match(re);
     if (m) {
-      saldoFinal = parseFloat(m[1].replace(/\s/g, ""));
+      saldoFinal = parseAmt(m[1]);
       break;
     }
   }
@@ -265,9 +272,14 @@ function parseMillennium(text: string): ParsedStatement {
     saldoFinal = prevBalance;
   }
 
-  // If saldoInicial wasn't detected but we have transactions, derive from the very first balance
-  // The balance after the first transaction = saldoInicial + first amount
-  // We can't know the sign reliably without prevBalance, so we leave it undefined and let user fill manually.
+  // Derive missing saldo from the other + sum of movements
+  const sumMovs = +txs.reduce((s, t) => s + t.movimento, 0).toFixed(2);
+  if (saldoInicial === undefined && saldoFinal !== undefined && txs.length > 0) {
+    saldoInicial = +(saldoFinal - sumMovs).toFixed(2);
+  }
+  if (saldoFinal === undefined && saldoInicial !== undefined && txs.length > 0) {
+    saldoFinal = +(saldoInicial + sumMovs).toFixed(2);
+  }
 
   return { bank: "Millennium", transactions: txs, saldoInicial, saldoFinal };
 }
