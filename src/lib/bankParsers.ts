@@ -409,51 +409,48 @@ function parseTabularRows(rows: string[][], filename: string): ParsedStatement {
 }
 
 // ---------- Build TOConline xlsx ----------
+import toconlineTemplateUrl from "@/assets/toconline-template.xlsx?url";
+
 export async function buildToconlineXlsx(parsed: ParsedStatement, opts: {
   saldoInicial: number;
   saldoFinal: number;
 }): Promise<Blob> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet("Extrato");
 
-  ws.getColumn(1).width = 14;
-  ws.getColumn(2).width = 14;
-  ws.getColumn(3).width = 60;
-  ws.getColumn(4).width = 16;
+  // Carregar o template oficial do TOConline para preservar exatamente
+  // a estrutura, formatação e fórmula de validação.
+  const res = await fetch(toconlineTemplateUrl);
+  if (!res.ok) throw new Error("Não foi possível carregar o modelo TOConline");
+  const buf = await res.arrayBuffer();
+  if (buf.byteLength === 0) throw new Error("Modelo TOConline está vazio");
+  await wb.xlsx.load(buf);
 
-  // Cabeçalho de saldos (modelo TOConline)
-  ws.getCell("A1").value = "Extrato bancário";
-  ws.getCell("A1").font = { bold: true, size: 14 };
+  const ws = wb.worksheets[0];
 
-  ws.getCell("C3").value = "Saldo Inicial";
-  ws.getCell("C3").font = { bold: true };
+  // Preencher saldos (D3 e D5)
   ws.getCell("D3").value = opts.saldoInicial;
-  ws.getCell("D3").numFmt = "0.00";
-
-  ws.getCell("C5").value = "Saldo Final";
-  ws.getCell("C5").font = { bold: true };
   ws.getCell("D5").value = opts.saldoFinal;
-  ws.getCell("D5").numFmt = "0.00";
 
-  // Cabeçalho da tabela de movimentos (linha 7)
-  const header = ws.getRow(7);
-  header.values = ["Data Movimento", "Data Valor", "Descrição", "Movimento"];
-  header.font = { bold: true };
-  header.eachCell((c) => {
-    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEEEEE" } };
-    c.border = { bottom: { style: "thin" } };
-  });
+  // Limpar quaisquer movimentos de exemplo existentes (a partir da linha 8)
+  const lastRow = ws.actualRowCount;
+  for (let r = 8; r <= Math.max(lastRow, 9); r++) {
+    const row = ws.getRow(r);
+    for (let c = 1; c <= 4; c++) row.getCell(c).value = null;
+  }
 
-  const sorted = [...parsed.transactions].sort((a, b) => a.dataMov.getTime() - b.dataMov.getTime());
+  // Inserir movimentos ordenados por data
+  const sorted = [...parsed.transactions].sort(
+    (a, b) => a.dataMov.getTime() - b.dataMov.getTime(),
+  );
 
   let r = 8;
   for (const t of sorted) {
     const row = ws.getRow(r);
     row.getCell(1).value = t.dataMov;
-    row.getCell(1).numFmt = "yyyy-mm-dd";
+    row.getCell(1).numFmt = "dd/mm/yyyy";
     row.getCell(2).value = t.dataValor;
-    row.getCell(2).numFmt = "yyyy-mm-dd";
+    row.getCell(2).numFmt = "dd/mm/yyyy";
     row.getCell(3).value = t.descricao;
     row.getCell(4).value = t.movimento;
     row.getCell(4).numFmt = "0.00";
@@ -461,5 +458,7 @@ export async function buildToconlineXlsx(parsed: ParsedStatement, opts: {
   }
 
   const out = await wb.xlsx.writeBuffer();
-  return new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  return new Blob([out], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
 }
