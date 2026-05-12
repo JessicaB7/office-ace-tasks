@@ -203,6 +203,25 @@ const ExtratosBancariosView = () => {
               )}
             </div>
           </div>
+
+          {pendingPdf && (
+            <div className="border border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 rounded-md p-4 space-y-2">
+              <Label className="text-sm font-medium">PDF protegido — introduza a palavra-passe</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  value={pdfPassword}
+                  onChange={(e) => setPdfPassword(e.target.value)}
+                  placeholder="Palavra-passe do PDF"
+                  onKeyDown={(e) => e.key === "Enter" && handleUnlockPdf()}
+                  disabled={loading}
+                />
+                <Button onClick={handleUnlockPdf} disabled={loading || !pdfPassword}>
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Desbloquear"}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
