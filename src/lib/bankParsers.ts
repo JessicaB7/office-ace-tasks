@@ -159,8 +159,18 @@ function parseMillennium(text: string): ParsedStatement {
   if (yMatch) year = parseInt(yMatch[1]);
 
   let saldoInicial: number | undefined;
-  const sIni = text.match(/SALDO\s+INICIAL\s+([\d\s]+\.\d{2})/i);
-  if (sIni) saldoInicial = parseFloat(sIni[1].replace(/\s/g, ""));
+  // Try several patterns: "SALDO INICIAL 10 373.06", "SALDO ANTERIOR ...", with possible newlines/extra whitespace
+  const sIniPatterns = [
+    /SALDO\s+INICIAL[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
+    /SALDO\s+ANTERIOR[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
+  ];
+  for (const re of sIniPatterns) {
+    const m = text.match(re);
+    if (m) {
+      saldoInicial = parseFloat(m[1].replace(/\s/g, ""));
+      break;
+    }
+  }
 
   let prevBalance = saldoInicial;
 
@@ -240,9 +250,24 @@ function parseMillennium(text: string): ParsedStatement {
   }
 
   let saldoFinal: number | undefined;
-  const sFin = text.match(/SALDO\s+FINAL\s+([\d\s]+\.\d{2})/i);
-  if (sFin) saldoFinal = parseFloat(sFin[1].replace(/\s/g, ""));
-  else if (prevBalance !== undefined && prevBalance !== saldoInicial) saldoFinal = prevBalance;
+  const sFinPatterns = [
+    /SALDO\s+FINAL[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
+    /SALDO\s+(?:ATUAL|ACTUAL|CONTABIL[IÍ]STICO|DISPON[IÍ]VEL)[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
+  ];
+  for (const re of sFinPatterns) {
+    const m = text.match(re);
+    if (m) {
+      saldoFinal = parseFloat(m[1].replace(/\s/g, ""));
+      break;
+    }
+  }
+  if (saldoFinal === undefined && prevBalance !== undefined && prevBalance !== saldoInicial) {
+    saldoFinal = prevBalance;
+  }
+
+  // If saldoInicial wasn't detected but we have transactions, derive from the very first balance
+  // The balance after the first transaction = saldoInicial + first amount
+  // We can't know the sign reliably without prevBalance, so we leave it undefined and let user fill manually.
 
   return { bank: "Millennium", transactions: txs, saldoInicial, saldoFinal };
 }
