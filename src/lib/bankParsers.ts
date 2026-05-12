@@ -265,9 +265,14 @@ function parseMillennium(text: string): ParsedStatement {
     saldoFinal = prevBalance;
   }
 
-  // If saldoInicial wasn't detected but we have transactions, derive from the very first balance
-  // The balance after the first transaction = saldoInicial + first amount
-  // We can't know the sign reliably without prevBalance, so we leave it undefined and let user fill manually.
+  // Derive missing saldo from the other + sum of movements
+  const sumMovs = +txs.reduce((s, t) => s + t.movimento, 0).toFixed(2);
+  if (saldoInicial === undefined && saldoFinal !== undefined && txs.length > 0) {
+    saldoInicial = +(saldoFinal - sumMovs).toFixed(2);
+  }
+  if (saldoFinal === undefined && saldoInicial !== undefined && txs.length > 0) {
+    saldoFinal = +(saldoInicial + sumMovs).toFixed(2);
+  }
 
   return { bank: "Millennium", transactions: txs, saldoInicial, saldoFinal };
 }
