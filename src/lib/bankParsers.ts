@@ -253,15 +253,18 @@ function parseMillennium(text: string): ParsedStatement {
       descricaoEnd = nums[nums.length - 2].index;
     }
 
-    const descricao = rest.slice(0, descricaoEnd).trim().replace(/\s+/g, " ");
+    let descricao = rest.slice(0, descricaoEnd).trim().replace(/\s+/g, " ");
+    if (!descricao || descricao.length < 3) {
+      descricao = pendingDesc || (signed >= 0 ? "Crédito" : "Débito");
+    }
+    pendingDesc = "";
     prevBalance = balance;
 
-    let valYear = year;
-    if (valM > movM + 6) valYear = year - 1;
-
+    // Per user requirement: both dates = data lançamento (first column)
+    const dataLanc = new Date(year, movM - 1, movD);
     txs.push({
-      dataMov: new Date(year, movM - 1, movD),
-      dataValor: new Date(valYear, valM - 1, valD),
+      dataMov: dataLanc,
+      dataValor: dataLanc,
       descricao,
       movimento: signed,
     });
