@@ -46,14 +46,15 @@ function parseDate(s: string): Date | null {
     return date;
   };
   // dd-mm-yyyy or dd/mm/yyyy
-  let m = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  let m = str.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$/);
   if (m) {
-    let [_, d, mo, y] = m;
+    const [, d, mo, rawYear] = m;
+    let y = rawYear;
     if (y.length === 2) y = (parseInt(y) > 50 ? "19" : "20") + y;
     return dateOnly(Number(y), Number(mo), Number(d));
   }
   // yyyy-mm-dd
-  m = str.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+  m = str.match(/^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})$/);
   if (m) {
     return dateOnly(Number(m[1]), Number(m[2]), Number(m[3]));
   }
