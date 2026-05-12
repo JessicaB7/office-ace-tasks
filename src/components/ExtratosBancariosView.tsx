@@ -18,6 +18,20 @@ import {
 
 const BANCOS = ["Auto", "Millennium", "CGD", "Santander", "BPI", "Novo Banco", "ActivoBank", "Genérico"];
 
+const parseInputDate = (value: string) => {
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0, 0);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+const fmtDate = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const ExtratosBancariosView = () => {
   const [loading, setLoading] = useState(false);
   const [bankHint, setBankHint] = useState<string>("Auto");
@@ -91,8 +105,8 @@ const ExtratosBancariosView = () => {
       const next = [...prev];
       const t = { ...next[idx] };
       if (field === "dataMov" || field === "dataValor") {
-        const d = new Date(value);
-        if (!isNaN(d.getTime())) (t as any)[field] = d;
+        const d = parseInputDate(value);
+        if (d) (t as any)[field] = d;
       } else if (field === "movimento") {
         const n = parseFloat(value.replace(",", "."));
         if (!isNaN(n)) t.movimento = n;
@@ -156,8 +170,6 @@ const ExtratosBancariosView = () => {
     setSaldoFinal("");
     setFileName("");
   };
-
-  const fmtDate = (d: Date) => d.toISOString().slice(0, 10);
 
   return (
     <div className="space-y-6">

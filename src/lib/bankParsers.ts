@@ -36,21 +36,33 @@ export function detectBank(text: string): string | null {
 function parseDate(s: string): Date | null {
   if (!s) return null;
   const str = s.trim();
+  const dateOnly = (year: number, month: number, day: number) => {
+    const date = new Date(year, month - 1, day, 12, 0, 0, 0);
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) return null;
+    return date;
+  };
   // dd-mm-yyyy or dd/mm/yyyy
-  let m = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  let m = str.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$/);
   if (m) {
-    let [_, d, mo, y] = m;
+    const [, d, mo, rawYear] = m;
+    let y = rawYear;
     if (y.length === 2) y = (parseInt(y) > 50 ? "19" : "20") + y;
-    const date = new Date(Number(y), Number(mo) - 1, Number(d));
-    return isNaN(date.getTime()) ? null : date;
+    return dateOnly(Number(y), Number(mo), Number(d));
   }
   // yyyy-mm-dd
-  m = str.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+  m = str.match(/^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})$/);
   if (m) {
-    const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-    return isNaN(date.getTime()) ? null : date;
+    return dateOnly(Number(m[1]), Number(m[2]), Number(m[3]));
   }
   return null;
+}
+
+function makeDateOnly(year: number, month: number, day: number): Date {
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
 function parseAmountPT(s: string): number | null {
@@ -221,8 +233,6 @@ function parseMillennium(text: string): ParsedStatement {
 
     const movM = parseInt(m[1]);
     const movD = parseInt(m[2]);
-    const valM = parseInt(m[3]);
-    const valD = parseInt(m[4]);
     const rest = m[5];
 
     const nums: { value: number; index: number; raw: string }[] = [];
@@ -269,7 +279,7 @@ function parseMillennium(text: string): ParsedStatement {
     prevBalance = balance;
 
     // Per user requirement: both dates = data lançamento (first column)
-    const dataLanc = new Date(year, movM - 1, movD);
+    const dataLanc = makeDateOnly(year, movM, movD);
     txs.push({
       dataMov: dataLanc,
       dataValor: dataLanc,
