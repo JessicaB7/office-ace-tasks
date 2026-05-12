@@ -447,11 +447,14 @@ export async function buildToconlineXlsx(parsed: ParsedStatement, opts: {
   let r = 8;
   for (const t of sorted) {
     const row = ws.getRow(r);
+    // Usar sempre a data de lançamento em ambas as colunas
     row.getCell(1).value = t.dataMov;
     row.getCell(1).numFmt = "dd/mm/yyyy";
-    row.getCell(2).value = t.dataValor;
+    row.getCell(2).value = t.dataMov;
     row.getCell(2).numFmt = "dd/mm/yyyy";
-    row.getCell(3).value = t.descricao;
+    // Garantir que a descrição nunca fica vazia
+    const desc = (t.descricao || "").trim();
+    row.getCell(3).value = desc || (t.movimento >= 0 ? "Entrada" : "Saída");
     row.getCell(4).value = t.movimento;
     row.getCell(4).numFmt = "0.00";
     r++;
