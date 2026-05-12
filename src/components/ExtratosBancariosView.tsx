@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,14 @@ const fmtDate = (d: Date) => {
 
 const ExtratosBancariosView = () => {
   const [loading, setLoading] = useState(false);
-  const [bankHint, setBankHint] = useState<string>("Auto");
+  const [bankHint, setBankHint] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem("extratos-bank-hint");
+      return saved && BANCOS.includes(saved) ? saved : "Auto";
+    } catch {
+      return "Auto";
+    }
+  });
   const [bank, setBank] = useState<string>("");
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [saldoInicial, setSaldoInicial] = useState<string>("");
@@ -43,6 +50,14 @@ const ExtratosBancariosView = () => {
 
   const [pendingPdf, setPendingPdf] = useState<File | null>(null);
   const [pdfPassword, setPdfPassword] = useState<string>("");
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("extratos-bank-hint", bankHint);
+    } catch {
+      // ignore storage errors
+    }
+  }, [bankHint]);
 
   const processFile = async (file: File, password?: string) => {
     setLoading(true);
