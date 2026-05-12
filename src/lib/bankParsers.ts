@@ -195,16 +195,21 @@ function parseMillennium(text: string): ParsedStatement {
     return [s, `${withSep}.${dec}`];
   };
 
-  // Helper: detect if a line is a candidate "descrição standalone"
-  const isHeaderOrMeta = (s: string) =>
-    /^(DATA|DESCRITIVO|DEBITO|CREDITO|SALDO|TRANSPORTE|A\s+TRANSPORTAR|SUCURSAL|EXTRATO|CONTA|PAG|MOEDA|RESUMO|MENSAGEM|N\.|NIB|IBAN|BIC|MOV|BCP|Banco|Capital|Nos\s+termos|Poder|www|\(\+|\d{2}\/\d{2}|26\/)/i.test(s);
+  // Reject only standalone header/meta lines, not real descriptions that happen to start with these words
+  const isHeaderOrMeta = (s: string) => {
+    if (/^(DATA\s+(LANC|VALOR)|DESCRITIVO|D[EÉ]BITO\s*$|CR[EÉ]DITO\s*$|SALDO\s*$|TRANSPORTE\s*$|A\s+TRANSPORTAR|SUCURSAL|EXTRATO\b|MOEDA\b|RESUMO|MENSAGEM\b|NIB\b|IBAN\b|BIC|Banco\s+Comercial|Capital\s+Social|Nos\s+termos|Poder|www\.|\(\+|^\d{2}\/\d{2}\/\d{2,4})/i.test(s)) return true;
+    // Pure header tokens or page markers
+    if (/^(DATA|VALOR|LANC\.?|DEBITO|CREDITO|SALDO|PAG|CONTA|N\.)\s*$/i.test(s)) return true;
+    if (/^\d{2}\/\d{2}\/\d{2}\s/.test(s)) return true;
+    return false;
+  };
 
   let pendingDesc = "";
   for (const line of lines) {
     if (!line || isNoise(line)) { pendingDesc = ""; continue; }
     const m = line.match(reLine);
     if (!m) {
-      // Buffer as potential description for next tx line (only if it looks like a description, not header/junk)
+      // Buffer as potential description for next tx line
       if (!isHeaderOrMeta(line) && !/^\d/.test(line) && line.length >= 3 && line.length < 120) {
         pendingDesc = line.replace(/\s+/g, " ").trim();
       }
