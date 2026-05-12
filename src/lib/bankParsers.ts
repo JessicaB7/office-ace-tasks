@@ -77,7 +77,7 @@ function parseAmountPT(s: string): number | null {
 }
 
 // ---------- PDF text extraction ----------
-export async function extractPdfText(file: File): Promise<string> {
+export async function extractPdfText(file: File, password?: string): Promise<string> {
   const pdfjs: any = await import("pdfjs-dist");
   // Use bundled worker
   // @ts-ignore
@@ -85,7 +85,7 @@ export async function extractPdfText(file: File): Promise<string> {
   pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
 
   const buf = await file.arrayBuffer();
-  const pdf = await pdfjs.getDocument({ data: buf }).promise;
+  const pdf = await pdfjs.getDocument({ data: buf, password: password || undefined }).promise;
   const lines: string[] = [];
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
