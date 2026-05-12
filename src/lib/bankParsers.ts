@@ -145,8 +145,111 @@ function findBalances(text: string): { saldoInicial?: number; saldoFinal?: numbe
   return out;
 }
 
+// ---------- Millennium BCP parser ----------
+// Format: "M.DD M.DDDESCRITIVO ... AMOUNT BALANCE"
+// Numbers use SPACE as thousand sep and DOT as decimal (e.g. "10 373.06")
+// Description may contain integer references (e.g. "MOV N 16") that confuse naive parsing,
+// so we determine the amount via balance delta when available.
+function parseMillennium(text: string): ParsedStatement {
+  const lines = text.split(/\n/).map((l) => l.trim());
+  const txs: BankTransaction[] = [];
+
+  let year = new Date().getFullYear();
+  const yMatch = text.match(/EXTRATO\s+DE\s+(\d{4})\/(\d{1,2})\/\d{1,2}/i);
+  if (yMatch) year = parseInt(yMatch[1]);
+
+  let saldoInicial: number | undefined;
+  const sIni = text.match(/SALDO\s+INICIAL\s+([\d\s]+\.\d{2})/i);
+  if (sIni) saldoInicial = parseFloat(sIni[1].replace(/\s/g, ""));
+
+  let prevBalance = saldoInicial;
+
+  // Decimal number with optional space-thousand-sep
+  const reNum = /(?:\d{1,3}(?:\s\d{3})+|\d+)\.\d{2}/g;
+  const reLine = /^(\d{1,2})\.(\d{1,2})\s+(\d{1,2})\.(\d{1,2})(.+)$/;
+  const isNoise = (s: string) => /^(A\s+TRANSPORTAR|TRANSPORTE|SALDO\s+(INICIAL|FINAL))/i.test(s);
+
+  const fmtAmt = (n: number) => {
+    const s = n.toFixed(2);
+    if (n < 1000) return [s];
+    // With thousand-sep using space
+    const [int, dec] = s.split(".");
+    const withSep = int.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    return [s, `${withSep}.${dec}`];
+  };
+
+  for (const line of lines) {
+    if (!line || isNoise(line)) continue;
+    const m = line.match(reLine);
+    if (!m) continue;
+
+    const movM = parseInt(m[1]);
+    const movD = parseInt(m[2]);
+    const valM = parseInt(m[3]);
+    const valD = parseInt(m[4]);
+    const rest = m[5];
+
+    const nums: { value: number; index: number; raw: string }[] = [];
+    let nm: RegExpExecArray | null;
+    while ((nm = reNum.exec(rest)) !== null) {
+      nums.push({ value: parseFloat(nm[0].replace(/\s/g, "")), index: nm.index, raw: nm[0] });
+    }
+    reNum.lastIndex = 0;
+    if (nums.length < 1) continue;
+
+    // Last decimal number is the running balance
+    const balance = nums[nums.length - 1].value;
+
+    let signed: number;
+    let descricaoEnd: number;
+
+    if (prevBalance !== undefined) {
+      // Amount derived from balance delta — most reliable for Millennium
+      const delta = +(balance - prevBalance).toFixed(2);
+      signed = delta;
+      const absAmt = Math.abs(delta);
+      const candidates = fmtAmt(absAmt);
+      // Find last occurrence (before the balance) of one of the candidate strings
+      let foundIdx = -1;
+      const searchEnd = nums[nums.length - 1].index;
+      for (const cand of candidates) {
+        const idx = rest.lastIndexOf(cand, searchEnd - 1);
+        if (idx > foundIdx) foundIdx = idx;
+      }
+      descricaoEnd = foundIdx > 0 ? foundIdx : (nums.length >= 2 ? nums[nums.length - 2].index : searchEnd);
+    } else {
+      // Fallback: assume penultimate decimal number is the amount
+      if (nums.length < 2) continue;
+      const amt = nums[nums.length - 2].value;
+      signed = /^(CR[EÉ]DITO|TRF\s+DE|TRF\.?\s*P\/O|OPDE\s+DEVOL)/i.test(rest) ? amt : -amt;
+      descricaoEnd = nums[nums.length - 2].index;
+    }
+
+    const descricao = rest.slice(0, descricaoEnd).trim().replace(/\s+/g, " ");
+    prevBalance = balance;
+
+    let valYear = year;
+    if (valM > movM + 6) valYear = year - 1;
+
+    txs.push({
+      dataMov: new Date(year, movM - 1, movD),
+      dataValor: new Date(valYear, valM - 1, valD),
+      descricao,
+      movimento: signed,
+    });
+  }
+
+  let saldoFinal: number | undefined;
+  const sFin = text.match(/SALDO\s+FINAL\s+([\d\s]+\.\d{2})/i);
+  if (sFin) saldoFinal = parseFloat(sFin[1].replace(/\s/g, ""));
+  else if (prevBalance !== undefined && prevBalance !== saldoInicial) saldoFinal = prevBalance;
+
+  return { bank: "Millennium", transactions: txs, saldoInicial, saldoFinal };
+}
+
 export function parseBankText(text: string, bankHint?: string | null): ParsedStatement {
   const bank = bankHint || detectBank(text) || "Genérico";
+  if (bank === "Millennium") return parseMillennium(text);
   const transactions = parseTextGeneric(text);
   const balances = findBalances(text);
   return { bank, transactions, ...balances };
