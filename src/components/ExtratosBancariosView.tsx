@@ -51,6 +51,14 @@ const ExtratosBancariosView = () => {
   const [pendingPdf, setPendingPdf] = useState<File | null>(null);
   const [pdfPassword, setPdfPassword] = useState<string>("");
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("extratos-bank-hint", bankHint);
+    } catch {
+      // ignore storage errors
+    }
+  }, [bankHint]);
+
   const processFile = async (file: File, password?: string) => {
     setLoading(true);
     setFileName(file.name);
