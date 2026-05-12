@@ -258,13 +258,13 @@ function parseMillennium(text: string): ParsedStatement {
 
   let saldoFinal: number | undefined;
   const sFinPatterns = [
-    /SALDO\s+FINAL[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
-    /SALDO\s+(?:ATUAL|ACTUAL|CONTABIL[IÍ]STICO|DISPON[IÍ]VEL)[^\d\-]*(-?\d{1,3}(?:\s\d{3})*\.\d{2})/i,
+    /SALDO\s+FINAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
+    /SALDO\s+(?:ATUAL|ACTUAL|CONTABIL[IÍ]STICO|DISPON[IÍ]VEL)[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
   ];
   for (const re of sFinPatterns) {
     const m = text.match(re);
     if (m) {
-      saldoFinal = parseFloat(m[1].replace(/\s/g, ""));
+      saldoFinal = parseAmt(m[1]);
       break;
     }
   }
