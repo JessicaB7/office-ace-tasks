@@ -397,30 +397,44 @@ function parseTabularRows(rows: string[][], filename: string): ParsedStatement {
 }
 
 // ---------- Build TOConline xlsx ----------
-import templateUrl from "@/assets/toconline-template.xlsx?url";
-
 export async function buildToconlineXlsx(parsed: ParsedStatement, opts: {
   saldoInicial: number;
   saldoFinal: number;
 }): Promise<Blob> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
-  const res = await fetch(templateUrl);
-  const buf = await res.arrayBuffer();
-  await wb.xlsx.load(buf);
-  const ws = wb.worksheets[0];
+  const ws = wb.addWorksheet("Extrato");
 
-  // Saldo Inicial: row 3, col D (4)
-  ws.getCell(3, 4).value = opts.saldoInicial;
-  // Saldo Final: row 5, col D (4)
-  ws.getCell(5, 4).value = opts.saldoFinal;
+  ws.getColumn(1).width = 14;
+  ws.getColumn(2).width = 14;
+  ws.getColumn(3).width = 60;
+  ws.getColumn(4).width = 16;
 
-  // Movements start at row 8 (header at row 7)
-  // Sort transactions by date ascending
+  // Cabeçalho de saldos (modelo TOConline)
+  ws.getCell("A1").value = "Extrato bancário";
+  ws.getCell("A1").font = { bold: true, size: 14 };
+
+  ws.getCell("C3").value = "Saldo Inicial";
+  ws.getCell("C3").font = { bold: true };
+  ws.getCell("D3").value = opts.saldoInicial;
+  ws.getCell("D3").numFmt = "0.00";
+
+  ws.getCell("C5").value = "Saldo Final";
+  ws.getCell("C5").font = { bold: true };
+  ws.getCell("D5").value = opts.saldoFinal;
+  ws.getCell("D5").numFmt = "0.00";
+
+  // Cabeçalho da tabela de movimentos (linha 7)
+  const header = ws.getRow(7);
+  header.values = ["Data Movimento", "Data Valor", "Descrição", "Movimento"];
+  header.font = { bold: true };
+  header.eachCell((c) => {
+    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEEEEE" } };
+    c.border = { bottom: { style: "thin" } };
+  });
+
   const sorted = [...parsed.transactions].sort((a, b) => a.dataMov.getTime() - b.dataMov.getTime());
 
-  // Clear any existing example rows beyond header (rows 8-9 in template)
-  // We'll overwrite from row 8 onwards
   let r = 8;
   for (const t of sorted) {
     const row = ws.getRow(r);
@@ -431,15 +445,6 @@ export async function buildToconlineXlsx(parsed: ParsedStatement, opts: {
     row.getCell(3).value = t.descricao;
     row.getCell(4).value = t.movimento;
     row.getCell(4).numFmt = "0.00";
-    r++;
-  }
-  // If template had example rows beyond what we wrote, blank them
-  while (r <= 9) {
-    const row = ws.getRow(r);
-    row.getCell(1).value = null;
-    row.getCell(2).value = null;
-    row.getCell(3).value = null;
-    row.getCell(4).value = null;
     r++;
   }
 
