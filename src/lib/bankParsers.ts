@@ -407,10 +407,75 @@ function parseRevolut(text: string): ParsedStatement {
   return { bank: "Revolut", transactions: txs, saldoInicial, saldoFinal };
 }
 
+// ---------- Santander parser ----------
+// Layout per row: "DD-MM DD-MM <descritivo> [<moeda>] <valor PT> <saldo PT>"
+// Year is not in the row → derive from "PERÍODO DE YYYY-MM-DD A YYYY-MM-DD" header.
+function parseSantander(text: string): ParsedStatement {
+  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+
+  // Period header (may appear multiple times — first wins)
+  let startYear = new Date().getFullYear();
+  let endYear = startYear;
+  let startMonth = 1;
+  const period = text.match(/PER[IÍ]ODO\s+DE\s+(\d{4})-(\d{2})-\d{2}\s+A\s+(\d{4})-(\d{2})-\d{2}/i);
+  if (period) {
+    startYear = parseInt(period[1]);
+    startMonth = parseInt(period[2]);
+    endYear = parseInt(period[3]);
+  }
+
+  // PT amount: optional leading '-', integer with optional dot-thousands, comma decimals
+  const reAmt = /-?\d{1,3}(?:\.\d{3})*,\d{2}/g;
+  // Row prefix: two DD-MM dates
+  const reRow = /^(\d{2})-(\d{2})\s+(\d{2})-(\d{2})\s+(.+)$/;
+
+  const txs: BankTransaction[] = [];
+  for (const line of lines) {
+    const m = line.match(reRow);
+    if (!m) continue;
+    const movD = parseInt(m[1]);
+    const movM = parseInt(m[2]);
+    if (movM < 1 || movM > 12 || movD < 1 || movD > 31) continue;
+    const rest = m[5];
+    const nums = rest.match(reAmt);
+    if (!nums || nums.length < 2) continue;
+    const valor = parseAmountPT(nums[nums.length - 2]);
+    if (valor === null || valor === 0) continue;
+    // Description = everything before the second-to-last amount
+    const valorStr = nums[nums.length - 2];
+    const valorIdx = rest.lastIndexOf(valorStr);
+    let desc = rest.slice(0, valorIdx).trim().replace(/\s+/g, " ");
+    // Strip trailing currency code "EUR" / "EU"
+    desc = desc.replace(/\s+(EUR|EU)\s*$/i, "").trim();
+    if (!desc) desc = valor >= 0 ? "Crédito" : "Débito";
+
+    // Year resolution: if month >= startMonth, use startYear; otherwise endYear (wrap into next year)
+    const year = movM >= startMonth ? startYear : endYear;
+    const date = makeDateOnly(year, movM, movD);
+    txs.push({ dataMov: date, dataValor: date, descricao: desc, movimento: valor });
+  }
+
+  // Balances: look for "Saldo Inicial" / "Saldo Final" patterns in the summary table
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  const mIni = text.match(/Saldo\s+Inicial[^\d\-]*(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
+  if (mIni) saldoInicial = parseAmountPT(mIni[1]) ?? undefined;
+  const mFim = text.match(/Saldo\s+Final[^\d\-]*(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
+  if (mFim) saldoFinal = parseAmountPT(mFim[1]) ?? undefined;
+
+  // Fallback: derive from movement sum if a balance is missing
+  const sum = +txs.reduce((s, t) => s + t.movimento, 0).toFixed(2);
+  if (saldoInicial === undefined && saldoFinal !== undefined) saldoInicial = +(saldoFinal - sum).toFixed(2);
+  if (saldoFinal === undefined && saldoInicial !== undefined) saldoFinal = +(saldoInicial + sum).toFixed(2);
+
+  return { bank: "Santander", transactions: txs, saldoInicial, saldoFinal };
+}
+
 export function parseBankText(text: string, bankHint?: string | null): ParsedStatement {
   const bank = bankHint || detectBank(text) || "Genérico";
   if (bank === "Millennium") return parseMillennium(text);
   if (bank === "Revolut") return parseRevolut(text);
+  if (bank === "Santander") return parseSantander(text);
   const transactions = parseTextGeneric(text);
   const balances = findBalances(text);
   return { bank, transactions, ...balances };
