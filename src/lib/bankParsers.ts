@@ -17,6 +17,7 @@ export interface ParsedStatement {
 
 const BANK_KEYWORDS: Record<string, string[]> = {
   Millennium: ["millennium", "millenniumbcp", "bcp"],
+  Revolut: ["revolut", "revolut bank", "revolt21"],
   CGD: ["caixa geral de depósitos", "caixadirecta", "cgd"],
   Santander: ["santander"],
   BPI: ["banco bpi", "bpi net"],
