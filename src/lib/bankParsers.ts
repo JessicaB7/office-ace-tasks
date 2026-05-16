@@ -429,7 +429,9 @@ function parseSantander(text: string): ParsedStatement {
   // Row prefix: two DD-MM dates
   const reRow = /^(\d{2})-(\d{2})\s+(\d{2})-(\d{2})\s+(.+)$/;
 
-  const txs: BankTransaction[] = [];
+  type Row = { tx: BankTransaction; saldo: number; order: number };
+  const rows: Row[] = [];
+  let order = 0;
   for (const line of lines) {
     const m = line.match(reRow);
     if (!m) continue;
@@ -440,33 +442,54 @@ function parseSantander(text: string): ParsedStatement {
     const nums = rest.match(reAmt);
     if (!nums || nums.length < 2) continue;
     const valor = parseAmountPT(nums[nums.length - 2]);
-    if (valor === null || valor === 0) continue;
-    // Description = everything before the second-to-last amount
+    const saldo = parseAmountPT(nums[nums.length - 1]);
+    if (valor === null || valor === 0 || saldo === null) continue;
     const valorStr = nums[nums.length - 2];
     const valorIdx = rest.lastIndexOf(valorStr);
     let desc = rest.slice(0, valorIdx).trim().replace(/\s+/g, " ");
-    // Strip trailing currency code "EUR" / "EU"
     desc = desc.replace(/\s+(EUR|EU)\s*$/i, "").trim();
     if (!desc) desc = valor >= 0 ? "Crédito" : "Débito";
 
-    // Year resolution: if month >= startMonth, use startYear; otherwise endYear (wrap into next year)
     const year = movM >= startMonth ? startYear : endYear;
     const date = makeDateOnly(year, movM, movD);
-    txs.push({ dataMov: date, dataValor: date, descricao: desc, movimento: valor });
+    rows.push({
+      tx: { dataMov: date, dataValor: date, descricao: desc, movimento: valor },
+      saldo,
+      order: order++,
+    });
   }
 
-  // Balances: look for "Saldo Inicial" / "Saldo Final" patterns in the summary table
+  const txs: BankTransaction[] = rows.map((r) => r.tx);
+
+  // Derive balances from the saldo column of the first/last movement row (chronological).
+  // Santander PDFs typically list newest → oldest; sort by date asc, then by source order desc
+  // (within same day, the earlier-printed row is the more recent transaction).
   let saldoInicial: number | undefined;
   let saldoFinal: number | undefined;
-  const mIni = text.match(/Saldo\s+Inicial[^\d\-]*(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
-  if (mIni) saldoInicial = parseAmountPT(mIni[1]) ?? undefined;
-  const mFim = text.match(/Saldo\s+Final[^\d\-]*(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
-  if (mFim) saldoFinal = parseAmountPT(mFim[1]) ?? undefined;
+  if (rows.length > 0) {
+    const sorted = [...rows].sort((a, b) => {
+      const d = a.tx.dataMov.getTime() - b.tx.dataMov.getTime();
+      return d !== 0 ? d : b.order - a.order;
+    });
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    // Saldo final = saldo da última linha cronológica
+    saldoFinal = last.saldo;
+    // Saldo inicial = saldo da primeira linha cronológica menos o seu movimento
+    saldoInicial = +(first.saldo - first.tx.movimento).toFixed(2);
+  }
 
-  // Fallback: derive from movement sum if a balance is missing
-  const sum = +txs.reduce((s, t) => s + t.movimento, 0).toFixed(2);
-  if (saldoInicial === undefined && saldoFinal !== undefined) saldoInicial = +(saldoFinal - sum).toFixed(2);
-  if (saldoFinal === undefined && saldoInicial !== undefined) saldoFinal = +(saldoInicial + sum).toFixed(2);
+  // Allow explicit summary values to override if present and consistent
+  const mIni = text.match(/Saldo\s+Inicial[^\d\-]*(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
+  if (mIni) {
+    const v = parseAmountPT(mIni[1]);
+    if (v !== null) saldoInicial = v;
+  }
+  const mFim = text.match(/Saldo\s+Final[^\d\-]*(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
+  if (mFim) {
+    const v = parseAmountPT(mFim[1]);
+    if (v !== null) saldoFinal = v;
+  }
 
   return { bank: "Santander", transactions: txs, saldoInicial, saldoFinal };
 }
