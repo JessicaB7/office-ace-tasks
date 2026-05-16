@@ -479,18 +479,7 @@ function parseSantander(text: string): ParsedStatement {
     saldoInicial = +(first.saldo - first.tx.movimento).toFixed(2);
   }
 
-  // Allow explicit summary values to override if present and consistent
-  const mIni = text.match(/Saldo\s+Inicial[^\d\-]*(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
-  if (mIni) {
-    const v = parseAmountPT(mIni[1]);
-    if (v !== null) saldoInicial = v;
-  }
-  const mFim = text.match(/Saldo\s+Final[^\d\-]*(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
-  if (mFim) {
-    const v = parseAmountPT(mFim[1]);
-    if (v !== null) saldoFinal = v;
-  }
-
+  // Use only saldos derived from movement rows — summary regex was unreliable.
   return { bank: "Santander", transactions: txs, saldoInicial, saldoFinal };
 }
 
