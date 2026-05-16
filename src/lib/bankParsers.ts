@@ -19,7 +19,7 @@ const BANK_KEYWORDS: Record<string, string[]> = {
   Millennium: ["millennium", "millenniumbcp", "bcp"],
   Revolut: ["revolut", "revolut bank", "revolt21"],
   CGD: ["caixa geral de depósitos", "caixadirecta", "cgd"],
-  Santander: ["santander"],
+  Santander: ["santander", "totaptpl"],
   BPI: ["banco bpi", "bpi net"],
   "Novo Banco": ["novo banco", "novobanco"],
   ActivoBank: ["activobank", "activo bank"],
