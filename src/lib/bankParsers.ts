@@ -17,6 +17,7 @@ export interface ParsedStatement {
 
 const BANK_KEYWORDS: Record<string, string[]> = {
   Millennium: ["millennium", "millenniumbcp", "bcp"],
+  Revolut: ["revolut", "revolut bank", "revolt21"],
   CGD: ["caixa geral de depósitos", "caixadirecta", "cgd"],
   Santander: ["santander"],
   BPI: ["banco bpi", "bpi net"],
@@ -317,9 +318,99 @@ function parseMillennium(text: string): ParsedStatement {
   return { bank: "Millennium", transactions: txs, saldoInicial, saldoFinal };
 }
 
+// ---------- Revolut parser ----------
+// Layout: "<day> <mon>. <year> <description> [€out] [€in] €saldo"
+// PDF extraction joins columns with spaces; missing columns simply disappear.
+// We capture the last two € numbers per row: first = movement amount, second = saldo.
+const PT_MONTHS: Record<string, number> = {
+  jan: 1, fev: 2, mar: 3, abr: 4, mai: 5, jun: 6,
+  jul: 7, ago: 8, set: 9, out: 10, nov: 11, dez: 12,
+};
+
+function parseRevolut(text: string): ParsedStatement {
+  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+
+  const parseEur = (raw: string): number => {
+    // raw may include leading '-', '€', spaces as thousand sep, '.' decimal, or ',' decimal
+    let s = raw.replace(/€/g, "").replace(/\s/g, "").trim();
+    const neg = s.startsWith("-");
+    if (neg) s = s.slice(1);
+    // If both '.' and ',' present, '.' is thousand sep, ',' decimal (rare for Revolut)
+    if (s.includes(",") && s.includes(".")) s = s.replace(/\./g, "").replace(",", ".");
+    else if (s.includes(",") && !s.includes(".")) s = s.replace(",", ".");
+    const n = parseFloat(s);
+    return neg ? -n : n;
+  };
+
+  // Balances from summary block
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  const mIni = text.match(/Saldo\s+de\s+abertura[^\d\-€]*(-?€?\s?-?\d[\d\s.,]*)/i);
+  if (mIni) saldoInicial = parseEur(mIni[1]);
+  const mFim = text.match(/Saldo\s+de\s+encerramento[^\d\-€]*(-?€?\s?-?\d[\d\s.,]*)/i);
+  if (mFim) saldoFinal = parseEur(mFim[1]);
+
+  // Date prefix: "9 abr. 2026" — capture day, mon, year, and rest
+  const reRow = /^(\d{1,2})\s+(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\.?\s+(\d{4})\s+(.+)$/i;
+  // Number with €: optional leading '-' or '- ' or '-€', then €, then digits with optional space-thousand and '.' decimal
+  const reNum = /-?\s*€\s*-?\d{1,3}(?:\s\d{3})*(?:[.,]\d{2})?/g;
+
+  type Row = { date: Date; desc: string; amount: number; saldo: number; order: number };
+  const rows: Row[] = [];
+  let order = 0;
+  for (const line of lines) {
+    const m = line.match(reRow);
+    if (!m) continue;
+    const day = parseInt(m[1]);
+    const mon = PT_MONTHS[m[2].toLowerCase()];
+    const year = parseInt(m[3]);
+    const rest = m[4];
+    const nums = rest.match(reNum);
+    if (!nums || nums.length < 2) continue;
+    // Description = everything before the first matched number
+    const firstIdx = rest.indexOf(nums[0]);
+    let desc = rest.slice(0, firstIdx).trim().replace(/\s+/g, " ");
+    // Strip leading type code (e.g. "ATM ", "FEE ", "CAR ") — keep readable description
+    desc = desc.replace(/^(ATM|FEE|CAR|MOA|MOR|MOS|EXI|EXO|TRF)\s+/i, "");
+    if (!desc) desc = "Movimento";
+    const amount = parseEur(nums[nums.length - 2]);
+    const saldo = parseEur(nums[nums.length - 1]);
+    if (isNaN(amount) || isNaN(saldo)) continue;
+    const date = new Date(year, mon - 1, day, 12, 0, 0, 0);
+    rows.push({ date, desc, amount, saldo, order: order++ });
+  }
+
+  // Revolut lists newest first. Sort chronologically: by date asc; within same date, reverse original order.
+  rows.sort((a, b) => a.date.getTime() - b.date.getTime() || b.order - a.order);
+
+  // Determine sign of each amount using saldo delta vs previous balance
+  const txs: BankTransaction[] = [];
+  let prev = saldoInicial;
+  for (const r of rows) {
+    let signed = r.amount;
+    if (prev !== undefined) {
+      const delta = +(r.saldo - prev).toFixed(2);
+      // If delta sign disagrees with our amount sign, flip
+      if (Math.abs(Math.abs(delta) - Math.abs(r.amount)) < 0.02) {
+        signed = delta < 0 ? -Math.abs(r.amount) : Math.abs(r.amount);
+      } else {
+        // Fallback: trust saldo delta
+        signed = delta;
+      }
+    }
+    txs.push({ dataMov: r.date, dataValor: r.date, descricao: r.desc, movimento: signed });
+    prev = r.saldo;
+  }
+
+  if (saldoFinal === undefined && prev !== undefined) saldoFinal = prev;
+
+  return { bank: "Revolut", transactions: txs, saldoInicial, saldoFinal };
+}
+
 export function parseBankText(text: string, bankHint?: string | null): ParsedStatement {
   const bank = bankHint || detectBank(text) || "Genérico";
   if (bank === "Millennium") return parseMillennium(text);
+  if (bank === "Revolut") return parseRevolut(text);
   const transactions = parseTextGeneric(text);
   const balances = findBalances(text);
   return { bank, transactions, ...balances };
