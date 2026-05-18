@@ -7,6 +7,7 @@ import type { Collaborator } from "@/types/database";
 import { Search, Plus, UserCircle, X, Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CollaboratorDetailDialog from "./CollaboratorDetailDialog";
+import CollaboratorClientsDialog from "./CollaboratorClientsDialog";
 
 const emptyCollab = { name: "", email: "", role: "técnico", specialty: "", access_code: "" };
 
@@ -23,6 +24,7 @@ const CollaboratorListView = () => {
   const [form, setForm] = useState(emptyCollab);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [detailCollab, setDetailCollab] = useState<Collaborator | null>(null);
+  const [clientsCollab, setClientsCollab] = useState<Collaborator | null>(null);
 
   const activeCollabs = collaborators.filter(c => c.active);
   const filtered = activeCollabs.filter((c) => {
@@ -129,7 +131,10 @@ const CollaboratorListView = () => {
                 
                 
                 {clientCounts.total > 0 && (
-                  <div className="mb-3 p-2.5 rounded-lg bg-muted/50">
+                  <div
+                    onClick={(e) => { e.stopPropagation(); setClientsCollab(collab); }}
+                    className="mb-3 p-2.5 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                  >
                     <div className="flex items-center justify-between mb-1.5">
                       <p className="text-xs font-medium">{clientCounts.total} cliente{clientCounts.total !== 1 ? "s" : ""}</p>
                       {clientCounts.totalMensalidade > 0 && (
@@ -218,6 +223,10 @@ const CollaboratorListView = () => {
 
       {detailCollab && (
         <CollaboratorDetailDialog collaborator={detailCollab} onClose={() => setDetailCollab(null)} />
+      )}
+
+      {clientsCollab && (
+        <CollaboratorClientsDialog collaborator={clientsCollab} onClose={() => setClientsCollab(null)} />
       )}
     </div>
   );
