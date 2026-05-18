@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useClients } from "@/hooks/useSupabaseQuery";
+import { useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { Search, Plus, Building2 } from "lucide-react";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { cn } from "@/lib/utils";
@@ -34,15 +34,20 @@ const tipoContabColor = (tipo: string) => {
 
 const ClientListView = () => {
   const { data: clients = [], isLoading } = useClients();
+  const { data: collaborators = [] } = useCollaborators();
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState<string>("all");
   const [filterIva, setFilterIva] = useState<string>("all");
+  const [filterResponsavel, setFilterResponsavel] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
 
   const filtered = clients.filter((c: any) => {
     if (filterTipo !== "all" && c.tipo_contabilidade !== filterTipo) return false;
     if (filterIva !== "all" && (c.iva || "") !== filterIva) return false;
+    if (filterResponsavel !== "all") {
+      if (filterResponsavel === "none" ? !!c.responsavel_id : c.responsavel_id !== filterResponsavel) return false;
+    }
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !(c.nif || "").includes(search)) return false;
     return c.active;
   });
@@ -76,6 +81,13 @@ const ClientListView = () => {
         <select value={filterIva} onChange={(e) => setFilterIva(e.target.value)} className="text-sm rounded-lg border bg-card px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="all">Todos os IVA</option>
           {IVA_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        <select value={filterResponsavel} onChange={(e) => setFilterResponsavel(e.target.value)} className="text-sm rounded-lg border bg-card px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring">
+          <option value="all">Todos os responsáveis</option>
+          <option value="none">Sem responsável</option>
+          {collaborators.filter((c: any) => c.active).map((c: any) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
         </select>
       </div>
 
