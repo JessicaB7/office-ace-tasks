@@ -536,13 +536,15 @@ function parseNovoBanco(text: string): ParsedStatement {
     const line = raw.trim();
     if (!line) continue;
     // End conditions
-    if (/SALDO\s+CONTABIL[ÍI]STICO/i.test(line) || /^TOTAL\b/i.test(line)) {
+    if (/SALDO\s+CONTABIL[ÍI]STICO/i.test(line)) {
       const nums = line.match(numRe) || [];
-      if (/SALDO\s+CONTABIL[ÍI]STICO/i.test(line) && nums.length) {
-        saldoFinal = parsePT(nums[nums.length - 1]);
-      }
+      if (nums.length) saldoFinal = parsePT(nums[nums.length - 1]);
       flush();
       break;
+    }
+    if (/^TOTAL\b/i.test(line)) {
+      flush();
+      continue;
     }
     // Break only on a DIFFERENT account header (not page-break repeats of the same account)
     if (/^CONTA\s/i.test(line)) {
