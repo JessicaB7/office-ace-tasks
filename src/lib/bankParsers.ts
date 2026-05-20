@@ -505,6 +505,14 @@ function parseNovoBanco(text: string): ParsedStatement {
     return new Date(2000 + Number(m[3]), Number(m[2]) - 1, Number(m[1]), 12, 0, 0, 0);
   };
 
+  // Capture first account number (e.g. "0006 8110 8781") to distinguish from sub-accounts
+  let mainAcct: string | null = null;
+  const acctRe = /CONTA\s+.*?n[ºo]\s+([\d\s]+?)\s+de\s+\d{2}\.\d{2}\.\d{4}/i;
+  for (let i = 0; i <= startIdx; i++) {
+    const am = lines[i].match(acctRe);
+    if (am) { mainAcct = am[1].replace(/\s+/g, ""); break; }
+  }
+
   // Initial balance
   const anteriorNums = lines[startIdx].match(numRe) || [];
   const saldoInicial = anteriorNums.length ? parsePT(anteriorNums[anteriorNums.length - 1]) : 0;
@@ -536,8 +544,16 @@ function parseNovoBanco(text: string): ParsedStatement {
       flush();
       break;
     }
-    if (/^CONTA\s/i.test(line) && i > startIdx + 1) {
-      flush();
+    // Break only on a DIFFERENT account header (not page-break repeats of the same account)
+    if (/^CONTA\s/i.test(line)) {
+      const am = line.match(acctRe);
+      const acct = am ? am[1].replace(/\s+/g, "") : null;
+      if (acct && mainAcct && acct !== mainAcct) {
+        flush();
+        break;
+      }
+      continue;
+    }
       break;
     }
     // Skip headers/page footers
