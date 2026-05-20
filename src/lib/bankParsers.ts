@@ -554,8 +554,6 @@ function parseNovoBanco(text: string): ParsedStatement {
       }
       continue;
     }
-      break;
-    }
     // Skip headers/page footers
     if (/Página\s*\d+\|/i.test(line) || /^Data\s+Valor/i.test(line) || /^Data\s+Data/i.test(line) || /^Valor\s*$/i.test(line) || /^Descritivo/i.test(line) || /Extrato\s+Integrado/i.test(line)) {
       continue;
