@@ -483,11 +483,127 @@ function parseSantander(text: string): ParsedStatement {
   return { bank: "Santander", transactions: txs, saldoInicial, saldoFinal };
 }
 
+function parseNovoBanco(text: string): ParsedStatement {
+  const lines = text.split(/\r?\n/);
+  // Find the first movements section
+  let startIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (/SALDO\s+ANTERIOR/i.test(lines[i]) && /\d/.test(lines[i])) {
+      startIdx = i;
+      break;
+    }
+  }
+  if (startIdx < 0) {
+    return { bank: "Novo Banco", transactions: [], ...findBalances(text) };
+  }
+
+  const numRe = /-?\d{1,3}(?:\.\d{3})*,\d{2}/g;
+  const parsePT = (s: string) => parseFloat(s.replace(/\./g, "").replace(",", "."));
+  const parseDate = (s: string) => {
+    const m = s.match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
+    if (!m) return null;
+    return new Date(2000 + Number(m[3]), Number(m[2]) - 1, Number(m[1]), 12, 0, 0, 0);
+  };
+
+  // Capture first account number (e.g. "0006 8110 8781") to distinguish from sub-accounts
+  let mainAcct: string | null = null;
+  const acctRe = /CONTA\s+.*?n[ºo]\s+([\d\s]+?)\s+de\s+\d{2}\.\d{2}\.\d{4}/i;
+  for (let i = 0; i <= startIdx; i++) {
+    const am = lines[i].match(acctRe);
+    if (am) { mainAcct = am[1].replace(/\s+/g, ""); break; }
+  }
+
+  // Initial balance
+  const anteriorNums = lines[startIdx].match(numRe) || [];
+  const saldoInicial = anteriorNums.length ? parsePT(anteriorNums[anteriorNums.length - 1]) : 0;
+  let prevSaldo = saldoInicial;
+  let saldoFinal: number | undefined;
+
+  const rowRe = /^\s*(\d{2}\.\d{2}\.\d{2})\s+(\d{2}\.\d{2}\.\d{2})\s+(.*)$/;
+  const transactions: BankTransaction[] = [];
+  let current: { tx: BankTransaction; rawDescParts: string[] } | null = null;
+
+  const flush = () => {
+    if (current) {
+      current.tx.descricao = current.rawDescParts.join(" ").replace(/\s+/g, " ").trim();
+      transactions.push(current.tx);
+      current = null;
+    }
+  };
+
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    const raw = lines[i];
+    const line = raw.trim();
+    if (!line) continue;
+    // End conditions
+    if (/SALDO\s+CONTABIL[ÍI]STICO/i.test(line)) {
+      const nums = line.match(numRe) || [];
+      if (nums.length) saldoFinal = parsePT(nums[nums.length - 1]);
+      flush();
+      break;
+    }
+    if (/^TOTAL\b/i.test(line)) {
+      flush();
+      continue;
+    }
+    // Break only on a DIFFERENT account header (not page-break repeats of the same account)
+    if (/^CONTA\s/i.test(line)) {
+      const am = line.match(acctRe);
+      const acct = am ? am[1].replace(/\s+/g, "") : null;
+      if (acct && mainAcct && acct !== mainAcct) {
+        flush();
+        break;
+      }
+      continue;
+    }
+    // Skip headers/page footers
+    if (/Página\s*\d+\|/i.test(line) || /^Data\s+Valor/i.test(line) || /^Data\s+Data/i.test(line) || /^Valor\s*$/i.test(line) || /^Descritivo/i.test(line) || /Extrato\s+Integrado/i.test(line)) {
+      continue;
+    }
+
+    const m = raw.match(rowRe);
+    if (m) {
+      flush();
+      const dataMov = parseDate(m[1]);
+      const dataValor = parseDate(m[2]);
+      if (!dataMov || !dataValor) continue;
+      const rest = m[3];
+      const nums = rest.match(numRe) || [];
+      let movimento = 0;
+      let descPart = rest;
+      if (nums.length >= 1) {
+        const saldo = parsePT(nums[nums.length - 1]);
+        movimento = Math.round((saldo - prevSaldo) * 100) / 100;
+        prevSaldo = saldo;
+        // Strip trailing numbers from description
+        const lastNumIdx = rest.lastIndexOf(nums[nums.length - 1]);
+        descPart = rest.substring(0, lastNumIdx);
+        // Strip the movement amount too (penultimate number) if present
+        if (nums.length >= 2) {
+          const penIdx = descPart.lastIndexOf(nums[nums.length - 2]);
+          if (penIdx >= 0) descPart = descPart.substring(0, penIdx);
+        }
+      }
+      current = {
+        tx: { dataMov, dataValor, descricao: "", movimento },
+        rawDescParts: [descPart.trim()],
+      };
+    } else if (current) {
+      // Continuation of description
+      current.rawDescParts.push(line);
+    }
+  }
+  flush();
+
+  return { bank: "Novo Banco", transactions, saldoInicial, saldoFinal };
+}
+
 export function parseBankText(text: string, bankHint?: string | null): ParsedStatement {
   const bank = bankHint || detectBank(text) || "Genérico";
   if (bank === "Millennium") return parseMillennium(text);
   if (bank === "Revolut") return parseRevolut(text);
   if (bank === "Santander") return parseSantander(text);
+  if (bank === "Novo Banco") return parseNovoBanco(text);
   const transactions = parseTextGeneric(text);
   const balances = findBalances(text);
   return { bank, transactions, ...balances };
