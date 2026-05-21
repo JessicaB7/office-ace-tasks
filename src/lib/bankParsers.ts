@@ -103,12 +103,21 @@ export async function extractPdfText(file: File, password?: string): Promise<str
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    // Group items by approximate Y position to reconstruct lines
+    // Group items by approximate Y position to reconstruct lines.
+    // Tolerate ±1.5 unit drift: snap each item to an existing bucket Y within tolerance.
     const rows = new Map<number, { x: number; str: string }[]>();
+    const TOL = 1.5;
     for (const item of content.items as any[]) {
-      const y = Math.round(item.transform[5]);
-      if (!rows.has(y)) rows.set(y, []);
-      rows.get(y)!.push({ x: item.transform[4], str: item.str });
+      const yRaw = item.transform[5];
+      let bucket: number | null = null;
+      for (const k of rows.keys()) {
+        if (Math.abs(k - yRaw) <= TOL) { bucket = k; break; }
+      }
+      if (bucket === null) {
+        bucket = Math.round(yRaw);
+        rows.set(bucket, []);
+      }
+      rows.get(bucket)!.push({ x: item.transform[4], str: item.str });
     }
     const sortedY = [...rows.keys()].sort((a, b) => b - a);
     for (const y of sortedY) {
