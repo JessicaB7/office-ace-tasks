@@ -22,6 +22,7 @@ const BANK_KEYWORDS: Record<string, string[]> = {
   Santander: ["santander", "totaptpl"],
   BPI: ["banco bpi", "bpi net"],
   "Novo Banco": ["novo banco", "novobanco"],
+  Abanca: ["abanca"],
   ActivoBank: ["activobank", "activo bank"],
 };
 
@@ -598,12 +599,52 @@ function parseNovoBanco(text: string): ParsedStatement {
   return { bank: "Novo Banco", transactions, saldoInicial, saldoFinal };
 }
 
+function parseAbanca(text: string): ParsedStatement {
+  const lines = text.split(/\r?\n/);
+  const numRe = /-?\d{1,3}(?:\.\d{3})*,\d{2}/g;
+  const parsePT = (s: string) => parseFloat(s.replace(/\./g, "").replace(",", "."));
+  const parseDate = (s: string) => {
+    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (!m) return null;
+    return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), 12, 0, 0, 0);
+  };
+  // Row: "DD-MM-YYYY   description   montante   saldo"
+  const rowRe = /^\s*(\d{2}-\d{2}-\d{4})\s+(.+?)\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
+  const rows: { d: Date; desc: string; mov: number; saldo: number }[] = [];
+  for (const raw of lines) {
+    const m = raw.match(rowRe);
+    if (!m) continue;
+    const d = parseDate(m[1]);
+    if (!d) continue;
+    rows.push({
+      d,
+      desc: m[2].replace(/\s+/g, " ").trim(),
+      mov: parsePT(m[3]),
+      saldo: parsePT(m[4]),
+    });
+  }
+  const transactions: BankTransaction[] = rows.map((r) => ({
+    dataMov: r.d,
+    dataValor: r.d,
+    descricao: r.desc,
+    movimento: r.mov,
+  }));
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  if (rows.length) {
+    saldoInicial = Math.round((rows[0].saldo - rows[0].mov) * 100) / 100;
+    saldoFinal = rows[rows.length - 1].saldo;
+  }
+  return { bank: "Abanca", transactions, saldoInicial, saldoFinal };
+}
+
 export function parseBankText(text: string, bankHint?: string | null): ParsedStatement {
   const bank = bankHint || detectBank(text) || "Genérico";
   if (bank === "Millennium") return parseMillennium(text);
   if (bank === "Revolut") return parseRevolut(text);
   if (bank === "Santander") return parseSantander(text);
   if (bank === "Novo Banco") return parseNovoBanco(text);
+  if (bank === "Abanca") return parseAbanca(text);
   const transactions = parseTextGeneric(text);
   const balances = findBalances(text);
   return { bank, transactions, ...balances };
