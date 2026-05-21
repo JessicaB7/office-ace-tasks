@@ -435,8 +435,11 @@ function parseSantander(text: string): ParsedStatement {
 
   // PT amount: optional leading '-', integer with optional dot-thousands, comma decimals
   const reAmt = /-?\d{1,3}(?:\.\d{3})*,\d{2}/g;
-  // Row prefix: two DD-MM dates
-  const reRow = /^(\d{2})-(\d{2})\s+(\d{2})-(\d{2})\s+(.+)$/;
+  // Row prefix: two DD-MM dates. Some Santander PDFs render footer text on the
+  // same Y coordinate as a movement row, so the reconstructed line may have
+  // leading footer text before the dates. Match the first valid date pair
+  // anywhere in the line instead of requiring it at column 0.
+  const reRow = /(?:^|\s)(\d{2})-(\d{2})\s+(\d{2})-(\d{2})\s+(.+)$/;
 
   type Row = { tx: BankTransaction; saldo: number; order: number };
   const rows: Row[] = [];
