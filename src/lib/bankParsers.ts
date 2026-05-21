@@ -22,7 +22,6 @@ const BANK_KEYWORDS: Record<string, string[]> = {
   Santander: ["santander", "totaptpl"],
   BPI: ["banco bpi", "bpi net"],
   "Novo Banco": ["novo banco", "novobanco"],
-  Abanca: ["abanca"],
   ActivoBank: ["activobank", "activo bank"],
 };
 
@@ -599,9 +598,8 @@ function parseNovoBanco(text: string): ParsedStatement {
   return { bank: "Novo Banco", transactions, saldoInicial, saldoFinal };
 }
 
-function parseAbanca(text: string): ParsedStatement {
+function parseNovoBancoConsulta(text: string): ParsedStatement {
   const lines = text.split(/\r?\n/);
-  const numRe = /-?\d{1,3}(?:\.\d{3})*,\d{2}/g;
   const parsePT = (s: string) => parseFloat(s.replace(/\./g, "").replace(",", "."));
   const parseDate = (s: string) => {
     const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
@@ -635,7 +633,7 @@ function parseAbanca(text: string): ParsedStatement {
     saldoInicial = Math.round((rows[0].saldo - rows[0].mov) * 100) / 100;
     saldoFinal = rows[rows.length - 1].saldo;
   }
-  return { bank: "Abanca", transactions, saldoInicial, saldoFinal };
+  return { bank: "Novo Banco", transactions, saldoInicial, saldoFinal };
 }
 
 export function parseBankText(text: string, bankHint?: string | null): ParsedStatement {
@@ -643,8 +641,14 @@ export function parseBankText(text: string, bankHint?: string | null): ParsedSta
   if (bank === "Millennium") return parseMillennium(text);
   if (bank === "Revolut") return parseRevolut(text);
   if (bank === "Santander") return parseSantander(text);
-  if (bank === "Novo Banco") return parseNovoBanco(text);
-  if (bank === "Abanca") return parseAbanca(text);
+  if (bank === "Novo Banco") {
+    // Two formats: "Extrato Integrado" (dates DD.MM.YY) and "Consulta de movimentos" (dates DD-MM-YYYY)
+    if (/Consulta\s+de\s+movimentos/i.test(text) || /\b\d{2}-\d{2}-\d{4}\b/.test(text)) {
+      const r = parseNovoBancoConsulta(text);
+      if (r.transactions.length) return r;
+    }
+    return parseNovoBanco(text);
+  }
   const transactions = parseTextGeneric(text);
   const balances = findBalances(text);
   return { bank, transactions, ...balances };
