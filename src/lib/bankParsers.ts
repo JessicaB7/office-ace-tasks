@@ -462,20 +462,17 @@ function parseSantander(text: string): ParsedStatement {
   const txs: BankTransaction[] = rows.map((r) => r.tx);
 
   // Derive balances from the saldo column of the first/last movement row (chronological).
-  // Santander PDFs typically list newest → oldest; sort by date asc, then by source order desc
-  // (within same day, the earlier-printed row is the more recent transaction).
+  // Santander PDFs list rows oldest → newest within each day (saldo progride linha a linha).
   let saldoInicial: number | undefined;
   let saldoFinal: number | undefined;
   if (rows.length > 0) {
     const sorted = [...rows].sort((a, b) => {
       const d = a.tx.dataMov.getTime() - b.tx.dataMov.getTime();
-      return d !== 0 ? d : b.order - a.order;
+      return d !== 0 ? d : a.order - b.order;
     });
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
-    // Saldo final = saldo da última linha cronológica
     saldoFinal = last.saldo;
-    // Saldo inicial = saldo da primeira linha cronológica menos o seu movimento
     saldoInicial = +(first.saldo - first.tx.movimento).toFixed(2);
   }
 
