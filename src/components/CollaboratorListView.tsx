@@ -52,7 +52,7 @@ const CollaboratorListView = () => {
   };
 
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
-  const openEdit = (c: Collaborator) => { setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "", access_code: (c as any).access_code || "" }); setEditingId(c.id); setDialogOpen(true); };
+  const openEdit = (c: Collaborator) => { setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "", access_code: "" }); setEditingId(c.id); setDialogOpen(true); };
   const handleCardClick = (c: Collaborator) => { if (isAdmin) { openEdit(c); } else { setDetailCollab(c); } };
 
   const handleSave = async (e: React.FormEvent) => {

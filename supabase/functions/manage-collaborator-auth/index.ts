@@ -105,15 +105,15 @@ Deno.serve(async (req) => {
       // Link auth user to collaborator
       await adminClient
         .from("collaborators")
-        .update({ user_id: authUserId, access_code })
+        .update({ user_id: authUserId })
         .eq("id", collaborator_id);
     }
 
-    // Update the access_code in collaborators table
+    // Store the access_code in the admin-only collaborator_secrets table
     await adminClient
-      .from("collaborators")
-      .update({ access_code })
-      .eq("id", collaborator_id);
+      .from("collaborator_secrets")
+      .upsert({ collaborator_id, access_code, updated_at: new Date().toISOString() });
+
 
     return new Response(JSON.stringify({ success: true, user_id: authUserId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
