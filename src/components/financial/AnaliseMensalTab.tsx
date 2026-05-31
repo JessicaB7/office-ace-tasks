@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useFinancialAccounts, useClientFinancialEntries, useUpsertEntry, type FinancialAccount } from "@/hooks/useClientFinancials";
 import { buildEntryMap, getValue, MONTHS_PT, sumSectionMonth, sumSectionYear, fmt, quarterSums } from "./financialMath";
 import { cn } from "@/lib/utils";
@@ -78,8 +78,8 @@ export default function AnaliseMensalTab({ clientId, year, readOnly }: { clientI
                 const accs = operationalAccounts.filter((a) => a.section === section.key);
                 const sectionTotalsM = months.map((m) => sumSectionMonth(map, accounts, section.key, m));
                 return (
-                  <>
-                    <tr key={`hdr-${section.key}`} className="bg-primary/5">
+                  <Fragment key={section.key}>
+                    <tr className="bg-primary/5">
                       <td className="sticky left-0 bg-primary/5 px-3 py-1.5 font-semibold text-primary text-[11px] uppercase tracking-wide" colSpan={18}>{section.label}</td>
                     </tr>
                     {accs.map((a) => (
