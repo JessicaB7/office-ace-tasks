@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Upload, Building2 } from "lucide-react";
 import { useClients } from "@/hooks/useSupabaseQuery";
 import { useBulkUpsertEntries, useFinancialAccounts } from "@/hooks/useClientFinancials";
