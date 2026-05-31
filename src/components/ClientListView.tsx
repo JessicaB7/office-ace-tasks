@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
-import { Search, Plus, Building2 } from "lucide-react";
+import { Search, Plus, Building2, BarChart3 } from "lucide-react";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +32,7 @@ const tipoContabColor = (tipo: string) => {
   }
 };
 
-const ClientListView = () => {
+const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => void }) => {
   const { data: clients = [], isLoading } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const [search, setSearch] = useState("");
@@ -96,21 +96,31 @@ const ClientListView = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((client: any, i: number) => (
-            <div key={client.id} onClick={() => openEdit(client)} className="bg-card rounded-xl border p-5 cursor-pointer hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 20}ms` }}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-primary" />
+            <div key={client.id} className="bg-card rounded-xl border p-5 hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 20}ms` }}>
+              <div onClick={() => openEdit(client)} className="cursor-pointer">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">{client.name}</h3>
+                      {client.nif && <p className="text-xs text-muted-foreground">NIF: {client.nif}</p>}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-sm">{client.name}</h3>
-                    {client.nif && <p className="text-xs text-muted-foreground">NIF: {client.nif}</p>}
-                  </div>
+                  <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", tipoContabColor(client.tipo_contabilidade))}>
+                    {TIPO_CONTAB_LABELS[client.tipo_contabilidade] || client.tipo_contabilidade || "—"}
+                  </span>
                 </div>
-                <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", tipoContabColor(client.tipo_contabilidade))}>
-                  {TIPO_CONTAB_LABELS[client.tipo_contabilidade] || client.tipo_contabilidade || "—"}
-                </span>
               </div>
+              {onOpenAnalysis && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onOpenAnalysis(client.id); }}
+                  className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg border bg-card hover:bg-primary/5 hover:border-primary hover:text-primary text-xs font-medium transition-colors"
+                >
+                  <BarChart3 className="w-3.5 h-3.5" /> Análise Financeira
+                </button>
+              )}
             </div>
           ))}
           {filtered.length === 0 && <div className="col-span-full text-center py-12 text-muted-foreground">Nenhum cliente encontrado</div>}
