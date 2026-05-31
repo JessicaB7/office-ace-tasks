@@ -30,36 +30,38 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
 
   const handleImport = async (file: File) => {
     try {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type: "array" });
       const codes = new Set(accounts.map((a) => a.code));
-      const entries: { month: number; account_code: string; value: number }[] = [];
+      let entries: { month: number; account_code: string; value: number }[] = [];
 
-      for (const sheetName of wb.SheetNames) {
-        const ws = wb.Sheets[sheetName];
-        const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-        for (const row of rows) {
-          if (!row || row.length < 3) continue;
-          // Detect code column: first cell or second cell that matches an account code
-          let codeCellIdx = -1;
-          for (let i = 0; i < Math.min(3, row.length); i++) {
-            const cell = row[i];
-            if (cell != null && codes.has(String(cell).trim())) { codeCellIdx = i; break; }
-          }
-          if (codeCellIdx < 0) continue;
-          const code = String(row[codeCellIdx]).trim();
-          // 12 month values follow the name (assume codeCellIdx + 2 is Janeiro if there's a name, else codeCellIdx + 1)
-          // We'll detect: starting from codeCellIdx+1, find first contiguous run of 12 numeric cells.
-          for (let start = codeCellIdx + 1; start <= row.length - 12; start++) {
-            const slice = row.slice(start, start + 12);
-            const numericCount = slice.filter((v) => typeof v === "number").length;
-            if (numericCount >= 6) {
-              slice.forEach((v, i) => {
-                if (typeof v === "number" && v !== 0) {
-                  entries.push({ month: i + 1, account_code: code, value: Number(v) });
-                }
-              });
-              break;
+      const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+      if (isPdf) {
+        entries = await parseMapaPdf(file, codes);
+      } else {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array" });
+        for (const sheetName of wb.SheetNames) {
+          const ws = wb.Sheets[sheetName];
+          const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+          for (const row of rows) {
+            if (!row || row.length < 3) continue;
+            let codeCellIdx = -1;
+            for (let i = 0; i < Math.min(3, row.length); i++) {
+              const cell = row[i];
+              if (cell != null && codes.has(String(cell).trim())) { codeCellIdx = i; break; }
+            }
+            if (codeCellIdx < 0) continue;
+            const code = String(row[codeCellIdx]).trim();
+            for (let start = codeCellIdx + 1; start <= row.length - 12; start++) {
+              const slice = row.slice(start, start + 12);
+              const numericCount = slice.filter((v) => typeof v === "number").length;
+              if (numericCount >= 6) {
+                slice.forEach((v, i) => {
+                  if (typeof v === "number" && v !== 0) {
+                    entries.push({ month: i + 1, account_code: code, value: Math.abs(Number(v)) });
+                  }
+                });
+                break;
+              }
             }
           }
         }
