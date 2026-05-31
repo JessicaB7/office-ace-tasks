@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_financial_entries: {
+        Row: {
+          account_code: string
+          client_id: string
+          month: number
+          updated_at: string
+          updated_by: string | null
+          value: number
+          year: number
+        }
+        Insert: {
+          account_code: string
+          client_id: string
+          month: number
+          updated_at?: string
+          updated_by?: string | null
+          value?: number
+          year: number
+        }
+        Update: {
+          account_code?: string
+          client_id?: string
+          month?: number
+          updated_at?: string
+          updated_by?: string | null
+          value?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_financial_entries_account_code_fkey"
+            columns: ["account_code"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      client_financial_settings: {
+        Row: {
+          client_id: string
+          corporate_tax_rate: number
+          ta_kms: number
+          ta_nao_doc: number
+          ta_representacao: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          client_id: string
+          corporate_tax_rate?: number
+          ta_kms?: number
+          ta_nao_doc?: number
+          ta_representacao?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          client_id?: string
+          corporate_tax_rate?: number
+          ta_kms?: number
+          ta_nao_doc?: number
+          ta_representacao?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           active: boolean
@@ -265,6 +333,36 @@ export type Database = {
           id?: string
           token?: string
           used_at?: string | null
+        }
+        Relationships: []
+      }
+      financial_accounts: {
+        Row: {
+          code: string
+          created_at: string
+          display_order: number
+          name: string
+          parent_code: string | null
+          section: string
+          sign: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          display_order?: number
+          name: string
+          parent_code?: string | null
+          section: string
+          sign?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          display_order?: number
+          name?: string
+          parent_code?: string | null
+          section?: string
+          sign?: number
         }
         Relationships: []
       }

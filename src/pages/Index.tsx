@@ -10,12 +10,14 @@ import ObrigacoesView from "@/components/ObrigacoesView";
 import ContabilidadesView from "@/components/ContabilidadesView";
 import ExtratosBancariosView from "@/components/ExtratosBancariosView";
 import AdminWeeklySummary from "@/components/AdminWeeklySummary";
+import ClientAnalysisView from "@/components/ClientAnalysisView";
 import NotificationBell from "@/components/NotificationBell";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("dashboard");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [analysisClientId, setAnalysisClientId] = useState<string | null>(null);
 
   const handleNewTask = () => {
     setEditingTask(null);
@@ -38,7 +40,8 @@ const Index = () => {
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
         {activeView.startsWith("contabilidades") && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} />}
-        {activeView === "clients" && <ClientListView />}
+        {activeView === "clients" && !analysisClientId && <ClientListView onOpenAnalysis={(id) => setAnalysisClientId(id)} />}
+        {activeView === "clients" && analysisClientId && <ClientAnalysisView clientId={analysisClientId} onBack={() => setAnalysisClientId(null)} />}
         {activeView === "extratos" && <ExtratosBancariosView />}
         {activeView === "resumo" && <AdminWeeklySummary />}
         {activeView === "collaborators" && <CollaboratorListView />}
