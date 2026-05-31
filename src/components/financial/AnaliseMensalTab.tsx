@@ -107,7 +107,7 @@ export default function AnaliseMensalTab({ clientId, year, readOnly }: { clientI
                       <td className="px-2 py-1 text-right text-xs tabular-nums bg-muted/60">{fmt(sumSectionYear(map, accounts, section.key))}</td>
                       {q(sectionTotalsM).map((qv, qi) => <td key={qi} className="px-2 py-1 text-right text-xs tabular-nums bg-muted/40">{fmt(qv)}</td>)}
                     </tr>
-                  </>
+                  </Fragment>
                 );
               })}
 
