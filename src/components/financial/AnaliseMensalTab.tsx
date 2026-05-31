@@ -11,8 +11,7 @@ type Section = {
 
 const SECTIONS: Section[] = [
   { key: "vendas", label: "Faturação", tone: "positive" },
-  { key: "pessoal_socios", label: "Gastos com pessoal — Sócios", tone: "negative" },
-  { key: "pessoal_colab", label: "Gastos com pessoal — Colaboradores", tone: "negative" },
+  { key: "pessoal", label: "Gastos com pessoal", tone: "negative" },
   { key: "despesas", label: "Despesas (FSE)", tone: "negative" },
   { key: "compras", label: "Compra de Material", tone: "negative" },
 ];
