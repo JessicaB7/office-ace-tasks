@@ -40,7 +40,7 @@ export default function IndicadoresTab({ clientId, year }: { clientId: string; y
     return MONTHS_PT.map((m, i) => {
       const month = i + 1;
       const v = sumSectionMonth(map, accounts, "vendas", month);
-      const g = sumSectionMonth(map, accounts, "pessoal_socios", month) + sumSectionMonth(map, accounts, "pessoal_colab", month) + sumSectionMonth(map, accounts, "despesas", month) + sumSectionMonth(map, accounts, "compras", month);
+      const g = sumSectionMonth(map, accounts, "pessoal", month) + sumSectionMonth(map, accounts, "despesas", month) + sumSectionMonth(map, accounts, "compras", month);
       return { mes: m, Faturação: v, Gastos: g, Lucro: v - g };
     });
   }, [entriesCurrent, accounts]);
