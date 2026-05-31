@@ -17,7 +17,7 @@ export default function IndicadoresTab({ clientId, year }: { clientId: string; y
     const map = buildEntryMap(entries);
     const me = computeMapaExploracao(map, accounts, s);
     const vendas = sumSectionYear(map, accounts, "vendas");
-    const pessoal = sumSectionYear(map, accounts, "pessoal_socios") + sumSectionYear(map, accounts, "pessoal_colab");
+    const pessoal = sumSectionYear(map, accounts, "pessoal");
     const despesas = sumSectionYear(map, accounts, "despesas");
     return {
       vendas,
