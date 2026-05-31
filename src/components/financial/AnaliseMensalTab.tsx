@@ -11,8 +11,7 @@ type Section = {
 
 const SECTIONS: Section[] = [
   { key: "vendas", label: "Faturação", tone: "positive" },
-  { key: "pessoal_socios", label: "Gastos com pessoal — Sócios", tone: "negative" },
-  { key: "pessoal_colab", label: "Gastos com pessoal — Colaboradores", tone: "negative" },
+  { key: "pessoal", label: "Gastos com pessoal", tone: "negative" },
   { key: "despesas", label: "Despesas (FSE)", tone: "negative" },
   { key: "compras", label: "Compra de Material", tone: "negative" },
 ];
@@ -53,7 +52,7 @@ export default function AnaliseMensalTab({ clientId, year, readOnly }: { clientI
   // Total Vendas, Total Pessoal, Total Despesas + Compras, Lucro
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
   const totVendasM = months.map((m) => sumSectionMonth(map, accounts, "vendas", m));
-  const totPessoalM = months.map((m) => sumSectionMonth(map, accounts, "pessoal_socios", m) + sumSectionMonth(map, accounts, "pessoal_colab", m));
+  const totPessoalM = months.map((m) => sumSectionMonth(map, accounts, "pessoal", m));
   const totDespesasM = months.map((m) => sumSectionMonth(map, accounts, "despesas", m));
   const totComprasM = months.map((m) => sumSectionMonth(map, accounts, "compras", m));
   const lucroM = months.map((_, i) => totVendasM[i] - totPessoalM[i] - totDespesasM[i] - totComprasM[i]);
