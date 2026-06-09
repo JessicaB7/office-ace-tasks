@@ -645,13 +645,93 @@ function parseNovoBancoConsulta(text: string): ParsedStatement {
   return { bank: "Novo Banco", transactions, saldoInicial, saldoFinal };
 }
 
+// ---------- BPI parser ----------
+// Layout per row: "DD/MM   DD/MM   DESCRIÇÃO   [MOEDA?]   VALOR   SALDO"
+// First date (data mov) may be missing — line then starts with the value date.
+// Numbers use PT format with SPACE as thousand sep and COMMA as decimal:
+// "33 691,85", "-32 000,00".
+function parseBPI(text: string): ParsedStatement {
+  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+
+  // Year from "Período De DD/MM/YYYY a DD/MM/YYYY"
+  let startYear = new Date().getFullYear();
+  let endYear = startYear;
+  let startMonth = 1;
+  const period = text.match(
+    /Per[ií]odo\s+De\s+(\d{2})\/(\d{2})\/(\d{4})\s+a\s+(\d{2})\/(\d{2})\/(\d{4})/i,
+  );
+  if (period) {
+    startMonth = parseInt(period[2]);
+    startYear = parseInt(period[3]);
+    endYear = parseInt(period[6]);
+  }
+
+  const reNumGlobal = /-?\d{1,3}(?:[\s.]\d{3})*,\d{2}/g;
+  const parsePT = (s: string) => {
+    const neg = s.trim().startsWith("-");
+    const clean = s.replace(/[\s.]/g, "").replace(",", ".").replace(/^-/, "");
+    const n = parseFloat(clean);
+    return isNaN(n) ? null : neg ? -n : n;
+  };
+  const lastNumberOf = (line: string): number | null => {
+    const nums = line.match(reNumGlobal);
+    if (!nums || !nums.length) return null;
+    return parsePT(nums[nums.length - 1]);
+  };
+
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  for (const line of lines) {
+    if (/SALDO\s+ANTERIOR/i.test(line) && saldoInicial === undefined) {
+      const v = lastNumberOf(line);
+      if (v !== null) saldoInicial = v;
+    }
+    if (/SALDO\s+ACTUAL\s+CONTABIL/i.test(line)) {
+      const v = lastNumberOf(line);
+      if (v !== null) saldoFinal = v;
+    }
+  }
+
+  const reRow =
+    /^(?:(\d{2})\/(\d{2})\s+)?(\d{2})\/(\d{2})\s+(.+?)\s+(-?\d{1,3}(?:[\s.]\d{3})*,\d{2})\s+(-?\d{1,3}(?:[\s.]\d{3})*,\d{2})\s*$/;
+  const skipRe = /^(SALDO|CONTA\s+VALOR|NIB:|IBAN:|DEP[OÓ]SITOS|DATA\b|DESCRI[ÇC][AÃ]O|MOEDA\b)/i;
+
+  const txs: BankTransaction[] = [];
+  for (const line of lines) {
+    if (skipRe.test(line)) continue;
+    const m = line.match(reRow);
+    if (!m) continue;
+    const movD = parseInt(m[1] || m[3]);
+    const movM = parseInt(m[2] || m[4]);
+    const valD = parseInt(m[3]);
+    const valM = parseInt(m[4]);
+    if (movM < 1 || movM > 12 || valM < 1 || valM > 12) continue;
+    let desc = m[5].trim().replace(/\s+/g, " ");
+    desc = desc.replace(/\s+EUR\s*$/i, "").trim();
+    const valor = parsePT(m[6]);
+    if (valor === null || valor === 0) continue;
+    if (!desc) desc = valor >= 0 ? "Crédito" : "Débito";
+
+    const yearMov = movM >= startMonth ? startYear : endYear;
+    const yearVal = valM >= startMonth ? startYear : endYear;
+    txs.push({
+      dataMov: makeDateOnly(yearMov, movM, movD),
+      dataValor: makeDateOnly(yearVal, valM, valD),
+      descricao: desc,
+      movimento: valor,
+    });
+  }
+
+  return { bank: "BPI", transactions: txs, saldoInicial, saldoFinal };
+}
+
 export function parseBankText(text: string, bankHint?: string | null): ParsedStatement {
   const bank = bankHint || detectBank(text) || "Genérico";
   if (bank === "Millennium") return parseMillennium(text);
   if (bank === "Revolut") return parseRevolut(text);
   if (bank === "Santander") return parseSantander(text);
+  if (bank === "BPI") return parseBPI(text);
   if (bank === "Novo Banco") {
-    // Two formats: "Extrato Integrado" (dates DD.MM.YY) and "Consulta de movimentos" (dates DD-MM-YYYY)
     if (/Consulta\s+de\s+movimentos/i.test(text) || /\b\d{2}-\d{2}-\d{4}\b/.test(text)) {
       const r = parseNovoBancoConsulta(text);
       if (r.transactions.length) return r;
