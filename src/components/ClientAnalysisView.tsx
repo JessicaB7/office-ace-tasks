@@ -6,6 +6,7 @@ import AnaliseMensalTab from "./financial/AnaliseMensalTab";
 import MapaExploracaoTab from "./financial/MapaExploracaoTab";
 import IvaTab from "./financial/IvaTab";
 import IndicadoresTab from "./financial/IndicadoresTab";
+import TISimplificadoDashboard from "./financial/TISimplificadoDashboard";
 import * as XLSX from "xlsx";
 import { parseMapaPdf } from "@/lib/pdfMapaImport";
 import { toast } from "sonner";
