@@ -1,36 +1,47 @@
 import { useMemo, useState } from "react";
-import { Building2, Search, ChevronRight } from "lucide-react";
-import { useClients } from "@/hooks/useSupabaseQuery";
+import { Search, ChevronRight, Filter, X } from "lucide-react";
+import { useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
 import ClientAnalysisView from "@/components/ClientAnalysisView";
 
 const TYPE_CONFIG: Record<string, { label: string; tipo: string; accentClass: string }> = {
   TI_simplificado: {
     label: "Análise Financeira — TI Simplificado",
     tipo: "TI RS",
-    accentClass: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+    accentClass: "text-emerald-700",
   },
   TI_organizado: {
     label: "Análise Financeira — TI Organizado",
     tipo: "TI CO",
-    accentClass: "bg-amber-500/10 text-amber-700 border-amber-200",
+    accentClass: "text-amber-700",
   },
   empresas: {
     label: "Análise Financeira — Empresas",
     tipo: "SQ",
-    accentClass: "bg-blue-500/10 text-blue-700 border-blue-200",
+    accentClass: "text-blue-700",
   },
 };
 
 export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) {
   const cfg = TYPE_CONFIG[subPage] ?? TYPE_CONFIG.TI_simplificado;
   const { data: clients = [], isLoading } = useClients();
+  const { data: collaborators = [] } = useCollaborators();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [ivaFilter, setIvaFilter] = useState("");
+  const [respFilter, setRespFilter] = useState("");
+
+  const ivaOptions = useMemo(() => {
+    const set = new Set<string>();
+    (clients as any[]).forEach((c) => { if (c.iva) set.add(c.iva); });
+    return Array.from(set).sort();
+  }, [clients]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (clients as any[])
       .filter((c) => c.tipo_contabilidade === cfg.tipo)
+      .filter((c) => (!ivaFilter ? true : c.iva === ivaFilter))
+      .filter((c) => (!respFilter ? true : c.responsavel_id === respFilter))
       .filter((c) =>
         !q
           ? true
@@ -38,7 +49,9 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
             String(c.nif || "").includes(q),
       )
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [clients, cfg.tipo, search]);
+  }, [clients, cfg.tipo, search, ivaFilter, respFilter]);
+
+  const activeFilters = (ivaFilter ? 1 : 0) + (respFilter ? 1 : 0);
 
   if (selectedId) {
     return (
@@ -58,14 +71,50 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
             {filtered.length} cliente{filtered.length === 1 ? "" : "s"} neste regime
           </p>
         </div>
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Procurar cliente ou NIF…"
-            className="pl-9 pr-3 py-2 rounded-lg border bg-card text-sm w-72 focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Procurar cliente ou NIF…"
+              className="pl-9 pr-3 py-2 rounded-lg border bg-card text-sm w-56 focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+
+          {ivaOptions.length > 0 && (
+            <select
+              value={ivaFilter}
+              onChange={(e) => setIvaFilter(e.target.value)}
+              className="py-2 px-3 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="">Todos os IVA</option>
+              {ivaOptions.map((v) => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </select>
+          )}
+
+          <select
+            value={respFilter}
+            onChange={(e) => setRespFilter(e.target.value)}
+            className="py-2 px-3 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">Todos os responsáveis</option>
+            {collaborators.map((col: any) => (
+              <option key={col.id} value={col.id}>{col.name}</option>
+            ))}
+          </select>
+
+          {activeFilters > 0 && (
+            <button
+              onClick={() => { setIvaFilter(""); setRespFilter(""); }}
+              className="flex items-center gap-1 px-3 py-2 rounded-lg border bg-card text-sm hover:bg-muted transition-colors"
+              title="Limpar filtros"
+            >
+              <X className="w-3.5 h-3.5" /> Limpar
+            </button>
+          )}
         </div>
       </div>
 
@@ -76,26 +125,38 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
           Não existem clientes neste regime.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map((c: any) => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedId(c.id)}
-              className="group flex items-center gap-3 rounded-xl border bg-card p-4 text-left hover:border-primary hover:shadow-sm transition-all"
-            >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${cfg.accentClass}`}>
-                <Building2 className="w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate">{c.name}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {c.nif ? `NIF ${c.nif}` : "Sem NIF"}
-                  {c.iva ? ` · IVA ${c.iva}` : ""}
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-            </button>
-          ))}
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Nome</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-32">NIF</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-32">IVA</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-40">Responsável</th>
+                <th className="w-10"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {filtered.map((c: any) => {
+                const resp = collaborators.find((col: any) => col.id === c.responsavel_id);
+                return (
+                  <tr
+                    key={c.id}
+                    onClick={() => setSelectedId(c.id)}
+                    className="hover:bg-muted/40 cursor-pointer transition-colors"
+                  >
+                    <td className={`px-4 py-2.5 font-medium ${cfg.accentClass}`}>{c.name}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">{c.nif || "—"}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">{c.iva || "—"}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">{resp?.name || "—"}</td>
+                    <td className="px-4 py-2.5">
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
