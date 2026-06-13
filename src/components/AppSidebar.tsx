@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutDashboard, ListTodo, Plus, Users, Building2, CalendarDays, LogOut, ClipboardList, ChevronDown, BookOpen, BarChart3, Banknote } from "lucide-react";
+import { LayoutDashboard, ListTodo, Plus, Users, Building2, CalendarDays, LogOut, ClipboardList, ChevronDown, BookOpen, BarChart3, Banknote, LineChart } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,12 @@ const contabilidadesSubItems = [
   { id: "contabilidades_empresas", label: "Empresas" },
 ];
 
+const analiseFinanceiraSubItems = [
+  { id: "analise_TI_simplificado", label: "TI Simplificado" },
+  { id: "analise_TI_organizado", label: "TI Organizado" },
+  { id: "analise_empresas", label: "Empresas" },
+];
+
 const bottomNavItems = [
   { id: "collaborators", label: "Colaboradores", icon: Users },
   { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays },
@@ -42,9 +48,11 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
   const { user, isAdmin, signOut } = useAuth();
   const [obrigacoesOpen, setObrigacoesOpen] = useState(activeView.startsWith("obrigacoes"));
   const [contabilidadesOpen, setContabilidadesOpen] = useState(activeView.startsWith("contabilidades"));
+  const [analiseOpen, setAnaliseOpen] = useState(activeView.startsWith("analise"));
 
   const isObrigacoesActive = activeView.startsWith("obrigacoes");
   const isContabilidadesActive = activeView.startsWith("contabilidades");
+  const isAnaliseActive = activeView.startsWith("analise");
 
   const handleObrigacoesClick = () => {
     setObrigacoesOpen((prev) => !prev);
@@ -57,6 +65,13 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
     setContabilidadesOpen((prev) => !prev);
     if (!isContabilidadesActive) {
       onViewChange("contabilidades_TI_isento");
+    }
+  };
+
+  const handleAnaliseClick = () => {
+    setAnaliseOpen((prev) => !prev);
+    if (!isAnaliseActive) {
+      onViewChange("analise_TI_simplificado");
     }
   };
 
@@ -136,6 +151,39 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
         {contabilidadesOpen && (
           <div className="ml-4 pl-3 border-l border-primary-foreground/20 mb-1">
             {contabilidadesSubItems.map((sub) => (
+              <button
+                key={sub.id}
+                onClick={() => onViewChange(sub.id)}
+                className={cn(
+                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium mb-0.5 transition-colors",
+                  activeView === sub.id
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50"
+                )}
+              >
+                {sub.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Análise Financeira with sub-items */}
+        <button
+          onClick={handleAnaliseClick}
+          className={cn(
+            "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors",
+            isAnaliseActive
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-sidebar-accent/50"
+          )}
+        >
+          <LineChart className="w-4 h-4" />
+          <span className="flex-1 text-left">Análise Financeira</span>
+          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", analiseOpen && "rotate-180")} />
+        </button>
+        {analiseOpen && (
+          <div className="ml-4 pl-3 border-l border-primary-foreground/20 mb-1">
+            {analiseFinanceiraSubItems.map((sub) => (
               <button
                 key={sub.id}
                 onClick={() => onViewChange(sub.id)}

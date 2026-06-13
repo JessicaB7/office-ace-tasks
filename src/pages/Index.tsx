@@ -11,6 +11,7 @@ import ContabilidadesView from "@/components/ContabilidadesView";
 import ExtratosBancariosView from "@/components/ExtratosBancariosView";
 import AdminWeeklySummary from "@/components/AdminWeeklySummary";
 import ClientAnalysisView from "@/components/ClientAnalysisView";
+import AnaliseFinanceiraView from "@/components/AnaliseFinanceiraView";
 import NotificationBell from "@/components/NotificationBell";
 
 const Index = () => {
@@ -40,6 +41,7 @@ const Index = () => {
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
         {activeView.startsWith("contabilidades") && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} />}
+        {activeView.startsWith("analise_") && <AnaliseFinanceiraView subPage={activeView.replace("analise_", "")} />}
         {activeView === "clients" && !analysisClientId && <ClientListView onOpenAnalysis={(id) => setAnalysisClientId(id)} />}
         {activeView === "clients" && analysisClientId && <ClientAnalysisView clientId={analysisClientId} onBack={() => setAnalysisClientId(null)} />}
         {activeView === "extratos" && <ExtratosBancariosView />}
