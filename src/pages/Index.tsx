@@ -11,6 +11,7 @@ import ContabilidadesView from "@/components/ContabilidadesView";
 import ExtratosBancariosView from "@/components/ExtratosBancariosView";
 import AdminWeeklySummary from "@/components/AdminWeeklySummary";
 import ClientAnalysisView from "@/components/ClientAnalysisView";
+import AnaliseFinanceiraView from "@/components/AnaliseFinanceiraView";
 import NotificationBell from "@/components/NotificationBell";
 
 const Index = () => {
