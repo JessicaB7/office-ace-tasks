@@ -33,6 +33,12 @@ const contabilidadesSubItems = [
   { id: "contabilidades_empresas", label: "Empresas" },
 ];
 
+const analiseFinanceiraSubItems = [
+  { id: "analise_TI_simplificado", label: "TI Simplificado" },
+  { id: "analise_TI_organizado", label: "TI Organizado" },
+  { id: "analise_empresas", label: "Empresas" },
+];
+
 const bottomNavItems = [
   { id: "collaborators", label: "Colaboradores", icon: Users },
   { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays },
