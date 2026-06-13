@@ -48,9 +48,11 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
   const { user, isAdmin, signOut } = useAuth();
   const [obrigacoesOpen, setObrigacoesOpen] = useState(activeView.startsWith("obrigacoes"));
   const [contabilidadesOpen, setContabilidadesOpen] = useState(activeView.startsWith("contabilidades"));
+  const [analiseOpen, setAnaliseOpen] = useState(activeView.startsWith("analise"));
 
   const isObrigacoesActive = activeView.startsWith("obrigacoes");
   const isContabilidadesActive = activeView.startsWith("contabilidades");
+  const isAnaliseActive = activeView.startsWith("analise");
 
   const handleObrigacoesClick = () => {
     setObrigacoesOpen((prev) => !prev);
@@ -63,6 +65,13 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
     setContabilidadesOpen((prev) => !prev);
     if (!isContabilidadesActive) {
       onViewChange("contabilidades_TI_isento");
+    }
+  };
+
+  const handleAnaliseClick = () => {
+    setAnaliseOpen((prev) => !prev);
+    if (!isAnaliseActive) {
+      onViewChange("analise_TI_simplificado");
     }
   };
 
