@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS irs_coeficiente numeric NOT NULL DEFAULT 0.75;

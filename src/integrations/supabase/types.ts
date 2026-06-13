@@ -93,6 +93,7 @@ export type Database = {
           fiscal_regime: Database["public"]["Enums"]["fiscal_regime"]
           id: string
           inicio_contrato: string | null
+          irs_coeficiente: number
           iva: string | null
           iva_oss: string | null
           mensalidade: number | null
@@ -127,6 +128,7 @@ export type Database = {
           fiscal_regime?: Database["public"]["Enums"]["fiscal_regime"]
           id?: string
           inicio_contrato?: string | null
+          irs_coeficiente?: number
           iva?: string | null
           iva_oss?: string | null
           mensalidade?: number | null
@@ -161,6 +163,7 @@ export type Database = {
           fiscal_regime?: Database["public"]["Enums"]["fiscal_regime"]
           id?: string
           inicio_contrato?: string | null
+          irs_coeficiente?: number
           iva?: string | null
           iva_oss?: string | null
           mensalidade?: number | null

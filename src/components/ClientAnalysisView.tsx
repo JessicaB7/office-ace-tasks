@@ -6,6 +6,7 @@ import AnaliseMensalTab from "./financial/AnaliseMensalTab";
 import MapaExploracaoTab from "./financial/MapaExploracaoTab";
 import IvaTab from "./financial/IvaTab";
 import IndicadoresTab from "./financial/IndicadoresTab";
+import TISimplificadoDashboard from "./financial/TISimplificadoDashboard";
 import * as XLSX from "xlsx";
 import { parseMapaPdf } from "@/lib/pdfMapaImport";
 import { toast } from "sonner";
@@ -123,25 +124,31 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         </div>
       </div>
 
-      <div className="flex gap-1 border-b">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={cn(
-              "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-              tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {client.tipo_contabilidade === "TI RS" ? (
+        <TISimplificadoDashboard clientId={clientId} year={year} client={client} />
+      ) : (
+        <>
+          <div className="flex gap-1 border-b">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                  tab === t.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
 
-      {tab === "analise" && <AnaliseMensalTab clientId={clientId} year={year} />}
-      {tab === "mapa" && <MapaExploracaoTab clientId={clientId} year={year} />}
-      {tab === "iva" && <IvaTab clientId={clientId} year={year} />}
-      {tab === "indicadores" && <IndicadoresTab clientId={clientId} year={year} />}
+          {tab === "analise" && <AnaliseMensalTab clientId={clientId} year={year} />}
+          {tab === "mapa" && <MapaExploracaoTab clientId={clientId} year={year} />}
+          {tab === "iva" && <IvaTab clientId={clientId} year={year} />}
+          {tab === "indicadores" && <IndicadoresTab clientId={clientId} year={year} />}
+        </>
+      )}
     </div>
   );
 }
