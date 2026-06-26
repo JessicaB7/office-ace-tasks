@@ -99,6 +99,7 @@ export default function TISimplificadoDashboard({
 
   const rendimentoColectavel = totalFat * coef;
   const irsEstimado = calcIRS(rendimentoColectavel);
+  const resultado = totalFat - totalDesp;
 
   const chartData = MONTHS_PT.map((m, i) => ({
     mes: m,
@@ -124,10 +125,12 @@ export default function TISimplificadoDashboard({
   const kpis = [
     { label: "Faturação anual", value: totalFat, tone: "primary" as const },
     { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
+    { label: "Resultado líquido", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
     { label: "IVA a entregar (anual)", value: totalIva, tone: totalIva >= 0 ? ("warn" as const) : ("positive" as const) },
     { label: "Segurança Social (anual)", value: totalSS, tone: "neutral" as const },
     { label: "IRS estimado", value: irsEstimado, tone: "warn" as const },
   ];
+
 
   return (
     <div className="space-y-6">
