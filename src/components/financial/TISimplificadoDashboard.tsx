@@ -134,7 +134,7 @@ export default function TISimplificadoDashboard({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {kpis.map((k) => (
           <div key={k.label} className="rounded-xl border bg-card p-4">
             <div className="text-xs text-muted-foreground">{k.label}</div>
