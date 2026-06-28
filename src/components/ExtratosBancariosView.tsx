@@ -16,7 +16,7 @@ import {
   type BankTransaction,
 } from "@/lib/bankParsers";
 
-const BANCOS = ["Auto", "Millennium", "Revolut", "CGD", "Santander", "BPI", "Novo Banco", "Abanca", "ActivoBank", "Genérico"];
+const BANCOS = ["Auto", "Abanca", "ActivoBank", "BPI", "CGD", "Genérico", "Millennium", "Novo Banco", "Revolut", "Santander"];
 
 const parseInputDate = (value: string) => {
   const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
