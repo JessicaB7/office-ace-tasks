@@ -22,6 +22,7 @@ const BANK_KEYWORDS: Record<string, string[]> = {
   Santander: ["santander", "totaptpl"],
   BPI: ["banco bpi", "bpi net", "bancobpi", "bpi negocios", "bpi negócios", "bbpiptpl"],
   "Novo Banco": ["novo banco", "novobanco"],
+  Abanca: ["abanca", "pt5001703"],
   ActivoBank: ["activobank", "activo bank"],
 };
 
