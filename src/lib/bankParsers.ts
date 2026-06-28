@@ -771,6 +771,7 @@ export function parseBankText(text: string, bankHint?: string | null): ParsedSta
   if (bank === "Revolut") return parseRevolut(text);
   if (bank === "Santander") return parseSantander(text);
   if (bank === "BPI") return parseBPI(text);
+  if (bank === "Abanca") return parseAbanca(text);
   if (bank === "Novo Banco") {
     if (/Consulta\s+de\s+movimentos/i.test(text) || /\b\d{2}-\d{2}-\d{4}\b/.test(text)) {
       const r = parseNovoBancoConsulta(text);
