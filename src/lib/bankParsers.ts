@@ -22,6 +22,7 @@ const BANK_KEYWORDS: Record<string, string[]> = {
   Santander: ["santander", "totaptpl"],
   BPI: ["banco bpi", "bpi net", "bancobpi", "bpi negocios", "bpi negócios", "bbpiptpl"],
   "Novo Banco": ["novo banco", "novobanco"],
+  Abanca: ["abanca", "pt5001703"],
   ActivoBank: ["activobank", "activo bank"],
 };
 
@@ -645,6 +646,45 @@ function parseNovoBancoConsulta(text: string): ParsedStatement {
   return { bank: "Novo Banco", transactions, saldoInicial, saldoFinal };
 }
 
+// ---------- Abanca parser ----------
+// Layout: "VALOR | DESCRIÇÃO | MONTANTE | SALDO" with dates DD-MM-YYYY
+// PT numbers with thousand sep "." and decimal ",".
+function parseAbanca(text: string): ParsedStatement {
+  const lines = text.split(/\r?\n/);
+  const parsePT = (s: string) => parseFloat(s.replace(/\./g, "").replace(",", "."));
+  const parseD = (s: string) => {
+    const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (!m) return null;
+    return makeDateOnly(Number(m[3]), Number(m[2]), Number(m[1]));
+  };
+  // Row may be on one line: "DD-MM-YYYY  desc  montante  saldo"
+  const rowRe = /(\d{2}-\d{2}-\d{4})\s+(.+?)\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
+  const rows: { d: Date; desc: string; mov: number; saldo: number }[] = [];
+  for (const raw of lines) {
+    const m = raw.match(rowRe);
+    if (!m) continue;
+    const d = parseD(m[1]);
+    if (!d) continue;
+    const mov = parsePT(m[3]);
+    const saldo = parsePT(m[4]);
+    if (isNaN(mov) || isNaN(saldo)) continue;
+    rows.push({ d, desc: m[2].replace(/\s+/g, " ").trim(), mov, saldo });
+  }
+  const transactions: BankTransaction[] = rows.map((r) => ({
+    dataMov: r.d,
+    dataValor: r.d,
+    descricao: r.desc,
+    movimento: r.mov,
+  }));
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  if (rows.length) {
+    saldoInicial = Math.round((rows[0].saldo - rows[0].mov) * 100) / 100;
+    saldoFinal = rows[rows.length - 1].saldo;
+  }
+  return { bank: "Abanca", transactions, saldoInicial, saldoFinal };
+}
+
 // ---------- BPI parser ----------
 // Layout per row: "DD/MM   DD/MM   DESCRIÇÃO   [MOEDA?]   VALOR   SALDO"
 // First date (data mov) may be missing — line then starts with the value date.
@@ -731,6 +771,7 @@ export function parseBankText(text: string, bankHint?: string | null): ParsedSta
   if (bank === "Revolut") return parseRevolut(text);
   if (bank === "Santander") return parseSantander(text);
   if (bank === "BPI") return parseBPI(text);
+  if (bank === "Abanca") return parseAbanca(text);
   if (bank === "Novo Banco") {
     if (/Consulta\s+de\s+movimentos/i.test(text) || /\b\d{2}-\d{2}-\d{4}\b/.test(text)) {
       const r = parseNovoBancoConsulta(text);
