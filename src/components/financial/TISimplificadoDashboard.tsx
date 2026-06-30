@@ -268,10 +268,24 @@ export default function TISimplificadoDashboard({
                 <option value={0.95}>0,95 — Rend. capitais / prediais</option>
               </select>
             </label>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Retenções na fonte (conta 2414)</span>
-              <span className="font-semibold tabular-nums text-emerald-700">{fmtEur(retencoes)}</span>
-            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">
+                Retenções na fonte {retencoesSource === "auto" ? "(conta 2414)" : "(manual)"}
+              </span>
+              {retencoesSource === "auto" ? (
+                <span className="font-semibold tabular-nums text-emerald-700">{fmtEur(retencoes)}</span>
+              ) : (
+                <input
+                  type="number"
+                  step="0.01"
+                  value={retencoesInput}
+                  onChange={(e) => setRetencoesInput(Number(e.target.value))}
+                  onBlur={() => upsertSettings.mutate({ irs_retencoes: retencoesInput })}
+                  className="w-32 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              )}
+            </label>
+
 
           </div>
         </div>
