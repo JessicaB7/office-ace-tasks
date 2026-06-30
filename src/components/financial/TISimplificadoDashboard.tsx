@@ -57,7 +57,7 @@ function closeRepeatedQuarterValues(monthly: number[]): number[] {
     const quarter = out.slice(start, start + 3);
     const nonZero = quarter.filter((v) => Math.abs(v) > 0.01);
 
-    if (nonZero.length >= 2 && nonZero.every((v) => sameCurrency(v, nonZero[0]))) {
+    if (nonZero.length === 3 && nonZero.every((v) => sameCurrency(v, nonZero[0]))) {
       out[start] = 0;
       out[start + 1] = 0;
       out[start + 2] = cents(quarter.reduce((a, b) => a + b, 0));
