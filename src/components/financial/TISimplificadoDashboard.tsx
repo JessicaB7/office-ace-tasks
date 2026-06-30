@@ -1,8 +1,11 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 import {
   useClientFinancialEntries,
   useClientFinancialSettings,
@@ -171,10 +174,61 @@ export default function TISimplificadoDashboard({
   ];
 
 
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const exportPDF = async () => {
+    if (!reportRef.current) return;
+    setExporting(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const imgW = pageW - margin * 2;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      let heightLeft = imgH;
+      let position = margin;
+      pdf.addImage(imgData, "PNG", margin, position, imgW, imgH);
+      heightLeft -= pageH - margin * 2;
+      while (heightLeft > 0) {
+        position = heightLeft - imgH + margin;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", margin, position, imgW, imgH);
+        heightLeft -= pageH - margin * 2;
+      }
+      const safeName = (client?.nome || "cliente").replace(/[^a-zA-Z0-9-_]+/g, "_");
+      pdf.save(`Analise_TI_Simplificado_${safeName}_${year}.pdf`);
+      toast.success("PDF exportado");
+    } catch (e: any) {
+      toast.error("Erro a exportar PDF: " + (e?.message || ""));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={exportPDF} disabled={exporting} size="sm" variant="outline">
+          <Download className="h-4 w-4 mr-2" />
+          {exporting ? "A exportar..." : "Exportar PDF"}
+        </Button>
+      </div>
+      <div ref={reportRef} className="space-y-6 bg-background p-4">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {kpis.map((k) => (
+
           <div key={k.label} className="rounded-xl border bg-card p-4">
             <div className="text-xs text-muted-foreground">{k.label}</div>
             <div
@@ -317,6 +371,8 @@ export default function TISimplificadoDashboard({
           </div>
         </div>
       </div>
+      </div>
     </div>
   );
+
 }
