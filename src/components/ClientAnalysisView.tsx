@@ -167,6 +167,12 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           {tab === "indicadores" && <IndicadoresTab clientId={clientId} year={year} />}
         </>
       )}
+
+      <ClientDetailDialog
+        client={fichaOpen ? client : null}
+        open={fichaOpen}
+        onClose={() => setFichaOpen(false)}
+      />
     </div>
   );
 }
