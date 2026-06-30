@@ -57,6 +57,10 @@ export type Database = {
           client_id: string
           corporate_tax_rate: number
           irs_retencoes: number
+          ss_q1: number
+          ss_q2: number
+          ss_q3: number
+          ss_q4: number
           ta_kms: number
           ta_nao_doc: number
           ta_representacao: number
@@ -67,6 +71,10 @@ export type Database = {
           client_id: string
           corporate_tax_rate?: number
           irs_retencoes?: number
+          ss_q1?: number
+          ss_q2?: number
+          ss_q3?: number
+          ss_q4?: number
           ta_kms?: number
           ta_nao_doc?: number
           ta_representacao?: number
@@ -77,6 +85,10 @@ export type Database = {
           client_id?: string
           corporate_tax_rate?: number
           irs_retencoes?: number
+          ss_q1?: number
+          ss_q2?: number
+          ss_q3?: number
+          ss_q4?: number
           ta_kms?: number
           ta_nao_doc?: number
           ta_representacao?: number
