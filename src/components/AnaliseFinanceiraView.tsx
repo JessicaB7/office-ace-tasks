@@ -147,7 +147,15 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
                     onClick={() => setSelectedId(c.id)}
                     className="hover:bg-muted/40 cursor-pointer transition-colors"
                   >
-                    <td className={`px-4 py-2.5 font-medium ${cfg.accentClass}`}>{c.name}</td>
+                    <td className={`px-4 py-2.5 font-medium ${cfg.accentClass}`}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setFichaClient(c); }}
+                        className="hover:underline text-left"
+                        title="Abrir ficha do cliente"
+                      >
+                        {c.name}
+                      </button>
+                    </td>
                     <td className="px-4 py-2.5 text-muted-foreground">{c.nif || "—"}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">{c.iva || "—"}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">{resp?.name || "—"}</td>
@@ -157,6 +165,19 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <ClientDetailDialog
+        client={fichaClient}
+        open={!!fichaClient}
+        onClose={() => setFichaClient(null)}
+      />
+    </div>
+  );
+}
             </tbody>
           </table>
         </div>
