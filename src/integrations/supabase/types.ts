@@ -64,6 +64,7 @@ export type Database = {
           ta_kms: number
           ta_nao_doc: number
           ta_representacao: number
+          tco: boolean
           updated_at: string
           year: number
         }
@@ -78,6 +79,7 @@ export type Database = {
           ta_kms?: number
           ta_nao_doc?: number
           ta_representacao?: number
+          tco?: boolean
           updated_at?: string
           year: number
         }
@@ -92,6 +94,7 @@ export type Database = {
           ta_kms?: number
           ta_nao_doc?: number
           ta_representacao?: number
+          tco?: boolean
           updated_at?: string
           year?: number
         }
