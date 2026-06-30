@@ -116,6 +116,16 @@ export default function TISimplificadoDashboard({
     return ivaM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0);
   });
 
+  // Retenções na fonte: soma anual da conta 2414 (qualquer subconta).
+  const retencoes = (() => {
+    let total = 0;
+    for (const [key, val] of map.entries()) {
+      const [, code] = key.split(":");
+      if (code.startsWith("2414")) total += Math.abs(val);
+    }
+    return total;
+  })();
+
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
@@ -124,6 +134,7 @@ export default function TISimplificadoDashboard({
   const irsEstimado = calcIRS(rendimentoColectavel);
   const irsLiquido = irsEstimado - retencoes;
   const resultado = totalFat - totalDesp;
+
 
   const chartData = MONTHS_PT.map((m, i) => ({
     mes: m,
