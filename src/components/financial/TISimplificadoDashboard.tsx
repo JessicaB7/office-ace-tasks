@@ -281,7 +281,8 @@ export default function TISimplificadoDashboard({
         ))}
       </div>
 
-      <div className="rounded-xl border bg-card p-4">
+      <div className="col-span-7 rounded-xl border bg-card p-4">
+
         <h4 className="font-semibold text-sm mb-3">Faturação vs Despesas (mensal)</h4>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={chartData}>
