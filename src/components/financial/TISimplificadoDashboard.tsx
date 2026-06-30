@@ -124,6 +124,7 @@ export default function TISimplificadoDashboard({
 
   const rendimentoColectavel = totalFat * coef;
   const irsEstimado = calcIRS(rendimentoColectavel);
+  const irsLiquido = irsEstimado - retencoes;
   const resultado = totalFat - totalDesp;
 
   const chartData = MONTHS_PT.map((m, i) => ({
