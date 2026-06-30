@@ -366,7 +366,7 @@ export default function TISimplificadoDashboard({
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {ssQuarters.map((val, i) => (
-            <div key={i} className="rounded-lg border bg-background p-3 space-y-2">
+            <div key={i} className="rounded-lg border bg-background p-3 space-y-2 min-h-[96px] flex flex-col justify-between">
               <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
               <div className="flex items-center gap-1">
                 <input
