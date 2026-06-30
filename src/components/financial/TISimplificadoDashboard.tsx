@@ -349,16 +349,18 @@ export default function TISimplificadoDashboard({
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={!!settings?.tco}
-                onChange={(e) => upsertSettings.mutate({ tco: e.target.checked } as any)}
-                className="h-4 w-4 rounded border-input accent-primary"
-              />
-              <span className="font-semibold">TCO</span>
-              <span className="text-muted-foreground">(dispensa preenchimento)</span>
-            </label>
+            {!exporting && (
+              <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={!!settings?.tco}
+                  onChange={(e) => upsertSettings.mutate({ tco: e.target.checked } as any)}
+                  className="h-4 w-4 rounded border-input accent-primary"
+                />
+                <span className="font-semibold">TCO</span>
+                <span className="text-muted-foreground">(dispensa preenchimento)</span>
+              </label>
+            )}
             <div className="text-xs text-muted-foreground">
               Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(ssQuarters.reduce((a, b) => a + b, 0))}</span>
             </div>
