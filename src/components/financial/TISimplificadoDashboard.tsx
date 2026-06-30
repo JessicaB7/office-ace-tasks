@@ -328,7 +328,7 @@ export default function TISimplificadoDashboard({
         <h4 className="font-semibold text-sm mb-3">IVA por trimestre</h4>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {ivaTrim.map((v, i) => (
-            <div key={i} className="rounded-lg border bg-background p-3">
+            <div key={i} className="rounded-lg border bg-background p-3 min-h-[96px] flex flex-col justify-between">
               <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
               <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
               <div className="text-[10px] text-muted-foreground mt-1">
@@ -366,7 +366,7 @@ export default function TISimplificadoDashboard({
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {ssQuarters.map((val, i) => (
-            <div key={i} className="rounded-lg border bg-background p-3 space-y-2">
+            <div key={i} className="rounded-lg border bg-background p-3 space-y-2 min-h-[96px] flex flex-col justify-between">
               <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
               <div className="flex items-center gap-1">
                 <input
