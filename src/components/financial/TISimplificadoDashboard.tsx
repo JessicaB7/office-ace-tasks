@@ -210,7 +210,7 @@ export default function TISimplificadoDashboard({
         backgroundColor: "#ffffff",
         useCORS: true,
       });
-      const imgData = canvas.toDataURL("image/png");
+      
       const pdf = new jsPDF("p", "mm", "a4");
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
