@@ -314,7 +314,7 @@ export default function TISimplificadoDashboard({
           <div>
             <h4 className="font-semibold text-sm">IRS estimado (regime simplificado)</h4>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Aplica o coeficiente do art.º 31 do CIRS à faturação e calcula o IRS pelos escalões 2024.
+              Aplica o coeficiente do art.º 31 do CIRS à faturação e calcula o IRS pelos escalões 2026.
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
