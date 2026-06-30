@@ -112,8 +112,8 @@ export default function TISimplificadoDashboard({
     return ivaM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0);
   });
 
-  // Retenções na fonte: soma anual da conta 2414 (qualquer subconta).
-  const retencoes = (() => {
+  // Retenções na fonte: soma anual da conta 2414 (qualquer subconta) do balancete.
+  const retencoes2414 = (() => {
     let total = 0;
     for (const [key, val] of map.entries()) {
       const [, code] = key.split(":");
@@ -121,6 +121,15 @@ export default function TISimplificadoDashboard({
     }
     return total;
   })();
+  const retencoesManual = Number(settings?.irs_retencoes ?? 0);
+  const retencoes = retencoes2414 > 0 ? retencoes2414 : retencoesManual;
+  const retencoesSource: "auto" | "manual" = retencoes2414 > 0 ? "auto" : "manual";
+
+  const [retencoesInput, setRetencoesInput] = useState<number>(retencoesManual);
+  useEffect(() => {
+    setRetencoesInput(Number(settings?.irs_retencoes ?? 0));
+  }, [settings?.irs_retencoes]);
+
 
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
