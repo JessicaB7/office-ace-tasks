@@ -70,10 +70,8 @@ export default function TISimplificadoDashboard({
     setCoef(Number(client?.irs_coeficiente ?? 0.75));
   }, [client?.irs_coeficiente]);
 
-  const [retencoes, setRetencoes] = useState<number>(Number(settings?.irs_retencoes ?? 0));
-  useEffect(() => {
-    setRetencoes(Number(settings?.irs_retencoes ?? 0));
-  }, [settings?.irs_retencoes]);
+
+
 
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
