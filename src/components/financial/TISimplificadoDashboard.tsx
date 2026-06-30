@@ -314,34 +314,42 @@ export default function TISimplificadoDashboard({
           <div>
             <h4 className="font-semibold text-sm">Segurança Social por trimestre</h4>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Base de incidência = 70% da faturação do trimestre · Contribuição = 21,4% × base
+              Introduz manualmente o valor pago em cada trimestre.
             </p>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(ssQuarters.reduce((a, b) => a + b, 0))}</span>
           </div>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {facTrim.map((fat, i) => {
-            const base = fat * 0.70;
-            const contrib = base * 0.214;
-            return (
-              <div key={i} className="rounded-lg border bg-background p-3 space-y-1">
-                <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Faturação</span>
-                  <span className="font-semibold tabular-nums">{fmtEur(fat)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Base (70%)</span>
-                  <span className="font-semibold tabular-nums">{fmtEur(base)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs pt-1 border-t">
-                  <span className="text-muted-foreground">Contribuição</span>
-                  <span className="font-bold tabular-nums text-primary">{fmtEur(contrib)}</span>
-                </div>
+          {ssQuarters.map((val, i) => (
+            <div key={i} className="rounded-lg border bg-background p-3 space-y-2">
+              <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={ssInputs[i]}
+                  onChange={(e) => {
+                    const next = [...ssInputs];
+                    next[i] = Number(e.target.value);
+                    setSsInputs(next);
+                  }}
+                  onBlur={() => {
+                    if (ssInputs[i] !== ssQuarters[i]) {
+                      upsertSettings.mutate({ [`ss_q${i + 1}`]: Number(ssInputs[i]) || 0 } as any);
+                    }
+                  }}
+                  className="w-full text-right font-bold tabular-nums text-primary py-1 px-2 rounded border bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <span className="text-xs text-muted-foreground">€</span>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
+
 
       <div className="rounded-xl border bg-card p-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
