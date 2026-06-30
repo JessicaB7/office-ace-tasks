@@ -212,52 +212,23 @@ export default function TISimplificadoDashboard({
       const contentW = pageW - margin * 2;
       const contentH = pageH - margin * 2;
 
-      // Capturar cada bloco de topo individualmente para evitar cortar cards a meio.
-      const blocks = Array.from(reportRef.current.children) as HTMLElement[];
-      let cursorY = margin;
-
-      for (const block of blocks) {
-        const canvas = await html2canvas(block, {
-          scale: 2,
-          backgroundColor: "#ffffff",
-          useCORS: true,
-        });
-        const wMm = contentW;
-        const hMm = (canvas.height * wMm) / canvas.width;
-        const imgData = canvas.toDataURL("image/png");
-
-        if (hMm > contentH) {
-          // Bloco maior que uma página: fatiar este bloco em páginas inteiras
-          const pxPerMm = canvas.width / contentW;
-          const pageHpx = Math.floor(contentH * pxPerMm);
-          let renderedPx = 0;
-          while (renderedPx < canvas.height) {
-            if (cursorY > margin) {
-              pdf.addPage();
-              cursorY = margin;
-            }
-            const sliceHpx = Math.min(pageHpx, canvas.height - renderedPx);
-            const slice = document.createElement("canvas");
-            slice.width = canvas.width;
-            slice.height = sliceHpx;
-            const ctx = slice.getContext("2d")!;
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, slice.width, slice.height);
-            ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHpx, 0, 0, canvas.width, sliceHpx);
-            const sliceHmm = sliceHpx / pxPerMm;
-            pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, margin, contentW, sliceHmm);
-            renderedPx += sliceHpx;
-            cursorY = margin + sliceHmm + 4;
-          }
-        } else {
-          if (cursorY + hMm > pageH - margin) {
-            pdf.addPage();
-            cursorY = margin;
-          }
-          pdf.addImage(imgData, "PNG", margin, cursorY, wMm, hMm);
-          cursorY += hMm + 4;
-        }
+      // Capturar tudo num único canvas e escalar para caber numa só página
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        windowWidth: reportRef.current.scrollWidth,
+      });
+      const ratio = canvas.width / canvas.height;
+      let wMm = contentW;
+      let hMm = wMm / ratio;
+      if (hMm > contentH) {
+        hMm = contentH;
+        wMm = hMm * ratio;
       }
+      const xOff = margin + (contentW - wMm) / 2;
+      const yOff = margin + (contentH - hMm) / 2;
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", xOff, yOff, wMm, hMm);
 
       const safeName = (client?.name || client?.nome || "cliente").replace(/[^a-zA-Z0-9-_]+/g, "_");
       pdf.save(`Analise_TI_Simplificado_${safeName}_${year}.pdf`);
