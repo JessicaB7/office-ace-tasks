@@ -235,7 +235,7 @@ export default function TISimplificadoDashboard({
           Análise TI Simplificado · {year}
         </div>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {kpis.map((k) => (
 
           <div key={k.label} className="rounded-xl border bg-card p-4">
@@ -333,7 +333,7 @@ export default function TISimplificadoDashboard({
             </label>
             <label className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">
-                Retenções na fonte {retencoesSource === "auto" ? "(conta 2414)" : "(manual)"}
+                Retenções na fonte
               </span>
               {retencoesSource === "auto" ? (
                 <span className="font-semibold tabular-nums text-emerald-700">{fmtEur(retencoes)}</span>
@@ -359,7 +359,7 @@ export default function TISimplificadoDashboard({
             <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
           </div>
           <div className="rounded-lg border bg-background p-3">
-            <div className="text-[11px] text-muted-foreground">Rendimento colectável ({(coef * 100).toFixed(0)}%)</div>
+            <div className="text-[11px] text-muted-foreground">Rendimento colectável</div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(rendimentoColectavel)}</div>
           </div>
           <div className="rounded-lg border bg-background p-3">
