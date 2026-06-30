@@ -37,7 +37,16 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
 
       const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
       if (isPdf) {
-        entries = await parseMapaPdf(file, codes);
+        if (await isBalancetePdf(file)) {
+          const res = await parseBalancetePdf(file, Array.from(codes));
+          if (res.year !== year) {
+            toast.warning(`Balancete é de ${res.year}, mas estás a ver ${year}. Importei na vista atual.`);
+          }
+          entries = res.entries;
+          toast.info(`Balancete acumulado ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} distribuído por ${res.endMonth - res.startMonth + 1} meses.`);
+        } else {
+          entries = await parseMapaPdf(file, codes);
+        }
       } else {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: "array" });
