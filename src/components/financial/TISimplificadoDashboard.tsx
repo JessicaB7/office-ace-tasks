@@ -199,44 +199,66 @@ export default function TISimplificadoDashboard({
       return;
     }
     setExporting(true);
-
     try {
       const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
         import("html2canvas"),
         import("jspdf"),
       ]);
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-      });
-      
+
       const pdf = new jsPDF("p", "mm", "a4");
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 8;
-      const imgW = pageW - margin * 2;
-      const pxPerMm = canvas.width / imgW;
-      const pageHpx = Math.floor((pageH - margin * 2) * pxPerMm);
+      const contentW = pageW - margin * 2;
+      const contentH = pageH - margin * 2;
 
-      let renderedPx = 0;
-      let pageIndex = 0;
-      while (renderedPx < canvas.height) {
-        const sliceHpx = Math.min(pageHpx, canvas.height - renderedPx);
-        const pageCanvas = document.createElement("canvas");
-        pageCanvas.width = canvas.width;
-        pageCanvas.height = sliceHpx;
-        const ctx = pageCanvas.getContext("2d")!;
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-        ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHpx, 0, 0, canvas.width, sliceHpx);
-        const sliceData = pageCanvas.toDataURL("image/png");
-        const sliceHmm = sliceHpx / pxPerMm;
-        if (pageIndex > 0) pdf.addPage();
-        pdf.addImage(sliceData, "PNG", margin, margin, imgW, sliceHmm);
-        renderedPx += sliceHpx;
-        pageIndex++;
+      // Capturar cada bloco de topo individualmente para evitar cortar cards a meio.
+      const blocks = Array.from(reportRef.current.children) as HTMLElement[];
+      let cursorY = margin;
+
+      for (const block of blocks) {
+        const canvas = await html2canvas(block, {
+          scale: 2,
+          backgroundColor: "#ffffff",
+          useCORS: true,
+        });
+        const wMm = contentW;
+        const hMm = (canvas.height * wMm) / canvas.width;
+        const imgData = canvas.toDataURL("image/png");
+
+        if (hMm > contentH) {
+          // Bloco maior que uma página: fatiar este bloco em páginas inteiras
+          const pxPerMm = canvas.width / contentW;
+          const pageHpx = Math.floor(contentH * pxPerMm);
+          let renderedPx = 0;
+          while (renderedPx < canvas.height) {
+            if (cursorY > margin) {
+              pdf.addPage();
+              cursorY = margin;
+            }
+            const sliceHpx = Math.min(pageHpx, canvas.height - renderedPx);
+            const slice = document.createElement("canvas");
+            slice.width = canvas.width;
+            slice.height = sliceHpx;
+            const ctx = slice.getContext("2d")!;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, slice.width, slice.height);
+            ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHpx, 0, 0, canvas.width, sliceHpx);
+            const sliceHmm = sliceHpx / pxPerMm;
+            pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, margin, contentW, sliceHmm);
+            renderedPx += sliceHpx;
+            cursorY = margin + sliceHmm + 4;
+          }
+        } else {
+          if (cursorY + hMm > pageH - margin) {
+            pdf.addPage();
+            cursorY = margin;
+          }
+          pdf.addImage(imgData, "PNG", margin, cursorY, wMm, hMm);
+          cursorY += hMm + 4;
+        }
       }
+
       const safeName = (client?.name || client?.nome || "cliente").replace(/[^a-zA-Z0-9-_]+/g, "_");
       pdf.save(`Analise_TI_Simplificado_${safeName}_${year}.pdf`);
       toast.success("PDF exportado");
@@ -246,6 +268,7 @@ export default function TISimplificadoDashboard({
       setExporting(false);
     }
   };
+
 
   return (
     <div className="space-y-4">
