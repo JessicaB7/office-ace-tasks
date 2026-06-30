@@ -205,7 +205,7 @@ export default function TISimplificadoDashboard({
         pdf.addImage(imgData, "PNG", margin, position, imgW, imgH);
         heightLeft -= pageH - margin * 2;
       }
-      const safeName = (client?.nome || "cliente").replace(/[^a-zA-Z0-9-_]+/g, "_");
+      const safeName = (client?.name || client?.nome || "cliente").replace(/[^a-zA-Z0-9-_]+/g, "_");
       pdf.save(`Analise_TI_Simplificado_${safeName}_${year}.pdf`);
       toast.success("PDF exportado");
     } catch (e: any) {
