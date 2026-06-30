@@ -30,6 +30,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const { data: accounts = [] } = useFinancialAccounts();
   const bulk = useBulkUpsertEntries(clientId, year);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [fichaOpen, setFichaOpen] = useState(false);
 
   const handleImport = async (file: File) => {
     try {
