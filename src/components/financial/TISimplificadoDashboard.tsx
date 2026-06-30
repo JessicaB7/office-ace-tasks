@@ -169,8 +169,6 @@ export default function TISimplificadoDashboard({
     { label: "Faturação anual", value: totalFat, tone: "primary" as const },
     { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
     { label: "Resultado líquido", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
-    { label: "IVA a entregar (anual)", value: totalIva, tone: totalIva >= 0 ? ("warn" as const) : ("positive" as const) },
-    { label: "IRS estimado", value: irsEstimado, tone: "warn" as const },
   ];
 
 
