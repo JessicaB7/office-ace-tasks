@@ -344,9 +344,6 @@ export default function TISimplificadoDashboard({
         <div className="flex items-start justify-between gap-2 flex-wrap mb-3">
           <div>
             <h4 className="font-semibold text-sm">Segurança Social por trimestre</h4>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              Introduz manualmente o valor pago em cada trimestre.
-            </p>
           </div>
           <div className="flex items-center gap-4">
             {!exporting && (
