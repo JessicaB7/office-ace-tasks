@@ -24,6 +24,10 @@ export type FinancialSettings = {
   ta_kms: number;
   ta_nao_doc: number;
   irs_retencoes: number;
+  ss_q1: number;
+  ss_q2: number;
+  ss_q3: number;
+  ss_q4: number;
 };
 
 export function useFinancialAccounts() {
@@ -76,6 +80,10 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         ta_kms: 0.05,
         ta_nao_doc: 0.50,
         irs_retencoes: 0,
+        ss_q1: 0,
+        ss_q2: 0,
+        ss_q3: 0,
+        ss_q4: 0,
       }) as FinancialSettings;
     },
     enabled: !!clientId,
