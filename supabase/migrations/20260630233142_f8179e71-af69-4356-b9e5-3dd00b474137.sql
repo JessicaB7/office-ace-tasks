@@ -1,0 +1,1 @@
+ALTER TABLE public.client_financial_settings ADD COLUMN IF NOT EXISTS tco boolean NOT NULL DEFAULT false;

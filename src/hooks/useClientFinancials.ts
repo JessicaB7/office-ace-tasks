@@ -28,6 +28,8 @@ export type FinancialSettings = {
   ss_q2: number;
   ss_q3: number;
   ss_q4: number;
+  tco: boolean;
+
 };
 
 export function useFinancialAccounts() {
@@ -84,6 +86,7 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         ss_q2: 0,
         ss_q3: 0,
         ss_q4: 0,
+        tco: false,
       }) as FinancialSettings;
     },
     enabled: !!clientId,
