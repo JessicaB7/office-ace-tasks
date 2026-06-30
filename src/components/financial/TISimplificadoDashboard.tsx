@@ -299,7 +299,7 @@ export default function TISimplificadoDashboard({
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {ivaTrim.map((v, i) => (
             <div key={i} className="rounded-lg border bg-background p-3">
-              <div className="text-[11px] text-muted-foreground">Q{i + 1}</div>
+              <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
               <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
               <div className="text-[10px] text-muted-foreground mt-1">
                 {["Pagar até 25/05", "Pagar até 25/08", "Pagar até 25/11", "Pagar até 25/02 ano seguinte"][i]}
