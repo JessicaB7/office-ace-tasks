@@ -7,6 +7,7 @@ import MapaExploracaoTab from "./financial/MapaExploracaoTab";
 import IvaTab from "./financial/IvaTab";
 import IndicadoresTab from "./financial/IndicadoresTab";
 import TISimplificadoDashboard from "./financial/TISimplificadoDashboard";
+import ClientDetailDialog from "@/components/ClientDetailDialog";
 import * as XLSX from "xlsx";
 import { parseMapaPdf } from "@/lib/pdfMapaImport";
 import { parseBalancetePdf, isBalancetePdf } from "@/lib/pdfBalanceteImport";
@@ -29,6 +30,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const { data: accounts = [] } = useFinancialAccounts();
   const bulk = useBulkUpsertEntries(clientId, year);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [fichaOpen, setFichaOpen] = useState(false);
 
   const handleImport = async (file: File) => {
     try {
@@ -113,7 +115,13 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
             <Building2 className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">{client.name}</h2>
+            <button
+              onClick={() => setFichaOpen(true)}
+              className="text-2xl font-bold hover:underline text-left"
+              title="Abrir ficha do cliente"
+            >
+              {client.name}
+            </button>
             <p className="text-sm text-muted-foreground">Análise financeira {year}{client.nif ? ` · NIF ${client.nif}` : ""}</p>
           </div>
         </div>
@@ -159,6 +167,12 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           {tab === "indicadores" && <IndicadoresTab clientId={clientId} year={year} />}
         </>
       )}
+
+      <ClientDetailDialog
+        client={fichaOpen ? client : null}
+        open={fichaOpen}
+        onClose={() => setFichaOpen(false)}
+      />
     </div>
   );
 }
