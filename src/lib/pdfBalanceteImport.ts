@@ -1,6 +1,7 @@
 // Parses a TOConline "Balancete (Período, Acumulado)" PDF and aggregates
-// accumulated values by account code, distributing them equally across the
-// months covered by the report header.
+// period values by account code. When the report covers a quarter/range, the
+// value is placed in the closing month so the chart shows the movement in the
+// correct month instead of spreading an accumulated value across the period.
 import * as pdfjsLib from "pdfjs-dist";
 // @ts-ignore - vite worker import
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
@@ -39,9 +40,9 @@ export async function parseBalancetePdf(file: File, catalogCodes: string[]): Pro
   let startMonth = 1, endMonth = 12, year = new Date().getFullYear();
   let foundHeader = false;
 
-  // Accumulate net per leaf account code (one row per account aggregated across the period).
-  const acumDeb = new Map<string, number>();
-  const acumCred = new Map<string, number>();
+  // Accumulate net per leaf account code (one row per account aggregated across the report period).
+  const periodDeb = new Map<string, number>();
+  const periodCred = new Map<string, number>();
   const seenCodes = new Set<string>();
 
   // Column x-centers, learnt from first page's header row.
@@ -126,12 +127,13 @@ export async function parseBalancetePdf(file: File, catalogCodes: string[]): Pro
         valByCol[bestIdx] = n.v;
       }
 
-      const accDeb = valByCol[2] ?? 0;
-      const accCred = valByCol[3] ?? 0;
-      if (accDeb === 0 && accCred === 0) continue;
+      // Prefer the "Período" columns. If a PDF omits them, fall back to "Acumulado".
+      const deb = valByCol[0] ?? valByCol[2] ?? 0;
+      const cred = valByCol[1] ?? valByCol[3] ?? 0;
+      if (deb === 0 && cred === 0) continue;
 
-      acumDeb.set(code, (acumDeb.get(code) || 0) + accDeb);
-      acumCred.set(code, (acumCred.get(code) || 0) + accCred);
+      periodDeb.set(code, (periodDeb.get(code) || 0) + deb);
+      periodCred.set(code, (periodCred.get(code) || 0) + cred);
     }
   }
 
@@ -147,18 +149,18 @@ export async function parseBalancetePdf(file: File, catalogCodes: string[]): Pro
     // find longest-prefix catalog code
     const match = sortedCodes.find((c) => code.startsWith(c));
     if (!match) continue;
-    const net = Math.abs((acumDeb.get(code) || 0) - (acumCred.get(code) || 0));
+    const net = Math.abs((periodDeb.get(code) || 0) - (periodCred.get(code) || 0));
     if (net === 0) continue;
     catalogAgg.set(match, (catalogAgg.get(match) || 0) + net);
   }
 
-  // Distribute equally across the period months
-  const span = Math.max(1, endMonth - startMonth + 1);
+  // Put the period total in the closing month. Also send zeros for the earlier
+  // months in the same period so re-importing fixes old equally-distributed rows.
   const entries: BalanceteEntry[] = [];
   for (const [code, total] of catalogAgg.entries()) {
-    const per = Math.round((total / span) * 100) / 100;
+    const rounded = Math.round(total * 100) / 100;
     for (let m = startMonth; m <= endMonth; m++) {
-      entries.push({ month: m, account_code: code, value: per });
+      entries.push({ month: m, account_code: code, value: m === endMonth ? rounded : 0 });
     }
   }
 

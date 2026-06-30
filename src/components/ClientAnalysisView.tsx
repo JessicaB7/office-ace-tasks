@@ -45,7 +45,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
             toast.warning(`Balancete é de ${res.year}, mas estás a ver ${year}. Importei na vista atual.`);
           }
           entries = res.entries;
-          toast.info(`Balancete acumulado ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} distribuído por ${res.endMonth - res.startMonth + 1} meses.`);
+          toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
           entries = await parseMapaPdf(file, codes);
         }
