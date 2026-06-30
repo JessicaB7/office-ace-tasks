@@ -323,7 +323,8 @@ export default function TISimplificadoDashboard({
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card p-4">
+      <div className="col-span-6 rounded-xl border bg-card p-4">
+
         <h4 className="font-semibold text-sm mb-3">IVA por trimestre</h4>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {ivaTrim.map((v, i) => (
