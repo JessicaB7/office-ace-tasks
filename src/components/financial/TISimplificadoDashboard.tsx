@@ -333,7 +333,7 @@ export default function TISimplificadoDashboard({
             </label>
             <label className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">
-                Retenções na fonte {retencoesSource === "auto" ? "(conta 2414)" : "(manual)"}
+                Retenções na fonte
               </span>
               {retencoesSource === "auto" ? (
                 <span className="font-semibold tabular-nums text-emerald-700">{fmtEur(retencoes)}</span>
