@@ -9,6 +9,7 @@ import IndicadoresTab from "./financial/IndicadoresTab";
 import TISimplificadoDashboard from "./financial/TISimplificadoDashboard";
 import * as XLSX from "xlsx";
 import { parseMapaPdf } from "@/lib/pdfMapaImport";
+import { parseBalancetePdf, isBalancetePdf } from "@/lib/pdfBalanceteImport";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
