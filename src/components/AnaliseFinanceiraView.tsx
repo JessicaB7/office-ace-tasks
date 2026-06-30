@@ -178,10 +178,3 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
     </div>
   );
 }
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
