@@ -28,6 +28,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
   const { data: collaborators = [] } = useCollaborators();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [fichaClient, setFichaClient] = useState<any | null>(null);
   const [ivaFilter, setIvaFilter] = useState("");
   const [respFilter, setRespFilter] = useState("");
 
