@@ -216,16 +216,26 @@ export default function TISimplificadoDashboard({
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 8;
       const imgW = pageW - margin * 2;
-      const imgH = (canvas.height * imgW) / canvas.width;
-      let heightLeft = imgH;
-      let position = margin;
-      pdf.addImage(imgData, "PNG", margin, position, imgW, imgH);
-      heightLeft -= pageH - margin * 2;
-      while (heightLeft > 0) {
-        position = heightLeft - imgH + margin;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", margin, position, imgW, imgH);
-        heightLeft -= pageH - margin * 2;
+      const pxPerMm = canvas.width / imgW;
+      const pageHpx = Math.floor((pageH - margin * 2) * pxPerMm);
+
+      let renderedPx = 0;
+      let pageIndex = 0;
+      while (renderedPx < canvas.height) {
+        const sliceHpx = Math.min(pageHpx, canvas.height - renderedPx);
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = sliceHpx;
+        const ctx = pageCanvas.getContext("2d")!;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHpx, 0, 0, canvas.width, sliceHpx);
+        const sliceData = pageCanvas.toDataURL("image/png");
+        const sliceHmm = sliceHpx / pxPerMm;
+        if (pageIndex > 0) pdf.addPage();
+        pdf.addImage(sliceData, "PNG", margin, margin, imgW, sliceHmm);
+        renderedPx += sliceHpx;
+        pageIndex++;
       }
       const safeName = (client?.name || client?.nome || "cliente").replace(/[^a-zA-Z0-9-_]+/g, "_");
       pdf.save(`Analise_TI_Simplificado_${safeName}_${year}.pdf`);
