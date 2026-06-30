@@ -287,7 +287,7 @@ export default function TISimplificadoDashboard({
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="mes" fontSize={11} />
+            <XAxis dataKey="mes" fontSize={11} interval={0} />
             <YAxis fontSize={11} />
             <Tooltip formatter={(v: any) => fmtEur(Number(v))} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
