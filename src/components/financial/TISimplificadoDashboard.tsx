@@ -85,17 +85,17 @@ export default function TISimplificadoDashboard({
   const facTrim = [0, 1, 2, 3].map((qi) =>
     faturacaoM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
   );
+  const despTrim = [0, 1, 2, 3].map((qi) =>
+    despesasM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
+  );
+  const lucroTrim = facTrim.map((f, i) => f - despTrim[i]);
   const ivaTrim = [0, 1, 2, 3].map((qi) =>
     ivaM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
   );
-  // SS mensal a pagar em cada mês = 21,4% × 70% × faturação do trimestre anterior / 3
-  const ssTrim = facTrim.map((f) => 0.214 * 0.7 * f);
-  const ssMensal = ssTrim.map((s) => s / 3);
 
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
-  const totalSS = ssTrim.reduce((a, b) => a + b, 0);
 
   const rendimentoColectavel = totalFat * coef;
   const irsEstimado = calcIRS(rendimentoColectavel);
@@ -127,14 +127,13 @@ export default function TISimplificadoDashboard({
     { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
     { label: "Resultado líquido", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
     { label: "IVA a entregar (anual)", value: totalIva, tone: totalIva >= 0 ? ("warn" as const) : ("positive" as const) },
-    { label: "Segurança Social (anual)", value: totalSS, tone: "neutral" as const },
     { label: "IRS estimado", value: irsEstimado, tone: "warn" as const },
   ];
 
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {kpis.map((k) => (
           <div key={k.label} className="rounded-xl border bg-card p-4">
             <div className="text-xs text-muted-foreground">{k.label}</div>
@@ -184,17 +183,24 @@ export default function TISimplificadoDashboard({
         </div>
 
         <div className="rounded-xl border bg-card p-4">
-          <h4 className="font-semibold text-sm mb-3">Segurança Social</h4>
-          <p className="text-[11px] text-muted-foreground mb-3">
-            21,4% × 70% × faturação do trimestre, dividido por 3 meses.
-          </p>
+          <h4 className="font-semibold text-sm mb-3">Análise trimestral</h4>
           <div className="grid grid-cols-2 gap-3">
-            {ssTrim.map((v, i) => (
-              <div key={i} className="rounded-lg border bg-background p-3">
-                <div className="text-[11px] text-muted-foreground">Q{i + 1} · {fmtEur(v)}</div>
-                <div className="text-lg font-bold tabular-nums text-primary">{fmtEur(ssMensal[i])}<span className="text-[10px] font-normal text-muted-foreground"> /mês</span></div>
-                <div className="text-[10px] text-muted-foreground mt-1">
-                  Faturação: {fmtEur(facTrim[i])}
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="rounded-lg border bg-background p-3 space-y-1">
+                <div className="text-[11px] text-muted-foreground font-semibold">Q{i + 1}</div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Faturação</span>
+                  <span className="font-semibold tabular-nums text-primary">{fmtEur(facTrim[i])}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Despesas</span>
+                  <span className="font-semibold tabular-nums">{fmtEur(despTrim[i])}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1 border-t">
+                  <span className="text-muted-foreground">Lucro</span>
+                  <span className={cn("font-bold tabular-nums", lucroTrim[i] >= 0 ? "text-emerald-700" : "text-amber-700")}>
+                    {fmtEur(lucroTrim[i])}
+                  </span>
                 </div>
               </div>
             ))}
