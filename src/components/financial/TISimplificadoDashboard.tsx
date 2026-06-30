@@ -193,7 +193,7 @@ export default function TISimplificadoDashboard({
 
   const exportPDF = async () => {
     if (!reportRef.current) return;
-    const ssMissing = ssInputs.some((v) => !v || Number(v) <= 0);
+    const ssMissing = !settings?.tco && ssInputs.some((v) => !v || Number(v) <= 0);
     if (ssMissing) {
       toast.error("Preencha a Segurança Social de todos os trimestres antes de exportar.");
       return;
