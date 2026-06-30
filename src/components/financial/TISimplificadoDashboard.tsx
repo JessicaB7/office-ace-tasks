@@ -400,19 +400,21 @@ export default function TISimplificadoDashboard({
             <h4 className="font-semibold text-sm">IRS estimado (regime simplificado)</h4>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <label className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Coeficiente</span>
-              <select
-                value={coef}
-                onChange={(e) => saveCoef(Number(e.target.value))}
-                className="py-1.5 px-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              >
-                <option value={0.15}>0,15 — Vendas mercadorias</option>
-                <option value={0.35}>0,35 — Outras prestações de serviços</option>
-                <option value={0.75}>0,75 — Serviços profissionais (art.º 151)</option>
-                <option value={0.95}>0,95 — Rend. capitais / prediais</option>
-              </select>
-            </label>
+            {!exporting && (
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Coeficiente</span>
+                <select
+                  value={coef}
+                  onChange={(e) => saveCoef(Number(e.target.value))}
+                  className="py-1.5 px-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value={0.15}>0,15 — Vendas mercadorias</option>
+                  <option value={0.35}>0,35 — Outras prestações de serviços</option>
+                  <option value={0.75}>0,75 — Serviços profissionais (art.º 151)</option>
+                  <option value={0.95}>0,95 — Rend. capitais / prediais</option>
+                </select>
+              </label>
+            )}
             {retencoesSource !== "auto" && (
               <label className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">Retenções na fonte</span>
