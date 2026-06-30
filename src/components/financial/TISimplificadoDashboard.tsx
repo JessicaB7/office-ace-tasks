@@ -5,7 +5,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   useClientFinancialEntries,
+  useClientFinancialSettings,
   useFinancialAccounts,
+  useUpsertSettings,
 } from "@/hooks/useClientFinancials";
 import {
   buildEntryMap,
