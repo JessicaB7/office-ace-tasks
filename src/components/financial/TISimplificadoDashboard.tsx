@@ -70,10 +70,8 @@ export default function TISimplificadoDashboard({
     setCoef(Number(client?.irs_coeficiente ?? 0.75));
   }, [client?.irs_coeficiente]);
 
-  const [retencoes, setRetencoes] = useState<number>(Number(settings?.irs_retencoes ?? 0));
-  useEffect(() => {
-    setRetencoes(Number(settings?.irs_retencoes ?? 0));
-  }, [settings?.irs_retencoes]);
+
+
 
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -118,6 +116,16 @@ export default function TISimplificadoDashboard({
     return ivaM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0);
   });
 
+  // Retenções na fonte: soma anual da conta 2414 (qualquer subconta).
+  const retencoes = (() => {
+    let total = 0;
+    for (const [key, val] of map.entries()) {
+      const [, code] = key.split(":");
+      if (code.startsWith("2414")) total += Math.abs(val);
+    }
+    return total;
+  })();
+
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
@@ -126,6 +134,7 @@ export default function TISimplificadoDashboard({
   const irsEstimado = calcIRS(rendimentoColectavel);
   const irsLiquido = irsEstimado - retencoes;
   const resultado = totalFat - totalDesp;
+
 
   const chartData = MONTHS_PT.map((m, i) => ({
     mes: m,
@@ -254,17 +263,11 @@ export default function TISimplificadoDashboard({
                 <option value={0.95}>0,95 — Rend. capitais / prediais</option>
               </select>
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Retenções na fonte</span>
-              <input
-                type="number"
-                step="0.01"
-                value={retencoes}
-                onChange={(e) => setRetencoes(Number(e.target.value))}
-                onBlur={() => upsertSettings.mutate({ irs_retencoes: retencoes })}
-                className="w-32 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </label>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Retenções na fonte (conta 2414)</span>
+              <span className="font-semibold tabular-nums text-emerald-700">{fmtEur(retencoes)}</span>
+            </div>
+
           </div>
         </div>
 
