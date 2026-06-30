@@ -112,8 +112,8 @@ export default function TISimplificadoDashboard({
     return ivaM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0);
   });
 
-  // Retenções na fonte: soma anual da conta 2414 (qualquer subconta).
-  const retencoes = (() => {
+  // Retenções na fonte: soma anual da conta 2414 (qualquer subconta) do balancete.
+  const retencoes2414 = (() => {
     let total = 0;
     for (const [key, val] of map.entries()) {
       const [, code] = key.split(":");
@@ -121,6 +121,15 @@ export default function TISimplificadoDashboard({
     }
     return total;
   })();
+  const retencoesManual = Number(settings?.irs_retencoes ?? 0);
+  const retencoes = retencoes2414 > 0 ? retencoes2414 : retencoesManual;
+  const retencoesSource: "auto" | "manual" = retencoes2414 > 0 ? "auto" : "manual";
+
+  const [retencoesInput, setRetencoesInput] = useState<number>(retencoesManual);
+  useEffect(() => {
+    setRetencoesInput(Number(settings?.irs_retencoes ?? 0));
+  }, [settings?.irs_retencoes]);
+
 
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
@@ -259,10 +268,24 @@ export default function TISimplificadoDashboard({
                 <option value={0.95}>0,95 — Rend. capitais / prediais</option>
               </select>
             </label>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Retenções na fonte (conta 2414)</span>
-              <span className="font-semibold tabular-nums text-emerald-700">{fmtEur(retencoes)}</span>
-            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">
+                Retenções na fonte {retencoesSource === "auto" ? "(conta 2414)" : "(manual)"}
+              </span>
+              {retencoesSource === "auto" ? (
+                <span className="font-semibold tabular-nums text-emerald-700">{fmtEur(retencoes)}</span>
+              ) : (
+                <input
+                  type="number"
+                  step="0.01"
+                  value={retencoesInput}
+                  onChange={(e) => setRetencoesInput(Number(e.target.value))}
+                  onBlur={() => upsertSettings.mutate({ irs_retencoes: retencoesInput })}
+                  className="w-32 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              )}
+            </label>
+
 
           </div>
         </div>
