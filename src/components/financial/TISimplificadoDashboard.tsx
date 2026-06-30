@@ -60,6 +60,8 @@ export default function TISimplificadoDashboard({
 }) {
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: entries = [] } = useClientFinancialEntries(clientId, year);
+  const { data: settings } = useClientFinancialSettings(clientId, year);
+  const upsertSettings = useUpsertSettings(clientId, year);
   const map = useMemo(() => buildEntryMap(entries), [entries]);
   const qc = useQueryClient();
 
@@ -67,6 +69,12 @@ export default function TISimplificadoDashboard({
   useEffect(() => {
     setCoef(Number(client?.irs_coeficiente ?? 0.75));
   }, [client?.irs_coeficiente]);
+
+  const [retencoes, setRetencoes] = useState<number>(Number(settings?.irs_retencoes ?? 0));
+  useEffect(() => {
+    setRetencoes(Number(settings?.irs_retencoes ?? 0));
+  }, [settings?.irs_retencoes]);
+
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
