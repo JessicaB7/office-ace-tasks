@@ -395,7 +395,7 @@ export default function TISimplificadoDashboard({
       </div>
 
 
-      <div className="rounded-xl border bg-card p-4">
+      <div className="col-span-12 rounded-xl border bg-card p-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h4 className="font-semibold text-sm">IRS estimado (regime simplificado)</h4>
