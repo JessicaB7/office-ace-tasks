@@ -249,7 +249,10 @@ export default function TISimplificadoDashboard({
           {exporting ? "A exportar..." : "Exportar PDF"}
         </Button>
       </div>
-      <div ref={reportRef} className="space-y-6 bg-background p-4">
+      <div ref={reportRef} className="bg-background p-4" style={{ width: exporting ? 1400 : undefined }}>
+      <div className="grid grid-cols-12 gap-3">
+      <div className="col-span-12">
+
       <div className="flex items-start justify-between border-b pb-3">
         <div>
           <div className="text-lg font-semibold">{client?.name || client?.nome || "—"}</div>
