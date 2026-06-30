@@ -28,6 +28,8 @@ export type FinancialSettings = {
   ss_q2: number;
   ss_q3: number;
   ss_q4: number;
+  tco: boolean;
+
 };
 
 export function useFinancialAccounts() {
