@@ -133,6 +133,22 @@ export default function TISimplificadoDashboard({
     setRetencoesInput(Number(settings?.irs_retencoes ?? 0));
   }, [settings?.irs_retencoes]);
 
+  const ssQuarters = [
+    Number(settings?.ss_q1 ?? 0),
+    Number(settings?.ss_q2 ?? 0),
+    Number(settings?.ss_q3 ?? 0),
+    Number(settings?.ss_q4 ?? 0),
+  ];
+  const [ssInputs, setSsInputs] = useState<number[]>(ssQuarters);
+  useEffect(() => {
+    setSsInputs([
+      Number(settings?.ss_q1 ?? 0),
+      Number(settings?.ss_q2 ?? 0),
+      Number(settings?.ss_q3 ?? 0),
+      Number(settings?.ss_q4 ?? 0),
+    ]);
+  }, [settings?.ss_q1, settings?.ss_q2, settings?.ss_q3, settings?.ss_q4]);
+
 
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
