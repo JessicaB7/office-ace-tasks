@@ -226,6 +226,17 @@ export default function TISimplificadoDashboard({
         </Button>
       </div>
       <div ref={reportRef} className="space-y-6 bg-background p-4">
+      <div className="flex items-start justify-between border-b pb-3">
+        <div>
+          <div className="text-lg font-semibold">{client?.nome || "—"}</div>
+          <div className="text-sm text-muted-foreground">
+            NIF: {(client as any)?.nif || (client as any)?.nipc || "—"}
+          </div>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          Análise TI Simplificado · {year}
+        </div>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {kpis.map((k) => (
 
