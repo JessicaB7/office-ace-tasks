@@ -56,6 +56,7 @@ export type Database = {
         Row: {
           client_id: string
           corporate_tax_rate: number
+          irs_retencoes: number
           ta_kms: number
           ta_nao_doc: number
           ta_representacao: number
@@ -65,6 +66,7 @@ export type Database = {
         Insert: {
           client_id: string
           corporate_tax_rate?: number
+          irs_retencoes?: number
           ta_kms?: number
           ta_nao_doc?: number
           ta_representacao?: number
@@ -74,6 +76,7 @@ export type Database = {
         Update: {
           client_id?: string
           corporate_tax_rate?: number
+          irs_retencoes?: number
           ta_kms?: number
           ta_nao_doc?: number
           ta_representacao?: number
