@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Search, ChevronRight, Filter, X } from "lucide-react";
 import { useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
 import ClientAnalysisView from "@/components/ClientAnalysisView";
+import ClientDetailDialog from "@/components/ClientDetailDialog";
 
 const TYPE_CONFIG: Record<string, { label: string; tipo: string; accentClass: string }> = {
   TI_simplificado: {
@@ -27,6 +28,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
   const { data: collaborators = [] } = useCollaborators();
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [fichaClient, setFichaClient] = useState<any | null>(null);
   const [ivaFilter, setIvaFilter] = useState("");
   const [respFilter, setRespFilter] = useState("");
 
@@ -145,7 +147,15 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
                     onClick={() => setSelectedId(c.id)}
                     className="hover:bg-muted/40 cursor-pointer transition-colors"
                   >
-                    <td className={`px-4 py-2.5 font-medium ${cfg.accentClass}`}>{c.name}</td>
+                    <td className={`px-4 py-2.5 font-medium ${cfg.accentClass}`}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setFichaClient(c); }}
+                        className="hover:underline text-left"
+                        title="Abrir ficha do cliente"
+                      >
+                        {c.name}
+                      </button>
+                    </td>
                     <td className="px-4 py-2.5 text-muted-foreground">{c.nif || "—"}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">{c.iva || "—"}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">{resp?.name || "—"}</td>
@@ -159,6 +169,12 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
           </table>
         </div>
       )}
+
+      <ClientDetailDialog
+        client={fichaClient}
+        open={!!fichaClient}
+        onClose={() => setFichaClient(null)}
+      />
     </div>
   );
 }
