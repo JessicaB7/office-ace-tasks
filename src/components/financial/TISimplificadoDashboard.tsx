@@ -226,9 +226,9 @@ export default function TISimplificadoDashboard({
       <div ref={reportRef} className="space-y-6 bg-background p-4">
       <div className="flex items-start justify-between border-b pb-3">
         <div>
-          <div className="text-lg font-semibold">{client?.nome || "—"}</div>
+          <div className="text-lg font-semibold">{client?.name || client?.nome || "—"}</div>
           <div className="text-sm text-muted-foreground">
-            NIF: {(client as any)?.nif || (client as any)?.nipc || "—"}
+            NIF: {client?.nif || client?.nipc || "—"}
           </div>
         </div>
         <div className="text-sm text-muted-foreground">
