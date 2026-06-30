@@ -85,17 +85,17 @@ export default function TISimplificadoDashboard({
   const facTrim = [0, 1, 2, 3].map((qi) =>
     faturacaoM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
   );
+  const despTrim = [0, 1, 2, 3].map((qi) =>
+    despesasM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
+  );
+  const lucroTrim = facTrim.map((f, i) => f - despTrim[i]);
   const ivaTrim = [0, 1, 2, 3].map((qi) =>
     ivaM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
   );
-  // SS mensal a pagar em cada mês = 21,4% × 70% × faturação do trimestre anterior / 3
-  const ssTrim = facTrim.map((f) => 0.214 * 0.7 * f);
-  const ssMensal = ssTrim.map((s) => s / 3);
 
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
-  const totalSS = ssTrim.reduce((a, b) => a + b, 0);
 
   const rendimentoColectavel = totalFat * coef;
   const irsEstimado = calcIRS(rendimentoColectavel);
@@ -127,7 +127,6 @@ export default function TISimplificadoDashboard({
     { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
     { label: "Resultado líquido", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
     { label: "IVA a entregar (anual)", value: totalIva, tone: totalIva >= 0 ? ("warn" as const) : ("positive" as const) },
-    { label: "Segurança Social (anual)", value: totalSS, tone: "neutral" as const },
     { label: "IRS estimado", value: irsEstimado, tone: "warn" as const },
   ];
 
