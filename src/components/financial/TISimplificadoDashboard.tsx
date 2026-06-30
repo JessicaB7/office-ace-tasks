@@ -339,10 +339,23 @@ export default function TISimplificadoDashboard({
               Introduz manualmente o valor pago em cada trimestre.
             </p>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(ssQuarters.reduce((a, b) => a + b, 0))}</span>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={!!settings?.tco}
+                onChange={(e) => upsertSettings.mutate({ tco: e.target.checked } as any)}
+                className="h-4 w-4 rounded border-input accent-primary"
+              />
+              <span className="font-semibold">TCO</span>
+              <span className="text-muted-foreground">(dispensa preenchimento)</span>
+            </label>
+            <div className="text-xs text-muted-foreground">
+              Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(ssQuarters.reduce((a, b) => a + b, 0))}</span>
+            </div>
           </div>
         </div>
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {ssQuarters.map((val, i) => (
             <div key={i} className="rounded-lg border bg-background p-3 space-y-2">
