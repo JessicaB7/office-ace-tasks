@@ -300,7 +300,7 @@ export default function TISimplificadoDashboard({
       <div className="col-span-5 rounded-xl border bg-card p-4">
 
         <h4 className="font-semibold text-sm mb-3">Análise trimestral</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="rounded-lg border bg-background p-3 space-y-1">
               <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
