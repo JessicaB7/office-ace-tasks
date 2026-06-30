@@ -21,33 +21,29 @@ import { cn } from "@/lib/utils";
 const IVA_VENDAS = ["24331111", "24333311", "24341331"];
 const IVA_COMPRAS = ["24323111", "24323211", "24323311", "24342"];
 
-// Escalões IRS 2024 (taxa marginal)
-const IRS_BRACKETS: { upTo: number; rate: number }[] = [
-  { upTo: 7703, rate: 0.1325 },
-  { upTo: 11623, rate: 0.18 },
-  { upTo: 16472, rate: 0.23 },
-  { upTo: 21321, rate: 0.26 },
-  { upTo: 27146, rate: 0.3275 },
-  { upTo: 39791, rate: 0.37 },
-  { upTo: 51997, rate: 0.435 },
-  { upTo: 81199, rate: 0.45 },
-  { upTo: Infinity, rate: 0.48 },
+// Escalões IRS 2026 — método "taxa × rendimento − parcela a abater"
+const IRS_BRACKETS: { upTo: number; rate: number; abate: number }[] = [
+  { upTo: 8342, rate: 0.125, abate: 0 },
+  { upTo: 12587, rate: 0.157, abate: 266.94 },
+  { upTo: 17838, rate: 0.212, abate: 959.26 },
+  { upTo: 23089, rate: 0.241, abate: 1476.45 },
+  { upTo: 29397, rate: 0.311, abate: 3092.77 },
+  { upTo: 43090, rate: 0.349, abate: 4209.94 },
+  { upTo: 46566, rate: 0.431, abate: 7743.27 },
+  { upTo: 86634, rate: 0.446, abate: 8441.48 },
+  { upTo: Infinity, rate: 0.48, abate: 11387.17 },
 ];
 
 function calcIRS(rendimentoColectavel: number): number {
   if (rendimentoColectavel <= 0) return 0;
-  let imposto = 0;
-  let prev = 0;
   for (const b of IRS_BRACKETS) {
     if (rendimentoColectavel <= b.upTo) {
-      imposto += (rendimentoColectavel - prev) * b.rate;
-      return imposto;
+      return Math.max(0, rendimentoColectavel * b.rate - b.abate);
     }
-    imposto += (b.upTo - prev) * b.rate;
-    prev = b.upTo;
   }
-  return imposto;
+  return 0;
 }
+
 
 export default function TISimplificadoDashboard({
   clientId,
