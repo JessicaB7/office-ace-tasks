@@ -47,6 +47,42 @@ function calcIRS(rendimentoColectavel: number): number {
   return 0;
 }
 
+const cents = (value: number) => Math.round(value * 100) / 100;
+const sameCurrency = (a: number, b: number) => Math.abs(cents(a) - cents(b)) <= 0.01;
+
+function closeRepeatedQuarterValues(monthly: number[]): number[] {
+  const out = monthly.map(cents);
+  for (let qi = 0; qi < 4; qi++) {
+    const start = qi * 3;
+    const quarter = out.slice(start, start + 3);
+    const nonZero = quarter.filter((v) => Math.abs(v) > 0.01);
+
+    if (nonZero.length >= 2 && nonZero.every((v) => sameCurrency(v, nonZero[0]))) {
+      out[start] = 0;
+      out[start + 1] = 0;
+      out[start + 2] = cents(quarter.reduce((a, b) => a + b, 0));
+    }
+  }
+  return out;
+}
+
+function sumSectionMonthClosedByQuarter(
+  map: Map<string, number>,
+  accounts: any[],
+  sections: string[],
+  month: number,
+): number {
+  let total = 0;
+  for (const account of accounts) {
+    if (!sections.includes(account.section)) continue;
+    const closed = closeRepeatedQuarterValues(
+      Array.from({ length: 12 }, (_, idx) => getValue(map, idx + 1, account.code)),
+    );
+    total += closed[month - 1] ?? 0;
+  }
+  return total;
+}
+
 
 export default function TISimplificadoDashboard({
   clientId,
@@ -81,6 +117,13 @@ export default function TISimplificadoDashboard({
       sumSectionMonth(map, accounts, "despesas", m) +
       sumSectionMonth(map, accounts, "compras", m) +
       sumSectionMonth(map, accounts, "pessoal", m),
+  );
+
+  const faturacaoChartM = months.map((m) =>
+    sumSectionMonthClosedByQuarter(map, accounts, ["vendas"], m),
+  );
+  const despesasChartM = months.map((m) =>
+    sumSectionMonthClosedByQuarter(map, accounts, ["despesas", "compras", "pessoal"], m),
   );
 
   const ivaM = months.map((m) => {
@@ -162,8 +205,8 @@ export default function TISimplificadoDashboard({
 
   const chartData = MONTHS_PT.map((m, i) => ({
     mes: m,
-    Faturação: Math.round(faturacaoM[i] * 100) / 100,
-    Despesas: Math.round(despesasM[i] * 100) / 100,
+    Faturação: cents(faturacaoChartM[i]),
+    Despesas: cents(despesasChartM[i]),
   }));
 
   const saveCoef = async (val: number) => {
@@ -249,7 +292,7 @@ export default function TISimplificadoDashboard({
           {exporting ? "A exportar..." : "Exportar PDF"}
         </Button>
       </div>
-      <div ref={reportRef} className="bg-background p-4 grid grid-cols-12 gap-3" style={{ width: exporting ? 1400 : undefined }}>
+      <div ref={reportRef} className="bg-background p-4 grid grid-cols-12 gap-3 items-stretch" style={{ width: exporting ? 1400 : undefined }}>
       <div className="col-span-12 flex items-start justify-between border-b pb-3">
 
         <div>
@@ -262,10 +305,10 @@ export default function TISimplificadoDashboard({
           Análise TI Simplificado · {year}
         </div>
       </div>
-      <div className="col-span-12 grid grid-cols-3 gap-3">
+      <div className="col-span-12 grid grid-cols-3 gap-3 auto-rows-fr">
         {kpis.map((k) => (
 
-          <div key={k.label} className="rounded-xl border bg-card p-4">
+          <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
             <div className="text-xs text-muted-foreground">{k.label}</div>
             <div
               className={cn(
@@ -281,28 +324,30 @@ export default function TISimplificadoDashboard({
         ))}
       </div>
 
-      <div className="col-span-7 rounded-xl border bg-card p-4">
+      <div className="col-span-7 rounded-xl border bg-card p-4 h-full flex flex-col">
 
         <h4 className="font-semibold text-sm mb-3">Faturação vs Despesas (mensal)</h4>
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={chartData}>
+        <div className="flex-1 min-h-[260px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} barCategoryGap="28%" barGap={4}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="mes" fontSize={11} interval={0} />
+            <XAxis dataKey="mes" fontSize={11} interval={0} tickMargin={8} />
             <YAxis fontSize={11} />
             <Tooltip formatter={(v: any) => fmtEur(Number(v))} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="Faturação" fill="hsl(var(--primary))" />
-            <Bar dataKey="Despesas" fill="#c17c74" />
+            <Bar dataKey="Faturação" fill="hsl(var(--primary))" maxBarSize={28} />
+            <Bar dataKey="Despesas" fill="hsl(var(--primary) / 0.62)" maxBarSize={28} />
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
-      <div className="col-span-5 rounded-xl border bg-card p-4">
+      <div className="col-span-5 rounded-xl border bg-card p-4 h-full flex flex-col">
 
         <h4 className="font-semibold text-sm mb-3">Análise trimestral</h4>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 auto-rows-fr flex-1">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="rounded-lg border bg-background p-3 space-y-1">
+            <div key={i} className="rounded-lg border bg-background p-3 space-y-1 min-h-[112px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Faturação</span>
@@ -323,12 +368,12 @@ export default function TISimplificadoDashboard({
         </div>
       </div>
 
-      <div className="col-span-6 rounded-xl border bg-card p-4">
+      <div className="col-span-6 rounded-xl border bg-card p-4 h-full flex flex-col">
 
         <h4 className="font-semibold text-sm mb-3">IVA por trimestre</h4>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr flex-1">
           {ivaTrim.map((v, i) => (
-            <div key={i} className="rounded-lg border bg-background p-3 min-h-[96px] flex flex-col justify-between">
+            <div key={i} className="rounded-lg border bg-background p-3 min-h-[116px] h-full flex flex-col justify-between">
               <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
               <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
               <div className="text-[10px] text-muted-foreground mt-1">
@@ -339,7 +384,7 @@ export default function TISimplificadoDashboard({
         </div>
       </div>
 
-      <div className="col-span-6 rounded-xl border bg-card p-4">
+      <div className="col-span-6 rounded-xl border bg-card p-4 h-full flex flex-col">
 
         <div className="flex items-start justify-between gap-2 flex-wrap mb-3">
           <div>
@@ -364,9 +409,9 @@ export default function TISimplificadoDashboard({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr flex-1">
           {ssQuarters.map((val, i) => (
-            <div key={i} className="rounded-lg border bg-background p-3 space-y-2 min-h-[96px] flex flex-col justify-between">
+            <div key={i} className="rounded-lg border bg-background p-3 space-y-2 min-h-[116px] h-full flex flex-col justify-between">
               <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
               <div className="flex items-center gap-1">
                 <input
@@ -433,24 +478,24 @@ export default function TISimplificadoDashboard({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
-          <div className="rounded-lg border bg-background p-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4 auto-rows-fr">
+          <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">Faturação</div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
           </div>
-          <div className="rounded-lg border bg-background p-3">
+          <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">Rendimento colectável</div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(rendimentoColectavel)}</div>
           </div>
-          <div className="rounded-lg border bg-background p-3">
+          <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">IRS estimado</div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(irsEstimado)}</div>
           </div>
-          <div className="rounded-lg border bg-background p-3">
+          <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">Retenções na fonte</div>
             <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(retencoes)}</div>
           </div>
-          <div className={cn("rounded-lg border bg-background p-3 ring-1", irsLiquido >= 0 ? "ring-amber-200 dark:ring-amber-900/40" : "ring-emerald-200 dark:ring-emerald-900/40")}>
+          <div className={cn("rounded-lg border bg-background p-3 ring-1 min-h-[78px] h-full flex flex-col justify-center", irsLiquido >= 0 ? "ring-amber-200 dark:ring-amber-900/40" : "ring-emerald-200 dark:ring-emerald-900/40")}>
             <div className={cn("text-[11px]", irsLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>
               {irsLiquido >= 0 ? "IRS a pagar" : "IRS a receber"}
             </div>
