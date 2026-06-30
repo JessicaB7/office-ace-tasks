@@ -5,7 +5,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   useClientFinancialEntries,
+  useClientFinancialSettings,
   useFinancialAccounts,
+  useUpsertSettings,
 } from "@/hooks/useClientFinancials";
 import {
   buildEntryMap,
@@ -58,6 +60,8 @@ export default function TISimplificadoDashboard({
 }) {
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: entries = [] } = useClientFinancialEntries(clientId, year);
+  const { data: settings } = useClientFinancialSettings(clientId, year);
+  const upsertSettings = useUpsertSettings(clientId, year);
   const map = useMemo(() => buildEntryMap(entries), [entries]);
   const qc = useQueryClient();
 
@@ -65,6 +69,12 @@ export default function TISimplificadoDashboard({
   useEffect(() => {
     setCoef(Number(client?.irs_coeficiente ?? 0.75));
   }, [client?.irs_coeficiente]);
+
+  const [retencoes, setRetencoes] = useState<number>(Number(settings?.irs_retencoes ?? 0));
+  useEffect(() => {
+    setRetencoes(Number(settings?.irs_retencoes ?? 0));
+  }, [settings?.irs_retencoes]);
+
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -114,6 +124,7 @@ export default function TISimplificadoDashboard({
 
   const rendimentoColectavel = totalFat * coef;
   const irsEstimado = calcIRS(rendimentoColectavel);
+  const irsLiquido = irsEstimado - retencoes;
   const resultado = totalFat - totalDesp;
 
   const chartData = MONTHS_PT.map((m, i) => ({
@@ -229,37 +240,58 @@ export default function TISimplificadoDashboard({
               Aplica o coeficiente do art.º 31 do CIRS à faturação e calcula o IRS pelos escalões 2024.
             </p>
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Coeficiente</span>
-            <select
-              value={coef}
-              onChange={(e) => saveCoef(Number(e.target.value))}
-              className="py-1.5 px-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value={0.15}>0,15 — Vendas mercadorias</option>
-              <option value={0.35}>0,35 — Outras prestações de serviços</option>
-              <option value={0.75}>0,75 — Serviços profissionais (art.º 151)</option>
-              <option value={0.95}>0,95 — Rend. capitais / prediais</option>
-            </select>
-          </label>
+          <div className="flex items-center gap-3 flex-wrap">
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Coeficiente</span>
+              <select
+                value={coef}
+                onChange={(e) => saveCoef(Number(e.target.value))}
+                className="py-1.5 px-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value={0.15}>0,15 — Vendas mercadorias</option>
+                <option value={0.35}>0,35 — Outras prestações de serviços</option>
+                <option value={0.75}>0,75 — Serviços profissionais (art.º 151)</option>
+                <option value={0.95}>0,95 — Rend. capitais / prediais</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Retenções na fonte</span>
+              <input
+                type="number"
+                step="0.01"
+                value={retencoes}
+                onChange={(e) => setRetencoes(Number(e.target.value))}
+                onBlur={() => upsertSettings.mutate({ irs_retencoes: retencoes })}
+                className="w-32 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </label>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4">
           <div className="rounded-lg border bg-background p-3">
             <div className="text-[11px] text-muted-foreground">Faturação</div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
           </div>
           <div className="rounded-lg border bg-background p-3">
-            <div className="text-[11px] text-muted-foreground">× Coeficiente</div>
-            <div className="text-lg font-bold tabular-nums">{(coef * 100).toFixed(0).replace(".", ",")}%</div>
-          </div>
-          <div className="rounded-lg border bg-background p-3">
-            <div className="text-[11px] text-muted-foreground">Rendimento colectável</div>
+            <div className="text-[11px] text-muted-foreground">Rendimento colectável ({(coef * 100).toFixed(0)}%)</div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(rendimentoColectavel)}</div>
           </div>
-          <div className="rounded-lg border bg-background p-3 ring-1 ring-amber-200 dark:ring-amber-900/40">
-            <div className="text-[11px] text-amber-700">IRS estimado</div>
-            <div className="text-lg font-bold tabular-nums text-amber-700">{fmtEur(irsEstimado)}</div>
+          <div className="rounded-lg border bg-background p-3">
+            <div className="text-[11px] text-muted-foreground">IRS estimado</div>
+            <div className="text-lg font-bold tabular-nums">{fmtEur(irsEstimado)}</div>
+          </div>
+          <div className="rounded-lg border bg-background p-3">
+            <div className="text-[11px] text-muted-foreground">Retenções na fonte</div>
+            <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(retencoes)}</div>
+          </div>
+          <div className={cn("rounded-lg border bg-background p-3 ring-1", irsLiquido >= 0 ? "ring-amber-200 dark:ring-amber-900/40" : "ring-emerald-200 dark:ring-emerald-900/40")}>
+            <div className={cn("text-[11px]", irsLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>
+              {irsLiquido >= 0 ? "IRS a pagar" : "IRS a receber"}
+            </div>
+            <div className={cn("text-lg font-bold tabular-nums", irsLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>
+              {fmtEur(Math.abs(irsLiquido))}
+            </div>
           </div>
         </div>
       </div>
