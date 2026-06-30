@@ -359,7 +359,7 @@ export default function TISimplificadoDashboard({
             <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
           </div>
           <div className="rounded-lg border bg-background p-3">
-            <div className="text-[11px] text-muted-foreground">Rendimento colectável ({(coef * 100).toFixed(0)}%)</div>
+            <div className="text-[11px] text-muted-foreground">Rendimento colectável</div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(rendimentoColectavel)}</div>
           </div>
           <div className="rounded-lg border bg-background p-3">
