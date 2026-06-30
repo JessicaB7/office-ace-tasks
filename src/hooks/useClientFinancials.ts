@@ -86,6 +86,7 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         ss_q2: 0,
         ss_q3: 0,
         ss_q4: 0,
+        tco: false,
       }) as FinancialSettings;
     },
     enabled: !!clientId,
