@@ -274,7 +274,7 @@ export default function TISimplificadoDashboard({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="rounded-lg border bg-background p-3 space-y-1">
-              <div className="text-[11px] text-muted-foreground font-semibold">Q{i + 1}</div>
+              <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Faturação</span>
                 <span className="font-semibold tabular-nums text-primary">{fmtEur(facTrim[i])}</span>
