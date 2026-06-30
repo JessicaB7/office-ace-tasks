@@ -169,8 +169,6 @@ export default function TISimplificadoDashboard({
     { label: "Faturação anual", value: totalFat, tone: "primary" as const },
     { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
     { label: "Resultado líquido", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
-    { label: "IVA a entregar (anual)", value: totalIva, tone: totalIva >= 0 ? ("warn" as const) : ("positive" as const) },
-    { label: "IRS estimado", value: irsEstimado, tone: "warn" as const },
   ];
 
 
@@ -207,7 +205,7 @@ export default function TISimplificadoDashboard({
         pdf.addImage(imgData, "PNG", margin, position, imgW, imgH);
         heightLeft -= pageH - margin * 2;
       }
-      const safeName = (client?.nome || "cliente").replace(/[^a-zA-Z0-9-_]+/g, "_");
+      const safeName = (client?.name || client?.nome || "cliente").replace(/[^a-zA-Z0-9-_]+/g, "_");
       pdf.save(`Analise_TI_Simplificado_${safeName}_${year}.pdf`);
       toast.success("PDF exportado");
     } catch (e: any) {
@@ -228,9 +226,9 @@ export default function TISimplificadoDashboard({
       <div ref={reportRef} className="space-y-6 bg-background p-4">
       <div className="flex items-start justify-between border-b pb-3">
         <div>
-          <div className="text-lg font-semibold">{client?.nome || "—"}</div>
+          <div className="text-lg font-semibold">{client?.name || client?.nome || "—"}</div>
           <div className="text-sm text-muted-foreground">
-            NIF: {(client as any)?.nif || (client as any)?.nipc || "—"}
+            NIF: {client?.nif || client?.nipc || "—"}
           </div>
         </div>
         <div className="text-sm text-muted-foreground">
