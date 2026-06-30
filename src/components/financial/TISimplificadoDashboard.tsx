@@ -82,16 +82,23 @@ export default function TISimplificadoDashboard({
     return v - co;
   });
 
-  const facTrim = [0, 1, 2, 3].map((qi) =>
-    faturacaoM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
-  );
-  const despTrim = [0, 1, 2, 3].map((qi) =>
-    despesasM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
-  );
-  const lucroTrim = facTrim.map((f, i) => f - despTrim[i]);
-  const ivaTrim = [0, 1, 2, 3].map((qi) =>
-    ivaM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
-  );
+  // IVA por trimestre: usa contas 2436 (a pagar) / 2437 (a recuperar) do último mês do trimestre.
+  // Fallback para o líquido das contas de IVA mensal somado no trimestre.
+  const sumPrefixMonth = (prefix: string, month: number) => {
+    let total = 0;
+    for (const [key, val] of map.entries()) {
+      const [mStr, code] = key.split(":");
+      if (Number(mStr) === month && code.startsWith(prefix)) total += val;
+    }
+    return total;
+  };
+  const ivaTrim = [0, 1, 2, 3].map((qi) => {
+    const lastMonth = qi * 3 + 3;
+    const aPagar = sumPrefixMonth("2436", lastMonth);
+    const aRecuperar = sumPrefixMonth("2437", lastMonth);
+    if (aPagar !== 0 || aRecuperar !== 0) return aPagar - aRecuperar;
+    return ivaM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0);
+  });
 
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
