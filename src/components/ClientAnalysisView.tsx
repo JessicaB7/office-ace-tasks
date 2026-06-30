@@ -115,7 +115,13 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
             <Building2 className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">{client.name}</h2>
+            <button
+              onClick={() => setFichaOpen(true)}
+              className="text-2xl font-bold hover:underline text-left"
+              title="Abrir ficha do cliente"
+            >
+              {client.name}
+            </button>
             <p className="text-sm text-muted-foreground">Análise financeira {year}{client.nif ? ` · NIF ${client.nif}` : ""}</p>
           </div>
         </div>
