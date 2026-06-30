@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Search, ChevronRight, Filter, X } from "lucide-react";
 import { useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
 import ClientAnalysisView from "@/components/ClientAnalysisView";
+import ClientDetailDialog from "@/components/ClientDetailDialog";
 
 const TYPE_CONFIG: Record<string, { label: string; tipo: string; accentClass: string }> = {
   TI_simplificado: {
