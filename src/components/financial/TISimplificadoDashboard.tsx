@@ -181,45 +181,43 @@ export default function TISimplificadoDashboard({
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="rounded-xl border bg-card p-4">
-          <h4 className="font-semibold text-sm mb-3">IVA por trimestre</h4>
-          <div className="grid grid-cols-2 gap-3">
-            {ivaTrim.map((v, i) => (
-              <div key={i} className="rounded-lg border bg-background p-3">
-                <div className="text-[11px] text-muted-foreground">Q{i + 1}</div>
-                <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
-                <div className="text-[10px] text-muted-foreground mt-1">
-                  {["Pagar até 25/05", "Pagar até 25/08", "Pagar até 25/11", "Pagar até 25/02 ano seguinte"][i]}
-                </div>
+      <div className="rounded-xl border bg-card p-4">
+        <h4 className="font-semibold text-sm mb-3">Análise trimestral</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="rounded-lg border bg-background p-3 space-y-1">
+              <div className="text-[11px] text-muted-foreground font-semibold">Q{i + 1}</div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Faturação</span>
+                <span className="font-semibold tabular-nums text-primary">{fmtEur(facTrim[i])}</span>
               </div>
-            ))}
-          </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Despesas</span>
+                <span className="font-semibold tabular-nums">{fmtEur(despTrim[i])}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1 border-t">
+                <span className="text-muted-foreground">Lucro</span>
+                <span className={cn("font-bold tabular-nums", lucroTrim[i] >= 0 ? "text-emerald-700" : "text-amber-700")}>
+                  {fmtEur(lucroTrim[i])}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
+      </div>
 
-        <div className="rounded-xl border bg-card p-4">
-          <h4 className="font-semibold text-sm mb-3">Análise trimestral</h4>
-          <div className="grid grid-cols-2 gap-3">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="rounded-lg border bg-background p-3 space-y-1">
-                <div className="text-[11px] text-muted-foreground font-semibold">Q{i + 1}</div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Faturação</span>
-                  <span className="font-semibold tabular-nums text-primary">{fmtEur(facTrim[i])}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Despesas</span>
-                  <span className="font-semibold tabular-nums">{fmtEur(despTrim[i])}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs pt-1 border-t">
-                  <span className="text-muted-foreground">Lucro</span>
-                  <span className={cn("font-bold tabular-nums", lucroTrim[i] >= 0 ? "text-emerald-700" : "text-amber-700")}>
-                    {fmtEur(lucroTrim[i])}
-                  </span>
-                </div>
+      <div className="rounded-xl border bg-card p-4">
+        <h4 className="font-semibold text-sm mb-3">IVA por trimestre</h4>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {ivaTrim.map((v, i) => (
+            <div key={i} className="rounded-lg border bg-background p-3">
+              <div className="text-[11px] text-muted-foreground">Q{i + 1}</div>
+              <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
+              <div className="text-[10px] text-muted-foreground mt-1">
+                {["Pagar até 25/05", "Pagar até 25/08", "Pagar até 25/11", "Pagar até 25/02 ano seguinte"][i]}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
