@@ -205,7 +205,7 @@ export default function TISimplificadoDashboard({
         import("jspdf"),
       ]);
 
-      const pdf = new jsPDF("p", "mm", "a4");
+      const pdf = new jsPDF("l", "mm", "a4");
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 8;
