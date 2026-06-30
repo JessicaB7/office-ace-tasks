@@ -249,8 +249,9 @@ export default function TISimplificadoDashboard({
           {exporting ? "A exportar..." : "Exportar PDF"}
         </Button>
       </div>
-      <div ref={reportRef} className="space-y-6 bg-background p-4">
-      <div className="flex items-start justify-between border-b pb-3">
+      <div ref={reportRef} className="bg-background p-4 grid grid-cols-12 gap-3" style={{ width: exporting ? 1400 : undefined }}>
+      <div className="col-span-12 flex items-start justify-between border-b pb-3">
+
         <div>
           <div className="text-lg font-semibold">{client?.name || client?.nome || "—"}</div>
           <div className="text-sm text-muted-foreground">
@@ -261,7 +262,7 @@ export default function TISimplificadoDashboard({
           Análise TI Simplificado · {year}
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="col-span-12 grid grid-cols-3 gap-3">
         {kpis.map((k) => (
 
           <div key={k.label} className="rounded-xl border bg-card p-4">
@@ -280,7 +281,8 @@ export default function TISimplificadoDashboard({
         ))}
       </div>
 
-      <div className="rounded-xl border bg-card p-4">
+      <div className="col-span-7 rounded-xl border bg-card p-4">
+
         <h4 className="font-semibold text-sm mb-3">Faturação vs Despesas (mensal)</h4>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={chartData}>
@@ -295,7 +297,8 @@ export default function TISimplificadoDashboard({
         </ResponsiveContainer>
       </div>
 
-      <div className="rounded-xl border bg-card p-4">
+      <div className="col-span-5 rounded-xl border bg-card p-4">
+
         <h4 className="font-semibold text-sm mb-3">Análise trimestral</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[0, 1, 2, 3].map((i) => (
@@ -320,7 +323,8 @@ export default function TISimplificadoDashboard({
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card p-4">
+      <div className="col-span-6 rounded-xl border bg-card p-4">
+
         <h4 className="font-semibold text-sm mb-3">IVA por trimestre</h4>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {ivaTrim.map((v, i) => (
@@ -335,7 +339,8 @@ export default function TISimplificadoDashboard({
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card p-4">
+      <div className="col-span-6 rounded-xl border bg-card p-4">
+
         <div className="flex items-start justify-between gap-2 flex-wrap mb-3">
           <div>
             <h4 className="font-semibold text-sm">Segurança Social por trimestre</h4>
@@ -390,7 +395,7 @@ export default function TISimplificadoDashboard({
       </div>
 
 
-      <div className="rounded-xl border bg-card p-4">
+      <div className="col-span-12 rounded-xl border bg-card p-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h4 className="font-semibold text-sm">IRS estimado (regime simplificado)</h4>
@@ -460,5 +465,8 @@ export default function TISimplificadoDashboard({
       </div>
     </div>
   );
+
+
+
 
 }
