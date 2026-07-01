@@ -52,9 +52,17 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           entries = await parseMapaPdf(file, codes);
         }
       } else {
-        const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, { type: "array" });
-        for (const sheetName of wb.SheetNames) {
+        // Try balancete XLSX first (TOConline "Balancete (Período, Acumulado)")
+        if (await isBalanceteXlsx(file)) {
+          const res = await parseBalanceteXlsx(file, Array.from(codes));
+          if (res.year !== year) {
+            toast.warning(`Balancete é de ${res.year}, mas estás a ver ${year}. Importei na vista atual.`);
+          }
+          entries = res.entries;
+          toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
+        } else {
+          const buf = await file.arrayBuffer();
+          const wb = XLSX.read(buf, { type: "array" });
           const ws = wb.Sheets[sheetName];
           const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
           for (const row of rows) {
