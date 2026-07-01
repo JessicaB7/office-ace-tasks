@@ -7,10 +7,12 @@ import MapaExploracaoTab from "./financial/MapaExploracaoTab";
 import IvaTab from "./financial/IvaTab";
 import IndicadoresTab from "./financial/IndicadoresTab";
 import TISimplificadoDashboard from "./financial/TISimplificadoDashboard";
+import TIOrganizadoDashboard from "./financial/TIOrganizadoDashboard";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import * as XLSX from "xlsx";
 import { parseMapaPdf } from "@/lib/pdfMapaImport";
 import { parseBalancetePdf, isBalancetePdf } from "@/lib/pdfBalanceteImport";
+import { parseBalanceteXlsx, isBalanceteXlsx } from "@/lib/xlsxBalanceteImport";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -50,30 +52,40 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           entries = await parseMapaPdf(file, codes);
         }
       } else {
-        const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, { type: "array" });
-        for (const sheetName of wb.SheetNames) {
-          const ws = wb.Sheets[sheetName];
-          const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-          for (const row of rows) {
-            if (!row || row.length < 3) continue;
-            let codeCellIdx = -1;
-            for (let i = 0; i < Math.min(3, row.length); i++) {
-              const cell = row[i];
-              if (cell != null && codes.has(String(cell).trim())) { codeCellIdx = i; break; }
-            }
-            if (codeCellIdx < 0) continue;
-            const code = String(row[codeCellIdx]).trim();
-            for (let start = codeCellIdx + 1; start <= row.length - 12; start++) {
-              const slice = row.slice(start, start + 12);
-              const numericCount = slice.filter((v) => typeof v === "number").length;
-              if (numericCount >= 6) {
-                slice.forEach((v, i) => {
-                  if (typeof v === "number" && v !== 0) {
-                    entries.push({ month: i + 1, account_code: code, value: Math.abs(Number(v)) });
-                  }
-                });
-                break;
+        // Try balancete XLSX first (TOConline "Balancete (Período, Acumulado)")
+        if (await isBalanceteXlsx(file)) {
+          const res = await parseBalanceteXlsx(file, Array.from(codes));
+          if (res.year !== year) {
+            toast.warning(`Balancete é de ${res.year}, mas estás a ver ${year}. Importei na vista atual.`);
+          }
+          entries = res.entries;
+          toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
+        } else {
+          const buf = await file.arrayBuffer();
+          const wb = XLSX.read(buf, { type: "array" });
+          for (const sheetName of wb.SheetNames) {
+            const ws = wb.Sheets[sheetName];
+            const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+            for (const row of rows) {
+              if (!row || row.length < 3) continue;
+              let codeCellIdx = -1;
+              for (let i = 0; i < Math.min(3, row.length); i++) {
+                const cell = row[i];
+                if (cell != null && codes.has(String(cell).trim())) { codeCellIdx = i; break; }
+              }
+              if (codeCellIdx < 0) continue;
+              const code = String(row[codeCellIdx]).trim();
+              for (let start = codeCellIdx + 1; start <= row.length - 12; start++) {
+                const slice = row.slice(start, start + 12);
+                const numericCount = slice.filter((v) => typeof v === "number").length;
+                if (numericCount >= 6) {
+                  slice.forEach((v, i) => {
+                    if (typeof v === "number" && v !== 0) {
+                      entries.push({ month: i + 1, account_code: code, value: Math.abs(Number(v)) });
+                    }
+                  });
+                  break;
+                }
               }
             }
           }
@@ -144,6 +156,8 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
 
       {client.tipo_contabilidade === "TI RS" ? (
         <TISimplificadoDashboard clientId={clientId} year={year} client={client} />
+      ) : client.tipo_contabilidade === "TI CO" ? (
+        <TIOrganizadoDashboard clientId={clientId} year={year} client={client} />
       ) : (
         <>
           <div className="flex gap-1 border-b">

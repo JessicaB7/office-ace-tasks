@@ -1,0 +1,282 @@
+import { useMemo, useRef, useState } from "react";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Download } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  useClientFinancialEntries,
+  useFinancialAccounts,
+} from "@/hooks/useClientFinancials";
+import {
+  buildEntryMap,
+  getValue,
+  MONTHS_PT,
+  fmtEur,
+  sumSectionMonth,
+} from "./financialMath";
+import { cn } from "@/lib/utils";
+
+const cents = (v: number) => Math.round(v * 100) / 100;
+const sameCurrency = (a: number, b: number) => Math.abs(cents(a) - cents(b)) <= 0.01;
+
+// Balancetes trimestrais ficam concentrados no mês de fecho. Se por algum
+// motivo os valores aparecerem repartidos por igual pelos 3 meses do trimestre,
+// colapsa-os no último mês para o gráfico.
+function closeRepeatedQuarterValues(monthly: number[]): number[] {
+  const out = monthly.map(cents);
+  for (let qi = 0; qi < 4; qi++) {
+    const s = qi * 3;
+    const q = out.slice(s, s + 3);
+    const nz = q.filter((v) => Math.abs(v) > 0.01);
+    if (nz.length === 3 && nz.every((v) => sameCurrency(v, nz[0]))) {
+      out[s] = 0;
+      out[s + 1] = 0;
+      out[s + 2] = cents(q.reduce((a, b) => a + b, 0));
+    }
+  }
+  return out;
+}
+
+function sumSectionMonthClosedByQuarter(
+  map: Map<string, number>,
+  accounts: any[],
+  sections: string[],
+  month: number,
+): number {
+  let total = 0;
+  for (const a of accounts) {
+    if (!sections.includes(a.section)) continue;
+    const closed = closeRepeatedQuarterValues(
+      Array.from({ length: 12 }, (_, i) => getValue(map, i + 1, a.code)),
+    );
+    total += closed[month - 1] ?? 0;
+  }
+  return total;
+}
+
+export default function TIOrganizadoDashboard({
+  clientId,
+  year,
+  client,
+}: {
+  clientId: string;
+  year: number;
+  client: any;
+}) {
+  const { data: accounts = [] } = useFinancialAccounts();
+  const { data: entries = [] } = useClientFinancialEntries(clientId, year);
+  const map = useMemo(() => buildEntryMap(entries), [entries]);
+
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+  const faturacaoM = months.map((m) => sumSectionMonth(map, accounts, "vendas", m));
+  const despesasM = months.map(
+    (m) =>
+      sumSectionMonth(map, accounts, "despesas", m) +
+      sumSectionMonth(map, accounts, "compras", m) +
+      sumSectionMonth(map, accounts, "pessoal", m),
+  );
+
+  const faturacaoChartM = months.map((m) =>
+    sumSectionMonthClosedByQuarter(map, accounts, ["vendas"], m),
+  );
+  const despesasChartM = months.map((m) =>
+    sumSectionMonthClosedByQuarter(map, accounts, ["despesas", "compras", "pessoal"], m),
+  );
+
+  const facTrim = [0, 1, 2, 3].map((qi) =>
+    faturacaoM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
+  );
+  const despTrim = [0, 1, 2, 3].map((qi) =>
+    despesasM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
+  );
+  const lucroTrim = facTrim.map((f, i) => f - despTrim[i]);
+
+  const sumPrefixMonth = (prefix: string, month: number) => {
+    let total = 0;
+    for (const [key, val] of map.entries()) {
+      const [mStr, code] = key.split(":");
+      if (Number(mStr) === month && code.startsWith(prefix)) total += val;
+    }
+    return total;
+  };
+  const ivaTrim = [0, 1, 2, 3].map((qi) => {
+    const lastMonth = qi * 3 + 3;
+    const aPagar = sumPrefixMonth("2436", lastMonth);
+    const aRecuperar = sumPrefixMonth("2437", lastMonth);
+    return aPagar - aRecuperar;
+  });
+
+  // Retenções na fonte (2414 e sub-contas) — soma anual em módulo.
+  const retencoes2414 = (() => {
+    let total = 0;
+    for (const [key, val] of map.entries()) {
+      const [, code] = key.split(":");
+      if (code.startsWith("2414")) total += Math.abs(val);
+    }
+    return total;
+  })();
+
+  const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
+  const totalDesp = despesasM.reduce((a, b) => a + b, 0);
+  const resultado = totalFat - totalDesp;
+  const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
+
+  const chartData = MONTHS_PT.map((m, i) => ({
+    mes: m,
+    Faturação: cents(faturacaoChartM[i]),
+    Despesas: cents(despesasChartM[i]),
+  }));
+
+  const kpis = [
+    { label: "Faturação anual", value: totalFat, tone: "primary" as const },
+    { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
+    { label: "Resultado", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
+  ];
+
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const exportPDF = async () => {
+    if (!reportRef.current) return;
+    setExporting(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      const pdf = new jsPDF("l", "mm", "a4");
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const contentW = pageW - margin * 2;
+      const contentH = pageH - margin * 2;
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        windowWidth: reportRef.current.scrollWidth,
+      });
+      const ratio = canvas.width / canvas.height;
+      let wMm = contentW;
+      let hMm = wMm / ratio;
+      if (hMm > contentH) { hMm = contentH; wMm = hMm * ratio; }
+      const xOff = margin + (contentW - wMm) / 2;
+      const yOff = margin + (contentH - hMm) / 2;
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", xOff, yOff, wMm, hMm);
+      const safeName = (client?.name || client?.nome || "cliente").replace(/[^a-zA-Z0-9-_]+/g, "_");
+      pdf.save(`Analise_TI_Organizado_${safeName}_${year}.pdf`);
+      toast.success("PDF exportado");
+    } catch (e: any) {
+      toast.error("Erro a exportar PDF: " + (e?.message || ""));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={exportPDF} disabled={exporting} size="sm" variant="outline">
+          <Download className="h-4 w-4 mr-2" />
+          {exporting ? "A exportar..." : "Exportar PDF"}
+        </Button>
+      </div>
+      <div ref={reportRef} className="bg-background p-4 grid grid-cols-12 gap-3 items-stretch" style={{ width: exporting ? 1400 : undefined }}>
+        <div className="col-span-12 flex items-start justify-between border-b pb-3">
+          <div>
+            <div className="text-lg font-semibold">{client?.name || client?.nome || "—"}</div>
+            <div className="text-sm text-muted-foreground">NIF: {client?.nif || client?.nipc || "—"}</div>
+          </div>
+          <div className="text-sm text-muted-foreground">Análise TI Organizado · {year}</div>
+        </div>
+
+        <div className="col-span-12 grid grid-cols-3 gap-3 auto-rows-fr">
+          {kpis.map((k) => (
+            <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
+              <div className="text-xs text-muted-foreground">{k.label}</div>
+              <div className={cn(
+                "text-xl font-bold mt-1 tabular-nums",
+                k.tone === "primary" && "text-primary",
+                k.tone === "warn" && "text-amber-700",
+                k.tone === "positive" && "text-emerald-700",
+              )}>{fmtEur(k.value)}</div>
+            </div>
+          ))}
+        </div>
+
+        <div className="col-span-7 rounded-xl border bg-card p-4 h-full flex flex-col">
+          <h4 className="font-semibold text-sm mb-3">Faturação vs Despesas (mensal)</h4>
+          <div className="flex-1 min-h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} barCategoryGap="28%" barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="mes" fontSize={11} interval={0} tickMargin={8} />
+                <YAxis fontSize={11} />
+                <Tooltip formatter={(v: any) => fmtEur(Number(v))} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="Faturação" fill="hsl(var(--primary))" maxBarSize={28} />
+                <Bar dataKey="Despesas" fill="hsl(var(--primary) / 0.62)" maxBarSize={28} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="col-span-5 rounded-xl border bg-card p-4 h-full flex flex-col">
+          <h4 className="font-semibold text-sm mb-3">Análise trimestral</h4>
+          <div className="grid grid-cols-2 gap-3 auto-rows-fr flex-1">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="rounded-lg border bg-background p-3 space-y-1 min-h-[112px] h-full flex flex-col justify-center">
+                <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Faturação</span>
+                  <span className="font-semibold tabular-nums text-primary">{fmtEur(facTrim[i])}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Despesas</span>
+                  <span className="font-semibold tabular-nums">{fmtEur(despTrim[i])}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1 border-t">
+                  <span className="text-muted-foreground">Resultado</span>
+                  <span className={cn("font-bold tabular-nums", lucroTrim[i] >= 0 ? "text-emerald-700" : "text-amber-700")}>
+                    {fmtEur(lucroTrim[i])}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="col-span-12 rounded-xl border bg-card p-4 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold text-sm">IVA por trimestre</h4>
+            <div className="text-xs text-muted-foreground">
+              Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(totalIva)}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr flex-1">
+            {ivaTrim.map((v, i) => (
+              <div key={i} className="rounded-lg border bg-background p-3 min-h-[116px] h-full flex flex-col justify-between">
+                <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
+                <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  {["Pagar até 25/05", "Pagar até 25/08", "Pagar até 25/11", "Pagar até 25/02 ano seguinte"][i]}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="col-span-12 rounded-xl border bg-card p-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h4 className="font-semibold text-sm">Retenções na fonte</h4>
+              <p className="text-xs text-muted-foreground mt-1">Conta 2414 · soma anual dos valores retidos por terceiros.</p>
+            </div>
+            <div className="text-2xl font-bold tabular-nums text-emerald-700">{fmtEur(retencoes2414)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
