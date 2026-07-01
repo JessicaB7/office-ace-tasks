@@ -156,6 +156,8 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
 
       {client.tipo_contabilidade === "TI RS" ? (
         <TISimplificadoDashboard clientId={clientId} year={year} client={client} />
+      ) : client.tipo_contabilidade === "TI CO" ? (
+        <TIOrganizadoDashboard clientId={clientId} year={year} client={client} />
       ) : (
         <>
           <div className="flex gap-1 border-b">
