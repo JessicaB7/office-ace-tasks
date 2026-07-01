@@ -63,27 +63,29 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         } else {
           const buf = await file.arrayBuffer();
           const wb = XLSX.read(buf, { type: "array" });
-          const ws = wb.Sheets[sheetName];
-          const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-          for (const row of rows) {
-            if (!row || row.length < 3) continue;
-            let codeCellIdx = -1;
-            for (let i = 0; i < Math.min(3, row.length); i++) {
-              const cell = row[i];
-              if (cell != null && codes.has(String(cell).trim())) { codeCellIdx = i; break; }
-            }
-            if (codeCellIdx < 0) continue;
-            const code = String(row[codeCellIdx]).trim();
-            for (let start = codeCellIdx + 1; start <= row.length - 12; start++) {
-              const slice = row.slice(start, start + 12);
-              const numericCount = slice.filter((v) => typeof v === "number").length;
-              if (numericCount >= 6) {
-                slice.forEach((v, i) => {
-                  if (typeof v === "number" && v !== 0) {
-                    entries.push({ month: i + 1, account_code: code, value: Math.abs(Number(v)) });
-                  }
-                });
-                break;
+          for (const sheetName of wb.SheetNames) {
+            const ws = wb.Sheets[sheetName];
+            const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+            for (const row of rows) {
+              if (!row || row.length < 3) continue;
+              let codeCellIdx = -1;
+              for (let i = 0; i < Math.min(3, row.length); i++) {
+                const cell = row[i];
+                if (cell != null && codes.has(String(cell).trim())) { codeCellIdx = i; break; }
+              }
+              if (codeCellIdx < 0) continue;
+              const code = String(row[codeCellIdx]).trim();
+              for (let start = codeCellIdx + 1; start <= row.length - 12; start++) {
+                const slice = row.slice(start, start + 12);
+                const numericCount = slice.filter((v) => typeof v === "number").length;
+                if (numericCount >= 6) {
+                  slice.forEach((v, i) => {
+                    if (typeof v === "number" && v !== 0) {
+                      entries.push({ month: i + 1, account_code: code, value: Math.abs(Number(v)) });
+                    }
+                  });
+                  break;
+                }
               }
             }
           }
