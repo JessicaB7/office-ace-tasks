@@ -7,10 +7,12 @@ import MapaExploracaoTab from "./financial/MapaExploracaoTab";
 import IvaTab from "./financial/IvaTab";
 import IndicadoresTab from "./financial/IndicadoresTab";
 import TISimplificadoDashboard from "./financial/TISimplificadoDashboard";
+import TIOrganizadoDashboard from "./financial/TIOrganizadoDashboard";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import * as XLSX from "xlsx";
 import { parseMapaPdf } from "@/lib/pdfMapaImport";
 import { parseBalancetePdf, isBalancetePdf } from "@/lib/pdfBalanceteImport";
+import { parseBalanceteXlsx, isBalanceteXlsx } from "@/lib/xlsxBalanceteImport";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
