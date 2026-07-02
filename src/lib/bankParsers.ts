@@ -774,7 +774,7 @@ function parseBPI(text: string): ParsedStatement {
 // purchases/charges are positive, payments are negative, and debt balance is positive.
 function parseBPICartaoCredito(text: string): ParsedStatement {
   const lines = text.split(/\n/).map((l) => l.replace(/\s+$/g, ""));
-  const reNumGlobal = /-?\d{1,3}(?:[\s.]+\d{3})*,\d{2}/g;
+  const reNumGlobal = /(?<![A-Za-z0-9])-?\d{1,3}(?:[\s.]+\d{3})*,\d{2}(?!\d)/g;
   const parsePT = (s: string): number | null => {
     const neg = s.trim().startsWith("-");
     const clean = s.replace(/[\s.]/g, "").replace(",", ".").replace(/^-/, "");
