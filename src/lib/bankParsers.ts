@@ -765,12 +765,94 @@ function parseBPI(text: string): ParsedStatement {
   return { bank: "BPI", transactions: txs, saldoInicial, saldoFinal };
 }
 
+// ---------- BPI Cartão de Crédito parser ----------
+// Rows are "DD/MM/YYYY   DD/MM/YYYY   DESCRIÇÃO  [FX?  VALOR MOEDA?]  VALOR_EUR"
+// Sections: PAGAMENTOS (already negative), MOVIMENTOS (positive purchases),
+// COMISSÕES E ENCARGOS LEGAIS (positive charges). Sub-lines (breakdown of
+// pagamento automatico: COMISSOES/JUROS/CAPITAL) have no leading date -> skipped.
+// Sign convention flipped for TOConline: purchases & charges → negative,
+// payments received → positive. Saldo em dívida is reported as negative balance.
+function parseBPICartaoCredito(text: string): ParsedStatement {
+  const lines = text.split(/\n/).map((l) => l.replace(/\s+$/g, ""));
+  const reNumGlobal = /-?\d{1,3}(?:[\s.]\d{3})*,\d{2}/g;
+  const parsePT = (s: string): number | null => {
+    const neg = s.trim().startsWith("-");
+    const clean = s.replace(/[\s.]/g, "").replace(",", ".").replace(/^-/, "");
+    const n = parseFloat(clean);
+    return isNaN(n) ? null : neg ? -n : n;
+  };
+
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  for (const line of lines) {
+    const nums = line.match(reNumGlobal);
+    if (!nums) continue;
+    const last = parsePT(nums[nums.length - 1]);
+    if (last === null) continue;
+    if (/Saldo\s+em\s+d[ií]vida.*extracto\s+anterior/i.test(line) && saldoInicial === undefined) {
+      // reported positive as debt → represent as negative (money owed)
+      saldoInicial = -Math.abs(last);
+    }
+    if (/Saldo\s+em\s+d[ií]vida.*extracto\s+actual/i.test(line)) {
+      saldoFinal = -Math.abs(last);
+    }
+  }
+
+  // Row must start (after leading whitespace) with two DD/MM/YYYY dates.
+  const reRow = /^\s*(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2})\/(\d{2})\/(\d{4})\s+(.+)$/;
+  const skipRe = /^(TOTAL\b|CART[AÃ]O\s+\d|DATA\s+DA|DESCRI[ÇC][AÃ]O|MOEDA\b|PAGAMENTOS\b|MOVIMENTOS\b|COMISS[OÕ]ES\b|Nota:|Nos\s+termos|Entidade|Relembramos|Esta\s+altera)/i;
+
+  const txs: BankTransaction[] = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || skipRe.test(line)) continue;
+    const m = raw.match(reRow);
+    if (!m) continue;
+    const [, dTx, moTx, yTx, dMov, moMov, yMov, rest] = m;
+    const nums = rest.match(reNumGlobal);
+    if (!nums || !nums.length) continue;
+    const valorEUR = parsePT(nums[nums.length - 1]);
+    if (valorEUR === null || valorEUR === 0) continue;
+    // Description = rest with all trailing numeric/currency tokens removed
+    let desc = rest.replace(/\s+\d[\d\s.,]*(?:\s+(?:USD|BRL|GBP|EUR|CHF|JPY|CAD|AUD))?\s*$/i, "");
+    // strip repeatedly in case of multiple trailing number tokens
+    for (let i = 0; i < 3; i++) {
+      const trimmed = desc.replace(/\s+-?\d{1,3}(?:[\s.]\d{3})*,\d{2}\s*(?:USD|BRL|GBP|EUR|CHF|JPY|CAD|AUD)?\s*$/i, "");
+      if (trimmed === desc) break;
+      desc = trimmed;
+    }
+    desc = desc.replace(/\s+/g, " ").trim();
+    if (!desc) desc = valorEUR >= 0 ? "Movimento" : "Pagamento";
+
+    // Flip sign: in PDF, purchases are +, payments are -.
+    // For TOConline card statement, purchases should be - (outflow/debt),
+    // payments should be + (inflow).
+    const movimento = -valorEUR;
+
+    txs.push({
+      dataMov: makeDateOnly(Number(yMov), Number(moMov), Number(dMov)),
+      dataValor: makeDateOnly(Number(yTx), Number(moTx), Number(dTx)),
+      descricao: desc,
+      movimento,
+    });
+  }
+
+  return { bank: "BPI Cartão", transactions: txs, saldoInicial, saldoFinal };
+}
+
+const isBPICartaoCredito = (text: string): boolean =>
+  /EXTRATO\s+DO\s+CART[AÃ]O\s+DE\s+CR[EÉ]DITO\s+BPI/i.test(text) ||
+  /Conta\s+cart[aã]o\s+n[ºo]/i.test(text);
+
 export function parseBankText(text: string, bankHint?: string | null): ParsedStatement {
   const bank = bankHint || detectBank(text) || "Genérico";
   if (bank === "Millennium") return parseMillennium(text);
   if (bank === "Revolut") return parseRevolut(text);
   if (bank === "Santander") return parseSantander(text);
-  if (bank === "BPI") return parseBPI(text);
+  if (bank === "BPI") {
+    if (isBPICartaoCredito(text)) return parseBPICartaoCredito(text);
+    return parseBPI(text);
+  }
   if (bank === "Abanca") return parseAbanca(text);
   if (bank === "Novo Banco") {
     if (/Consulta\s+de\s+movimentos/i.test(text) || /\b\d{2}-\d{2}-\d{4}\b/.test(text)) {
