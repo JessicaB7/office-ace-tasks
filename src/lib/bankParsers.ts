@@ -770,8 +770,8 @@ function parseBPI(text: string): ParsedStatement {
 // Sections: PAGAMENTOS (already negative), MOVIMENTOS (positive purchases),
 // COMISSÕES E ENCARGOS LEGAIS (positive charges). Sub-lines (breakdown of
 // pagamento automatico: COMISSOES/JUROS/CAPITAL) have no leading date -> skipped.
-// Keep the statement convention so the imported balances match the PDF:
-// purchases/charges are positive, payments are negative, and debt balance is positive.
+// TOConline/import convention for credit cards is opposite to the PDF debt convention:
+// purchases/charges are negative, payments are positive, and debt balance is negative.
 function parseBPICartaoCredito(text: string): ParsedStatement {
   const lines = text.split(/\n/).map((l) => l.replace(/\s+$/g, ""));
   const reNumGlobal = /(?<![A-Za-z0-9])-?\d{1,3}(?:[\s.]+\d{3})*,\d{2}(?!\d)/g;
@@ -790,10 +790,10 @@ function parseBPICartaoCredito(text: string): ParsedStatement {
     const last = parsePT(nums[nums.length - 1]);
     if (last === null) continue;
     if (/Saldo\s+em\s+d[ií]vida.*extracto\s+anterior/i.test(line) && saldoInicial === undefined) {
-      saldoInicial = Math.abs(last);
+      saldoInicial = -Math.abs(last);
     }
     if (/Saldo\s+em\s+d[ií]vida.*extracto\s+actual/i.test(line)) {
-      saldoFinal = Math.abs(last);
+      saldoFinal = -Math.abs(last);
     }
   }
 
@@ -823,7 +823,7 @@ function parseBPICartaoCredito(text: string): ParsedStatement {
     desc = desc.replace(/\s+/g, " ").trim();
     if (!desc) desc = valorEUR >= 0 ? "Movimento" : "Pagamento";
 
-    const movimento = valorEUR;
+    const movimento = -valorEUR;
 
     txs.push({
       dataMov: makeDateOnly(Number(yMov), Number(moMov), Number(dMov)),
