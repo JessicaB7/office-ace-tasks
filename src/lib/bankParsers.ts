@@ -840,11 +840,96 @@ const isBPICartaoCredito = (text: string): boolean =>
   /EXTRATO\s+DO\s+CART[AÃ]O\s+DE\s+CR[EÉ]DITO\s+BPI/i.test(text) ||
   /Conta\s+cart[aã]o\s+n[ºo]/i.test(text);
 
+// ---------- Santander Cartão de Crédito parser ----------
+// Format: "DD/MM   DD/MM   DESCRIÇÃO   VALOR €" where VALOR is signed
+// (negative for pagamentos, positive for compras). Sub-lines like
+// "Capital", "Juros", "Comissões" after a PAGAMENTO row are breakdowns and
+// must be ignored. TOConline convention (same as BPI card): purchases are
+// negative, payments are positive, debt balance is negative.
+function parseSantanderCartaoCredito(text: string): ParsedStatement {
+  const lines = text.split(/\n/).map((l) => l.replace(/\s+$/g, ""));
+  const reNumGlobal = /-?\d{1,3}(?:[\s.]\d{3})*,\d{2}/g;
+  const parsePT = (s: string): number | null => {
+    const neg = s.trim().startsWith("-");
+    const clean = s.replace(/[\s.]/g, "").replace(",", ".").replace(/^-/, "");
+    const n = parseFloat(clean);
+    return isNaN(n) ? null : neg ? -n : n;
+  };
+
+  // Extract statement year from "Data Extrato DD/MM/YYYY"
+  let extractYear = new Date().getFullYear();
+  let extractMonth = 1;
+  const mDataExt = text.match(/Data\s+Extrato\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  if (mDataExt) {
+    extractMonth = Number(mDataExt[2]);
+    extractYear = Number(mDataExt[3]);
+  }
+  const yearFor = (m: number) => (m > extractMonth ? extractYear - 1 : extractYear);
+
+  // Balances from RESUMO DE MOVIMENTOS line:
+  // "Saldo Anterior  X,XX €  + Débitos ... - Créditos ... = Saldo em Dívida Y,YY €"
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  for (const line of lines) {
+    if (saldoInicial === undefined) {
+      const m = line.match(/Saldo\s+Anterior\s+(-?\d[\d\s.,]*)\s*€/i);
+      if (m) {
+        const v = parsePT(m[1]);
+        if (v !== null) saldoInicial = -v; // flip sign for TOConline
+      }
+    }
+    const mf = line.match(/Saldo\s+em\s+D[ií]vida\s+(-?\d[\d\s.,]*)\s*€/i);
+    if (mf) {
+      const v = parsePT(mf[1]);
+      if (v !== null) saldoFinal = -v;
+    }
+  }
+
+  const reRow = /^\s*(\d{2})\/(\d{2})\s+(\d{2})\/(\d{2})\s+(.+)$/;
+  const skipDescRe = /^(Capital|Juros(?:\s+de\s+Mora)?|Comiss[oõ]es|Impostos|Total\s+Movimentos|\*Movimentos)/i;
+
+  const txs: BankTransaction[] = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = raw.match(reRow);
+    if (!m) continue;
+    const [, dMov, moMov, dVal, moVal, rest] = m;
+    if (skipDescRe.test(rest.trim())) continue;
+    const nums = rest.match(reNumGlobal);
+    if (!nums || !nums.length) continue;
+    const valor = parsePT(nums[nums.length - 1]);
+    if (valor === null || valor === 0) continue;
+    let desc = rest.replace(/\s+-?\d{1,3}(?:[\s.]\d{3})*,\d{2}\s*€?\s*$/i, "").replace(/\s+/g, " ").trim();
+    if (!desc) desc = valor >= 0 ? "Movimento" : "Pagamento";
+
+    const yMov = yearFor(Number(moMov));
+    const yVal = yearFor(Number(moVal));
+
+    txs.push({
+      dataMov: makeDateOnly(yMov, Number(moMov), Number(dMov)),
+      dataValor: makeDateOnly(yVal, Number(moVal), Number(dVal)),
+      descricao: desc,
+      movimento: -valor, // flip: compras positivas no PDF -> negativas
+    });
+  }
+
+  return { bank: "Santander Cartão", transactions: txs, saldoInicial, saldoFinal };
+}
+
+const isSantanderCartaoCredito = (text: string): boolean =>
+  /SANTANDER\s+BUSINESS/i.test(text) &&
+  /DETALHE\s+DE\s+MOVIMENTOS/i.test(text) &&
+  /Saldo\s+em\s+D[ií]vida/i.test(text);
+
 export function parseBankText(text: string, bankHint?: string | null): ParsedStatement {
   const bank = bankHint || detectBank(text) || "Genérico";
   if (bank === "Millennium") return parseMillennium(text);
   if (bank === "Revolut") return parseRevolut(text);
-  if (bank === "Santander") return parseSantander(text);
+  if (bank === "Santander") {
+    if (isSantanderCartaoCredito(text)) return parseSantanderCartaoCredito(text);
+    return parseSantander(text);
+  }
   if (bank === "BPI") {
     if (isBPICartaoCredito(text)) return parseBPICartaoCredito(text);
     return parseBPI(text);
