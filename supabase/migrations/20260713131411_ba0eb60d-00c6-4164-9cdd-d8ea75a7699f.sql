@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Admin can modify clients" ON public.clients; CREATE POLICY "Authenticated can insert clients" ON public.clients FOR INSERT TO authenticated WITH CHECK (true);
