@@ -108,6 +108,12 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="text-sm rounded-lg border bg-card px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring">
+          <option value="all">Todos os estados</option>
+          <option value="ativo">Ativos</option>
+          <option value="a_sair">A sair</option>
+          <option value="inativo">Inativos</option>
+        </select>
       </div>
 
       {isLoading ? (
