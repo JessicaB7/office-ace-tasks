@@ -40,7 +40,7 @@ const CollaboratorListView = () => {
   };
 
   const getClientCountsByType = (collabId: string) => {
-    const collabClients = clients.filter(c => c.responsavel_id === collabId && c.active);
+    const collabClients = clients.filter(c => c.responsavel_id === collabId && (c as any).status === "ativo");
     const byType: Record<string, number> = {};
     let totalMensalidade = 0;
     for (const c of collabClients) {
@@ -49,6 +49,12 @@ const CollaboratorListView = () => {
       if (c.mensalidade) totalMensalidade += Number(c.mensalidade);
     }
     return { total: collabClients.length, byType, totalMensalidade };
+  };
+
+  const getLeavingClients = (collabId: string) => {
+    return clients
+      .filter(c => c.responsavel_id === collabId && (c as any).status === "a sair")
+      .sort((a, b) => a.name.localeCompare(b.name));
   };
 
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
