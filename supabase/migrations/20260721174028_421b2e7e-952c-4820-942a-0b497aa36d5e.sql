@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Authenticated can insert clients" ON public.clients;
+CREATE POLICY "Authenticated can insert clients" ON public.clients FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
