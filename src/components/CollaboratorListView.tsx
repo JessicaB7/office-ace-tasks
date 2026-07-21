@@ -164,6 +164,32 @@ const CollaboratorListView = () => {
                   </div>
                 )}
 
+                {leaving.length > 0 && (
+                  <div className="mb-3 p-2.5 rounded-lg border border-orange-200 dark:border-orange-900/40 bg-orange-50/50 dark:bg-orange-950/20">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-xs font-medium text-orange-700 dark:text-orange-300">
+                        {leaving.length} a sair
+                      </p>
+                      {leavingTotal > 0 && (
+                        <p className="text-xs font-semibold text-orange-700 dark:text-orange-300">
+                          {leavingTotal.toFixed(2).replace(".", ",")} €
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-0.5">
+                      {leaving.map((c) => (
+                        <div key={c.id} className="flex items-center justify-between text-[11px]">
+                          <span className="truncate">{c.name}</span>
+                          <span className="font-medium shrink-0 ml-2">
+                            {c.mensalidade ? `${Number(c.mensalidade).toFixed(2).replace(".", ",")} €` : "—"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+
                 <div className="flex items-center gap-4 text-xs">
                   <div className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-warning" />
