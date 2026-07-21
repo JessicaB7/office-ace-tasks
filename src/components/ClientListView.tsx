@@ -32,6 +32,23 @@ const tipoContabColor = (tipo: string) => {
   }
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  ativo: "Ativo",
+  a_sair: "A sair",
+  inativo: "Inativo",
+};
+
+const statusColor = (status: string) => {
+  switch (status) {
+    case "ativo": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300";
+    case "a_sair": return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
+    case "inativo": return "bg-muted text-muted-foreground";
+    default: return "bg-muted text-muted-foreground";
+  }
+};
+
+const clientStatus = (c: any): string => c.status || (c.active === false ? "inativo" : "ativo");
+
 const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => void }) => {
   const { data: clients = [], isLoading } = useClients();
   const { data: collaborators = [] } = useCollaborators();
