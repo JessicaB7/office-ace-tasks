@@ -302,6 +302,12 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                   <label className="text-sm font-medium mb-1 block">Início de Contrato</label>
                   <input type="date" value={form.inicio_contrato} onChange={(e) => set("inicio_contrato", e.target.value)} className={inputClass} />
                 </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium mb-1 block">Estado</label>
+                  <select value={form.status} onChange={(e) => set("status", e.target.value)} className={inputClass}>
+                    {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
               </div>
             </TabsContent>
 
