@@ -200,6 +200,8 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         faturacao_frequencia: form.faturacao === "Emitir" ? (form.faturacao_frequencia || null) : null,
         salarios: form.salarios || null,
         responsavel_id: form.responsavel_id || null,
+        status: form.status || "ativo",
+        active: form.status !== "inativo",
       };
       if (isEditing) payload.id = client.id;
       await upsert.mutateAsync(payload);
