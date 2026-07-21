@@ -40,7 +40,7 @@ const CollaboratorListView = () => {
   };
 
   const getClientCountsByType = (collabId: string) => {
-    const collabClients = clients.filter(c => c.responsavel_id === collabId && c.active);
+    const collabClients = clients.filter(c => c.responsavel_id === collabId && (c as any).status === "ativo");
     const byType: Record<string, number> = {};
     let totalMensalidade = 0;
     for (const c of collabClients) {
@@ -49,6 +49,12 @@ const CollaboratorListView = () => {
       if (c.mensalidade) totalMensalidade += Number(c.mensalidade);
     }
     return { total: collabClients.length, byType, totalMensalidade };
+  };
+
+  const getLeavingClients = (collabId: string) => {
+    return clients
+      .filter(c => c.responsavel_id === collabId && (c as any).status === "a sair")
+      .sort((a, b) => a.name.localeCompare(b.name));
   };
 
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
@@ -116,6 +122,8 @@ const CollaboratorListView = () => {
           {filtered.map((collab, i) => {
             const counts = getTaskCounts(collab.id);
             const clientCounts = getClientCountsByType(collab.id);
+            const leaving = getLeavingClients(collab.id);
+            const leavingTotal = leaving.reduce((s, c) => s + (Number(c.mensalidade) || 0), 0);
             return (
               <div key={collab.id} onClick={() => handleCardClick(collab)} className="bg-card rounded-xl border p-5 cursor-pointer hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
                 <div className="flex items-start gap-3 mb-4">
@@ -155,6 +163,32 @@ const CollaboratorListView = () => {
                     </div>
                   </div>
                 )}
+
+                {leaving.length > 0 && (
+                  <div className="mb-3 p-2.5 rounded-lg border border-orange-200 dark:border-orange-900/40 bg-orange-50/50 dark:bg-orange-950/20">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-xs font-medium text-orange-700 dark:text-orange-300">
+                        {leaving.length} a sair
+                      </p>
+                      {leavingTotal > 0 && (
+                        <p className="text-xs font-semibold text-orange-700 dark:text-orange-300">
+                          {leavingTotal.toFixed(2).replace(".", ",")} €
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-0.5">
+                      {leaving.map((c) => (
+                        <div key={c.id} className="flex items-center justify-between text-[11px]">
+                          <span className="truncate">{c.name}</span>
+                          <span className="font-medium shrink-0 ml-2">
+                            {c.mensalidade ? `${Number(c.mensalidade).toFixed(2).replace(".", ",")} €` : "—"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
 
                 <div className="flex items-center gap-4 text-xs">
                   <div className="flex items-center gap-1">
