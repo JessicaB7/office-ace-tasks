@@ -32,6 +32,23 @@ const tipoContabColor = (tipo: string) => {
   }
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  ativo: "Ativo",
+  a_sair: "A sair",
+  inativo: "Inativo",
+};
+
+const statusColor = (status: string) => {
+  switch (status) {
+    case "ativo": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300";
+    case "a_sair": return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
+    case "inativo": return "bg-muted text-muted-foreground";
+    default: return "bg-muted text-muted-foreground";
+  }
+};
+
+const clientStatus = (c: any): string => c.status || (c.active === false ? "inativo" : "ativo");
+
 const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => void }) => {
   const { data: clients = [], isLoading } = useClients();
   const { data: collaborators = [] } = useCollaborators();
@@ -39,6 +56,7 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
   const [filterTipo, setFilterTipo] = useState<string>("all");
   const [filterIva, setFilterIva] = useState<string>("all");
   const [filterResponsavel, setFilterResponsavel] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("ativo");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
 
@@ -48,14 +66,15 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
     if (filterResponsavel !== "all") {
       if (filterResponsavel === "none" ? !!c.responsavel_id : c.responsavel_id !== filterResponsavel) return false;
     }
+    if (filterStatus !== "all" && clientStatus(c) !== filterStatus) return false;
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !(c.nif || "").includes(search)) return false;
-    return c.active;
+    return true;
   });
 
   const openNew = () => { setSelectedClient(null); setDialogOpen(true); };
   const openEdit = (c: any) => { setSelectedClient(c); setDialogOpen(true); };
 
-  const activeClients = clients.filter((c: any) => c.active);
+  const activeClients = clients.filter((c: any) => clientStatus(c) === "ativo");
 
   return (
     <div className="space-y-5">
@@ -89,6 +108,12 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="text-sm rounded-lg border bg-card px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring">
+          <option value="all">Todos os estados</option>
+          <option value="ativo">Ativos</option>
+          <option value="a_sair">A sair</option>
+          <option value="inativo">Inativos</option>
+        </select>
       </div>
 
       {isLoading ? (
@@ -108,9 +133,14 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
                       {client.nif && <p className="text-xs text-muted-foreground">NIF: {client.nif}</p>}
                     </div>
                   </div>
-                  <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", tipoContabColor(client.tipo_contabilidade))}>
-                    {TIPO_CONTAB_LABELS[client.tipo_contabilidade] || client.tipo_contabilidade || "—"}
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", tipoContabColor(client.tipo_contabilidade))}>
+                      {TIPO_CONTAB_LABELS[client.tipo_contabilidade] || client.tipo_contabilidade || "—"}
+                    </span>
+                    <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full", statusColor(clientStatus(client)))}>
+                      {STATUS_LABELS[clientStatus(client)]}
+                    </span>
+                  </div>
                 </div>
               </div>
               {onOpenAnalysis && (

@@ -101,6 +101,7 @@ interface ClientForm {
   faturacao_frequencia: string;
   salarios: string;
   responsavel_id: string;
+  status: string;
 }
 
 const emptyForm: ClientForm = {
@@ -109,8 +110,14 @@ const emptyForm: ClientForm = {
   saft: "", via_ctt: "", mensalidade: "", inicio_contrato: "",
   tipo_contabilidade: "SQ", seguranca_social: "", pag_seguranca_social: "",
   iva: "", iva_oss: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "",
-  salarios: "", responsavel_id: "",
+  salarios: "", responsavel_id: "", status: "ativo",
 };
+
+const STATUS_OPTIONS = [
+  { value: "ativo", label: "Ativo" },
+  { value: "a_sair", label: "A sair" },
+  { value: "inativo", label: "Inativo" },
+];
 
 interface ClientDetailDialogProps {
   client: any | null;
@@ -155,6 +162,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         faturacao_frequencia: client.faturacao_frequencia || "",
         salarios: client.salarios || "",
         responsavel_id: client.responsavel_id || "",
+        status: client.status || (client.active === false ? "inativo" : "ativo"),
       });
     } else {
       setForm(emptyForm);
@@ -192,6 +200,8 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         faturacao_frequencia: form.faturacao === "Emitir" ? (form.faturacao_frequencia || null) : null,
         salarios: form.salarios || null,
         responsavel_id: form.responsavel_id || null,
+        status: form.status || "ativo",
+        active: form.status !== "inativo",
       };
       if (isEditing) payload.id = client.id;
       await upsert.mutateAsync(payload);
@@ -291,6 +301,12 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                 <div>
                   <label className="text-sm font-medium mb-1 block">Início de Contrato</label>
                   <input type="date" value={form.inicio_contrato} onChange={(e) => set("inicio_contrato", e.target.value)} className={inputClass} />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium mb-1 block">Estado</label>
+                  <select value={form.status} onChange={(e) => set("status", e.target.value)} className={inputClass}>
+                    {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
                 </div>
               </div>
             </TabsContent>
