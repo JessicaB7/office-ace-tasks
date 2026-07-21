@@ -162,7 +162,6 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         faturacao_frequencia: client.faturacao_frequencia || "",
         salarios: client.salarios || "",
         responsavel_id: client.responsavel_id || "",
-        responsavel_id: client.responsavel_id || "",
         status: client.status || (client.active === false ? "inativo" : "ativo"),
       });
     } else {
