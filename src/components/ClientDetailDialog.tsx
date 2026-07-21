@@ -101,6 +101,7 @@ interface ClientForm {
   faturacao_frequencia: string;
   salarios: string;
   responsavel_id: string;
+  status: string;
 }
 
 const emptyForm: ClientForm = {
@@ -109,8 +110,14 @@ const emptyForm: ClientForm = {
   saft: "", via_ctt: "", mensalidade: "", inicio_contrato: "",
   tipo_contabilidade: "SQ", seguranca_social: "", pag_seguranca_social: "",
   iva: "", iva_oss: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "",
-  salarios: "", responsavel_id: "",
+  salarios: "", responsavel_id: "", status: "ativo",
 };
+
+const STATUS_OPTIONS = [
+  { value: "ativo", label: "Ativo" },
+  { value: "a_sair", label: "A sair" },
+  { value: "inativo", label: "Inativo" },
+];
 
 interface ClientDetailDialogProps {
   client: any | null;
