@@ -56,6 +56,7 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
   const [filterTipo, setFilterTipo] = useState<string>("all");
   const [filterIva, setFilterIva] = useState<string>("all");
   const [filterResponsavel, setFilterResponsavel] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("ativo");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
 
@@ -65,14 +66,15 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
     if (filterResponsavel !== "all") {
       if (filterResponsavel === "none" ? !!c.responsavel_id : c.responsavel_id !== filterResponsavel) return false;
     }
+    if (filterStatus !== "all" && clientStatus(c) !== filterStatus) return false;
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !(c.nif || "").includes(search)) return false;
-    return c.active;
+    return true;
   });
 
   const openNew = () => { setSelectedClient(null); setDialogOpen(true); };
   const openEdit = (c: any) => { setSelectedClient(c); setDialogOpen(true); };
 
-  const activeClients = clients.filter((c: any) => c.active);
+  const activeClients = clients.filter((c: any) => clientStatus(c) === "ativo");
 
   return (
     <div className="space-y-5">
