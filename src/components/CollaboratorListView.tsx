@@ -53,7 +53,7 @@ const CollaboratorListView = () => {
 
   const getLeavingClients = (collabId: string) => {
     return clients
-      .filter(c => c.responsavel_id === collabId && (c as any).status === "a sair")
+      .filter(c => c.responsavel_id === collabId && (c as any).status === "a_sair")
       .sort((a, b) => a.name.localeCompare(b.name));
   };
 
