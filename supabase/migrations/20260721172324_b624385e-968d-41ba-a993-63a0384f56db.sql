@@ -1,0 +1,2 @@
+ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo','a_sair','inativo'));
+UPDATE public.clients SET status = CASE WHEN active THEN 'ativo' ELSE 'inativo' END;
