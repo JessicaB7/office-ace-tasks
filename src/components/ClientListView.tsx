@@ -133,9 +133,14 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
                       {client.nif && <p className="text-xs text-muted-foreground">NIF: {client.nif}</p>}
                     </div>
                   </div>
-                  <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", tipoContabColor(client.tipo_contabilidade))}>
-                    {TIPO_CONTAB_LABELS[client.tipo_contabilidade] || client.tipo_contabilidade || "—"}
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full", tipoContabColor(client.tipo_contabilidade))}>
+                      {TIPO_CONTAB_LABELS[client.tipo_contabilidade] || client.tipo_contabilidade || "—"}
+                    </span>
+                    <span className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full", statusColor(clientStatus(client)))}>
+                      {STATUS_LABELS[clientStatus(client)]}
+                    </span>
+                  </div>
                 </div>
               </div>
               {onOpenAnalysis && (
