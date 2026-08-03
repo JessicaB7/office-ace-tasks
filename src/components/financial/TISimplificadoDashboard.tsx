@@ -369,6 +369,8 @@ export default function TISimplificadoDashboard({
           ))}
         </div>
       </div>
+      </>
+      )}
 
       {(exporting || tab === "impostos") && (
       <>
