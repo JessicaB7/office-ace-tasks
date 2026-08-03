@@ -1020,6 +1020,8 @@ export function parseBankText(text: string, bankHint?: string | null): ParsedSta
     return parseBPI(text);
   }
   if (bank === "Abanca") return parseAbanca(text);
+  if (bank === "ActivoBank") return parseActivoBank(text);
+
   if (bank === "Novo Banco") {
     if (/Consulta\s+de\s+movimentos/i.test(text) || /\b\d{2}-\d{2}-\d{4}\b/.test(text)) {
       const r = parseNovoBancoConsulta(text);
