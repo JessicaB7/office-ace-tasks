@@ -182,13 +182,14 @@ export default function TISimplificadoDashboard({
     Number(settings?.ss_q3 ?? 0),
     Number(settings?.ss_q4 ?? 0),
   ];
-  const [ssInputs, setSsInputs] = useState<number[]>(ssQuarters);
+  // O utilizador introduz o valor MENSAL; guardamos o valor do trimestre (mensal × 3).
+  const [ssInputs, setSsInputs] = useState<number[]>(ssQuarters.map((v) => v / 3));
   useEffect(() => {
     setSsInputs([
-      Number(settings?.ss_q1 ?? 0),
-      Number(settings?.ss_q2 ?? 0),
-      Number(settings?.ss_q3 ?? 0),
-      Number(settings?.ss_q4 ?? 0),
+      Number(settings?.ss_q1 ?? 0) / 3,
+      Number(settings?.ss_q2 ?? 0) / 3,
+      Number(settings?.ss_q3 ?? 0) / 3,
+      Number(settings?.ss_q4 ?? 0) / 3,
     ]);
   }, [settings?.ss_q1, settings?.ss_q2, settings?.ss_q3, settings?.ss_q4]);
 
@@ -388,7 +389,7 @@ export default function TISimplificadoDashboard({
 
         <div className="flex items-start justify-between gap-2 flex-wrap mb-3">
           <div>
-            <h4 className="font-semibold text-sm">Segurança Social por trimestre</h4>
+            <h4 className="font-semibold text-sm">Segurança Social por trimestre <span className="font-normal text-muted-foreground">(valor mensal × 3)</span></h4>
           </div>
           <div className="flex items-center gap-4">
             {!exporting && (
@@ -425,13 +426,17 @@ export default function TISimplificadoDashboard({
                     setSsInputs(next);
                   }}
                   onBlur={() => {
-                    if (ssInputs[i] !== ssQuarters[i]) {
-                      upsertSettings.mutate({ [`ss_q${i + 1}`]: Number(ssInputs[i]) || 0 } as any);
+                    const quarter = (Number(ssInputs[i]) || 0) * 3;
+                    if (quarter !== ssQuarters[i]) {
+                      upsertSettings.mutate({ [`ss_q${i + 1}`]: quarter } as any);
                     }
                   }}
                   className="w-full text-right font-bold tabular-nums text-primary py-1 px-2 rounded border bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
-                <span className="text-xs text-muted-foreground">€</span>
+                <span className="text-xs text-muted-foreground">€/mês</span>
+              </div>
+              <div className="text-[11px] text-muted-foreground text-right">
+                Trimestre: <span className="font-semibold tabular-nums text-foreground">{fmtEur(val)}</span>
               </div>
             </div>
           ))}
