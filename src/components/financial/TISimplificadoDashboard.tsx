@@ -389,7 +389,7 @@ export default function TISimplificadoDashboard({
 
         <div className="flex items-start justify-between gap-2 flex-wrap mb-3">
           <div>
-            <h4 className="font-semibold text-sm">Segurança Social por trimestre</h4>
+            <h4 className="font-semibold text-sm">Segurança Social por trimestre <span className="font-normal text-muted-foreground">(valor mensal × 3)</span></h4>
           </div>
           <div className="flex items-center gap-4">
             {!exporting && (
