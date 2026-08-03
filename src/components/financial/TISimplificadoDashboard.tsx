@@ -182,13 +182,14 @@ export default function TISimplificadoDashboard({
     Number(settings?.ss_q3 ?? 0),
     Number(settings?.ss_q4 ?? 0),
   ];
-  const [ssInputs, setSsInputs] = useState<number[]>(ssQuarters);
+  // O utilizador introduz o valor MENSAL; guardamos o valor do trimestre (mensal × 3).
+  const [ssInputs, setSsInputs] = useState<number[]>(ssQuarters.map((v) => v / 3));
   useEffect(() => {
     setSsInputs([
-      Number(settings?.ss_q1 ?? 0),
-      Number(settings?.ss_q2 ?? 0),
-      Number(settings?.ss_q3 ?? 0),
-      Number(settings?.ss_q4 ?? 0),
+      Number(settings?.ss_q1 ?? 0) / 3,
+      Number(settings?.ss_q2 ?? 0) / 3,
+      Number(settings?.ss_q3 ?? 0) / 3,
+      Number(settings?.ss_q4 ?? 0) / 3,
     ]);
   }, [settings?.ss_q1, settings?.ss_q2, settings?.ss_q3, settings?.ss_q4]);
 
