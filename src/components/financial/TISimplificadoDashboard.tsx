@@ -426,13 +426,17 @@ export default function TISimplificadoDashboard({
                     setSsInputs(next);
                   }}
                   onBlur={() => {
-                    if (ssInputs[i] !== ssQuarters[i]) {
-                      upsertSettings.mutate({ [`ss_q${i + 1}`]: Number(ssInputs[i]) || 0 } as any);
+                    const quarter = (Number(ssInputs[i]) || 0) * 3;
+                    if (quarter !== ssQuarters[i]) {
+                      upsertSettings.mutate({ [`ss_q${i + 1}`]: quarter } as any);
                     }
                   }}
                   className="w-full text-right font-bold tabular-nums text-primary py-1 px-2 rounded border bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
-                <span className="text-xs text-muted-foreground">€</span>
+                <span className="text-xs text-muted-foreground">€/mês</span>
+              </div>
+              <div className="text-[11px] text-muted-foreground text-right">
+                Trimestre: <span className="font-semibold tabular-nums text-foreground">{fmtEur(val)}</span>
               </div>
             </div>
           ))}
