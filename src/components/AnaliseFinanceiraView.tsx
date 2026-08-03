@@ -111,9 +111,20 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
             ))}
           </select>
 
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="py-2 px-3 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">Todos os estados</option>
+            <option value="ativo">Ativo</option>
+            <option value="a_sair">A sair</option>
+            <option value="inativo">Inativo</option>
+          </select>
+
           {activeFilters > 0 && (
             <button
-              onClick={() => { setIvaFilter(""); setRespFilter(""); }}
+              onClick={() => { setIvaFilter(""); setRespFilter(""); setStatusFilter(""); }}
               className="flex items-center gap-1 px-3 py-2 rounded-lg border bg-card text-sm hover:bg-muted transition-colors"
               title="Limpar filtros"
             >
