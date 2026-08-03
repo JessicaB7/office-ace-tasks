@@ -5,7 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
   useClientFinancialEntries,
@@ -285,17 +284,9 @@ export default function TISimplificadoDashboard({
     }
   };
 
-  const [tab, setTab] = useState<"atividade" | "impostos">("atividade");
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as "atividade" | "impostos")}>
-          <TabsList>
-            <TabsTrigger value="atividade">Atividade</TabsTrigger>
-            <TabsTrigger value="impostos">Impostos</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="flex items-center justify-end gap-3 flex-wrap">
         <Button onClick={exportPDF} disabled={exporting} size="sm" variant="outline">
           <Download className="h-4 w-4 mr-2" />
           {exporting ? "A exportar..." : "Exportar PDF"}
@@ -314,8 +305,6 @@ export default function TISimplificadoDashboard({
           Análise TI Simplificado · {year}
         </div>
       </div>
-      {(exporting || tab === "atividade") && (
-      <>
       <div className="col-span-12 grid grid-cols-3 gap-3 auto-rows-fr">
         {kpis.map((k) => (
 
@@ -378,11 +367,13 @@ export default function TISimplificadoDashboard({
           ))}
         </div>
       </div>
-      </>
-      )}
 
-      {(exporting || tab === "impostos") && (
-      <>
+      <div className="col-span-12 flex items-center gap-3 py-2">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Impostos</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
       <div className="col-span-6 rounded-xl border bg-card p-4 h-full flex flex-col">
 
         <h4 className="font-semibold text-sm mb-3">IVA por trimestre</h4>
@@ -533,9 +524,7 @@ export default function TISimplificadoDashboard({
           </div>
         </div>
       </div>
-      </>
-      )}
-      </div>
+    </div>
     </div>
   );
 
