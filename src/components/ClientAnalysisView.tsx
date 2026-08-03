@@ -1,7 +1,15 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Upload, Building2 } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Upload, Building2, Trash2, FileText } from "lucide-react";
 import { useClients } from "@/hooks/useSupabaseQuery";
-import { useBulkUpsertEntries, useFinancialAccounts, useLastImportDate } from "@/hooks/useClientFinancials";
+import {
+  useFinancialAccounts,
+  useLastImportDate,
+  useFinancialImports,
+  useSaveFinancialImport,
+  useDeleteFinancialImport,
+  IMPORT_SLOTS,
+  type ImportSlot,
+} from "@/hooks/useClientFinancials";
 import AnaliseMensalTab from "./financial/AnaliseMensalTab";
 import MapaExploracaoTab from "./financial/MapaExploracaoTab";
 import IvaTab from "./financial/IvaTab";
@@ -30,12 +38,15 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const [year, setYear] = useState(new Date().getFullYear());
   const [tab, setTab] = useState<Tab>("analise");
   const { data: accounts = [] } = useFinancialAccounts();
-  const bulk = useBulkUpsertEntries(clientId, year);
   const { data: lastImport } = useLastImportDate(clientId, year);
+  const { data: imports = [] } = useFinancialImports(clientId, year);
+  const saveImport = useSaveFinancialImport(clientId, year);
+  const deleteImport = useDeleteFinancialImport(clientId, year);
   const fileRef = useRef<HTMLInputElement>(null);
+  const pendingSlot = useRef<ImportSlot>("mapa");
   const [fichaOpen, setFichaOpen] = useState(false);
 
-  const handleImport = async (file: File) => {
+  const handleImport = async (file: File, slot: ImportSlot) => {
     try {
       const codes = new Set(accounts.map((a) => a.code));
       let entries: { month: number; account_code: string; value: number }[] = [];
@@ -105,7 +116,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         toast.error("Não foram encontradas linhas com códigos de conta reconhecidos.");
         return;
       }
-      await bulk.mutateAsync(entries);
+      await saveImport.mutateAsync({ slot, fileName: file.name, entries });
       toast.success(`Importação concluída: ${entries.length} valores carregados.`);
     } catch (e: any) {
       toast.error("Erro a importar: " + e.message);
@@ -158,11 +169,56 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
             <button onClick={() => setYear(year + 1)} className="p-1 rounded hover:bg-muted"><ChevronRight className="w-4 h-4" /></button>
           </div>
           <input ref={fileRef} type="file" accept=".xlsx,.xls,.pdf,application/pdf" className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImport(f); e.target.value = ""; }} />
-          <button onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-card hover:bg-muted text-sm transition-colors">
-            <Upload className="w-4 h-4" /> Importar Excel / PDF
-          </button>
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImport(f, pendingSlot.current); e.target.value = ""; }} />
+        </div>
+      </div>
+
+      <div className="rounded-xl border bg-card p-4">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h3 className="text-sm font-semibold">Ficheiros importados {year}</h3>
+          <p className="text-xs text-muted-foreground">Cada balancete trimestral substitui os meses do respetivo trimestre.</p>
+        </div>
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+          {IMPORT_SLOTS.map((s) => {
+            const imp = imports.find((i) => i.slot === s.slot);
+            return (
+              <div key={s.slot} className="flex items-center gap-3 rounded-lg border bg-background px-3 py-2">
+                <FileText className={cn("w-4 h-4 shrink-0", imp ? "text-primary" : "text-muted-foreground/50")} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{s.label}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {imp
+                      ? `${imp.file_name} · ${new Date(imp.updated_at).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" })}`
+                      : "Sem ficheiro"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => { pendingSlot.current = s.slot; fileRef.current?.click(); }}
+                  className="p-2 rounded-lg hover:bg-muted transition-colors"
+                  title={imp ? "Substituir ficheiro" : "Importar ficheiro"}
+                >
+                  <Upload className="w-4 h-4" />
+                </button>
+                {imp && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm(`Eliminar "${imp.file_name}"? Os valores deste ficheiro serão removidos.`)) return;
+                      try {
+                        await deleteImport.mutateAsync(s.slot);
+                        toast.success("Ficheiro eliminado.");
+                      } catch (e: any) {
+                        toast.error("Erro a eliminar: " + e.message);
+                      }
+                    }}
+                    className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                    title="Eliminar ficheiro importado"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
