@@ -149,6 +149,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-32">NIF</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-32">IVA</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-40">Responsável</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Estado</th>
                 <th className="w-10"></th>
               </tr>
             </thead>
