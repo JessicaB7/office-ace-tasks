@@ -52,6 +52,50 @@ export type Database = {
           },
         ]
       }
+      client_financial_imports: {
+        Row: {
+          client_id: string
+          created_at: string
+          entries: Json
+          file_name: string
+          id: string
+          imported_by: string | null
+          slot: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          entries?: Json
+          file_name: string
+          id?: string
+          imported_by?: string | null
+          slot: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          entries?: Json
+          file_name?: string
+          id?: string
+          imported_by?: string | null
+          slot?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_financial_imports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_financial_settings: {
         Row: {
           client_id: string
