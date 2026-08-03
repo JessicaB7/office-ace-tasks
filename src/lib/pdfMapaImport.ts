@@ -23,10 +23,21 @@ const ptNumber = (s: string): number | null => {
 
 export interface ImportedEntry { month: number; account_code: string; value: number; }
 
-export async function parseMapaPdf(file: File, knownCodes: Set<string>): Promise<ImportedEntry[]> {
+export interface MapaParseResult { entries: ImportedEntry[]; nif: string | null; }
+
+const findNif = (text: string): string | null => {
+  const labelled = text.match(/(?:NIF|N\.?\s*I\.?\s*F\.?|NIPC|Contribuinte)[^0-9]{0,15}(\d[\d\s.]{7,12}\d)/i);
+  const raw = labelled?.[1] ?? text.match(/\b([125-9]\d{8})\b/)?.[1] ?? null;
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  return digits.length === 9 ? digits : null;
+};
+
+export async function parseMapaPdf(file: File, knownCodes: Set<string>): Promise<MapaParseResult> {
   const buf = await file.arrayBuffer();
   const pdf = await (pdfjsLib as any).getDocument({ data: buf }).promise;
   const entries: ImportedEntry[] = [];
+  let nif: string | null = null;
   // dedupe by code+month — keep first (signed) value found per cell
   const seen = new Set<string>();
 
@@ -39,6 +50,8 @@ export async function parseMapaPdf(file: File, knownCodes: Set<string>): Promise
       x: it.transform[4],
       y: Math.round(it.transform[5]),
     })).filter((it: Item) => it.str.trim().length > 0);
+
+    if (!nif) nif = findNif(items.map((it) => it.str).join(" "));
 
     // Group by Y row (tolerance 2px)
     const rows = new Map<number, Item[]>();
@@ -82,5 +95,5 @@ export async function parseMapaPdf(file: File, knownCodes: Set<string>): Promise
     }
   }
 
-  return entries;
+  return { entries, nif };
 }
