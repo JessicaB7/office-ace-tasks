@@ -970,24 +970,36 @@ function parseActivoBank(text: string): ParsedStatement {
     const m = line.match(reRow);
     if (!m) continue;
     const [, moMov, dMov, moVal, dVal, rest] = m;
-    const nums = rest.match(reNum);
-    if (!nums || nums.length < 2) continue;
+    const matches = [...rest.matchAll(reNum)];
+    if (matches.length < 2) continue;
 
-    const novoSaldo = amt(nums[nums.length - 1]);
-    const valor = amt(nums[nums.length - 2]);
-    if (novoSaldo === null || valor === null || valor === 0) continue;
+    const last = matches[matches.length - 1];
+    const novoSaldo = amt(last[0]);
+    if (novoSaldo === null) continue;
 
-    let movimento = valor;
+    // O montante exato é a variação do saldo (as colunas débito/crédito são ambíguas em texto).
+    let movimento: number;
     if (saldo !== null) {
-      const delta = novoSaldo - saldo;
-      movimento = Math.abs(delta - valor) < Math.abs(delta + valor) ? valor : -valor;
+      movimento = Math.round((novoSaldo - saldo) * 100) / 100;
+    } else {
+      const v = amt(matches[matches.length - 2][0]);
+      if (v === null) continue;
+      movimento = v;
     }
     saldo = novoSaldo;
+    if (movimento === 0) continue;
 
-    let desc = rest;
-    for (const n of nums.slice(-2)) desc = desc.replace(n, " ");
-    desc = desc.replace(/\s+/g, " ").trim();
+    // Descrição: corta a partir do montante correspondente ao movimento (ou do saldo).
+    let cut = last.index ?? rest.length;
+    for (let i = matches.length - 2; i >= 0; i--) {
+      if (Math.abs((amt(matches[i][0]) ?? 0) - Math.abs(movimento)) < 0.005) {
+        cut = matches[i].index ?? cut;
+        break;
+      }
+    }
+    let desc = rest.slice(0, cut).replace(/\s+/g, " ").trim();
     if (!desc) desc = movimento >= 0 ? "Movimento" : "Pagamento";
+
 
     txs.push({
       dataMov: makeDateOnly(yearFor(Number(moMov)), Number(moMov), Number(dMov)),
