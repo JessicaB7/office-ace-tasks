@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 export type FinancialAccount = {
   code: string;
   name: string;
-  section: "vendas" | "pessoal" | "despesas" | "compras" | "iva_vendas" | "iva_compras";
+  section: "vendas" | "pessoal" | "pessoal_socios" | "pessoal_colab" | "despesas" | "compras" | "iva_vendas" | "iva_compras" | "impostos";
   display_order: number;
 };
 
