@@ -187,7 +187,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
       <div className="rounded-xl border bg-card p-4">
         <div className="flex items-center justify-between gap-3 mb-3">
           <h3 className="text-sm font-semibold">Ficheiros importados {year}</h3>
-          <p className="text-xs text-muted-foreground">Cada balancete trimestral substitui os meses do respetivo trimestre.</p>
+          <p className="text-xs text-muted-foreground">Mapa de Exploração: faturação, despesas e lucro. Balancetes: IVA, Segurança Social e retenção na fonte.</p>
         </div>
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {IMPORT_SLOTS.map((s) => {
