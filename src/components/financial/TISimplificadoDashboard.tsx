@@ -370,6 +370,8 @@ export default function TISimplificadoDashboard({
         </div>
       </div>
 
+      {(exporting || tab === "impostos") && (
+      <>
       <div className="col-span-6 rounded-xl border bg-card p-4 h-full flex flex-col">
 
         <h4 className="font-semibold text-sm mb-3">IVA por trimestre</h4>
