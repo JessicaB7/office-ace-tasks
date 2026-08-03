@@ -922,7 +922,7 @@ function parseSantanderCartaoCredito(text: string): ParsedStatement {
 // O montante pode ser débito ou crédito; o sinal é deduzido pela variação do saldo.
 function parseActivoBank(text: string): ParsedStatement {
   const lines = text.split(/\r?\n/);
-  const reNum = /(?:\d{1,3}(?:[  ]\d{3})+|\d+)[.,]\d{2}/g;
+  const reNum = /(?<![\d.,/-])(?:\d{1,3}(?:[  ]\d{3})+|\d+)[.,]\d{2}/g;
   const amt = (s: string): number | null => {
     const v = Number(s.replace(/[\s ]/g, "").replace(",", "."));
     return Number.isFinite(v) ? v : null;
