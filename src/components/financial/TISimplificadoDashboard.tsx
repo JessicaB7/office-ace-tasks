@@ -305,7 +305,6 @@ export default function TISimplificadoDashboard({
           Análise TI Simplificado · {year}
         </div>
       </div>
-      <>
       <div className="col-span-12 grid grid-cols-3 gap-3 auto-rows-fr">
         {kpis.map((k) => (
 
@@ -375,7 +374,6 @@ export default function TISimplificadoDashboard({
         <div className="h-px flex-1 bg-border" />
       </div>
 
-      <>
       <div className="col-span-6 rounded-xl border bg-card p-4 h-full flex flex-col">
 
         <h4 className="font-semibold text-sm mb-3">IVA por trimestre</h4>
@@ -526,8 +524,6 @@ export default function TISimplificadoDashboard({
           </div>
         </div>
       </div>
-      </>
-      </>
     </div>
   );
 
