@@ -520,6 +520,8 @@ export default function TISimplificadoDashboard({
           </div>
         </div>
       </div>
+      </>
+      )}
       </div>
     </div>
   );
