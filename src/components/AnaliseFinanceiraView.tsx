@@ -31,6 +31,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
   const [fichaClient, setFichaClient] = useState<any | null>(null);
   const [ivaFilter, setIvaFilter] = useState("");
   const [respFilter, setRespFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const ivaOptions = useMemo(() => {
     const set = new Set<string>();
@@ -44,6 +45,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
       .filter((c) => c.tipo_contabilidade === cfg.tipo)
       .filter((c) => (!ivaFilter ? true : c.iva === ivaFilter))
       .filter((c) => (!respFilter ? true : c.responsavel_id === respFilter))
+      .filter((c) => (!statusFilter ? true : (c.status || "ativo") === statusFilter))
       .filter((c) =>
         !q
           ? true
@@ -51,9 +53,10 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
             String(c.nif || "").includes(q),
       )
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [clients, cfg.tipo, search, ivaFilter, respFilter]);
+  }, [clients, cfg.tipo, search, ivaFilter, respFilter, statusFilter]);
 
-  const activeFilters = (ivaFilter ? 1 : 0) + (respFilter ? 1 : 0);
+  const activeFilters = (ivaFilter ? 1 : 0) + (respFilter ? 1 : 0) + (statusFilter ? 1 : 0);
+
 
   if (selectedId) {
     return (
