@@ -31,6 +31,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
   const [fichaClient, setFichaClient] = useState<any | null>(null);
   const [ivaFilter, setIvaFilter] = useState("");
   const [respFilter, setRespFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const ivaOptions = useMemo(() => {
     const set = new Set<string>();
@@ -44,6 +45,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
       .filter((c) => c.tipo_contabilidade === cfg.tipo)
       .filter((c) => (!ivaFilter ? true : c.iva === ivaFilter))
       .filter((c) => (!respFilter ? true : c.responsavel_id === respFilter))
+      .filter((c) => (!statusFilter ? true : (c.status || "ativo") === statusFilter))
       .filter((c) =>
         !q
           ? true
@@ -51,9 +53,10 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
             String(c.nif || "").includes(q),
       )
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [clients, cfg.tipo, search, ivaFilter, respFilter]);
+  }, [clients, cfg.tipo, search, ivaFilter, respFilter, statusFilter]);
 
-  const activeFilters = (ivaFilter ? 1 : 0) + (respFilter ? 1 : 0);
+  const activeFilters = (ivaFilter ? 1 : 0) + (respFilter ? 1 : 0) + (statusFilter ? 1 : 0);
+
 
   if (selectedId) {
     return (
@@ -108,9 +111,20 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
             ))}
           </select>
 
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="py-2 px-3 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">Todos os estados</option>
+            <option value="ativo">Ativo</option>
+            <option value="a_sair">A sair</option>
+            <option value="inativo">Inativo</option>
+          </select>
+
           {activeFilters > 0 && (
             <button
-              onClick={() => { setIvaFilter(""); setRespFilter(""); }}
+              onClick={() => { setIvaFilter(""); setRespFilter(""); setStatusFilter(""); }}
               className="flex items-center gap-1 px-3 py-2 rounded-lg border bg-card text-sm hover:bg-muted transition-colors"
               title="Limpar filtros"
             >
@@ -135,6 +149,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-32">NIF</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-32">IVA</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-40">Responsável</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Estado</th>
                 <th className="w-10"></th>
               </tr>
             </thead>
@@ -159,6 +174,17 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
                     <td className="px-4 py-2.5 text-muted-foreground">{c.nif || "—"}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">{c.iva || "—"}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">{resp?.name || "—"}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                        (c.status || "ativo") === "ativo"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : c.status === "a_sair"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-muted text-muted-foreground"
+                      }`}>
+                        {(c.status || "ativo") === "ativo" ? "Ativo" : c.status === "a_sair" ? "A sair" : "Inativo"}
+                      </span>
+                    </td>
                     <td className="px-4 py-2.5">
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </td>
