@@ -285,6 +285,7 @@ export default function TISimplificadoDashboard({
     }
   };
 
+  const [tab, setTab] = useState<"atividade" | "impostos">("atividade");
 
   return (
     <div className="space-y-4">
