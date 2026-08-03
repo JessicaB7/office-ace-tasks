@@ -174,6 +174,17 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
                     <td className="px-4 py-2.5 text-muted-foreground">{c.iva || "—"}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">{resp?.name || "—"}</td>
                     <td className="px-4 py-2.5">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                        (c.status || "ativo") === "ativo"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : c.status === "a_sair"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-muted text-muted-foreground"
+                      }`}>
+                        {(c.status || "ativo") === "ativo" ? "Ativo" : c.status === "a_sair" ? "A sair" : "Inativo"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5">
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </td>
                   </tr>
