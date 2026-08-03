@@ -116,6 +116,17 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         toast.error("Não foram encontradas linhas com códigos de conta reconhecidos.");
         return;
       }
+
+      const slotMonths = IMPORT_SLOTS.find((s) => s.slot === slot)!.months;
+      const kept = entries.filter((e) => slotMonths.includes(e.month));
+      if (!kept.length) {
+        toast.error("Os valores do ficheiro não pertencem ao período selecionado.");
+        return;
+      }
+      if (kept.length !== entries.length) {
+        toast.warning(`${entries.length - kept.length} valores fora do período selecionado foram ignorados.`);
+      }
+      entries = kept;
       await saveImport.mutateAsync({ slot, fileName: file.name, entries });
       toast.success(`Importação concluída: ${entries.length} valores carregados.`);
     } catch (e: any) {
