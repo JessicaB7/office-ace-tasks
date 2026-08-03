@@ -390,8 +390,46 @@ function parseRevolut(text: string): ParsedStatement {
     rows.push({ date, desc, amount, saldo, order: order++ });
   }
 
-  // Revolut lists newest first. Sort chronologically: by date asc; within same date, reverse original order.
-  rows.sort((a, b) => a.date.getTime() - b.date.getTime() || b.order - a.order);
+  // Formato tabular novo ("Extrato de EUR"): datas DD/MM/AAAA e colunas
+  // "Dinheiro retirado | Dinheiro recebido | Saldo" com o € como sufixo.
+  if (rows.length === 0) {
+    const reRowSlash = /^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)$/;
+    // Montante PT com € no fim: 1 234,56€ / 1.234,56€ / 188,00€
+    const reNumSuffix = /-?\d{1,3}(?:[ .]\d{3})*,\d{2}\s*€/g;
+
+    // Saldos: linha "Total <inicial> <retirado> <recebido> <final>"
+    const totalLine = lines.find((l) => /^Total\b/i.test(l) && (l.match(reNumSuffix) || []).length >= 2);
+    if (totalLine) {
+      const nums = totalLine.match(reNumSuffix) || [];
+      if (nums.length >= 2) {
+        saldoInicial = parseEur(nums[0]);
+        saldoFinal = parseEur(nums[nums.length - 1]);
+      }
+    }
+
+    for (const line of lines) {
+      const m = line.match(reRowSlash);
+      if (!m) continue;
+      const rest = m[4];
+      const nums = rest.match(reNumSuffix);
+      // Linhas de movimento têm sempre montante + saldo
+      if (!nums || nums.length < 2) continue;
+      const firstIdx = rest.indexOf(nums[0]);
+      let desc = rest.slice(0, firstIdx).trim().replace(/\s+/g, " ");
+      if (!desc) desc = "Movimento";
+      const amount = parseEur(nums[nums.length - 2]);
+      const saldo = parseEur(nums[nums.length - 1]);
+      if (isNaN(amount) || isNaN(saldo)) continue;
+      const date = new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]), 12, 0, 0, 0);
+      rows.push({ date, desc, amount, saldo, order: order++ });
+    }
+
+    // Este formato já vem por ordem cronológica ascendente.
+    rows.sort((a, b) => a.date.getTime() - b.date.getTime() || a.order - b.order);
+  } else {
+    // Revolut lists newest first. Sort chronologically: by date asc; within same date, reverse original order.
+    rows.sort((a, b) => a.date.getTime() - b.date.getTime() || b.order - a.order);
+  }
 
   // Determine sign of each amount using saldo delta vs previous balance
   const txs: BankTransaction[] = [];
