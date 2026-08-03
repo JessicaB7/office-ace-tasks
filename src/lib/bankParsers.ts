@@ -917,6 +917,104 @@ function parseSantanderCartaoCredito(text: string): ParsedStatement {
   return { bank: "Santander Cartão", transactions: txs, saldoInicial, saldoFinal };
 }
 
+// ---------- ActivoBank (Extrato Combinado) ----------
+// Linhas: "4.01 4.01 DESCRITIVO   622.20   3 000.00"
+// O montante pode ser débito ou crédito; o sinal é deduzido pela variação do saldo.
+function parseActivoBank(text: string): ParsedStatement {
+  const lines = text.split(/\r?\n/);
+  const reNum = /(?<![\d.,/-])(?:\d{1,3}(?:[  ]\d{3})+|\d+)[.,]\d{2}/g;
+  const amt = (s: string): number | null => {
+    const v = Number(s.replace(/[\s ]/g, "").replace(",", "."));
+    return Number.isFinite(v) ? v : null;
+  };
+
+  // Período do extrato -> ano das datas M.DD
+  let startYear = new Date().getFullYear();
+  let endYear = startYear;
+  let startMonth = 1;
+  const mPer = text.match(/EXTRATO\s+DE\s+(\d{4})\/(\d{2})\/(\d{2})\s+A\s+(\d{4})\/(\d{2})\/(\d{2})/i);
+  if (mPer) {
+    startYear = Number(mPer[1]);
+    startMonth = Number(mPer[2]);
+    endYear = Number(mPer[4]);
+  }
+  const yearFor = (m: number) => (m >= startMonth ? startYear : endYear);
+
+  const reRow = /^(\d{1,2})\.(\d{1,2})\s+(\d{1,2})\.(\d{1,2})\s+(.+)$/;
+  const txs: BankTransaction[] = [];
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  let saldo: number | null = null;
+  let sectionDone = false; // só a primeira conta (conta à ordem)
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+/g, " ").trim();
+    if (!line) continue;
+
+    const mIni = line.match(/^SALDO\s+INICIAL\s+(-?[\d\s.,]+)$/i);
+    if (mIni) {
+      if (saldoInicial !== undefined) { sectionDone = true; continue; }
+      const v = amt(mIni[1]);
+      if (v !== null) { saldoInicial = v; saldo = v; }
+      continue;
+    }
+    if (sectionDone) continue;
+
+    const mFin = line.match(/^SALDO\s+FINAL\s+(-?[\d\s.,]+)$/i);
+    if (mFin) {
+      const v = amt(mFin[1]);
+      if (v !== null) saldoFinal = v;
+      continue;
+    }
+
+    const m = line.match(reRow);
+    if (!m) continue;
+    const [, moMov, dMov, moVal, dVal, rest] = m;
+    const matches = [...rest.matchAll(reNum)];
+    if (matches.length < 2) continue;
+
+    const last = matches[matches.length - 1];
+    const novoSaldo = amt(last[0]);
+    if (novoSaldo === null) continue;
+
+    // O montante exato é a variação do saldo (as colunas débito/crédito são ambíguas em texto).
+    let movimento: number;
+    if (saldo !== null) {
+      movimento = Math.round((novoSaldo - saldo) * 100) / 100;
+    } else {
+      const v = amt(matches[matches.length - 2][0]);
+      if (v === null) continue;
+      movimento = v;
+    }
+    saldo = novoSaldo;
+    if (movimento === 0) continue;
+
+    // Descrição: corta a partir do montante correspondente ao movimento (ou do saldo).
+    let cut = last.index ?? rest.length;
+    for (let i = matches.length - 2; i >= 0; i--) {
+      if (Math.abs((amt(matches[i][0]) ?? 0) - Math.abs(movimento)) < 0.005) {
+        cut = matches[i].index ?? cut;
+        break;
+      }
+    }
+    let desc = rest.slice(0, cut).replace(/\s+/g, " ").trim();
+    desc = desc.replace(/\s*(?:\d{1,3}(?:[  ]\d{3})+|\d+)[.,]\d{2}$/, "").trim();
+    if (!desc) desc = movimento >= 0 ? "Movimento" : "Pagamento";
+
+
+    txs.push({
+      dataMov: makeDateOnly(yearFor(Number(moMov)), Number(moMov), Number(dMov)),
+      dataValor: makeDateOnly(yearFor(Number(moVal)), Number(moVal), Number(dVal)),
+      descricao: desc,
+      movimento,
+    });
+  }
+
+  txs.sort((a, b) => a.dataMov.getTime() - b.dataMov.getTime());
+  return { bank: "ActivoBank", transactions: txs, saldoInicial, saldoFinal };
+}
+
+
 const isSantanderCartaoCredito = (text: string): boolean =>
   /SANTANDER\s+BUSINESS/i.test(text) &&
   /DETALHE\s+DE\s+MOVIMENTOS/i.test(text) &&
@@ -935,6 +1033,8 @@ export function parseBankText(text: string, bankHint?: string | null): ParsedSta
     return parseBPI(text);
   }
   if (bank === "Abanca") return parseAbanca(text);
+  if (bank === "ActivoBank") return parseActivoBank(text);
+
   if (bank === "Novo Banco") {
     if (/Consulta\s+de\s+movimentos/i.test(text) || /\b\d{2}-\d{2}-\d{4}\b/.test(text)) {
       const r = parseNovoBancoConsulta(text);
