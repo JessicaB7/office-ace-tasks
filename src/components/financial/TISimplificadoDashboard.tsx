@@ -288,7 +288,13 @@ export default function TISimplificadoDashboard({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as "atividade" | "impostos")}>
+          <TabsList>
+            <TabsTrigger value="atividade">Atividade</TabsTrigger>
+            <TabsTrigger value="impostos">Impostos</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <Button onClick={exportPDF} disabled={exporting} size="sm" variant="outline">
           <Download className="h-4 w-4 mr-2" />
           {exporting ? "A exportar..." : "Exportar PDF"}
@@ -307,6 +313,8 @@ export default function TISimplificadoDashboard({
           Análise TI Simplificado · {year}
         </div>
       </div>
+      {(exporting || tab === "atividade") && (
+      <>
       <div className="col-span-12 grid grid-cols-3 gap-3 auto-rows-fr">
         {kpis.map((k) => (
 
