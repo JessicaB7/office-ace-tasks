@@ -387,34 +387,42 @@ export default function TISimplificadoDashboard({
 
       <div className="col-span-6 rounded-xl border bg-card p-4 h-full flex flex-col">
 
-        <div className="flex items-start justify-between gap-2 flex-wrap mb-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
           <div>
-            <h4 className="font-semibold text-sm">Segurança Social por trimestre <span className="font-normal text-muted-foreground">(valor mensal × 3)</span></h4>
+            <h4 className="font-semibold text-sm">Segurança Social</h4>
+            <p className="text-[11px] text-muted-foreground">Valor mensal por trimestre</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
             {!exporting && (
-              <label className="flex items-center gap-2 text-xs cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-xs cursor-pointer select-none rounded-full border bg-background px-3 py-1.5 hover:bg-muted/60 transition-colors">
                 <input
                   type="checkbox"
                   checked={!!settings?.tco}
                   onChange={(e) => upsertSettings.mutate({ tco: e.target.checked } as any)}
-                  className="h-4 w-4 rounded border-input accent-primary"
+                  className="h-3.5 w-3.5 rounded border-input accent-primary"
                 />
                 <span className="font-semibold">TCO</span>
-                <span className="text-muted-foreground">(dispensa preenchimento)</span>
               </label>
             )}
-            <div className="text-xs text-muted-foreground">
-              Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(ssQuarters.reduce((a, b) => a + b, 0))}</span>
+            <div className="rounded-lg bg-primary/10 px-3 py-1.5 text-right">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Total anual</div>
+              <div className="text-sm font-bold tabular-nums text-primary">{fmtEur(ssQuarters.reduce((a, b) => a + b, 0))}</div>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr flex-1">
           {ssQuarters.map((val, i) => (
-            <div key={i} className="rounded-lg border bg-background p-3 space-y-2 min-h-[116px] h-full flex flex-col justify-between">
-              <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
-              <div className="flex items-center gap-1">
+            <div
+              key={i}
+              className="group relative overflow-hidden rounded-xl border bg-background p-3 min-h-[124px] h-full flex flex-col justify-between transition-colors hover:border-primary/40"
+            >
+              <span className="absolute inset-x-0 top-0 h-0.5 bg-primary/60" />
+              <div className="flex items-center gap-1.5">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{i + 1}</span>
+                <span className="text-[11px] font-semibold text-muted-foreground">trimestre</span>
+              </div>
+              <div className="relative">
                 <input
                   type="number"
                   step="0.01"
@@ -431,12 +439,13 @@ export default function TISimplificadoDashboard({
                       upsertSettings.mutate({ [`ss_q${i + 1}`]: quarter } as any);
                     }
                   }}
-                  className="w-full text-right font-bold tabular-nums text-primary py-1 px-2 rounded border bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full text-right font-bold tabular-nums text-base text-foreground py-1.5 pl-2 pr-12 rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-shadow"
                 />
-                <span className="text-xs text-muted-foreground">€/mês</span>
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">€/mês</span>
               </div>
-              <div className="text-[11px] text-muted-foreground text-right">
-                Trimestre: <span className="font-semibold tabular-nums text-foreground">{fmtEur(val)}</span>
+              <div className="flex items-baseline justify-between border-t pt-2 text-[11px]">
+                <span className="text-muted-foreground">Trimestre</span>
+                <span className="font-semibold tabular-nums text-foreground">{fmtEur(val)}</span>
               </div>
             </div>
           ))}
