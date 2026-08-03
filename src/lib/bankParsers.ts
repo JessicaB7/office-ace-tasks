@@ -998,6 +998,7 @@ function parseActivoBank(text: string): ParsedStatement {
       }
     }
     let desc = rest.slice(0, cut).replace(/\s+/g, " ").trim();
+    desc = desc.replace(/\s*(?:\d{1,3}(?:[  ]\d{3})+|\d+)[.,]\d{2}$/, "").trim();
     if (!desc) desc = movimento >= 0 ? "Movimento" : "Pagamento";
 
 
