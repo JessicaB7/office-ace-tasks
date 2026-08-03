@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Upload, Building2 } from "lucide-react";
 import { useClients } from "@/hooks/useSupabaseQuery";
-import { useBulkUpsertEntries, useFinancialAccounts } from "@/hooks/useClientFinancials";
+import { useBulkUpsertEntries, useFinancialAccounts, useLastImportDate } from "@/hooks/useClientFinancials";
 import AnaliseMensalTab from "./financial/AnaliseMensalTab";
 import MapaExploracaoTab from "./financial/MapaExploracaoTab";
 import IvaTab from "./financial/IvaTab";
@@ -31,6 +31,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const [tab, setTab] = useState<Tab>("analise");
   const { data: accounts = [] } = useFinancialAccounts();
   const bulk = useBulkUpsertEntries(clientId, year);
+  const { data: lastImport } = useLastImportDate(clientId, year);
   const fileRef = useRef<HTMLInputElement>(null);
   const [fichaOpen, setFichaOpen] = useState(false);
 
@@ -49,7 +50,15 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           entries = res.entries;
           toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
-          entries = await parseMapaPdf(file, codes);
+          const res = await parseMapaPdf(file, codes);
+          const pdfNif = res.nif;
+          const clientNif = (client?.nif ?? "").replace(/\D/g, "");
+          if (pdfNif && clientNif && pdfNif !== clientNif) {
+            toast.error(`NIF do mapa (${pdfNif}) não corresponde ao NIF do cliente (${clientNif}). Importação cancelada.`);
+            return;
+          }
+          if (!pdfNif) toast.warning("Não foi possível ler o NIF no mapa — verifica se o ficheiro é do cliente correto.");
+          entries = res.entries;
         }
       } else {
         // Try balancete XLSX first (TOConline "Balancete (Período, Acumulado)")
@@ -135,6 +144,9 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
               {client.name}
             </button>
             <p className="text-sm text-muted-foreground">Análise financeira {year}{client.nif ? ` · NIF ${client.nif}` : ""}</p>
+            <p className="text-xs text-muted-foreground/80">
+              Última importação: {lastImport ? new Date(lastImport).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" }) : "—"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">

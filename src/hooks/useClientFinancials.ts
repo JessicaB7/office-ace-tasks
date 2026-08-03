@@ -139,6 +139,29 @@ export function useBulkUpsertEntries(clientId: string, year: number) {
         .upsert(rows, { onConflict: "client_id,year,month,account_code" });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["cfe", clientId, year] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cfe", clientId, year] });
+      qc.invalidateQueries({ queryKey: ["cfe_last_import", clientId, year] });
+    },
+  });
+}
+
+/** Data/hora da última importação de valores financeiros (apenas para análise interna). */
+export function useLastImportDate(clientId: string, year: number) {
+  return useQuery({
+    queryKey: ["cfe_last_import", clientId, year],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_financial_entries")
+        .select("updated_at")
+        .eq("client_id", clientId)
+        .eq("year", year)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.updated_at as string | undefined) ?? null;
+    },
+    enabled: !!clientId,
   });
 }
