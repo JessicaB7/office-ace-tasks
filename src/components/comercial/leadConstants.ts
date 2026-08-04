@@ -6,6 +6,20 @@ export const LEAD_STAGES = [
   { id: "perda", label: "Perda" },
 ] as const;
 
+export const CONSULTORIA_STAGES = [
+  { id: "reuniao_agendada", label: "Reunião agendada" },
+  { id: "resumo_enviado", label: "Resumo enviado" },
+  { id: "followup", label: "Follow up" },
+  { id: "mensal_sim", label: "Serviço mensal sim" },
+  { id: "mensal_nao", label: "Serviço mensal não" },
+] as const;
+
+export const stagesFor = (segment?: string) =>
+  segment === "consultoria" ? CONSULTORIA_STAGES : LEAD_STAGES;
+
+export const closedStagesFor = (segment?: string) =>
+  segment === "consultoria" ? ["mensal_sim", "mensal_nao"] : ["ganho", "perda"];
+
 export const BUSINESS_TYPES = [
   { id: "ti_rs", label: "TI RS" },
   { id: "ti_co", label: "TI CO" },
@@ -25,15 +39,19 @@ export const businessTypeLabel = (id: string | null) =>
 export const ivaFrameworkLabel = (id: string | null) =>
   IVA_FRAMEWORKS.find((t) => t.id === id)?.label || "—";
 
-export const stageLabel = (id: string) => LEAD_STAGES.find((s) => s.id === id)?.label || id;
+export const stageLabel = (id: string) =>
+  [...LEAD_STAGES, ...CONSULTORIA_STAGES].find((s) => s.id === id)?.label || id;
 
 export const stageClass = (id: string) => {
   switch (id) {
     case "ganho":
+    case "mensal_sim":
       return "bg-emerald-500/10 text-emerald-700 border-emerald-500/30";
     case "perda":
+    case "mensal_nao":
       return "bg-destructive/10 text-destructive border-destructive/30";
     case "proposta_enviada":
+    case "resumo_enviado":
       return "bg-amber-500/10 text-amber-700 border-amber-500/30";
     case "followup":
       return "bg-blue-500/10 text-blue-700 border-blue-500/30";
