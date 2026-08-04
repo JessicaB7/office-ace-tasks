@@ -13,7 +13,25 @@ const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "
 const ComercialView = () => {
   const { data: clients = [], isLoading } = useClients();
   const { data: collaborators = [] } = useCollaborators();
+  const { data: leads = [] } = useLeads();
   const [year, setYear] = useState(new Date().getFullYear());
+
+  const monthlyLeads = useMemo(() => {
+    const inYear = (d: string | null) => !!d && new Date(d).getFullYear() === year;
+    return MONTHS.map((label, i) => {
+      const novas = leads.filter((l) => inYear(l.created_at) && new Date(l.created_at).getMonth() === i);
+      const propostas = leads.filter((l) => inYear(l.proposal_sent_at) && new Date(l.proposal_sent_at as string).getMonth() === i);
+      const ganhas = propostas.filter((l) => l.stage === "ganho");
+      return {
+        label,
+        novas: novas.length,
+        propostas: propostas.length,
+        ganhas: ganhas.length,
+        valor: ganhas.reduce((s, l) => s + Number(l.estimated_value || 0), 0),
+      };
+    });
+  }, [leads, year]);
+
 
   const stats = useMemo(() => {
     const ativos = clients.filter((c: any) => c.status === "ativo");
