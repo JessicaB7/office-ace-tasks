@@ -477,6 +477,7 @@ export type Database = {
           created_at: string
           email: string | null
           estimated_value: number | null
+          given_by: string | null
           id: string
           iva_framework: string | null
           loss_reason: string | null
@@ -501,6 +502,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           estimated_value?: number | null
+          given_by?: string | null
           id?: string
           iva_framework?: string | null
           loss_reason?: string | null
@@ -525,6 +527,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           estimated_value?: number | null
+          given_by?: string | null
           id?: string
           iva_framework?: string | null
           loss_reason?: string | null
