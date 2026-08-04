@@ -167,14 +167,18 @@ const ComercialView = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-12 gap-2 items-end h-40">
-            {monthly.map((m) => (
+            {monthly.map((m, i) => (
               <div key={m.label} className="flex flex-col items-center gap-1 h-full justify-end">
                 <span className="text-[10px] text-muted-foreground">{m.novas || ""}</span>
                 <div
-                  className="w-full rounded-t bg-primary/80"
+                  className={cn(
+                    "w-full rounded-t transition-colors",
+                    month === i ? "bg-primary" : "bg-primary/80",
+                    month !== null && month !== i && "opacity-40"
+                  )}
                   style={{ height: `${(m.novas / maxNovas) * 100}%`, minHeight: m.novas ? 4 : 2 }}
                 />
-                <span className="text-[10px] text-muted-foreground">{m.label}</span>
+                <span className={cn("text-[10px]", month === i ? "text-foreground font-medium" : "text-muted-foreground")}>{m.label}</span>
               </div>
             ))}
           </div>
