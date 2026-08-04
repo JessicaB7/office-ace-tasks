@@ -360,7 +360,7 @@ export default function EmpresasDashboard({
               <div className="text-lg font-bold tabular-nums text-primary">{fmtEur(ircBase)}</div>
             </div>
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
-              <div className="text-[11px] text-muted-foreground">Derrama municipal (1,5%)</div>
+              <div className="text-[11px] text-muted-foreground">Derrama municipal ({(derramaTaxa * 100).toFixed(1)}%)</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(derrama)}</div>
             </div>
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
