@@ -7,12 +7,14 @@ import {
   useClientFinancialEntries,
   useFinancialAccounts,
 } from "@/hooks/useClientFinancials";
-import { buildEntryMap, MONTHS_PT, MONTHS_FULL, fmtEur, sumSectionMonth, sumGroupMonth } from "./financialMath";
+import { buildEntryMap, fmtEur, sumSectionMonth, sumGroupMonth, quarterSums } from "./financialMath";
 import { cn } from "@/lib/utils";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
+const QUARTERS = ["1º trimestre", "2º trimestre", "3º trimestre", "4º trimestre"];
+const QUARTERS_SHORT = ["1º T", "2º T", "3º T", "4º T"];
 
-export default function DashboardMensal({
+export default function DashboardTrimestral({
   clientId,
   year,
   client,
@@ -45,43 +47,53 @@ export default function DashboardMensal({
   );
   const resultadoM = months.map((_, i) => rendimentosM[i] - gastosM[i]);
 
-  const lastWithData = useMemo(() => {
-    for (let i = 11; i >= 0; i--) if (rendimentosM[i] || gastosM[i]) return i + 1;
-    return new Date().getMonth() + 1;
-  }, [rendimentosM.join(","), gastosM.join(",")]);
+  // Agregação por trimestre
+  const rendimentosQ = quarterSums(rendimentosM);
+  const fseQ = quarterSums(fseM);
+  const pessoalQ = quarterSums(pessoalM);
+  const depreciacoesQ = quarterSums(depreciacoesM);
+  const mercadoriasQ = quarterSums(mercadoriasM);
+  const outrosGastosQ = quarterSums(outrosGastosM);
+  const gastosQ = quarterSums(gastosM);
+  const resultadoQ = quarterSums(resultadoM);
 
-  const [month, setMonth] = useState<number>(lastWithData);
-  const i = month - 1;
+  const lastWithData = useMemo(() => {
+    for (let q = 3; q >= 0; q--) if (rendimentosQ[q] || gastosQ[q]) return q;
+    return Math.floor(new Date().getMonth() / 3);
+  }, [rendimentosQ.join(","), gastosQ.join(",")]);
+
+  const [quarter, setQuarter] = useState<number>(lastWithData);
+  const i = quarter;
   const prev = i > 0 ? i - 1 : null;
 
-  const acumulado = (arr: number[]) => arr.slice(0, month).reduce((a, b) => a + b, 0);
+  const acumulado = (arr: number[]) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0);
 
   const rows = [
-    { label: "Rendimentos", arr: rendimentosM, tone: "primary" as const },
-    { label: "Gastos com mercadorias", arr: mercadoriasM, tone: "neutral" as const },
-    { label: "FSE", arr: fseM, tone: "neutral" as const },
-    { label: "Gastos com salários", arr: pessoalM, tone: "neutral" as const },
-    { label: "Depreciações", arr: depreciacoesM, tone: "neutral" as const },
-    { label: "Outros gastos", arr: outrosGastosM, tone: "neutral" as const },
-    { label: "Total de gastos", arr: gastosM, tone: "neutral" as const },
-    { label: "Resultado", arr: resultadoM, tone: "result" as const },
+    { label: "Rendimentos", arr: rendimentosQ, tone: "primary" as const },
+    { label: "Gastos com mercadorias", arr: mercadoriasQ, tone: "neutral" as const },
+    { label: "FSE", arr: fseQ, tone: "neutral" as const },
+    { label: "Gastos com salários", arr: pessoalQ, tone: "neutral" as const },
+    { label: "Depreciações", arr: depreciacoesQ, tone: "neutral" as const },
+    { label: "Outros gastos", arr: outrosGastosQ, tone: "neutral" as const },
+    { label: "Total de gastos", arr: gastosQ, tone: "neutral" as const },
+    { label: "Resultado", arr: resultadoQ, tone: "result" as const },
   ];
 
   const kpis = rows.filter((r) => r.label !== "Outros gastos" && r.label !== "Total de gastos");
 
-  const margem = rendimentosM[i] ? (resultadoM[i] / rendimentosM[i]) * 100 : 0;
+  const margem = rendimentosQ[i] ? (resultadoQ[i] / rendimentosQ[i]) * 100 : 0;
 
-  const chartData = MONTHS_PT.map((m, idx) => ({
-    mes: m,
-    Rendimentos: cents(rendimentosM[idx]),
-    Gastos: cents(gastosM[idx]),
-    Resultado: cents(resultadoM[idx]),
+  const chartData = QUARTERS_SHORT.map((q, idx) => ({
+    trimestre: q,
+    Rendimentos: cents(rendimentosQ[idx]),
+    Gastos: cents(gastosQ[idx]),
+    Resultado: cents(resultadoQ[idx]),
   }));
 
   let running = 0;
-  const acumData = MONTHS_PT.map((m, idx) => {
-    running += resultadoM[idx];
-    return { mes: m, Acumulado: cents(running) };
+  const acumData = QUARTERS_SHORT.map((q, idx) => {
+    running += resultadoQ[idx];
+    return { trimestre: q, Acumulado: cents(running) };
   });
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -115,7 +127,7 @@ export default function DashboardMensal({
       const yOff = margin + (contentH - hMm) / 2;
       pdf.addImage(canvas.toDataURL("image/png"), "PNG", xOff, yOff, wMm, hMm);
       const safeName = (client?.name || client?.nome || "cliente").replace(/[^a-zA-Z0-9-_]+/g, "_");
-      pdf.save(`Analise_Mensal_${safeName}_${MONTHS_PT[i]}_${year}.pdf`);
+      pdf.save(`Analise_Trimestral_${safeName}_T${i + 1}_${year}.pdf`);
       toast.success("PDF exportado");
     } catch (e: any) {
       toast.error("Erro a exportar PDF: " + (e?.message || ""));
@@ -135,18 +147,18 @@ export default function DashboardMensal({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-1 flex-wrap">
-          {MONTHS_PT.map((m, idx) => (
+          {QUARTERS.map((q, idx) => (
             <button
-              key={m}
-              onClick={() => setMonth(idx + 1)}
+              key={q}
+              onClick={() => setQuarter(idx)}
               className={cn(
-                "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
-                month === idx + 1
+                "px-3 py-1 rounded-md text-xs font-medium border transition-colors",
+                quarter === idx
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-background text-muted-foreground hover:text-foreground",
               )}
             >
-              {m}
+              {q}
             </button>
           ))}
         </div>
@@ -163,7 +175,7 @@ export default function DashboardMensal({
             <div className="text-sm text-muted-foreground">NIF: {client?.nif || client?.nipc || "—"}</div>
           </div>
           <div className="text-sm text-muted-foreground">
-            Análise mensal · {MONTHS_FULL[i]} {year}
+            Análise trimestral · {QUARTERS[i]} {year}
           </div>
         </div>
 
@@ -185,7 +197,7 @@ export default function DashboardMensal({
                   ) : (
                     <>
                       {varPct >= 0 ? <ArrowUp className="h-3 w-3 text-emerald-600" /> : <ArrowDown className="h-3 w-3 text-amber-600" />}
-                      {Math.abs(varPct).toFixed(1)}% vs {MONTHS_PT[prev!]}
+                      {Math.abs(varPct).toFixed(1)}% vs {QUARTERS_SHORT[prev!]}
                     </>
                   )}
                 </div>
@@ -196,40 +208,40 @@ export default function DashboardMensal({
 
         <div className="col-span-12 grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
           <div className="rounded-lg border bg-card p-3 min-h-[92px] flex flex-col justify-center">
-            <div className="text-[11px] text-muted-foreground">Margem do mês</div>
+            <div className="text-[11px] text-muted-foreground">Margem do trimestre</div>
             <div className={cn("text-lg font-bold tabular-nums", margem >= 0 ? "text-emerald-700" : "text-amber-700")}>
               {margem.toFixed(1)}%
             </div>
           </div>
           <div className="rounded-lg border bg-card p-3 min-h-[92px] flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">Rendimentos acumulados</div>
-            <div className="text-lg font-bold tabular-nums text-primary">{fmtEur(acumulado(rendimentosM))}</div>
+            <div className="text-lg font-bold tabular-nums text-primary">{fmtEur(acumulado(rendimentosQ))}</div>
           </div>
           <div className="rounded-lg border bg-card p-3 min-h-[92px] flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">Gastos acumulados</div>
-            <div className="text-lg font-bold tabular-nums">{fmtEur(acumulado(gastosM))}</div>
+            <div className="text-lg font-bold tabular-nums">{fmtEur(acumulado(gastosQ))}</div>
           </div>
           <div className="rounded-lg border bg-card p-3 min-h-[92px] flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">Resultado acumulado</div>
-            <div className={cn("text-lg font-bold tabular-nums", acumulado(resultadoM) >= 0 ? "text-emerald-700" : "text-amber-700")}>
-              {fmtEur(acumulado(resultadoM))}
+            <div className={cn("text-lg font-bold tabular-nums", acumulado(resultadoQ) >= 0 ? "text-emerald-700" : "text-amber-700")}>
+              {fmtEur(acumulado(resultadoQ))}
             </div>
           </div>
         </div>
 
         <div className="col-span-12 lg:col-span-7 rounded-xl border bg-card p-4 h-full flex flex-col">
-          <h4 className="font-semibold text-sm mb-3">Evolução mensal</h4>
+          <h4 className="font-semibold text-sm mb-3">Evolução trimestral</h4>
           <div className="flex-1 min-h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} barCategoryGap="24%" barGap={3}>
+              <BarChart data={chartData} barCategoryGap="24%" barGap={4}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="mes" fontSize={11} interval={0} tickMargin={8} />
+                <XAxis dataKey="trimestre" fontSize={11} interval={0} tickMargin={8} />
                 <YAxis fontSize={11} />
                 <Tooltip formatter={(v: any) => fmtEur(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="Rendimentos" fill="hsl(var(--primary))" maxBarSize={22} />
-                <Bar dataKey="Gastos" fill="hsl(var(--primary) / 0.62)" maxBarSize={22} />
-                <Bar dataKey="Resultado" fill="hsl(var(--primary) / 0.32)" maxBarSize={22} />
+                <Bar dataKey="Rendimentos" fill="hsl(var(--primary))" maxBarSize={38} />
+                <Bar dataKey="Gastos" fill="hsl(var(--primary) / 0.62)" maxBarSize={38} />
+                <Bar dataKey="Resultado" fill="hsl(var(--primary) / 0.32)" maxBarSize={38} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -241,7 +253,7 @@ export default function DashboardMensal({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={acumData}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="mes" fontSize={11} interval={0} tickMargin={8} />
+                <XAxis dataKey="trimestre" fontSize={11} interval={0} tickMargin={8} />
                 <YAxis fontSize={11} />
                 <Tooltip formatter={(v: any) => fmtEur(Number(v))} />
                 <Line type="monotone" dataKey="Acumulado" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
@@ -255,8 +267,8 @@ export default function DashboardMensal({
             <thead className="bg-muted/60 text-muted-foreground">
               <tr>
                 <th className="text-left px-3 py-2 font-semibold w-56">Rubrica</th>
-                {MONTHS_PT.map((m, idx) => (
-                  <th key={m} className={cn("px-2 py-2 text-right font-semibold", idx === i && "bg-primary/10 text-primary")}>{m}</th>
+                {QUARTERS.map((q, idx) => (
+                  <th key={q} className={cn("px-3 py-2 text-right font-semibold", idx === i && "bg-primary/10 text-primary")}>{q}</th>
                 ))}
                 <th className="px-3 py-2 text-right font-semibold">Total</th>
               </tr>
@@ -267,7 +279,7 @@ export default function DashboardMensal({
                   <td className={cn("px-3 py-1.5", r.tone === "result" && "font-semibold")}>{r.label}</td>
                   {r.arr.map((v, idx) => (
                     <td key={idx} className={cn(
-                      "px-2 py-1.5 text-right tabular-nums",
+                      "px-3 py-1.5 text-right tabular-nums",
                       idx === i && "bg-primary/10 font-semibold",
                       r.tone === "result" && (v >= 0 ? "text-emerald-700" : "text-amber-700"),
                     )}>{fmtEur(v)}</td>
