@@ -112,9 +112,15 @@ export default function EmpresasDashboard({
   const ircBase = baseTributavel * taxa;
   const derrama = baseTributavel * 0.015;
 
-  // Tributação autónoma
-  const taRepBase = Number(settings?.ta_base_representacao ?? 0);
-  const taAjBase = Number(settings?.ta_base_ajudas_custo ?? 0);
+  // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 625; ajudas de custo: 6315 + 6325)
+  const sumPrefixYear = (prefix: string) =>
+    cents(months.reduce((acc, m) => acc + sumPrefixMonth(prefix, m), 0));
+  const taRepAuto = cents(sumPrefixYear("6266") + sumPrefixYear("625"));
+  const taAjAuto = cents(sumPrefixYear("6315") + sumPrefixYear("6325"));
+  const taRepManual = Number(settings?.ta_base_representacao ?? 0);
+  const taAjManual = Number(settings?.ta_base_ajudas_custo ?? 0);
+  const taRepBase = taRepManual > 0 ? taRepManual : taRepAuto;
+  const taAjBase = taAjManual > 0 ? taAjManual : taAjAuto;
   const taRep = taRepBase * 0.10;
   const taAj = taAjBase * 0.05;
   const taTotal = taRep + taAj;
@@ -354,12 +360,17 @@ export default function EmpresasDashboard({
             <h5 className="text-xs font-semibold mb-3">Tributação autónoma</h5>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {([
-                { key: "ta_base_representacao" as const, label: "Despesas de representação", rate: 0.10, base: taRepBase, imposto: taRep },
-                { key: "ta_base_ajudas_custo" as const, label: "Ajudas de custo", rate: 0.05, base: taAjBase, imposto: taAj },
+                { key: "ta_base_representacao" as const, label: "Despesas de representação", contas: "6266 + 625", rate: 0.10, base: taRepBase, auto: taRepAuto, manual: taRepManual, imposto: taRep },
+                { key: "ta_base_ajudas_custo" as const, label: "Ajudas de custo", contas: "6315 + 6325", rate: 0.05, base: taAjBase, auto: taAjAuto, manual: taAjManual, imposto: taAj },
               ]).map((row) => (
                 <div key={row.key} className="rounded-lg border bg-background p-3">
                   <div className="flex items-center justify-between gap-3 mb-2">
-                    <div className="text-[11px] font-medium">{row.label}</div>
+                    <div>
+                      <div className="text-[11px] font-medium">{row.label}</div>
+                      {!exporting && (
+                        <div className="text-[10px] text-muted-foreground">Contas {row.contas}</div>
+                      )}
+                    </div>
                     <span className="text-[10px] rounded-full bg-primary/10 text-primary px-2 py-0.5 font-semibold">
                       {(row.rate * 100).toFixed(0)}%
                     </span>
@@ -367,22 +378,35 @@ export default function EmpresasDashboard({
                   {exporting ? (
                     <div className="text-xs text-muted-foreground">Base: {fmtEur(row.base)}</div>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor={row.key} className="text-[10px] text-muted-foreground whitespace-nowrap">Base (€)</Label>
-                      <Input
-                        id={row.key}
-                        type="number"
-                        step="0.01"
-                        className="h-8"
-                        value={row.base ? String(row.base) : ""}
-                        placeholder="0,00"
-                        onChange={(e) => {
-                          const raw = e.target.value.trim();
-                          const n = raw === "" ? 0 : Number(raw.replace(",", "."));
-                          if (Number.isFinite(n)) upsertSettings.mutate({ [row.key]: n } as any);
-                        }}
-                      />
-                    </div>
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor={row.key} className="text-[10px] text-muted-foreground whitespace-nowrap">Base (€)</Label>
+                        <Input
+                          id={row.key}
+                          type="number"
+                          step="0.01"
+                          className="h-8"
+                          value={row.manual > 0 ? String(row.manual) : ""}
+                          placeholder={row.auto ? row.auto.toFixed(2) : "0,00"}
+                          onChange={(e) => {
+                            const raw = e.target.value.trim();
+                            const n = raw === "" ? 0 : Number(raw.replace(",", "."));
+                            if (Number.isFinite(n)) upsertSettings.mutate({ [row.key]: n } as any);
+                          }}
+                        />
+                      </div>
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        Balancete: {fmtEur(row.auto)}
+                        {row.manual > 0 && (
+                          <button
+                            className="ml-2 underline hover:text-foreground"
+                            onClick={() => upsertSettings.mutate({ [row.key]: 0 } as any)}
+                          >
+                            repor
+                          </button>
+                        )}
+                      </div>
+                    </>
                   )}
                   <div className="mt-2 text-sm font-bold tabular-nums">{fmtEur(row.imposto)}</div>
                 </div>
