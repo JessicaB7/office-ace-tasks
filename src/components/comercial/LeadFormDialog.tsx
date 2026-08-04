@@ -63,6 +63,20 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
 
   const set = (k: string, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
 
+  // Follow-up por defeito: 3 dias após a data da reunião
+  const plus3 = (d: string) => {
+    const base = new Date(`${d}T12:00:00`);
+    if (isNaN(base.getTime())) return "";
+    base.setDate(base.getDate() + 3);
+    return base.toISOString().slice(0, 10);
+  };
+
+  const setMeetingDate = (v: string) =>
+    setForm((p) => {
+      const auto = p.next_followup === "" || (p.meeting_date && p.next_followup === plus3(p.meeting_date));
+      return { ...p, meeting_date: v, next_followup: auto && v ? plus3(v) : p.next_followup };
+    });
+
   const handleSave = async () => {
     if (!form.name.trim()) {
       toast.error("Indica o nome da lead.");
@@ -130,7 +144,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
               type="date"
               disabled={!form.meeting}
               value={form.meeting_date}
-              onChange={(e) => set("meeting_date", e.target.value)}
+              onChange={(e) => setMeetingDate(e.target.value)}
             />
           </div>
 
@@ -175,6 +189,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
           <div>
             <Label>Próximo follow-up</Label>
             <Input type="date" value={form.next_followup} onChange={(e) => set("next_followup", e.target.value)} />
+            <p className="text-xs text-muted-foreground mt-1">Por defeito, 3 dias após a reunião.</p>
           </div>
           <div className="sm:col-span-2">
             <Label>Responsável</Label>
