@@ -1,15 +1,14 @@
 import { useMemo, useState } from "react";
-import { useLeads, useCollaborators, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
+import { useLeads, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { eur, fmtDate, stageClass, stageLabel } from "./leadConstants";
+import { eur, fmtDate, stageClass, stageLabel, businessTypeLabel } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { FileText, ThumbsUp, ThumbsDown } from "lucide-react";
 
 const PropostasView = () => {
   const { data: leads = [] } = useLeads();
-  const { data: collaborators = [] } = useCollaborators();
   const upsert = useUpsertLead();
   const [editing, setEditing] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -37,7 +36,6 @@ const PropostasView = () => {
     };
   }, [sent]);
 
-  const ownerName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
 
   return (
     <div className="space-y-6">
@@ -77,7 +75,7 @@ const PropostasView = () => {
                 <th className="text-left p-3">Lead</th>
                 <th className="text-left p-3">Enviada</th>
                 <th className="text-right p-3">Valor</th>
-                <th className="text-left p-3">Responsável</th>
+                <th className="text-left p-3">Tipo de negócio</th>
                 <th className="text-left p-3">Estado</th>
                 <th className="p-3" />
               </tr>
@@ -88,7 +86,7 @@ const PropostasView = () => {
                   <td className="p-3 font-medium">{l.name}</td>
                   <td className="p-3 text-xs">{fmtDate(l.proposal_sent_at)}</td>
                   <td className="p-3 text-right font-medium">{eur(l.estimated_value)}</td>
-                  <td className="p-3 text-xs">{ownerName(l.owner_id)}</td>
+                  <td className="p-3 text-xs">{businessTypeLabel(l.business_type)}</td>
                   <td className="p-3"><Badge variant="outline" className={stageClass(l.stage)}>{stageLabel(l.stage)}</Badge></td>
                   <td className="p-3">
                     <div className="flex justify-end gap-2">

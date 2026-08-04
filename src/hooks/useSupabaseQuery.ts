@@ -220,6 +220,9 @@ export interface Lead {
   proposal_sent_at: string | null;
   next_followup: string | null;
   owner_id: string | null;
+  business_type: string | null;
+  business_area: string | null;
+  iva_framework: string | null;
   notes: string | null;
   meeting: boolean;
   meeting_date: string | null;

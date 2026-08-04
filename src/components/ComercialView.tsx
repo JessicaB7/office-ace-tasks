@@ -1,17 +1,16 @@
 import { useMemo, useState } from "react";
-import { useCollaborators, useLeads } from "@/hooks/useSupabaseQuery";
+import { useLeads } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Euro, TrendingUp, Target, Handshake } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { LEAD_STAGES, eur, stageClass, stageLabel } from "./comercial/leadConstants";
+import { LEAD_STAGES, eur, stageClass, stageLabel, businessTypeLabel } from "./comercial/leadConstants";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 const ComercialView = () => {
   const { data: leads = [], isLoading } = useLeads();
-  const { data: collaborators = [] } = useCollaborators();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState<number | null>(null);
 
@@ -99,7 +98,6 @@ const ComercialView = () => {
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [stats.perdidas]);
 
-  const ownerName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
 
   const years = [year + 1, year, year - 1, year - 2];
 
@@ -280,7 +278,7 @@ const ComercialView = () => {
                 <div className="min-w-0">
                   <p className="font-medium truncate">{l.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {l.suggested_product || stageLabel(l.stage)} · {ownerName(l.owner_id)}
+                    {l.suggested_product || stageLabel(l.stage)} · {businessTypeLabel(l.business_type)}
                   </p>
                 </div>
                 <span className="font-semibold">{eur(l.estimated_value)}</span>

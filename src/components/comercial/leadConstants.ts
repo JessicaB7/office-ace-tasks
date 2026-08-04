@@ -6,6 +6,26 @@ export const LEAD_STAGES = [
   { id: "perda", label: "Perda" },
 ] as const;
 
+export const BUSINESS_TYPES = [
+  { id: "ti_rs", label: "TI RS" },
+  { id: "ti_co", label: "TI CO" },
+  { id: "empresa", label: "Empresa" },
+] as const;
+
+export const IVA_FRAMEWORKS = [
+  { id: "isento_53", label: "Isento art.º 53" },
+  { id: "mensal", label: "Regime normal — mensal" },
+  { id: "trimestral", label: "Regime normal — trimestral" },
+  { id: "misto", label: "Misto" },
+  { id: "outro", label: "Outro" },
+] as const;
+
+export const businessTypeLabel = (id: string | null) =>
+  BUSINESS_TYPES.find((t) => t.id === id)?.label || "—";
+
+export const ivaFrameworkLabel = (id: string | null) =>
+  IVA_FRAMEWORKS.find((t) => t.id === id)?.label || "—";
+
 export const stageLabel = (id: string) => LEAD_STAGES.find((s) => s.id === id)?.label || id;
 
 export const stageClass = (id: string) => {

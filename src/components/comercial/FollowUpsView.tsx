@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { useLeads, useCollaborators, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
+import { useLeads, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { eur, fmtDate, stageClass, stageLabel } from "./leadConstants";
+import { eur, fmtDate, stageClass, stageLabel, businessTypeLabel } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,6 @@ const addDays = (n: number) => {
 
 const FollowUpsView = () => {
   const { data: leads = [] } = useLeads();
-  const { data: collaborators = [] } = useCollaborators();
   const upsert = useUpsertLead();
   const [editing, setEditing] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -37,14 +36,13 @@ const FollowUpsView = () => {
     };
   }, [leads]);
 
-  const ownerName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
 
   const Row = ({ lead, tone }: { lead: Lead; tone?: string }) => (
     <div className="flex items-center justify-between gap-3 border-b last:border-0 py-2.5 flex-wrap">
       <div className="min-w-0">
         <p className="text-sm font-medium">{lead.name}</p>
         <p className="text-xs text-muted-foreground">
-          {ownerName(lead.owner_id)} · {eur(lead.estimated_value)}
+          {businessTypeLabel(lead.business_type)} · {eur(lead.estimated_value)}
         </p>
       </div>
       <div className="flex items-center gap-2">

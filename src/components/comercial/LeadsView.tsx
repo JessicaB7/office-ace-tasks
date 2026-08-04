@@ -1,24 +1,32 @@
 import { useMemo, useState } from "react";
-import { useLeads, useCollaborators, useDeleteLead, type Lead } from "@/hooks/useSupabaseQuery";
+import { useLeads, useDeleteLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Trash2, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LEAD_STAGES, eur, fmtDate, stageClass, stageLabel } from "./leadConstants";
+import {
+  LEAD_STAGES,
+  BUSINESS_TYPES,
+  businessTypeLabel,
+  ivaFrameworkLabel,
+  eur,
+  fmtDate,
+  stageClass,
+  stageLabel,
+} from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const LeadsView = () => {
   const { data: leads = [], isLoading } = useLeads();
-  const { data: collaborators = [] } = useCollaborators();
   const del = useDeleteLead();
   const { isAdmin } = useAuth();
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState("all");
-  const [owner, setOwner] = useState("all");
+  const [bizType, setBizType] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);
 
@@ -30,13 +38,13 @@ const LeadsView = () => {
           !q ||
           l.name.toLowerCase().includes(q) ||
           (l.email || "").toLowerCase().includes(q) ||
+          (l.business_area || "").toLowerCase().includes(q) ||
           (l.nif || "").includes(q);
-        return matchQ && (stage === "all" || l.stage === stage) && (owner === "all" || l.owner_id === owner);
+        return matchQ && (stage === "all" || l.stage === stage) && (bizType === "all" || l.business_type === bizType);
       }),
-    [leads, search, stage, owner]
+    [leads, search, stage, bizType]
   );
 
-  const ownerName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
 
   return (
     <div className="space-y-6">
@@ -62,13 +70,11 @@ const LeadsView = () => {
             {LEAD_STAGES.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={owner} onValueChange={setOwner}>
+        <Select value={bizType} onValueChange={setBizType}>
           <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os responsáveis</SelectItem>
-            {collaborators.filter((c: any) => c.active).map((c: any) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
+            <SelectItem value="all">Todos os tipos</SelectItem>
+            {BUSINESS_TYPES.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -83,7 +89,8 @@ const LeadsView = () => {
                 <th className="text-left p-3">Produto</th>
                 <th className="text-left p-3">Estado</th>
                 <th className="text-right p-3">Valor</th>
-                <th className="text-left p-3">Responsável</th>
+                <th className="text-left p-3">Tipo / área</th>
+                <th className="text-left p-3">IVA</th>
                 <th className="text-left p-3">Reunião</th>
                 <th className="text-left p-3">Follow-up</th>
                 <th className="p-3" />
@@ -105,7 +112,11 @@ const LeadsView = () => {
                     )}
                   </td>
                   <td className="p-3 text-right font-medium">{eur(l.estimated_value)}</td>
-                  <td className="p-3 text-xs">{ownerName(l.owner_id)}</td>
+                  <td className="p-3 text-xs">
+                    {businessTypeLabel(l.business_type)}
+                    <span className="block text-muted-foreground">{l.business_area || "—"}</span>
+                  </td>
+                  <td className="p-3 text-xs">{ivaFrameworkLabel(l.iva_framework)}</td>
                   <td className="p-3 text-xs">{l.meeting ? fmtDate(l.meeting_date) : "—"}</td>
                   <td className="p-3 text-xs">{fmtDate(l.next_followup)}</td>
                   <td className="p-3">
@@ -135,7 +146,7 @@ const LeadsView = () => {
                 </tr>
               ))}
               {!isLoading && filtered.length === 0 && (
-                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
+                <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
               )}
             </tbody>
           </table>
