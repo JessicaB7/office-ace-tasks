@@ -18,6 +18,7 @@ import {
   UserPlus,
   FileText,
   CalendarClock,
+  MessageSquareQuote,
 
 
 } from "lucide-react";
@@ -48,6 +49,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
       { kind: "item", item: { id: "leads", label: "Leads", icon: UserPlus } },
       { kind: "item", item: { id: "propostas", label: "Propostas enviadas", icon: FileText } },
       { kind: "item", item: { id: "followups", label: "Follow ups", icon: CalendarClock } },
+      { kind: "item", item: { id: "scripts", label: "Scripts", icon: MessageSquareQuote } },
     ],
   },
   {

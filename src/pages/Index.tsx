@@ -19,6 +19,7 @@ import PipelineView from "@/components/comercial/PipelineView";
 import LeadsView from "@/components/comercial/LeadsView";
 import PropostasView from "@/components/comercial/PropostasView";
 import FollowUpsView from "@/components/comercial/FollowUpsView";
+import ScriptsView from "@/components/comercial/ScriptsView";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
@@ -54,6 +55,7 @@ const Index = () => {
         {activeView === "leads" && <LeadsView />}
         {activeView === "propostas" && <PropostasView />}
         {activeView === "followups" && <FollowUpsView />}
+        {activeView === "scripts" && <ScriptsView />}
 
 
 
