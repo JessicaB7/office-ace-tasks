@@ -38,28 +38,46 @@ export default function EmpresasDashboard({
   const fseM = months.map((m) => sumGroupMonth(map, accounts, "62", m));
   const pessoalM = months.map((m) => sumSectionMonth(map, accounts, "pessoal", m));
   const depreciacoesM = months.map((m) => sumGroupMonth(map, accounts, "64", m));
+  const mercadoriasM = months.map((m) => sumGroupMonth(map, accounts, "31", m));
   const outrosGastosM = months.map(
     (m) =>
       sumSectionMonth(map, accounts, "despesas", m) +
       sumSectionMonth(map, accounts, "compras", m) -
       fseM[m - 1] -
-      depreciacoesM[m - 1],
+      depreciacoesM[m - 1] -
+      mercadoriasM[m - 1],
   );
   const gastosM = months.map(
-    (m, i) => fseM[i] + pessoalM[i] + depreciacoesM[i] + outrosGastosM[i],
+    (m, i) => fseM[i] + pessoalM[i] + depreciacoesM[i] + mercadoriasM[i] + outrosGastosM[i],
   );
   const resultadoM = months.map((_, i) => rendimentosM[i] - gastosM[i]);
 
   const vendasM = rendimentosM;
 
+  const sumPrefixMonth = (prefix: string, month: number) => {
+    let total = 0;
+    for (const [key, val] of map.entries()) {
+      const [mStr, code] = key.split(":");
+      if (Number(mStr) === month && code.startsWith(prefix)) total += val;
+    }
+    return total;
+  };
+  const ivaTrim = [0, 1, 2, 3].map((qi) => {
+    const lastMonth = qi * 3 + 3;
+    return sumPrefixMonth("2436", lastMonth) - sumPrefixMonth("2437", lastMonth);
+  });
+  const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
+
   const totalRendimentos = rendimentosM.reduce((a, b) => a + b, 0);
   const totalFse = fseM.reduce((a, b) => a + b, 0);
   const totalPessoal = pessoalM.reduce((a, b) => a + b, 0);
   const totalDepreciacoes = depreciacoesM.reduce((a, b) => a + b, 0);
+  const totalMercadorias = mercadoriasM.reduce((a, b) => a + b, 0);
   const totalOutros = outrosGastosM.reduce((a, b) => a + b, 0);
   const totalVendas = totalRendimentos;
   const totalGastos = gastosM.reduce((a, b) => a + b, 0);
   const resultado = totalRendimentos - totalGastos;
+
 
   const vTrim = [0, 1, 2, 3].map((q) => vendasM.slice(q * 3, q * 3 + 3).reduce((a, b) => a + b, 0));
   const gTrim = [0, 1, 2, 3].map((q) => gastosM.slice(q * 3, q * 3 + 3).reduce((a, b) => a + b, 0));
