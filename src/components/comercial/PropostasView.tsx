@@ -17,15 +17,15 @@ const PropostasView = () => {
   const sent = useMemo(
     () =>
       leads
-        .filter((l) => l.proposal_sent_at || ["proposta", "ganho", "perdido"].includes(l.stage))
+        .filter((l) => l.proposal_sent_at || ["proposta_enviada", "ganho", "perda"].includes(l.stage))
         .sort((a, b) => (b.proposal_sent_at || "").localeCompare(a.proposal_sent_at || "")),
     [leads]
   );
 
   const stats = useMemo(() => {
-    const pend = sent.filter((l) => l.stage === "proposta");
+    const pend = sent.filter((l) => l.stage === "proposta_enviada");
     const won = sent.filter((l) => l.stage === "ganho");
-    const lost = sent.filter((l) => l.stage === "perdido");
+    const lost = sent.filter((l) => l.stage === "perda");
     const decided = won.length + lost.length;
     return {
       pend,
@@ -92,12 +92,12 @@ const PropostasView = () => {
                   <td className="p-3"><Badge variant="outline" className={stageClass(l.stage)}>{stageLabel(l.stage)}</Badge></td>
                   <td className="p-3">
                     <div className="flex justify-end gap-2">
-                      {l.stage === "proposta" && (
+                      {l.stage === "proposta_enviada" && (
                         <>
                           <Button size="sm" variant="outline" onClick={() => upsert.mutate({ id: l.id, name: l.name, stage: "ganho" })}>
                             Ganhou
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => upsert.mutate({ id: l.id, name: l.name, stage: "perdido" })}>
+                          <Button size="sm" variant="outline" onClick={() => upsert.mutate({ id: l.id, name: l.name, stage: "perda" })}>
                             Perdeu
                           </Button>
                         </>

@@ -221,9 +221,14 @@ export interface Lead {
   next_followup: string | null;
   owner_id: string | null;
   notes: string | null;
+  meeting: boolean;
+  meeting_date: string | null;
+  suggested_product: string | null;
+  loss_reason: string | null;
   created_at: string;
   updated_at: string;
 }
+
 
 export function useLeads() {
   return useQuery({

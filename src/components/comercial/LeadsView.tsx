@@ -58,7 +58,7 @@ const LeadsView = () => {
         <Select value={stage} onValueChange={setStage}>
           <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as fases</SelectItem>
+            <SelectItem value="all">Todos os estados</SelectItem>
             {LEAD_STAGES.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -80,10 +80,11 @@ const LeadsView = () => {
               <tr>
                 <th className="text-left p-3">Nome</th>
                 <th className="text-left p-3">Contacto</th>
-                <th className="text-left p-3">Origem</th>
-                <th className="text-left p-3">Fase</th>
-                <th className="text-right p-3">Estimativa</th>
+                <th className="text-left p-3">Produto</th>
+                <th className="text-left p-3">Estado</th>
+                <th className="text-right p-3">Valor</th>
                 <th className="text-left p-3">Responsável</th>
+                <th className="text-left p-3">Reunião</th>
                 <th className="text-left p-3">Follow-up</th>
                 <th className="p-3" />
               </tr>
@@ -96,10 +97,16 @@ const LeadsView = () => {
                     {l.email || "—"}
                     {l.phone && <span className="block">{l.phone}</span>}
                   </td>
-                  <td className="p-3 text-xs text-muted-foreground">{l.source || "—"}</td>
-                  <td className="p-3"><Badge variant="outline" className={stageClass(l.stage)}>{stageLabel(l.stage)}</Badge></td>
+                  <td className="p-3 text-xs text-muted-foreground">{l.suggested_product || "—"}</td>
+                  <td className="p-3">
+                    <Badge variant="outline" className={stageClass(l.stage)}>{stageLabel(l.stage)}</Badge>
+                    {l.stage === "perda" && l.loss_reason && (
+                      <span className="block text-xs text-muted-foreground mt-1">{l.loss_reason}</span>
+                    )}
+                  </td>
                   <td className="p-3 text-right font-medium">{eur(l.estimated_value)}</td>
                   <td className="p-3 text-xs">{ownerName(l.owner_id)}</td>
+                  <td className="p-3 text-xs">{l.meeting ? fmtDate(l.meeting_date) : "—"}</td>
                   <td className="p-3 text-xs">{fmtDate(l.next_followup)}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
@@ -128,7 +135,7 @@ const LeadsView = () => {
                 </tr>
               ))}
               {!isLoading && filtered.length === 0 && (
-                <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
+                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
               )}
             </tbody>
           </table>

@@ -1,10 +1,9 @@
 export const LEAD_STAGES = [
-  { id: "novo", label: "Novo" },
-  { id: "contactado", label: "Contactado" },
-  { id: "reuniao", label: "Reunião" },
-  { id: "proposta", label: "Proposta enviada" },
+  { id: "reuniao_agendada", label: "Reunião agendada" },
+  { id: "proposta_enviada", label: "Proposta enviada" },
+  { id: "followup", label: "Follow up" },
   { id: "ganho", label: "Ganho" },
-  { id: "perdido", label: "Perdido" },
+  { id: "perda", label: "Perda" },
 ] as const;
 
 export const stageLabel = (id: string) => LEAD_STAGES.find((s) => s.id === id)?.label || id;
@@ -13,13 +12,13 @@ export const stageClass = (id: string) => {
   switch (id) {
     case "ganho":
       return "bg-emerald-500/10 text-emerald-700 border-emerald-500/30";
-    case "perdido":
+    case "perda":
       return "bg-destructive/10 text-destructive border-destructive/30";
-    case "proposta":
+    case "proposta_enviada":
       return "bg-amber-500/10 text-amber-700 border-amber-500/30";
-    case "reuniao":
+    case "followup":
       return "bg-blue-500/10 text-blue-700 border-blue-500/30";
-    case "contactado":
+    case "reuniao_agendada":
       return "bg-primary/10 text-primary border-primary/30";
     default:
       return "bg-muted text-muted-foreground border-border";
