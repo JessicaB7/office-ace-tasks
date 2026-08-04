@@ -44,7 +44,7 @@ const FollowUpsView = () => {
       <div className="min-w-0">
         <p className="text-sm font-medium">{lead.name}</p>
         <p className="text-xs text-muted-foreground">
-          {ownerName(lead.owner_id)} · {eur(lead.estimated_value)}/mês
+          {ownerName(lead.owner_id)} · {eur(lead.estimated_value)}
         </p>
       </div>
       <div className="flex items-center gap-2">

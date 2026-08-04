@@ -143,7 +143,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
             />
           </div>
           <div>
-            <Label>Valor (€/mês)</Label>
+            <Label>Valor (€)</Label>
             <Input type="number" step="0.01" value={form.estimated_value} onChange={(e) => set("estimated_value", e.target.value)} />
           </div>
 

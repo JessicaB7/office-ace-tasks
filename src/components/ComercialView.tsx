@@ -119,8 +119,8 @@ const ComercialView = () => {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Leads em aberto", value: String(stats.abertas.length), hint: `${eur(stats.pipelineValor)}/mês em pipeline`, icon: Target },
-          { label: `Ganhas em ${year}`, value: String(stats.ganhas.length), hint: `${eur(stats.ganhoValor)}/mês`, icon: Handshake },
+          { label: "Leads em aberto", value: String(stats.abertas.length), hint: `${eur(stats.pipelineValor)} em pipeline`, icon: Target },
+          { label: `Ganhas em ${year}`, value: String(stats.ganhas.length), hint: `${eur(stats.ganhoValor)}`, icon: Handshake },
           { label: "Taxa de conversão", value: `${stats.taxa.toFixed(0)}%`, hint: `${stats.perdidas.length} perdidas`, icon: TrendingUp },
           { label: "Valor médio ganho", value: eur(stats.ticket), hint: "por lead ganha", icon: Euro },
         ].map((k) => (
@@ -202,7 +202,7 @@ const ComercialView = () => {
                 <Badge variant="outline" className={stageClass(s.id)}>{s.label}</Badge>
                 <div className="text-right">
                   <p className="font-semibold">{s.count}</p>
-                  <p className="text-xs text-muted-foreground">{eur(s.value)}/mês</p>
+                  <p className="text-xs text-muted-foreground">{eur(s.value)}</p>
                 </div>
               </div>
             ))}

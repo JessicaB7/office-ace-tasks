@@ -48,8 +48,8 @@ const PropostasView = () => {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: "Aguardam resposta", value: String(stats.pend.length), hint: `${eur(stats.pendValue)}/mês`, icon: FileText },
-          { label: "Ganhas", value: String(stats.won.length), hint: `${eur(stats.wonValue)}/mês`, icon: ThumbsUp },
+          { label: "Aguardam resposta", value: String(stats.pend.length), hint: `${eur(stats.pendValue)}`, icon: FileText },
+          { label: "Ganhas", value: String(stats.won.length), hint: `${eur(stats.wonValue)}`, icon: ThumbsUp },
           { label: "Perdidas", value: String(stats.lost.length), hint: "propostas sem sucesso", icon: ThumbsDown },
           { label: "Taxa de conversão", value: `${stats.rate.toFixed(0)}%`, hint: "ganhas / decididas", icon: FileText },
         ].map((k) => (

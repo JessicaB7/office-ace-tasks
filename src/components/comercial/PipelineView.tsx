@@ -53,7 +53,7 @@ const PipelineView = () => {
               <p className="text-xs font-semibold uppercase tracking-wide">{col.label}</p>
               <span className="text-xs text-muted-foreground">{col.items.length}</span>
             </div>
-            <p className="px-1 text-xs text-muted-foreground">{eur(col.value)}/mês</p>
+            <p className="px-1 text-xs text-muted-foreground">{eur(col.value)}</p>
             <div className="space-y-2 min-h-[80px]">
               {col.items.map((lead) => (
                 <Card
@@ -66,7 +66,7 @@ const PipelineView = () => {
                 >
                   <CardContent className="p-3 space-y-2">
                     <p className="text-sm font-medium leading-tight">{lead.name}</p>
-                    <p className="text-xs text-muted-foreground">{eur(lead.estimated_value)}/mês</p>
+                    <p className="text-xs text-muted-foreground">{eur(lead.estimated_value)}</p>
                     <p className="text-[11px] text-muted-foreground">{ownerName(lead.owner_id)}</p>
                     {lead.next_followup && (
                       <p className="text-[11px] text-muted-foreground">Follow-up: {fmtDate(lead.next_followup)}</p>
