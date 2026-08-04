@@ -167,7 +167,7 @@ export default function EmpresasDashboard({
           <div className="text-sm text-muted-foreground">Análise Empresa · {year}</div>
         </div>
 
-        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-5 gap-3 auto-rows-fr">
+        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-6 gap-3 auto-rows-fr">
           {kpis.map((k) => (
             <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
               <div className="text-xs text-muted-foreground">{k.label}</div>
