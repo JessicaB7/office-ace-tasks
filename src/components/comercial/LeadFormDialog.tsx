@@ -55,7 +55,9 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
             loss_reason: lead.loss_reason || "",
             proposal_sent_at: lead.proposal_sent_at || "",
             next_followup: lead.next_followup || "",
-            owner_id: lead.owner_id || "",
+            business_type: lead.business_type || "",
+            business_area: lead.business_area || "",
+            iva_framework: lead.iva_framework || "",
             notes: lead.notes || "",
           }
         : { ...empty, stage: defaultStage || "reuniao_agendada" }
