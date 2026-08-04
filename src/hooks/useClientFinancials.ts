@@ -87,6 +87,8 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         ta_representacao: 0.10,
         ta_kms: 0.05,
         ta_nao_doc: 0.50,
+        ta_base_representacao: 0,
+        ta_base_ajudas_custo: 0,
         irs_retencoes: 0,
         ss_q1: 0,
         ss_q2: 0,
