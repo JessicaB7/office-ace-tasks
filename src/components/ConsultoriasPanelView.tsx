@@ -3,7 +3,7 @@ import { useLeads } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarClock, Handshake, Target, Users } from "lucide-react";
+import { Handshake, Target, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CONSULTORIA_STAGES, eur, fmtDate, stageClass, stageLabel } from "./comercial/leadConstants";
 
@@ -12,7 +12,7 @@ const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "
 const ConsultoriasPanelView = () => {
   const { data: leads = [], isLoading } = useLeads("consultoria");
   const [year, setYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState<number | null>(null);
+  const [month, setMonth] = useState<number | null>(new Date().getMonth());
 
   const inYear = (d: string | null) => !!d && new Date(d).getFullYear() === year;
   const monthOf = (d: string) => new Date(d).getMonth();
@@ -24,18 +24,17 @@ const ConsultoriasPanelView = () => {
   const stats = useMemo(() => {
     const sim = filtered.filter((l) => l.stage === "mensal_sim");
     const nao = filtered.filter((l) => l.stage === "mensal_nao");
-    const abertas = filtered.filter((l) => !["mensal_sim", "mensal_nao"].includes(l.stage));
-    const decididas = sim.length + nao.length;
-    const valorSim = sim.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
+    const agendadas = filtered.filter((l) => l.stage === "reuniao_agendada");
+    const valorTotal = filtered.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
     return {
       sim,
       nao,
-      abertas,
-      taxa: decididas ? (sim.length / decididas) * 100 : 0,
-      valorSim,
-      ticket: sim.length ? valorSim / sim.length : 0,
+      agendadas,
+      taxa: filtered.length ? (sim.length / filtered.length) * 100 : 0,
+      valorTotal,
     };
   }, [filtered]);
+
 
   const monthly = useMemo(
     () =>
@@ -49,7 +48,7 @@ const ConsultoriasPanelView = () => {
           sessoes: sessoes.length,
           sim: sim.length,
           nao: novas.filter((l) => l.stage === "mensal_nao").length,
-          valor: sim.reduce((s, l) => s + Number(l.estimated_value || 0), 0),
+          valor: novas.reduce((s, l) => s + Number(l.estimated_value || 0), 0),
         };
       }),
     [leads, yearLeads, year]
@@ -75,11 +74,12 @@ const ConsultoriasPanelView = () => {
       map.set(key, {
         total: cur.total + 1,
         sim: cur.sim + (l.stage === "mensal_sim" ? 1 : 0),
-        valor: cur.valor + (l.stage === "mensal_sim" ? Number(l.estimated_value || 0) : 0),
+        valor: cur.valor + Number(l.estimated_value || 0),
       });
     });
-    return [...map.entries()].sort((a, b) => b[1].total - a[1].total);
+    return [...map.entries()].sort((a, b) => b[1].valor - a[1].valor);
   }, [filtered]);
+
 
   const proximas = useMemo(
     () =>
@@ -129,13 +129,13 @@ const ConsultoriasPanelView = () => {
 
       {isLoading && <p className="text-sm text-muted-foreground">A carregar…</p>}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[
-          { label: "Consultorias em aberto", value: String(stats.abertas.length), hint: `${filtered.length} no período`, icon: Target },
-          { label: `Serviço mensal sim (${periodLabel})`, value: String(stats.sim.length), hint: eur(stats.valorSim), icon: Handshake },
-          { label: "Taxa de conversão", value: `${stats.taxa.toFixed(0)}%`, hint: `${stats.nao.length} sem serviço mensal`, icon: Users },
-          { label: "Ticket médio", value: eur(stats.ticket), hint: "por serviço mensal", icon: CalendarClock },
+          { label: "Consultorias agendadas", value: String(stats.agendadas.length), hint: `${filtered.length} no período`, icon: Target },
+          { label: `Valor total (${periodLabel})`, value: eur(stats.valorTotal), hint: `${filtered.length} leads`, icon: Handshake },
+          { label: "Taxa de conversão", value: `${stats.taxa.toFixed(0)}%`, hint: `${stats.sim.length} com serviço mensal · ${stats.nao.length} sem`, icon: Users },
         ].map((k) => (
+
           <Card key={k.label}>
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
@@ -175,11 +175,12 @@ const ConsultoriasPanelView = () => {
               <div key={name} className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">{name}</span>
                 <div className="text-right text-xs text-muted-foreground">
-                  <span className="block text-sm font-semibold text-foreground">{v.total} sessões</span>
-                  {v.sim} com serviço mensal · {eur(v.valor)}
+                  <span className="block text-sm font-semibold text-foreground">{eur(v.valor)}</span>
+                  {v.total} sessões · {v.sim} com serviço mensal
                 </div>
               </div>
             ))}
+
           </CardContent>
         </Card>
       </div>
