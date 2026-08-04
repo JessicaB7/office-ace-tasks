@@ -20,6 +20,7 @@ export type FinancialSettings = {
   client_id: string;
   year: number;
   corporate_tax_rate: number;
+  derrama_rate: number;
   ta_representacao: number;
   ta_kms: number;
   ta_nao_doc: number;
