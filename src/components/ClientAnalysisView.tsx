@@ -256,14 +256,9 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           })}
         </div>
       </div>
+      )}
 
-      {client.tipo_contabilidade === "TI RS" ? (
-        <TISimplificadoDashboard clientId={clientId} year={year} client={client} />
-      ) : client.tipo_contabilidade === "TI CO" ? (
-        <TIOrganizadoDashboard clientId={clientId} year={year} client={client} />
-      ) : client.tipo_contabilidade === "SQ" ? (
-        <EmpresasDashboard clientId={clientId} year={year} client={client} />
-      ) : (
+      {section === "dados" && (
         <>
           <div className="flex gap-1 border-b">
             {TABS.map((t) => (
@@ -286,6 +281,17 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           {tab === "indicadores" && <IndicadoresTab clientId={clientId} year={year} />}
         </>
       )}
+
+      {section === "dashboard" && (
+        client.tipo_contabilidade === "TI RS" ? (
+          <TISimplificadoDashboard clientId={clientId} year={year} client={client} />
+        ) : client.tipo_contabilidade === "TI CO" ? (
+          <TIOrganizadoDashboard clientId={clientId} year={year} client={client} />
+        ) : (
+          <EmpresasDashboard clientId={clientId} year={year} client={client} />
+        )
+      )}
+
 
       <ClientDetailDialog
         client={fichaOpen ? client : null}
