@@ -207,7 +207,7 @@ export default function EmpresasDashboard({
               <div key={i} className="rounded-lg border bg-background p-3 space-y-1 min-h-[112px] h-full flex flex-col justify-center">
                 <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Vendas</span>
+                  <span className="text-muted-foreground">Rendimentos</span>
                   <span className="font-semibold tabular-nums text-primary">{fmtEur(vTrim[i])}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
