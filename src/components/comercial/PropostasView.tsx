@@ -37,7 +37,6 @@ const PropostasView = () => {
     };
   }, [sent]);
 
-  const ownerName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
 
   return (
     <div className="space-y-6">

@@ -99,7 +99,6 @@ const ComercialView = () => {
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [stats.perdidas]);
 
-  const ownerName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
 
   const years = [year + 1, year, year - 1, year - 2];
 

@@ -37,7 +37,6 @@ const FollowUpsView = () => {
     };
   }, [leads]);
 
-  const ownerName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
 
   const Row = ({ lead, tone }: { lead: Lead; tone?: string }) => (
     <div className="flex items-center justify-between gap-3 border-b last:border-0 py-2.5 flex-wrap">

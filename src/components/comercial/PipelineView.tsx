@@ -24,7 +24,6 @@ const PipelineView = () => {
     [leads]
   );
 
-  const ownerName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
 
   const openNew = (stage: string) => {
     setEditing(null);

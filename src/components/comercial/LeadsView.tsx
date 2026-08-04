@@ -146,7 +146,7 @@ const LeadsView = () => {
                 </tr>
               ))}
               {!isLoading && filtered.length === 0 && (
-                <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
+                <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
               )}
             </tbody>
           </table>
