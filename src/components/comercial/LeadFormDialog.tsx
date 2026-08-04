@@ -6,8 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCollaborators, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
-import { LEAD_STAGES } from "./leadConstants";
+import { useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
+import { LEAD_STAGES, BUSINESS_TYPES, IVA_FRAMEWORKS } from "./leadConstants";
 import { toast } from "sonner";
 
 interface Props {
