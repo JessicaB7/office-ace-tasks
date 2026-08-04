@@ -1,24 +1,32 @@
 import { useMemo, useState } from "react";
-import { useLeads, useCollaborators, useDeleteLead, type Lead } from "@/hooks/useSupabaseQuery";
+import { useLeads, useDeleteLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Trash2, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LEAD_STAGES, eur, fmtDate, stageClass, stageLabel } from "./leadConstants";
+import {
+  LEAD_STAGES,
+  BUSINESS_TYPES,
+  businessTypeLabel,
+  ivaFrameworkLabel,
+  eur,
+  fmtDate,
+  stageClass,
+  stageLabel,
+} from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 const LeadsView = () => {
   const { data: leads = [], isLoading } = useLeads();
-  const { data: collaborators = [] } = useCollaborators();
   const del = useDeleteLead();
   const { isAdmin } = useAuth();
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState("all");
-  const [owner, setOwner] = useState("all");
+  const [bizType, setBizType] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);
 
@@ -30,13 +38,13 @@ const LeadsView = () => {
           !q ||
           l.name.toLowerCase().includes(q) ||
           (l.email || "").toLowerCase().includes(q) ||
+          (l.business_area || "").toLowerCase().includes(q) ||
           (l.nif || "").includes(q);
-        return matchQ && (stage === "all" || l.stage === stage) && (owner === "all" || l.owner_id === owner);
+        return matchQ && (stage === "all" || l.stage === stage) && (bizType === "all" || l.business_type === bizType);
       }),
-    [leads, search, stage, owner]
+    [leads, search, stage, bizType]
   );
 
-  const ownerName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
 
   return (
     <div className="space-y-6">
