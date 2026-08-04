@@ -103,7 +103,9 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
         loss_reason: form.stage === "perda" ? form.loss_reason.trim() : null,
         proposal_sent_at: form.proposal_sent_at || null,
         next_followup: form.next_followup || null,
-        owner_id: form.owner_id || null,
+        business_type: form.business_type || null,
+        business_area: form.business_area || null,
+        iva_framework: form.iva_framework || null,
         notes: form.notes || null,
       });
       toast.success(lead ? "Lead atualizada." : "Lead criada.");
