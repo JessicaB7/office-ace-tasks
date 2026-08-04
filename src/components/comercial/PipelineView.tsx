@@ -3,7 +3,7 @@ import { useLeads, useCollaborators, useUpsertLead, type Lead } from "@/hooks/us
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { LEAD_STAGES, eur, fmtDate } from "./leadConstants";
+import { LEAD_STAGES, eur, fmtDate, businessTypeLabel } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -67,7 +67,7 @@ const PipelineView = () => {
                   <CardContent className="p-3 space-y-2">
                     <p className="text-sm font-medium leading-tight">{lead.name}</p>
                     <p className="text-xs text-muted-foreground">{eur(lead.estimated_value)}</p>
-                    <p className="text-[11px] text-muted-foreground">{ownerName(lead.owner_id)}</p>
+                    <p className="text-[11px] text-muted-foreground">{businessTypeLabel(lead.business_type)}</p>
                     {lead.next_followup && (
                       <p className="text-[11px] text-muted-foreground">Follow-up: {fmtDate(lead.next_followup)}</p>
                     )}

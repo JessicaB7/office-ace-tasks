@@ -3,7 +3,7 @@ import { useLeads, useCollaborators, useUpsertLead, type Lead } from "@/hooks/us
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { eur, fmtDate, stageClass, stageLabel } from "./leadConstants";
+import { eur, fmtDate, stageClass, stageLabel, businessTypeLabel } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { FileText, ThumbsUp, ThumbsDown } from "lucide-react";
 
