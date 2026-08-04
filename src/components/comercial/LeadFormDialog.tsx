@@ -92,7 +92,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
       toast.error("Indica o nome da lead.");
       return;
     }
-    if (form.stage === "perda" && !form.loss_reason.trim()) {
+    if (!isConsultoria && form.stage === "perda" && !form.loss_reason.trim()) {
       toast.error("Indica o motivo da perda.");
       return;
     }
@@ -104,15 +104,16 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
         email: form.email || null,
         meeting: isConsultoria ? !!form.meeting_date : form.meeting,
         meeting_date: isConsultoria ? form.meeting_date || null : form.meeting ? form.meeting_date || null : null,
-        suggested_product: form.suggested_product || null,
+        suggested_product: isConsultoria ? null : form.suggested_product || null,
         estimated_value: form.estimated_value ? Number(form.estimated_value) : null,
         stage: form.stage,
-        loss_reason: form.stage === "perda" ? form.loss_reason.trim() : null,
-        proposal_sent_at: form.proposal_sent_at || null,
+        loss_reason: !isConsultoria && form.stage === "perda" ? form.loss_reason.trim() : null,
+        proposal_sent_at: isConsultoria ? null : form.proposal_sent_at || null,
         next_followup: form.next_followup || null,
-        business_type: form.business_type || null,
-        business_area: form.business_area || null,
-        iva_framework: form.iva_framework || null,
+        business_type: isConsultoria ? null : form.business_type || null,
+        business_area: isConsultoria ? null : form.business_area || null,
+        iva_framework: isConsultoria ? null : form.iva_framework || null,
+
         segment: lead?.segment || segment || "contabilidade",
         given_by: isConsultoria ? form.given_by || null : null,
         notes: form.notes || null,
