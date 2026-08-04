@@ -71,19 +71,21 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
 
   const set = (k: string, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
 
-  // Follow-up por defeito: 3 dias após a data da reunião
-  const plus3 = (d: string) => {
+  // Follow-up por defeito: 15 dias (consultoria) / 3 dias após a data da reunião
+  const followUpDays = isConsultoria ? 15 : 3;
+  const plusDays = (d: string) => {
     const base = new Date(`${d}T12:00:00`);
     if (isNaN(base.getTime())) return "";
-    base.setDate(base.getDate() + 3);
+    base.setDate(base.getDate() + followUpDays);
     return base.toISOString().slice(0, 10);
   };
 
   const setMeetingDate = (v: string) =>
     setForm((p) => {
-      const auto = p.next_followup === "" || (p.meeting_date && p.next_followup === plus3(p.meeting_date));
-      return { ...p, meeting_date: v, next_followup: auto && v ? plus3(v) : p.next_followup };
+      const auto = p.next_followup === "" || (p.meeting_date && p.next_followup === plusDays(p.meeting_date));
+      return { ...p, meeting_date: v, next_followup: auto && v ? plusDays(v) : p.next_followup };
     });
+
 
   const handleSave = async () => {
     if (!form.name.trim()) {
