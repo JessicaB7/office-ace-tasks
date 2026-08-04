@@ -7,7 +7,7 @@ import { LEAD_STAGES, eur, fmtDate, businessTypeLabel } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const PipelineView = () => {
+const PipelineView = ({ segment = "contabilidade" }: { segment?: string }) => {
   const { data: leads = [], isLoading } = useLeads(segment);
   const upsert = useUpsertLead();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -96,7 +96,7 @@ const PipelineView = () => {
         ))}
       </div>
 
-      <LeadFormDialog open={dialogOpen} lead={editing} defaultStage={defaultStage} onClose={() => setDialogOpen(false)} />
+      <LeadFormDialog segment={segment} open={dialogOpen} lead={editing} defaultStage={defaultStage} onClose={() => setDialogOpen(false)} />
     </div>
   );
 };

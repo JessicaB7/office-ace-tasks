@@ -15,7 +15,7 @@ const addDays = (n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-const FollowUpsView = () => {
+const FollowUpsView = ({ segment = "contabilidade" }: { segment?: string }) => {
   const { data: leads = [] } = useLeads(segment);
   const upsert = useUpsertLead();
   const [editing, setEditing] = useState<Lead | null>(null);
@@ -106,7 +106,7 @@ const FollowUpsView = () => {
         </Card>
       ))}
 
-      <LeadFormDialog open={dialogOpen} lead={editing} onClose={() => setDialogOpen(false)} />
+      <LeadFormDialog segment={segment} open={dialogOpen} lead={editing} onClose={() => setDialogOpen(false)} />
     </div>
   );
 };
