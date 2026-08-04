@@ -85,6 +85,7 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         client_id: clientId,
         year,
         corporate_tax_rate: 0.16,
+        derrama_rate: 0.015,
         ta_representacao: 0.10,
         ta_kms: 0.05,
         ta_nao_doc: 0.50,
