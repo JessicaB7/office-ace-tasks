@@ -89,7 +89,8 @@ const LeadsView = () => {
                 <th className="text-left p-3">Produto</th>
                 <th className="text-left p-3">Estado</th>
                 <th className="text-right p-3">Valor</th>
-                <th className="text-left p-3">Responsável</th>
+                <th className="text-left p-3">Tipo / área</th>
+                <th className="text-left p-3">IVA</th>
                 <th className="text-left p-3">Reunião</th>
                 <th className="text-left p-3">Follow-up</th>
                 <th className="p-3" />
