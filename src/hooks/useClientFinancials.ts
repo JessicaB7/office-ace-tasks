@@ -23,6 +23,8 @@ export type FinancialSettings = {
   ta_representacao: number;
   ta_kms: number;
   ta_nao_doc: number;
+  ta_base_representacao: number;
+  ta_base_ajudas_custo: number;
   irs_retencoes: number;
   ss_q1: number;
   ss_q2: number;
