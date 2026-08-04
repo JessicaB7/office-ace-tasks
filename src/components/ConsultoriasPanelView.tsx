@@ -84,6 +84,16 @@ const ConsultoriasPanelView = () => {
     return [...map.entries()].sort((a, b) => b[1].valor - a[1].valor);
   }, [filtered]);
 
+  const valorDiogo = useMemo(
+    () =>
+      filtered
+        .filter((l) => (l.given_by || "").toLowerCase().includes("diogo"))
+        .reduce((s, l) => s + semIVA(Number(l.estimated_value || 0)), 0),
+    [filtered]
+  );
+  const comissaoDiogo = valorDiogo * 0.1;
+
+
 
   const proximas = useMemo(
     () =>
@@ -197,7 +207,15 @@ const ConsultoriasPanelView = () => {
               </div>
             ))}
 
+            <div className="pt-3 border-t flex items-center justify-between gap-3">
+              <span className="text-sm font-medium">Comissão Diogo (10%)</span>
+              <div className="text-right text-xs text-muted-foreground">
+                <span className="block text-sm font-semibold text-foreground">{eur(comissaoDiogo)}</span>
+                10% de {eur(valorDiogo)}
+              </div>
+            </div>
           </CardContent>
+
         </Card>
       </div>
 
