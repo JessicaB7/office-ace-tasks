@@ -76,7 +76,7 @@ const ConsultoriasPanelView = () => {
       map.set(key, {
         total: cur.total + 1,
         sim: cur.sim + (l.stage === "mensal_sim" ? 1 : 0),
-        valor: cur.valor + Number(l.estimated_value || 0),
+        valor: cur.valor + semIVA(Number(l.estimated_value || 0)),
       });
     });
     return [...map.entries()].sort((a, b) => b[1].valor - a[1].valor);
