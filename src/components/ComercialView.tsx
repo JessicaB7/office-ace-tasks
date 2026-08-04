@@ -46,12 +46,14 @@ const ComercialView = () => {
     [leads, yearLeads, year]
   );
 
+  const visibleMonthly = useMemo(() => (month === null ? monthly : monthly.filter((Masked (_, i) => i === month)), [monthly, month]);
+
   const maxNovas = Math.max(1, ...monthly.map((m) => m.novas));
 
   const stats = useMemo(() => {
-    const ganhas = yearLeads.filter((l) => l.stage === "ganho");
-    const perdidas = yearLeads.filter((l) => l.stage === "perda");
-    const abertas = yearLeads.filter((l) => !["ganho", "perda"].includes(l.stage));
+    const ganhas = filteredLeads.filter((l) => l.stage === "ganho");
+    const perdidas = filteredLeads.filter((l) => l.stage === "perda");
+    const abertas = filteredLeads.filter((l) => !["ganho", "perda"].includes(l.stage));
     const decididas = ganhas.length + perdidas.length;
     const ganhoValor = ganhas.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
     return {
@@ -63,30 +65,30 @@ const ComercialView = () => {
       taxa: decididas ? (ganhas.length / decididas) * 100 : 0,
       ticket: ganhas.length ? ganhoValor / ganhas.length : 0,
     };
-  }, [yearLeads]);
+  }, [filteredLeads]);
 
   const byStage = useMemo(
     () =>
       LEAD_STAGES.map((s) => {
-        const items = yearLeads.filter((l) => l.stage === s.id);
+        const items = filteredLeads.filter((l) => l.stage === s.id);
         return {
           ...s,
           count: items.length,
           value: items.reduce((a, l) => a + Number(l.estimated_value || 0), 0),
         };
       }),
-    [yearLeads]
+    [filteredLeads]
   );
 
   const products = useMemo(() => {
     const map = new Map<string, { count: number; value: number }>();
-    yearLeads.forEach((l) => {
+    filteredLeads.forEach((l) => {
       const key = (l.suggested_product || "Sem produto").trim() || "Sem produto";
       const cur = map.get(key) || { count: 0, value: 0 };
       map.set(key, { count: cur.count + 1, value: cur.value + Number(l.estimated_value || 0) });
     });
     return [...map.entries()].sort((a, b) => b[1].value - a[1].value).slice(0, 8);
-  }, [yearLeads]);
+  }, [filteredLeads]);
 
   const losses = useMemo(() => {
     const map = new Map<string, number>();
