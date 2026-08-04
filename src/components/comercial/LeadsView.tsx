@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Trash2, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  LEAD_STAGES,
+  stagesFor,
   BUSINESS_TYPES,
   businessTypeLabel,
   ivaFrameworkLabel,
@@ -67,7 +67,7 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
           <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os estados</SelectItem>
-            {LEAD_STAGES.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
+            {stagesFor(segment).map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
           </SelectContent>
         </Select>
         {segment !== "consultoria" && (
