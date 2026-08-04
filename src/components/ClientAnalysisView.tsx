@@ -191,7 +191,24 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         </div>
       </div>
 
+      <div className="flex gap-1 border-b">
+        {SECTIONS.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setSection(s.key)}
+            className={cn(
+              "px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors",
+              section === s.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {section === "dados" && (
       <div className="rounded-xl border bg-card p-4">
+
         <div className="flex items-center justify-between gap-3 mb-3">
           <h3 className="text-sm font-semibold">Ficheiros importados {year}</h3>
           <p className="text-xs text-muted-foreground">Mapa de Exploração: faturação, despesas e lucro. Balancetes: IVA, Segurança Social e retenção na fonte.</p>
