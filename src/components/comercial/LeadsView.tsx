@@ -89,13 +89,14 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
               <tr>
                 <th className="text-left p-3">Nome</th>
                 <th className="text-left p-3">Contacto</th>
-                <th className="text-left p-3">Produto</th>
+                {segment !== "consultoria" && <th className="text-left p-3">Produto</th>}
                 <th className="text-left p-3">Estado</th>
                 <th className="text-right p-3">Valor</th>
-                <th className="text-left p-3">Tipo / área</th>
-                <th className="text-left p-3">IVA</th>
+                {segment !== "consultoria" && <th className="text-left p-3">Tipo / área</th>}
+                {segment !== "consultoria" && <th className="text-left p-3">IVA</th>}
                 <th className="text-left p-3">{segment === "consultoria" ? "Sessão" : "Reunião"}</th>
                 <th className="text-left p-3">Follow-up</th>
+
                 <th className="p-3" />
               </tr>
             </thead>
