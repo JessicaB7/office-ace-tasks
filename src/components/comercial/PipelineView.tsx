@@ -53,7 +53,7 @@ const PipelineView = () => {
               <p className="text-xs font-semibold uppercase tracking-wide">{col.label}</p>
               <span className="text-xs text-muted-foreground">{col.items.length}</span>
             </div>
-            <p className="px-1 text-xs text-muted-foreground">{eur(col.value)}/mês</p>
+            <p className="px-1 text-xs text-muted-foreground">{eur(col.value)}</p>
             <div className="space-y-2 min-h-[80px]">
               {col.items.map((lead) => (
                 <Card
