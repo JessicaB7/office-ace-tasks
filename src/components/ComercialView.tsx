@@ -46,7 +46,7 @@ const ComercialView = () => {
     [leads, yearLeads, year]
   );
 
-  const visibleMonthly = useMemo(() => (month === null ? monthly : monthly.filter((Masked (_, i) => i === month)), [monthly, month]);
+  const visibleMonthly = useMemo(() => (month === null ? monthly : monthly.filter((_, i) => i === month)), [monthly, month]);
 
   const maxNovas = Math.max(1, ...monthly.map((m) => m.novas));
 
