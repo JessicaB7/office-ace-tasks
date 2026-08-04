@@ -3,7 +3,7 @@ import { useLeads } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarClock, Handshake, Target, Users } from "lucide-react";
+import { Handshake, Target, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CONSULTORIA_STAGES, eur, fmtDate, stageClass, stageLabel } from "./comercial/leadConstants";
 
@@ -12,7 +12,7 @@ const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "
 const ConsultoriasPanelView = () => {
   const { data: leads = [], isLoading } = useLeads("consultoria");
   const [year, setYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState<number | null>(null);
+  const [month, setMonth] = useState<number | null>(new Date().getMonth());
 
   const inYear = (d: string | null) => !!d && new Date(d).getFullYear() === year;
   const monthOf = (d: string) => new Date(d).getMonth();
@@ -175,11 +175,12 @@ const ConsultoriasPanelView = () => {
               <div key={name} className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">{name}</span>
                 <div className="text-right text-xs text-muted-foreground">
-                  <span className="block text-sm font-semibold text-foreground">{v.total} sessões</span>
-                  {v.sim} com serviço mensal · {eur(v.valor)}
+                  <span className="block text-sm font-semibold text-foreground">{eur(v.valor)}</span>
+                  {v.total} sessões · {v.sim} com serviço mensal
                 </div>
               </div>
             ))}
+
           </CardContent>
         </Card>
       </div>
