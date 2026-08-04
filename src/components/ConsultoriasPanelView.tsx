@@ -129,13 +129,13 @@ const ConsultoriasPanelView = () => {
 
       {isLoading && <p className="text-sm text-muted-foreground">A carregar…</p>}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[
-          { label: "Consultorias em aberto", value: String(stats.abertas.length), hint: `${filtered.length} no período`, icon: Target },
-          { label: `Serviço mensal sim (${periodLabel})`, value: String(stats.sim.length), hint: eur(stats.valorSim), icon: Handshake },
-          { label: "Taxa de conversão", value: `${stats.taxa.toFixed(0)}%`, hint: `${stats.nao.length} sem serviço mensal`, icon: Users },
-          { label: "Ticket médio", value: eur(stats.ticket), hint: "por serviço mensal", icon: CalendarClock },
+          { label: "Consultorias agendadas", value: String(stats.agendadas.length), hint: `${filtered.length} no período`, icon: Target },
+          { label: `Valor total (${periodLabel})`, value: eur(stats.valorTotal), hint: `${filtered.length} leads`, icon: Handshake },
+          { label: "Taxa de conversão", value: `${stats.taxa.toFixed(0)}%`, hint: `${stats.sim.length} com serviço mensal · ${stats.nao.length} sem`, icon: Users },
         ].map((k) => (
+
           <Card key={k.label}>
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
