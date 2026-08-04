@@ -1,5 +1,19 @@
 import { useState } from "react";
-import { LayoutDashboard, ListTodo, Plus, Users, Building2, CalendarDays, LogOut, ClipboardList, ChevronDown, BookOpen, BarChart3, Banknote, LineChart } from "lucide-react";
+import {
+  LayoutDashboard,
+  ListTodo,
+  Users,
+  Building2,
+  CalendarDays,
+  LogOut,
+  ClipboardList,
+  ChevronDown,
+  BookOpen,
+  BarChart3,
+  Banknote,
+  LineChart,
+  Gauge,
+} from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,86 +24,107 @@ interface AppSidebarProps {
   onNewTask: () => void;
 }
 
-const mainNavItems = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "tasks", label: "Tarefas", icon: ListTodo },
+type Item = { id: string; label: string; icon?: any; adminOnly?: boolean };
+type Group = { id: string; label: string; icon: any; adminOnly?: boolean; items: Item[] };
+type Entry = { kind: "item"; item: Item } | { kind: "group"; group: Group };
+
+const SECTIONS: { title: string; entries: Entry[] }[] = [
+  {
+    title: "Visão geral",
+    entries: [
+      { kind: "item", item: { id: "business", label: "Painel do negócio", icon: Gauge } },
+      { kind: "item", item: { id: "dashboard", label: "O meu dia", icon: LayoutDashboard } },
+      { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
+    ],
+  },
+  {
+    title: "Clientes",
+    entries: [
+      { kind: "item", item: { id: "clients", label: "Clientes", icon: Building2 } },
+      {
+        kind: "group",
+        group: {
+          id: "contabilidades",
+          label: "Contabilidades",
+          icon: BookOpen,
+          items: [
+            { id: "contabilidades_TI_isento", label: "TI Simplificado - Isento IVA" },
+            { id: "contabilidades_TI_iva", label: "TI Simplificado - Reg. IVA" },
+            { id: "contabilidades_organizada", label: "TI Contabilidade Organizada" },
+            { id: "contabilidades_empresas", label: "Empresas" },
+          ],
+        },
+      },
+      {
+        kind: "group",
+        group: {
+          id: "analise",
+          label: "Análise Financeira",
+          icon: LineChart,
+          items: [
+            { id: "analise_TI_simplificado", label: "TI Simplificado" },
+            { id: "analise_TI_organizado", label: "TI Organizado" },
+            { id: "analise_empresas", label: "Empresas" },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    title: "Trabalho",
+    entries: [
+      { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
+      {
+        kind: "group",
+        group: {
+          id: "obrigacoes",
+          label: "Obrigações",
+          icon: ClipboardList,
+          items: [
+            { id: "obrigacoes_SAFT", label: "SAFT" },
+            { id: "obrigacoes_salarios", label: "Salários" },
+            { id: "obrigacoes_DMR", label: "DMR" },
+            { id: "obrigacoes_SS_TI", label: "Segurança Social TI" },
+            { id: "obrigacoes_IVA", label: "IVA - Periódica" },
+            { id: "obrigacoes_IVA_recapitulativa", label: "IVA - Recapitulativa" },
+            { id: "obrigacoes_retencao_fonte", label: "Retenção na Fonte" },
+            { id: "obrigacoes_emissao_faturas", label: "Emissão de Faturas" },
+          ],
+        },
+      },
+      { kind: "item", item: { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays } },
+    ],
+  },
+  {
+    title: "Escritório",
+    entries: [
+      { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
+      { kind: "item", item: { id: "extratos", label: "Extratos Bancários", icon: Banknote } },
+    ],
+  },
 ];
 
-const obrigacoesSubItems = [
-  { id: "obrigacoes_SAFT", label: "SAFT" },
-  { id: "obrigacoes_salarios", label: "Salários" },
-  { id: "obrigacoes_DMR", label: "DMR" },
-  { id: "obrigacoes_SS_TI", label: "Segurança Social TI" },
-  { id: "obrigacoes_IVA", label: "IVA - Periódica" },
-  { id: "obrigacoes_IVA_recapitulativa", label: "IVA - Recapitulativa" },
-  { id: "obrigacoes_retencao_fonte", label: "Retenção na Fonte" },
-  { id: "obrigacoes_emissao_faturas", label: "Emissão de Faturas" },
-];
-
-const contabilidadesSubItems = [
-  { id: "contabilidades_TI_isento", label: "TI Simplificado - Isento IVA" },
-  { id: "contabilidades_TI_iva", label: "TI Simplificado - Reg. IVA" },
-  { id: "contabilidades_organizada", label: "TI Contabilidade Organizada" },
-  { id: "contabilidades_empresas", label: "Empresas" },
-];
-
-const analiseFinanceiraSubItems = [
-  { id: "analise_TI_simplificado", label: "TI Simplificado" },
-  { id: "analise_TI_organizado", label: "TI Organizado" },
-  { id: "analise_empresas", label: "Empresas" },
-];
-
-const bottomNavItems = [
-  { id: "collaborators", label: "Colaboradores", icon: Users },
-  { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays },
-];
-
-const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) => {
+const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
   const { user, isAdmin, signOut } = useAuth();
-  const [obrigacoesOpen, setObrigacoesOpen] = useState(activeView.startsWith("obrigacoes"));
-  const [contabilidadesOpen, setContabilidadesOpen] = useState(activeView.startsWith("contabilidades"));
-  const [analiseOpen, setAnaliseOpen] = useState(activeView.startsWith("analise"));
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    contabilidades: activeView.startsWith("contabilidades"),
+    analise: activeView.startsWith("analise"),
+    obrigacoes: activeView.startsWith("obrigacoes"),
+  });
 
-  const isObrigacoesActive = activeView.startsWith("obrigacoes");
-  const isContabilidadesActive = activeView.startsWith("contabilidades");
-  const isAnaliseActive = activeView.startsWith("analise");
+  const itemClass = (active: boolean) =>
+    cn(
+      "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors",
+      active
+        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+        : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-sidebar-accent/50"
+    );
 
-  const handleObrigacoesClick = () => {
-    setObrigacoesOpen((prev) => !prev);
-    if (!isObrigacoesActive) {
-      onViewChange("obrigacoes_SAFT");
-    }
+  const handleGroupClick = (group: Group) => {
+    const isActive = activeView.startsWith(group.id);
+    setOpenGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }));
+    if (!isActive) onViewChange(group.items[0].id);
   };
-
-  const handleContabilidadesClick = () => {
-    setContabilidadesOpen((prev) => !prev);
-    if (!isContabilidadesActive) {
-      onViewChange("contabilidades_TI_isento");
-    }
-  };
-
-  const handleAnaliseClick = () => {
-    setAnaliseOpen((prev) => !prev);
-    if (!isAnaliseActive) {
-      onViewChange("analise_TI_simplificado");
-    }
-  };
-
-  const renderNavButton = (item: { id: string; label: string; icon: any }) => (
-    <button
-      key={item.id}
-      onClick={() => onViewChange(item.id)}
-      className={cn(
-        "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors",
-        activeView === item.id
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-sidebar-accent/50"
-      )}
-    >
-      <item.icon className="w-4 h-4" />
-      {item.label}
-    </button>
-  );
 
   return (
     <aside className="w-64 bg-primary text-primary-foreground min-h-screen flex flex-col">
@@ -97,114 +132,61 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
         <img src={logoWhite} alt="Contabilista Explica" className="w-full max-w-[240px]" />
       </div>
 
-
-      <nav className="flex-1 px-3">
-        {mainNavItems.map(renderNavButton)}
-
-        {/* Obrigações with sub-items */}
-        <button
-          onClick={handleObrigacoesClick}
-          className={cn(
-            "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors",
-            isObrigacoesActive
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-sidebar-accent/50"
-          )}
-        >
-          <ClipboardList className="w-4 h-4" />
-          <span className="flex-1 text-left">Obrigações</span>
-          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", obrigacoesOpen && "rotate-180")} />
-        </button>
-        {obrigacoesOpen && (
-          <div className="ml-4 pl-3 border-l border-primary-foreground/20 mb-1">
-            {obrigacoesSubItems.map((sub) => (
-              <button
-                key={sub.id}
-                onClick={() => onViewChange(sub.id)}
-                className={cn(
-                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium mb-0.5 transition-colors",
-                  activeView === sub.id
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50"
-                )}
-              >
-                {sub.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Contabilidades with sub-items */}
-        <button
-          onClick={handleContabilidadesClick}
-          className={cn(
-            "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors",
-            isContabilidadesActive
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-sidebar-accent/50"
-          )}
-        >
-          <BookOpen className="w-4 h-4" />
-          <span className="flex-1 text-left">Contabilidades</span>
-          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", contabilidadesOpen && "rotate-180")} />
-        </button>
-        {contabilidadesOpen && (
-          <div className="ml-4 pl-3 border-l border-primary-foreground/20 mb-1">
-            {contabilidadesSubItems.map((sub) => (
-              <button
-                key={sub.id}
-                onClick={() => onViewChange(sub.id)}
-                className={cn(
-                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium mb-0.5 transition-colors",
-                  activeView === sub.id
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50"
-                )}
-              >
-                {sub.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Análise Financeira with sub-items */}
-        <button
-          onClick={handleAnaliseClick}
-          className={cn(
-            "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors",
-            isAnaliseActive
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-sidebar-accent/50"
-          )}
-        >
-          <LineChart className="w-4 h-4" />
-          <span className="flex-1 text-left">Análise Financeira</span>
-          <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", analiseOpen && "rotate-180")} />
-        </button>
-        {analiseOpen && (
-          <div className="ml-4 pl-3 border-l border-primary-foreground/20 mb-1">
-            {analiseFinanceiraSubItems.map((sub) => (
-              <button
-                key={sub.id}
-                onClick={() => onViewChange(sub.id)}
-                className={cn(
-                  "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium mb-0.5 transition-colors",
-                  activeView === sub.id
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50"
-                )}
-              >
-                {sub.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {renderNavButton({ id: "clients", label: "Clientes", icon: Building2 })}
-        {renderNavButton({ id: "extratos", label: "Extratos Bancários", icon: Banknote })}
-        {isAdmin && renderNavButton({ id: "resumo", label: "Resumo Mensal", icon: BarChart3 })}
-        {isAdmin && renderNavButton({ id: "collaborators", label: "Colaboradores", icon: Users })}
-        {renderNavButton({ id: "calendar", label: "Calendário Fiscal", icon: CalendarDays })}
+      <nav className="flex-1 px-3 pb-4 overflow-y-auto">
+        {SECTIONS.map((section) => {
+          const entries = section.entries.filter((e) =>
+            e.kind === "item" ? !e.item.adminOnly || isAdmin : !e.group.adminOnly || isAdmin
+          );
+          if (entries.length === 0) return null;
+          return (
+            <div key={section.title} className="mb-4">
+              <p className="px-4 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/40">
+                {section.title}
+              </p>
+              {entries.map((entry) => {
+                if (entry.kind === "item") {
+                  const item = entry.item;
+                  return (
+                    <button key={item.id} onClick={() => onViewChange(item.id)} className={itemClass(activeView === item.id)}>
+                      {item.icon && <item.icon className="w-4 h-4" />}
+                      {item.label}
+                    </button>
+                  );
+                }
+                const group = entry.group;
+                const isActive = activeView.startsWith(group.id);
+                const open = openGroups[group.id];
+                return (
+                  <div key={group.id}>
+                    <button onClick={() => handleGroupClick(group)} className={itemClass(isActive)}>
+                      <group.icon className="w-4 h-4" />
+                      <span className="flex-1 text-left">{group.label}</span>
+                      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
+                    </button>
+                    {open && (
+                      <div className="ml-4 pl-3 border-l border-primary-foreground/20 mb-1">
+                        {group.items.map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => onViewChange(sub.id)}
+                            className={cn(
+                              "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium mb-0.5 transition-colors",
+                              activeView === sub.id
+                                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                : "text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50"
+                            )}
+                          >
+                            {sub.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </nav>
 
       <div className="p-4 mx-3 mb-2 rounded-lg bg-sidebar-accent/50 text-xs text-primary-foreground/60">
@@ -212,7 +194,10 @@ const AppSidebar = ({ activeView, onViewChange, onNewTask }: AppSidebarProps) =>
         <p>Período fiscal 2026</p>
       </div>
       <div className="px-4 mb-4">
-        <button onClick={signOut} className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-colors">
+        <button
+          onClick={signOut}
+          className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-colors"
+        >
           <LogOut className="w-4 h-4" /> Terminar sessão
         </button>
       </div>
