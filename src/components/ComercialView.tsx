@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useCollaborators, useLeads } from "@/hooks/useSupabaseQuery";
+import { useLeads } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +11,6 @@ const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "
 
 const ComercialView = () => {
   const { data: leads = [], isLoading } = useLeads();
-  const { data: collaborators = [] } = useCollaborators();
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState<number | null>(null);
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLeads, useCollaborators, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
+import { useLeads, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const PipelineView = () => {
   const { data: leads = [], isLoading } = useLeads();
-  const { data: collaborators = [] } = useCollaborators();
   const upsert = useUpsertLead();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLeads, useCollaborators, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
+import { useLeads, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import { FileText, ThumbsUp, ThumbsDown } from "lucide-react";
 
 const PropostasView = () => {
   const { data: leads = [] } = useLeads();
-  const { data: collaborators = [] } = useCollaborators();
   const upsert = useUpsertLead();
   const [editing, setEditing] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
