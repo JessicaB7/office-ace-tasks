@@ -52,6 +52,18 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
       const codes = new Set(accounts.map((a) => a.code));
       let entries: { month: number; account_code: string; value: number }[] = [];
 
+      // 1) Validação obrigatória do NIF do documento vs NIF do cliente
+      const nifCheck = await validateDocumentNif(file, client?.nif);
+      if (!nifCheck.ok) {
+        toast.error(
+          `NIF do documento (${nifCheck.docNif}) não corresponde ao NIF do cliente (${nifCheck.clientNif}). Importação cancelada.`,
+        );
+        return;
+      }
+      if (!nifCheck.docNif) {
+        toast.warning("Não foi possível ler o NIF no documento — confirma que pertence a este cliente.");
+      }
+
       const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
       if (isPdf) {
         if (await isBalancetePdf(file)) {
@@ -63,16 +75,10 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
           const res = await parseMapaPdf(file, codes);
-          const pdfNif = res.nif;
-          const clientNif = (client?.nif ?? "").replace(/\D/g, "");
-          if (pdfNif && clientNif && pdfNif !== clientNif) {
-            toast.error(`NIF do mapa (${pdfNif}) não corresponde ao NIF do cliente (${clientNif}). Importação cancelada.`);
-            return;
-          }
-          if (!pdfNif) toast.warning("Não foi possível ler o NIF no mapa — verifica se o ficheiro é do cliente correto.");
           entries = res.entries;
         }
       } else {
+
         // Try balancete XLSX first (TOConline "Balancete (Período, Acumulado)")
         if (await isBalanceteXlsx(file)) {
           const res = await parseBalanceteXlsx(file, Array.from(codes));
