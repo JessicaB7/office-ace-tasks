@@ -187,7 +187,7 @@ const ComercialView = () => {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Atividade comercial mensal — {year}</CardTitle>
+          <CardTitle className="text-base">Atividade comercial — {periodLabel}</CardTitle>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
@@ -203,7 +203,7 @@ const ComercialView = () => {
               </tr>
             </thead>
             <tbody>
-              {monthly.map((m) => (
+              {visibleMonthly.map((m) => (
                 <tr key={m.label} className="border-t">
                   <td className="p-3 font-medium">{m.label}</td>
                   <td className="p-3 text-right">{m.novas || "—"}</td>
