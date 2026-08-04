@@ -29,8 +29,12 @@ export type FinancialSettings = {
   ss_q3: number;
   ss_q4: number;
   tco: boolean;
-
+  iva_q1: number | null;
+  iva_q2: number | null;
+  iva_q3: number | null;
+  iva_q4: number | null;
 };
+
 
 export function useFinancialAccounts() {
   return useQuery({
