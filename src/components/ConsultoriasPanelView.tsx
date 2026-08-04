@@ -24,18 +24,17 @@ const ConsultoriasPanelView = () => {
   const stats = useMemo(() => {
     const sim = filtered.filter((l) => l.stage === "mensal_sim");
     const nao = filtered.filter((l) => l.stage === "mensal_nao");
-    const abertas = filtered.filter((l) => !["mensal_sim", "mensal_nao"].includes(l.stage));
-    const decididas = sim.length + nao.length;
-    const valorSim = sim.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
+    const agendadas = filtered.filter((l) => l.stage === "reuniao_agendada");
+    const valorTotal = filtered.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
     return {
       sim,
       nao,
-      abertas,
-      taxa: decididas ? (sim.length / decididas) * 100 : 0,
-      valorSim,
-      ticket: sim.length ? valorSim / sim.length : 0,
+      agendadas,
+      taxa: filtered.length ? (sim.length / filtered.length) * 100 : 0,
+      valorTotal,
     };
   }, [filtered]);
+
 
   const monthly = useMemo(
     () =>
@@ -75,11 +74,12 @@ const ConsultoriasPanelView = () => {
       map.set(key, {
         total: cur.total + 1,
         sim: cur.sim + (l.stage === "mensal_sim" ? 1 : 0),
-        valor: cur.valor + (l.stage === "mensal_sim" ? Number(l.estimated_value || 0) : 0),
+        valor: cur.valor + Number(l.estimated_value || 0),
       });
     });
-    return [...map.entries()].sort((a, b) => b[1].total - a[1].total);
+    return [...map.entries()].sort((a, b) => b[1].valor - a[1].valor);
   }, [filtered]);
+
 
   const proximas = useMemo(
     () =>
