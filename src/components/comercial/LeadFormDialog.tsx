@@ -191,15 +191,31 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
             <Input type="date" value={form.next_followup} onChange={(e) => set("next_followup", e.target.value)} />
             <p className="text-xs text-muted-foreground mt-1">Por defeito, 3 dias após a reunião.</p>
           </div>
-          <div className="sm:col-span-2">
-            <Label>Responsável</Label>
-            <Select value={form.owner_id || "none"} onValueChange={(v) => set("owner_id", v === "none" ? "" : v)}>
-              <SelectTrigger><SelectValue placeholder="Sem responsável" /></SelectTrigger>
+          <div>
+            <Label>Tipo de negócio</Label>
+            <Select value={form.business_type || "none"} onValueChange={(v) => set("business_type", v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sem responsável</SelectItem>
-                {collaborators.filter((c: any) => c.active).map((c: any) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
+                <SelectItem value="none">Não definido</SelectItem>
+                {BUSINESS_TYPES.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Área de negócio</Label>
+            <Input
+              placeholder="Restauração, construção, consultoria…"
+              value={form.business_area}
+              onChange={(e) => set("business_area", e.target.value)}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label>Enquadramento em IVA</Label>
+            <Select value={form.iva_framework || "none"} onValueChange={(v) => set("iva_framework", v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Não definido</SelectItem>
+                {IVA_FRAMEWORKS.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
