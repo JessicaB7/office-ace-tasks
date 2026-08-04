@@ -184,14 +184,16 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
             </>
           )}
 
-          <div>
-            <Label>Produto sugerido</Label>
-            <Input
-              placeholder="Contabilidade, IRS, consultoria…"
-              value={form.suggested_product}
-              onChange={(e) => set("suggested_product", e.target.value)}
-            />
-          </div>
+          {!isConsultoria && (
+            <div>
+              <Label>Produto sugerido</Label>
+              <Input
+                placeholder="Contabilidade, IRS, consultoria…"
+                value={form.suggested_product}
+                onChange={(e) => set("suggested_product", e.target.value)}
+              />
+            </div>
+          )}
           <div>
             <Label>Valor (€)</Label>
             <Input type="number" step="0.01" value={form.estimated_value} onChange={(e) => set("estimated_value", e.target.value)} />
@@ -208,56 +210,65 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Motivo da perda {form.stage === "perda" && "*"}</Label>
-            <Input
-              disabled={form.stage !== "perda"}
-              placeholder="Preço, ficou com o atual…"
-              value={form.loss_reason}
-              onChange={(e) => set("loss_reason", e.target.value)}
-            />
-          </div>
+          {!isConsultoria && (
+            <div>
+              <Label>Motivo da perda {form.stage === "perda" && "*"}</Label>
+              <Input
+                disabled={form.stage !== "perda"}
+                placeholder="Preço, ficou com o atual…"
+                value={form.loss_reason}
+                onChange={(e) => set("loss_reason", e.target.value)}
+              />
+            </div>
+          )}
 
-          <div>
-            <Label>Proposta enviada em</Label>
-            <Input type="date" value={form.proposal_sent_at} onChange={(e) => set("proposal_sent_at", e.target.value)} />
-          </div>
+          {!isConsultoria && (
+            <div>
+              <Label>Proposta enviada em</Label>
+              <Input type="date" value={form.proposal_sent_at} onChange={(e) => set("proposal_sent_at", e.target.value)} />
+            </div>
+          )}
           <div>
             <Label>Próximo follow-up</Label>
             <Input type="date" value={form.next_followup} onChange={(e) => set("next_followup", e.target.value)} />
             <p className="text-xs text-muted-foreground mt-1">
-              Por defeito, 3 dias após a {isConsultoria ? "sessão" : "reunião"}.
+              Por defeito, {followUpDays} dias após a {isConsultoria ? "sessão" : "reunião"}.
             </p>
           </div>
-          <div>
-            <Label>Tipo de negócio</Label>
-            <Select value={form.business_type || "none"} onValueChange={(v) => set("business_type", v === "none" ? "" : v)}>
-              <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Não definido</SelectItem>
-                {BUSINESS_TYPES.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Área de negócio</Label>
-            <Input
-              placeholder="Restauração, construção, consultoria…"
-              value={form.business_area}
-              onChange={(e) => set("business_area", e.target.value)}
-            />
-          </div>
+          {!isConsultoria && (
+            <>
+              <div>
+                <Label>Tipo de negócio</Label>
+                <Select value={form.business_type || "none"} onValueChange={(v) => set("business_type", v === "none" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Não definido</SelectItem>
+                    {BUSINESS_TYPES.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Área de negócio</Label>
+                <Input
+                  placeholder="Restauração, construção, consultoria…"
+                  value={form.business_area}
+                  onChange={(e) => set("business_area", e.target.value)}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Enquadramento em IVA</Label>
+                <Select value={form.iva_framework || "none"} onValueChange={(v) => set("iva_framework", v === "none" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Não definido</SelectItem>
+                    {IVA_FRAMEWORKS.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
           <div className="sm:col-span-2">
-            <Label>Enquadramento em IVA</Label>
-            <Select value={form.iva_framework || "none"} onValueChange={(v) => set("iva_framework", v === "none" ? "" : v)}>
-              <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Não definido</SelectItem>
-                {IVA_FRAMEWORKS.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="sm:col-span-2">
+
             <Label>Notas</Label>
             <Textarea rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
