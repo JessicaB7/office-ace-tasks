@@ -13,6 +13,8 @@ import {
   Banknote,
   LineChart,
   Gauge,
+  TrendingUp,
+
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
