@@ -159,16 +159,27 @@ const ConsultoriasPanelView = () => {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle className="text-base">Leads por estado</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {byStage.map((s) => (
-              <div key={s.id} className="flex items-center justify-between gap-3">
-                <Badge variant="outline" className={stageClass(s.id)}>{s.label}</Badge>
-                <div className="text-right">
-                  <span className="text-sm font-semibold">{s.count}</span>
-                  <span className="block text-xs text-muted-foreground">{eur(s.value)}</span>
+          <CardContent className="space-y-4">
+            {byStage.map((s) => {
+              const pct = filtered.length ? (s.count / filtered.length) * 100 : 0;
+              return (
+                <div key={s.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <Badge variant="outline" className={stageClass(s.id)}>{s.label}</Badge>
+                    <div className="flex items-center gap-3 text-right">
+                      <span className="text-sm font-semibold tabular-nums">{s.count}</span>
+                      <span className="text-xs text-muted-foreground w-20">{eur(s.value)}</span>
+                    </div>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${pct}%`, opacity: 0.6 + (pct / 100) * 0.4 }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
 
