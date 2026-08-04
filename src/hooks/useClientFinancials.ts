@@ -29,8 +29,12 @@ export type FinancialSettings = {
   ss_q3: number;
   ss_q4: number;
   tco: boolean;
-
+  iva_q1: number | null;
+  iva_q2: number | null;
+  iva_q3: number | null;
+  iva_q4: number | null;
 };
+
 
 export function useFinancialAccounts() {
   return useQuery({
@@ -87,6 +91,11 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         ss_q3: 0,
         ss_q4: 0,
         tco: false,
+        iva_q1: null,
+        iva_q2: null,
+        iva_q3: null,
+        iva_q4: null,
+
       }) as FinancialSettings;
     },
     enabled: !!clientId,

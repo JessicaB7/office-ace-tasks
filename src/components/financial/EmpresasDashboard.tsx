@@ -75,8 +75,13 @@ export default function EmpresasDashboard({
     ivaCum.push(cum);
     prevCum = cum;
   }
-  const ivaTrim = ivaCum.map((c, i) => cents(c - (i === 0 ? 0 : ivaCum[i - 1])));
-  const totalIva = cents(ivaCum[3]);
+  const ivaAuto = ivaCum.map((c, i) => cents(c - (i === 0 ? 0 : ivaCum[i - 1])));
+  const ivaOverrides = [settings?.iva_q1, settings?.iva_q2, settings?.iva_q3, settings?.iva_q4];
+  const ivaTrim = ivaAuto.map((v, i) =>
+    ivaOverrides[i] === null || ivaOverrides[i] === undefined ? v : cents(Number(ivaOverrides[i])),
+  );
+  const totalIva = cents(ivaTrim.reduce((a, b) => a + b, 0));
+
 
 
   const totalRendimentos = rendimentosM.reduce((a, b) => a + b, 0);
@@ -201,13 +206,50 @@ export default function EmpresasDashboard({
             </div>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
-            {ivaTrim.map((v, i) => (
-              <div key={i} className="rounded-lg border bg-background p-3 min-h-[92px] flex flex-col justify-center">
-                <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
-                <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
-              </div>
-            ))}
+            {ivaTrim.map((v, i) => {
+              const key = `iva_q${i + 1}` as "iva_q1" | "iva_q2" | "iva_q3" | "iva_q4";
+              const edited = ivaOverrides[i] !== null && ivaOverrides[i] !== undefined;
+              return (
+                <div key={i} className="rounded-lg border bg-background p-3 min-h-[92px] flex flex-col justify-center gap-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
+                    {!exporting && edited && (
+                      <button
+                        type="button"
+                        className="text-[10px] text-muted-foreground underline hover:text-foreground"
+                        onClick={() => upsertSettings.mutate({ [key]: null } as any)}
+                      >
+                        repor
+                      </button>
+                    )}
+                  </div>
+                  {exporting ? (
+                    <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
+                  ) : (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      className={cn(
+                        "h-9 text-lg font-bold tabular-nums border-transparent bg-transparent px-0 focus-visible:border-input focus-visible:px-2",
+                        v < 0 ? "text-emerald-600" : "text-primary",
+                      )}
+                      value={String(cents(v))}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === "") return upsertSettings.mutate({ [key]: null } as any);
+                        const n = Number(raw);
+                        if (Number.isFinite(n)) upsertSettings.mutate({ [key]: n } as any);
+                      }}
+                    />
+                  )}
+                  {!exporting && edited && (
+                    <div className="text-[10px] text-muted-foreground">Calculado: {fmtEur(ivaAuto[i])}</div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
         </div>
 
 
