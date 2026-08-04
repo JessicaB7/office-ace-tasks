@@ -16,7 +16,7 @@ const addDays = (n: number) => {
 };
 
 const FollowUpsView = () => {
-  const { data: leads = [] } = useLeads();
+  const { data: leads = [] } = useLeads(segment);
   const upsert = useUpsertLead();
   const [editing, setEditing] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);

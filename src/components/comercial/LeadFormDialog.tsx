@@ -14,6 +14,7 @@ interface Props {
   open: boolean;
   lead: Lead | null;
   defaultStage?: string;
+  segment?: string;
   onClose: () => void;
 }
 
@@ -35,7 +36,7 @@ const empty = {
   notes: "",
 };
 
-const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
+const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) => {
   const [form, setForm] = useState({ ...empty });
   const upsert = useUpsertLead();
 
@@ -106,6 +107,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
         business_type: form.business_type || null,
         business_area: form.business_area || null,
         iva_framework: form.iva_framework || null,
+        segment: lead?.segment || segment || "contabilidade",
         notes: form.notes || null,
       });
       toast.success(lead ? "Lead atualizada." : "Lead criada.");

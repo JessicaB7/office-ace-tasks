@@ -8,7 +8,7 @@ import LeadFormDialog from "./LeadFormDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const PipelineView = () => {
-  const { data: leads = [], isLoading } = useLeads();
+  const { data: leads = [], isLoading } = useLeads(segment);
   const upsert = useUpsertLead();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);

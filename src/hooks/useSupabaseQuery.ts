@@ -223,6 +223,7 @@ export interface Lead {
   business_type: string | null;
   business_area: string | null;
   iva_framework: string | null;
+  segment: string | null;
   notes: string | null;
   meeting: boolean;
   meeting_date: string | null;
@@ -233,11 +234,13 @@ export interface Lead {
 }
 
 
-export function useLeads() {
+export function useLeads(segment?: string) {
   return useQuery({
-    queryKey: ["leads"],
+    queryKey: ["leads", segment ?? "all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
+      let query = supabase.from("leads").select("*").order("created_at", { ascending: false });
+      if (segment) query = query.eq("segment", segment);
+      const { data, error } = await query;
       if (error) throw error;
       return data as unknown as Lead[];
     },
