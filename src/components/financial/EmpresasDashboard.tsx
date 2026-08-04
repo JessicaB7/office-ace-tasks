@@ -75,8 +75,13 @@ export default function EmpresasDashboard({
     ivaCum.push(cum);
     prevCum = cum;
   }
-  const ivaTrim = ivaCum.map((c, i) => cents(c - (i === 0 ? 0 : ivaCum[i - 1])));
-  const totalIva = cents(ivaCum[3]);
+  const ivaAuto = ivaCum.map((c, i) => cents(c - (i === 0 ? 0 : ivaCum[i - 1])));
+  const ivaOverrides = [settings?.iva_q1, settings?.iva_q2, settings?.iva_q3, settings?.iva_q4];
+  const ivaTrim = ivaAuto.map((v, i) =>
+    ivaOverrides[i] === null || ivaOverrides[i] === undefined ? v : cents(Number(ivaOverrides[i])),
+  );
+  const totalIva = cents(ivaTrim.reduce((a, b) => a + b, 0));
+
 
 
   const totalRendimentos = rendimentosM.reduce((a, b) => a + b, 0);
