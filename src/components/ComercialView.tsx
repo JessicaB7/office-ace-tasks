@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
+import { useClients, useCollaborators, useLeads } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Euro, TrendingUp, TrendingDown, Users2 } from "lucide-react";
