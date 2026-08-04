@@ -50,7 +50,7 @@ const ConsultoriasPanelView = () => {
           sessoes: sessoes.length,
           sim: sim.length,
           nao: novas.filter((l) => l.stage === "mensal_nao").length,
-          valor: novas.reduce((s, l) => s + Number(l.estimated_value || 0), 0),
+          valor: novas.reduce((s, l) => s + semIVA(Number(l.estimated_value || 0)), 0),
         };
       }),
     [leads, yearLeads, year]
