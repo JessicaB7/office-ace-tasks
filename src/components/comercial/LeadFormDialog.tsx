@@ -33,6 +33,7 @@ const empty = {
   business_type: "",
   business_area: "",
   iva_framework: "",
+  given_by: "",
   notes: "",
 };
 
@@ -59,11 +60,14 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
             business_type: lead.business_type || "",
             business_area: lead.business_area || "",
             iva_framework: lead.iva_framework || "",
+            given_by: lead.given_by || "",
             notes: lead.notes || "",
           }
         : { ...empty, stage: defaultStage || "reuniao_agendada" }
     );
   }, [open, lead, defaultStage]);
+
+  const isConsultoria = (lead?.segment || segment) === "consultoria";
 
   const set = (k: string, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -96,8 +100,8 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
         name: form.name.trim(),
         phone: form.phone || null,
         email: form.email || null,
-        meeting: form.meeting,
-        meeting_date: form.meeting ? form.meeting_date || null : null,
+        meeting: isConsultoria ? !!form.meeting_date : form.meeting,
+        meeting_date: isConsultoria ? form.meeting_date || null : form.meeting ? form.meeting_date || null : null,
         suggested_product: form.suggested_product || null,
         estimated_value: form.estimated_value ? Number(form.estimated_value) : null,
         stage: form.stage,
@@ -108,6 +112,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
         business_area: form.business_area || null,
         iva_framework: form.iva_framework || null,
         segment: lead?.segment || segment || "contabilidade",
+        given_by: isConsultoria ? form.given_by || null : null,
         notes: form.notes || null,
       });
       toast.success(lead ? "Lead atualizada." : "Lead criada.");
@@ -138,22 +143,44 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
             <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div>
-              <Label className="cursor-pointer">Reunião</Label>
-              <p className="text-xs text-muted-foreground">{form.meeting ? "Sim" : "Não"}</p>
-            </div>
-            <Switch checked={form.meeting} onCheckedChange={(v) => set("meeting", v)} />
-          </div>
-          <div>
-            <Label>Data da reunião</Label>
-            <Input
-              type="date"
-              disabled={!form.meeting}
-              value={form.meeting_date}
-              onChange={(e) => setMeetingDate(e.target.value)}
-            />
-          </div>
+          {isConsultoria ? (
+            <>
+              <div>
+                <Label>Data da sessão</Label>
+                <Input type="date" value={form.meeting_date} onChange={(e) => setMeetingDate(e.target.value)} />
+              </div>
+              <div>
+                <Label>Dada por</Label>
+                <Select value={form.given_by || "none"} onValueChange={(v) => set("given_by", v === "none" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Não definido</SelectItem>
+                    <SelectItem value="Diogo">Diogo</SelectItem>
+                    <SelectItem value="Jéssica">Jéssica</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <Label className="cursor-pointer">Reunião</Label>
+                  <p className="text-xs text-muted-foreground">{form.meeting ? "Sim" : "Não"}</p>
+                </div>
+                <Switch checked={form.meeting} onCheckedChange={(v) => set("meeting", v)} />
+              </div>
+              <div>
+                <Label>Data da reunião</Label>
+                <Input
+                  type="date"
+                  disabled={!form.meeting}
+                  value={form.meeting_date}
+                  onChange={(e) => setMeetingDate(e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
           <div>
             <Label>Produto sugerido</Label>
@@ -196,7 +223,9 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
           <div>
             <Label>Próximo follow-up</Label>
             <Input type="date" value={form.next_followup} onChange={(e) => set("next_followup", e.target.value)} />
-            <p className="text-xs text-muted-foreground mt-1">Por defeito, 3 dias após a reunião.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Por defeito, 3 dias após a {isConsultoria ? "sessão" : "reunião"}.
+            </p>
           </div>
           <div>
             <Label>Tipo de negócio</Label>
