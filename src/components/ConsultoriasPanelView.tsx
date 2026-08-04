@@ -84,6 +84,16 @@ const ConsultoriasPanelView = () => {
     return [...map.entries()].sort((a, b) => b[1].valor - a[1].valor);
   }, [filtered]);
 
+  const valorDiogo = useMemo(
+    () =>
+      filtered
+        .filter((l) => (l.given_by || "").toLowerCase().includes("diogo"))
+        .reduce((s, l) => s + semIVA(Number(l.estimated_value || 0)), 0),
+    [filtered]
+  );
+  const comissaoDiogo = valorDiogo * 0.1;
+
+
 
   const proximas = useMemo(
     () =>
