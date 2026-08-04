@@ -15,10 +15,16 @@ import AnaliseFinanceiraView from "@/components/AnaliseFinanceiraView";
 import NotificationBell from "@/components/NotificationBell";
 import BusinessOverviewView from "@/components/BusinessOverviewView";
 import ComercialView from "@/components/ComercialView";
-
+import PipelineView from "@/components/comercial/PipelineView";
+import LeadsView from "@/components/comercial/LeadsView";
+import PropostasView from "@/components/comercial/PropostasView";
+import FollowUpsView from "@/components/comercial/FollowUpsView";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  const [activeView, setActiveView] = useState("business");
+  const { isAdmin } = useAuth();
+  const [activeView, setActiveView] = useState("dashboard");
+
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
@@ -41,9 +47,15 @@ const Index = () => {
         <div className="flex justify-end mb-4">
           <NotificationBell />
         </div>
-        {activeView === "business" && <BusinessOverviewView onNavigate={setActiveView} />}
+        {activeView === "business" && isAdmin && <BusinessOverviewView onNavigate={setActiveView} />}
         {activeView === "dashboard" && <DashboardView />}
         {activeView === "comercial" && <ComercialView />}
+        {activeView === "pipeline" && <PipelineView />}
+        {activeView === "leads" && <LeadsView />}
+        {activeView === "propostas" && <PropostasView />}
+        {activeView === "followups" && <FollowUpsView />}
+
+
 
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}

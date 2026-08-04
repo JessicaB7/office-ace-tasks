@@ -470,6 +470,65 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          created_at: string
+          email: string | null
+          estimated_value: number | null
+          id: string
+          name: string
+          next_followup: string | null
+          nif: string | null
+          notes: string | null
+          owner_id: string | null
+          phone: string | null
+          proposal_sent_at: string | null
+          source: string | null
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          estimated_value?: number | null
+          id?: string
+          name: string
+          next_followup?: string | null
+          nif?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          phone?: string | null
+          proposal_sent_at?: string | null
+          source?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          estimated_value?: number | null
+          id?: string
+          name?: string
+          next_followup?: string | null
+          nif?: string | null
+          notes?: string | null
+          owner_id?: string | null
+          phone?: string | null
+          proposal_sent_at?: string | null
+          source?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "collaborators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_obligations: {
         Row: {
           client_id: string
