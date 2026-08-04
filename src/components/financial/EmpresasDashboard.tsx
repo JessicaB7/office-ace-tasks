@@ -38,28 +38,46 @@ export default function EmpresasDashboard({
   const fseM = months.map((m) => sumGroupMonth(map, accounts, "62", m));
   const pessoalM = months.map((m) => sumSectionMonth(map, accounts, "pessoal", m));
   const depreciacoesM = months.map((m) => sumGroupMonth(map, accounts, "64", m));
+  const mercadoriasM = months.map((m) => sumGroupMonth(map, accounts, "31", m));
   const outrosGastosM = months.map(
     (m) =>
       sumSectionMonth(map, accounts, "despesas", m) +
       sumSectionMonth(map, accounts, "compras", m) -
       fseM[m - 1] -
-      depreciacoesM[m - 1],
+      depreciacoesM[m - 1] -
+      mercadoriasM[m - 1],
   );
   const gastosM = months.map(
-    (m, i) => fseM[i] + pessoalM[i] + depreciacoesM[i] + outrosGastosM[i],
+    (m, i) => fseM[i] + pessoalM[i] + depreciacoesM[i] + mercadoriasM[i] + outrosGastosM[i],
   );
   const resultadoM = months.map((_, i) => rendimentosM[i] - gastosM[i]);
 
   const vendasM = rendimentosM;
 
+  const sumPrefixMonth = (prefix: string, month: number) => {
+    let total = 0;
+    for (const [key, val] of map.entries()) {
+      const [mStr, code] = key.split(":");
+      if (Number(mStr) === month && code.startsWith(prefix)) total += val;
+    }
+    return total;
+  };
+  const ivaTrim = [0, 1, 2, 3].map((qi) => {
+    const lastMonth = qi * 3 + 3;
+    return sumPrefixMonth("2436", lastMonth) - sumPrefixMonth("2437", lastMonth);
+  });
+  const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
+
   const totalRendimentos = rendimentosM.reduce((a, b) => a + b, 0);
   const totalFse = fseM.reduce((a, b) => a + b, 0);
   const totalPessoal = pessoalM.reduce((a, b) => a + b, 0);
   const totalDepreciacoes = depreciacoesM.reduce((a, b) => a + b, 0);
+  const totalMercadorias = mercadoriasM.reduce((a, b) => a + b, 0);
   const totalOutros = outrosGastosM.reduce((a, b) => a + b, 0);
   const totalVendas = totalRendimentos;
   const totalGastos = gastosM.reduce((a, b) => a + b, 0);
   const resultado = totalRendimentos - totalGastos;
+
 
   const vTrim = [0, 1, 2, 3].map((q) => vendasM.slice(q * 3, q * 3 + 3).reduce((a, b) => a + b, 0));
   const gTrim = [0, 1, 2, 3].map((q) => gastosM.slice(q * 3, q * 3 + 3).reduce((a, b) => a + b, 0));
@@ -122,11 +140,13 @@ export default function EmpresasDashboard({
 
   const kpis = [
     { label: "Rendimentos", value: totalRendimentos, tone: "primary" as const },
+    { label: "Gastos com mercadorias", value: totalMercadorias, tone: "neutral" as const },
     { label: "FSE", value: totalFse, tone: "neutral" as const },
-    { label: "Gastos com pessoal", value: totalPessoal, tone: "neutral" as const },
+    { label: "Gastos com salários", value: totalPessoal, tone: "neutral" as const },
     { label: "Depreciações", value: totalDepreciacoes, tone: "neutral" as const },
     { label: "Resultado", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
   ];
+
 
 
   return (
@@ -147,7 +167,7 @@ export default function EmpresasDashboard({
           <div className="text-sm text-muted-foreground">Análise Empresa · {year}</div>
         </div>
 
-        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-5 gap-3 auto-rows-fr">
+        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-6 gap-3 auto-rows-fr">
           {kpis.map((k) => (
             <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
               <div className="text-xs text-muted-foreground">{k.label}</div>
@@ -162,24 +182,24 @@ export default function EmpresasDashboard({
         </div>
 
         <div className="col-span-12 rounded-xl border bg-card p-4">
-          <h4 className="font-semibold text-sm mb-3">Estrutura de gastos</h4>
+
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold text-sm">IVA pago por trimestre</h4>
+            <div className="text-xs text-muted-foreground">
+              Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(totalIva)}</span>
+            </div>
+          </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
-            {[
-              { label: "FSE", value: totalFse },
-              { label: "Gastos com pessoal", value: totalPessoal },
-              { label: "Depreciações", value: totalDepreciacoes },
-              { label: "Outros gastos", value: totalOutros },
-            ].map((g) => (
-              <div key={g.label} className="rounded-lg border bg-background p-3 min-h-[92px] flex flex-col justify-center">
-                <div className="text-[11px] text-muted-foreground">{g.label}</div>
-                <div className="text-lg font-bold tabular-nums">{fmtEur(g.value)}</div>
-                <div className="text-[10px] text-muted-foreground mt-1">
-                  {totalGastos > 0 ? `${((g.value / totalGastos) * 100).toFixed(1)}% dos gastos` : "—"}
-                </div>
+            {ivaTrim.map((v, i) => (
+              <div key={i} className="rounded-lg border bg-background p-3 min-h-[92px] flex flex-col justify-center">
+                <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
+                <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
               </div>
             ))}
           </div>
         </div>
+
+
 
         <div className="col-span-12 lg:col-span-7 rounded-xl border bg-card p-4 h-full flex flex-col">
           <h4 className="font-semibold text-sm mb-3">Rendimentos, gastos e resultado (mensal)</h4>
