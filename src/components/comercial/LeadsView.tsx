@@ -108,19 +108,26 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
                     {l.email || "—"}
                     {l.phone && <span className="block">{l.phone}</span>}
                   </td>
-                  <td className="p-3 text-xs text-muted-foreground">{l.suggested_product || "—"}</td>
+                  {segment !== "consultoria" && (
+                    <td className="p-3 text-xs text-muted-foreground">{l.suggested_product || "—"}</td>
+                  )}
                   <td className="p-3">
                     <Badge variant="outline" className={stageClass(l.stage)}>{stageLabel(l.stage)}</Badge>
-                    {l.stage === "perda" && l.loss_reason && (
+                    {segment !== "consultoria" && l.stage === "perda" && l.loss_reason && (
                       <span className="block text-xs text-muted-foreground mt-1">{l.loss_reason}</span>
                     )}
                   </td>
                   <td className="p-3 text-right font-medium">{eur(l.estimated_value)}</td>
-                  <td className="p-3 text-xs">
-                    {businessTypeLabel(l.business_type)}
-                    <span className="block text-muted-foreground">{l.business_area || "—"}</span>
-                  </td>
-                  <td className="p-3 text-xs">{ivaFrameworkLabel(l.iva_framework)}</td>
+                  {segment !== "consultoria" && (
+                    <td className="p-3 text-xs">
+                      {businessTypeLabel(l.business_type)}
+                      <span className="block text-muted-foreground">{l.business_area || "—"}</span>
+                    </td>
+                  )}
+                  {segment !== "consultoria" && (
+                    <td className="p-3 text-xs">{ivaFrameworkLabel(l.iva_framework)}</td>
+                  )}
+
                   <td className="p-3 text-xs">
                     {segment === "consultoria" ? fmtDate(l.meeting_date) : l.meeting ? fmtDate(l.meeting_date) : "—"}
                     {segment === "consultoria" && l.given_by && (
