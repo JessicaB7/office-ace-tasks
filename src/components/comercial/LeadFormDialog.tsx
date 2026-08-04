@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
-import { LEAD_STAGES, BUSINESS_TYPES, IVA_FRAMEWORKS } from "./leadConstants";
+import { stagesFor, BUSINESS_TYPES, IVA_FRAMEWORKS } from "./leadConstants";
 import { toast } from "sonner";
 
 interface Props {
@@ -205,7 +205,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
             <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {LEAD_STAGES.map((s) => (
+                {stagesFor(lead?.segment || segment).map((s) => (
                   <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
                 ))}
               </SelectContent>

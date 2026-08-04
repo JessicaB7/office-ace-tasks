@@ -3,7 +3,7 @@ import { useLeads, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { eur, fmtDate, stageClass, stageLabel, businessTypeLabel } from "./leadConstants";
+import { eur, fmtDate, stageClass, stageLabel, businessTypeLabel, closedStagesFor } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,16 +25,16 @@ const FollowUpsView = ({ segment = "contabilidade" }: { segment?: string }) => {
     const today = addDays(0);
     const week = addDays(7);
     const withDate = leads
-      .filter((l) => l.next_followup && !["ganho", "perda"].includes(l.stage))
+      .filter((l) => l.next_followup && !closedStagesFor(segment).includes(l.stage))
       .sort((a, b) => (a.next_followup || "").localeCompare(b.next_followup || ""));
     return {
       atrasados: withDate.filter((l) => (l.next_followup as string) < today),
       hoje: withDate.filter((l) => l.next_followup === today),
       semana: withDate.filter((l) => (l.next_followup as string) > today && (l.next_followup as string) <= week),
       futuros: withDate.filter((l) => (l.next_followup as string) > week),
-      sem: leads.filter((l) => !l.next_followup && !["ganho", "perda"].includes(l.stage)),
+      sem: leads.filter((l) => !l.next_followup && !closedStagesFor(segment).includes(l.stage)),
     };
-  }, [leads]);
+  }, [leads, segment]);
 
 
   const Row = ({ lead, tone }: { lead: Lead; tone?: string }) => (
