@@ -340,12 +340,57 @@ export default function EmpresasDashboard({
               <div className="text-lg font-bold tabular-nums">{fmtEur(derrama)}</div>
             </div>
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Tributação autónoma</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(taTotal)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Total a pagar</div>
               <div className="text-lg font-bold tabular-nums text-amber-700">{fmtEur(ircTotal)}</div>
               <div className="text-[10px] text-muted-foreground mt-1">Taxa efetiva {taxaEfetiva.toFixed(1)}%</div>
             </div>
           </div>
+
+          <div className="mt-4 rounded-lg border bg-muted/30 p-3">
+            <h5 className="text-xs font-semibold mb-3">Tributação autónoma</h5>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {([
+                { key: "ta_base_representacao" as const, label: "Despesas de representação", rate: 0.10, base: taRepBase, imposto: taRep },
+                { key: "ta_base_ajudas_custo" as const, label: "Ajudas de custo", rate: 0.05, base: taAjBase, imposto: taAj },
+              ]).map((row) => (
+                <div key={row.key} className="rounded-lg border bg-background p-3">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="text-[11px] font-medium">{row.label}</div>
+                    <span className="text-[10px] rounded-full bg-primary/10 text-primary px-2 py-0.5 font-semibold">
+                      {(row.rate * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  {exporting ? (
+                    <div className="text-xs text-muted-foreground">Base: {fmtEur(row.base)}</div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={row.key} className="text-[10px] text-muted-foreground whitespace-nowrap">Base (€)</Label>
+                      <Input
+                        id={row.key}
+                        type="number"
+                        step="0.01"
+                        className="h-8"
+                        value={row.base ? String(row.base) : ""}
+                        placeholder="0,00"
+                        onChange={(e) => {
+                          const raw = e.target.value.trim();
+                          const n = raw === "" ? 0 : Number(raw.replace(",", "."));
+                          if (Number.isFinite(n)) upsertSettings.mutate({ [row.key]: n } as any);
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="mt-2 text-sm font-bold tabular-nums">{fmtEur(row.imposto)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
+
       </div>
     </div>
   );
