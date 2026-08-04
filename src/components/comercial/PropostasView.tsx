@@ -77,7 +77,7 @@ const PropostasView = () => {
                 <th className="text-left p-3">Lead</th>
                 <th className="text-left p-3">Enviada</th>
                 <th className="text-right p-3">Valor</th>
-                <th className="text-left p-3">Responsável</th>
+                <th className="text-left p-3">Tipo de negócio</th>
                 <th className="text-left p-3">Estado</th>
                 <th className="p-3" />
               </tr>
