@@ -26,14 +26,14 @@ const FollowUpsView = () => {
     const today = addDays(0);
     const week = addDays(7);
     const withDate = leads
-      .filter((l) => l.next_followup && !["ganho", "perdido"].includes(l.stage))
+      .filter((l) => l.next_followup && !["ganho", "perda"].includes(l.stage))
       .sort((a, b) => (a.next_followup || "").localeCompare(b.next_followup || ""));
     return {
       atrasados: withDate.filter((l) => (l.next_followup as string) < today),
       hoje: withDate.filter((l) => l.next_followup === today),
       semana: withDate.filter((l) => (l.next_followup as string) > today && (l.next_followup as string) <= week),
       futuros: withDate.filter((l) => (l.next_followup as string) > week),
-      sem: leads.filter((l) => !l.next_followup && !["ganho", "perdido"].includes(l.stage)),
+      sem: leads.filter((l) => !l.next_followup && !["ganho", "perda"].includes(l.stage)),
     };
   }, [leads]);
 
