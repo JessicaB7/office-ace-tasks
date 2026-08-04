@@ -16,6 +16,7 @@ import IvaTab from "./financial/IvaTab";
 import IndicadoresTab from "./financial/IndicadoresTab";
 import TISimplificadoDashboard from "./financial/TISimplificadoDashboard";
 import TIOrganizadoDashboard from "./financial/TIOrganizadoDashboard";
+import EmpresasDashboard from "./financial/EmpresasDashboard";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import * as XLSX from "xlsx";
 import { parseMapaPdf } from "@/lib/pdfMapaImport";
@@ -237,6 +238,8 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         <TISimplificadoDashboard clientId={clientId} year={year} client={client} />
       ) : client.tipo_contabilidade === "TI CO" ? (
         <TIOrganizadoDashboard clientId={clientId} year={year} client={client} />
+      ) : client.tipo_contabilidade === "SQ" ? (
+        <EmpresasDashboard clientId={clientId} year={year} client={client} />
       ) : (
         <>
           <div className="flex gap-1 border-b">

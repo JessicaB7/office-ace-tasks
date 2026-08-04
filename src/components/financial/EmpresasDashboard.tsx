@@ -186,7 +186,8 @@ export default function EmpresasDashboard({
         <div className="col-span-12 rounded-xl border bg-card p-4">
           <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
             <h4 className="font-semibold text-sm">IRC estimado</h4>
-            <div className="flex items-center gap-2 pdf-hide">
+            {!exporting && (
+            <div className="flex items-center gap-2">
               <Label htmlFor="irc-taxa" className="text-xs text-muted-foreground whitespace-nowrap">Taxa de IRC (%)</Label>
               <Input
                 id="irc-taxa"
@@ -200,6 +201,7 @@ export default function EmpresasDashboard({
                 }}
               />
             </div>
+            )}
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
