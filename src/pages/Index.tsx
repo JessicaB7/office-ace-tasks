@@ -14,6 +14,8 @@ import ClientAnalysisView from "@/components/ClientAnalysisView";
 import AnaliseFinanceiraView from "@/components/AnaliseFinanceiraView";
 import NotificationBell from "@/components/NotificationBell";
 import BusinessOverviewView from "@/components/BusinessOverviewView";
+import ComercialView from "@/components/ComercialView";
+
 
 const Index = () => {
   const [activeView, setActiveView] = useState("business");
