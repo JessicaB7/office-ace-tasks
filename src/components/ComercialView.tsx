@@ -13,11 +13,17 @@ const ComercialView = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: collaborators = [] } = useCollaborators();
   const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState<number | null>(null);
 
   const inYear = (d: string | null) => !!d && new Date(d).getFullYear() === year;
   const monthOf = (d: string) => new Date(d).getMonth();
+  const inSelectedMonth = (d: string | null) => month === null || (d ? monthOf(d) === month : false);
 
   const yearLeads = useMemo(() => leads.filter((l) => inYear(l.created_at)), [leads, year]);
+  const filteredLeads = useMemo(
+    () => yearLeads.filter((l) => inSelectedMonth(l.created_at)),
+    [yearLeads, month]
+  );
 
   const monthly = useMemo(
     () =>
