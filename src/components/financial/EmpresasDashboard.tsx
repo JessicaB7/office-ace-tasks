@@ -33,17 +33,33 @@ export default function EmpresasDashboard({
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-  const vendasM = months.map((m) => sumSectionMonth(map, accounts, "vendas", m));
-  const gastosM = months.map(
+  // Rubricas SNC
+  const rendimentosM = months.map((m) => sumSectionMonth(map, accounts, "vendas", m));
+  const fseM = months.map((m) => sumGroupMonth(map, accounts, "62", m));
+  const pessoalM = months.map((m) => sumSectionMonth(map, accounts, "pessoal", m));
+  const depreciacoesM = months.map((m) => sumGroupMonth(map, accounts, "64", m));
+  const outrosGastosM = months.map(
     (m) =>
       sumSectionMonth(map, accounts, "despesas", m) +
-      sumSectionMonth(map, accounts, "compras", m) +
-      sumSectionMonth(map, accounts, "pessoal", m),
+      sumSectionMonth(map, accounts, "compras", m) -
+      fseM[m - 1] -
+      depreciacoesM[m - 1],
   );
+  const gastosM = months.map(
+    (m, i) => fseM[i] + pessoalM[i] + depreciacoesM[i] + outrosGastosM[i],
+  );
+  const resultadoM = months.map((_, i) => rendimentosM[i] - gastosM[i]);
 
-  const totalVendas = vendasM.reduce((a, b) => a + b, 0);
+  const vendasM = rendimentosM;
+
+  const totalRendimentos = rendimentosM.reduce((a, b) => a + b, 0);
+  const totalFse = fseM.reduce((a, b) => a + b, 0);
+  const totalPessoal = pessoalM.reduce((a, b) => a + b, 0);
+  const totalDepreciacoes = depreciacoesM.reduce((a, b) => a + b, 0);
+  const totalOutros = outrosGastosM.reduce((a, b) => a + b, 0);
+  const totalVendas = totalRendimentos;
   const totalGastos = gastosM.reduce((a, b) => a + b, 0);
-  const resultado = totalVendas - totalGastos;
+  const resultado = totalRendimentos - totalGastos;
 
   const vTrim = [0, 1, 2, 3].map((q) => vendasM.slice(q * 3, q * 3 + 3).reduce((a, b) => a + b, 0));
   const gTrim = [0, 1, 2, 3].map((q) => gastosM.slice(q * 3, q * 3 + 3).reduce((a, b) => a + b, 0));
@@ -51,9 +67,11 @@ export default function EmpresasDashboard({
 
   const chartData = MONTHS_PT.map((m, i) => ({
     mes: m,
-    Vendas: cents(vendasM[i]),
+    Rendimentos: cents(rendimentosM[i]),
     Gastos: cents(gastosM[i]),
+    Resultado: cents(resultadoM[i]),
   }));
+
 
   const taxa = Number(settings?.corporate_tax_rate ?? 0.16);
   const baseTributavel = Math.max(0, resultado);
