@@ -472,10 +472,13 @@ export type Database = {
       }
       leads: {
         Row: {
+          business_area: string | null
+          business_type: string | null
           created_at: string
           email: string | null
           estimated_value: number | null
           id: string
+          iva_framework: string | null
           loss_reason: string | null
           meeting: boolean
           meeting_date: string | null
@@ -492,10 +495,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          business_area?: string | null
+          business_type?: string | null
           created_at?: string
           email?: string | null
           estimated_value?: number | null
           id?: string
+          iva_framework?: string | null
           loss_reason?: string | null
           meeting?: boolean
           meeting_date?: string | null
@@ -512,10 +518,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          business_area?: string | null
+          business_type?: string | null
           created_at?: string
           email?: string | null
           estimated_value?: number | null
           id?: string
+          iva_framework?: string | null
           loss_reason?: string | null
           meeting?: boolean
           meeting_date?: string | null
