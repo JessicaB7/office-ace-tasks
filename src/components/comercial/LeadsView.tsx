@@ -91,7 +91,7 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
                 <th className="text-right p-3">Valor</th>
                 <th className="text-left p-3">Tipo / área</th>
                 <th className="text-left p-3">IVA</th>
-                <th className="text-left p-3">Reunião</th>
+                <th className="text-left p-3">{segment === "consultoria" ? "Sessão" : "Reunião"}</th>
                 <th className="text-left p-3">Follow-up</th>
                 <th className="p-3" />
               </tr>
@@ -117,7 +117,12 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
                     <span className="block text-muted-foreground">{l.business_area || "—"}</span>
                   </td>
                   <td className="p-3 text-xs">{ivaFrameworkLabel(l.iva_framework)}</td>
-                  <td className="p-3 text-xs">{l.meeting ? fmtDate(l.meeting_date) : "—"}</td>
+                  <td className="p-3 text-xs">
+                    {segment === "consultoria" ? fmtDate(l.meeting_date) : l.meeting ? fmtDate(l.meeting_date) : "—"}
+                    {segment === "consultoria" && l.given_by && (
+                      <span className="block text-muted-foreground">{l.given_by}</span>
+                    )}
+                  </td>
                   <td className="p-3 text-xs">{fmtDate(l.next_followup)}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1">

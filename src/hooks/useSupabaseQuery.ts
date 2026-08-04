@@ -224,6 +224,7 @@ export interface Lead {
   business_area: string | null;
   iva_framework: string | null;
   segment: string | null;
+  given_by: string | null;
   notes: string | null;
   meeting: boolean;
   meeting_date: string | null;
