@@ -182,7 +182,7 @@ export default function EmpresasDashboard({
         </div>
 
         <div className="col-span-12 rounded-xl border bg-card p-4">
-        <div className="col-span-12 rounded-xl border bg-card p-4">
+
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-semibold text-sm">IVA pago por trimestre</h4>
             <div className="text-xs text-muted-foreground">
