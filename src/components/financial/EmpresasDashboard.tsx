@@ -62,11 +62,22 @@ export default function EmpresasDashboard({
     }
     return total;
   };
-  const ivaTrim = [0, 1, 2, 3].map((qi) => {
-    const lastMonth = qi * 3 + 3;
-    return sumPrefixMonth("2436", lastMonth) - sumPrefixMonth("2437", lastMonth);
-  });
-  const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
+  // Nos balancetes as contas 2436/2437 vêm acumuladas (saldo desde o início do ano).
+  // O IVA de cada trimestre é a variação do acumulado face ao trimestre anterior.
+  const ivaCum: number[] = [];
+  let prevCum = 0;
+  for (const qi of [0, 1, 2, 3]) {
+    let cum = prevCum;
+    for (const m of [qi * 3 + 3, qi * 3 + 2, qi * 3 + 1]) {
+      const v = sumPrefixMonth("2436", m) - sumPrefixMonth("2437", m);
+      if (v !== 0) { cum = v; break; }
+    }
+    ivaCum.push(cum);
+    prevCum = cum;
+  }
+  const ivaTrim = ivaCum.map((c, i) => cents(c - (i === 0 ? 0 : ivaCum[i - 1])));
+  const totalIva = cents(ivaCum[3]);
+
 
   const totalRendimentos = rendimentosM.reduce((a, b) => a + b, 0);
   const totalFse = fseM.reduce((a, b) => a + b, 0);
