@@ -29,13 +29,14 @@ const empty = {
   loss_reason: "",
   proposal_sent_at: "",
   next_followup: "",
-  owner_id: "",
+  business_type: "",
+  business_area: "",
+  iva_framework: "",
   notes: "",
 };
 
 const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
   const [form, setForm] = useState({ ...empty });
-  const { data: collaborators = [] } = useCollaborators();
   const upsert = useUpsertLead();
 
   useEffect(() => {
