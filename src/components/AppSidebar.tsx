@@ -13,6 +13,8 @@ import {
   Banknote,
   LineChart,
   Gauge,
+  TrendingUp,
+
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
@@ -34,7 +36,6 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
     entries: [
       { kind: "item", item: { id: "business", label: "Painel do negócio", icon: Gauge } },
       { kind: "item", item: { id: "dashboard", label: "O meu dia", icon: LayoutDashboard } },
-      { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
     ],
   },
   {
@@ -55,23 +56,14 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
           ],
         },
       },
-      {
-        kind: "group",
-        group: {
-          id: "analise",
-          label: "Análise Financeira",
-          icon: LineChart,
-          items: [
-            { id: "analise_TI_simplificado", label: "TI Simplificado" },
-            { id: "analise_TI_organizado", label: "TI Organizado" },
-            { id: "analise_empresas", label: "Empresas" },
-          ],
-        },
-      },
     ],
   },
   {
-    title: "Trabalho",
+    title: "Comercial",
+    entries: [{ kind: "item", item: { id: "comercial", label: "Painel comercial", icon: TrendingUp } }],
+  },
+  {
+    title: "Processos",
     entries: [
       { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
       {
@@ -93,16 +85,31 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
         },
       },
       { kind: "item", item: { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays } },
+      { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
+      { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
     ],
   },
   {
-    title: "Escritório",
+    title: "Financeiro",
     entries: [
-      { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
+      {
+        kind: "group",
+        group: {
+          id: "analise",
+          label: "Análise Financeira",
+          icon: LineChart,
+          items: [
+            { id: "analise_TI_simplificado", label: "TI Simplificado" },
+            { id: "analise_TI_organizado", label: "TI Organizado" },
+            { id: "analise_empresas", label: "Empresas" },
+          ],
+        },
+      },
       { kind: "item", item: { id: "extratos", label: "Extratos Bancários", icon: Banknote } },
     ],
   },
 ];
+
 
 const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
   const { user, isAdmin, signOut } = useAuth();

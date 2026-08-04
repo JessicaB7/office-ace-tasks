@@ -14,6 +14,8 @@ import ClientAnalysisView from "@/components/ClientAnalysisView";
 import AnaliseFinanceiraView from "@/components/AnaliseFinanceiraView";
 import NotificationBell from "@/components/NotificationBell";
 import BusinessOverviewView from "@/components/BusinessOverviewView";
+import ComercialView from "@/components/ComercialView";
+
 
 const Index = () => {
   const [activeView, setActiveView] = useState("business");
@@ -41,6 +43,7 @@ const Index = () => {
         </div>
         {activeView === "business" && <BusinessOverviewView onNavigate={setActiveView} />}
         {activeView === "dashboard" && <DashboardView />}
+        {activeView === "comercial" && <ComercialView />}
 
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
