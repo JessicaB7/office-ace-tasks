@@ -23,6 +23,7 @@ import { parseMapaPdf } from "@/lib/pdfMapaImport";
 import { parseBalancetePdf, isBalancetePdf } from "@/lib/pdfBalanceteImport";
 import { parseBalanceteXlsx, isBalanceteXlsx } from "@/lib/xlsxBalanceteImport";
 import { toast } from "sonner";
+import { validateDocumentNif } from "@/lib/nifCheck";
 import { cn } from "@/lib/utils";
 
 type Tab = "analise" | "mapa" | "iva" | "indicadores";
@@ -33,11 +34,19 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "indicadores", label: "Indicadores" },
 ];
 
+type Section = "dados" | "dashboard";
+const SECTIONS: { key: Section; label: string }[] = [
+  { key: "dados", label: "Dados" },
+  { key: "dashboard", label: "Dashboard" },
+];
+
 export default function ClientAnalysisView({ clientId, onBack }: { clientId: string; onBack: () => void }) {
   const { data: clients = [] } = useClients();
   const client = clients.find((c: any) => c.id === clientId);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [section, setSection] = useState<Section>("dashboard");
   const [tab, setTab] = useState<Tab>("analise");
+
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: lastImport } = useLastImportDate(clientId, year);
   const { data: imports = [] } = useFinancialImports(clientId, year);
@@ -52,6 +61,18 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
       const codes = new Set(accounts.map((a) => a.code));
       let entries: { month: number; account_code: string; value: number }[] = [];
 
+      // 1) Validação obrigatória do NIF do documento vs NIF do cliente
+      const nifCheck = await validateDocumentNif(file, client?.nif);
+      if (!nifCheck.ok) {
+        toast.error(
+          `NIF do documento (${nifCheck.docNif}) não corresponde ao NIF do cliente (${nifCheck.clientNif}). Importação cancelada.`,
+        );
+        return;
+      }
+      if (!nifCheck.docNif) {
+        toast.warning("Não foi possível ler o NIF no documento — confirma que pertence a este cliente.");
+      }
+
       const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
       if (isPdf) {
         if (await isBalancetePdf(file)) {
@@ -63,16 +84,10 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
           const res = await parseMapaPdf(file, codes);
-          const pdfNif = res.nif;
-          const clientNif = (client?.nif ?? "").replace(/\D/g, "");
-          if (pdfNif && clientNif && pdfNif !== clientNif) {
-            toast.error(`NIF do mapa (${pdfNif}) não corresponde ao NIF do cliente (${clientNif}). Importação cancelada.`);
-            return;
-          }
-          if (!pdfNif) toast.warning("Não foi possível ler o NIF no mapa — verifica se o ficheiro é do cliente correto.");
           entries = res.entries;
         }
       } else {
+
         // Try balancete XLSX first (TOConline "Balancete (Período, Acumulado)")
         if (await isBalanceteXlsx(file)) {
           const res = await parseBalanceteXlsx(file, Array.from(codes));
@@ -185,7 +200,24 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         </div>
       </div>
 
+      <div className="flex gap-1 border-b">
+        {SECTIONS.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setSection(s.key)}
+            className={cn(
+              "px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors",
+              section === s.key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      {section === "dados" && (
       <div className="rounded-xl border bg-card p-4">
+
         <div className="flex items-center justify-between gap-3 mb-3">
           <h3 className="text-sm font-semibold">Ficheiros importados {year}</h3>
           <p className="text-xs text-muted-foreground">Mapa de Exploração: faturação, despesas e lucro. Balancetes: IVA, Segurança Social e retenção na fonte.</p>
@@ -233,14 +265,9 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           })}
         </div>
       </div>
+      )}
 
-      {client.tipo_contabilidade === "TI RS" ? (
-        <TISimplificadoDashboard clientId={clientId} year={year} client={client} />
-      ) : client.tipo_contabilidade === "TI CO" ? (
-        <TIOrganizadoDashboard clientId={clientId} year={year} client={client} />
-      ) : client.tipo_contabilidade === "SQ" ? (
-        <EmpresasDashboard clientId={clientId} year={year} client={client} />
-      ) : (
+      {section === "dados" && (
         <>
           <div className="flex gap-1 border-b">
             {TABS.map((t) => (
@@ -263,6 +290,17 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           {tab === "indicadores" && <IndicadoresTab clientId={clientId} year={year} />}
         </>
       )}
+
+      {section === "dashboard" && (
+        client.tipo_contabilidade === "TI RS" ? (
+          <TISimplificadoDashboard clientId={clientId} year={year} client={client} />
+        ) : client.tipo_contabilidade === "TI CO" ? (
+          <TIOrganizadoDashboard clientId={clientId} year={year} client={client} />
+        ) : (
+          <EmpresasDashboard clientId={clientId} year={year} client={client} />
+        )
+      )}
+
 
       <ClientDetailDialog
         client={fichaOpen ? client : null}

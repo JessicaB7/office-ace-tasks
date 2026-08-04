@@ -143,3 +143,19 @@ export function quarterSums(monthly: number[]): number[] {
 }
 
 export const VAT_DUE_DATES = ["A pagar até 25/05", "A pagar até 25/08", "A pagar até 25/11", "A pagar até 25/02 ano seguinte"];
+
+/** Soma um grupo de contas por prefixo (evita duplicar pai + filhos). */
+export function sumGroupMonth(
+  map: Map<string, number>,
+  accounts: FinancialAccount[],
+  prefix: string,
+  month: number,
+): number {
+  const parent = getValue(map, month, prefix);
+  if (parent !== 0) return parent;
+  let total = 0;
+  for (const a of accounts) {
+    if (a.code !== prefix && a.code.startsWith(prefix)) total += getValue(map, month, a.code);
+  }
+  return total;
+}

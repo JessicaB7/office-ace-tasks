@@ -11,7 +11,7 @@ import {
   useFinancialAccounts,
   useUpsertSettings,
 } from "@/hooks/useClientFinancials";
-import { buildEntryMap, MONTHS_PT, fmtEur, sumSectionMonth } from "./financialMath";
+import { buildEntryMap, MONTHS_PT, fmtEur, sumSectionMonth, sumGroupMonth } from "./financialMath";
 import { cn } from "@/lib/utils";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
@@ -33,17 +33,33 @@ export default function EmpresasDashboard({
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-  const vendasM = months.map((m) => sumSectionMonth(map, accounts, "vendas", m));
-  const gastosM = months.map(
+  // Rubricas SNC
+  const rendimentosM = months.map((m) => sumSectionMonth(map, accounts, "vendas", m));
+  const fseM = months.map((m) => sumGroupMonth(map, accounts, "62", m));
+  const pessoalM = months.map((m) => sumSectionMonth(map, accounts, "pessoal", m));
+  const depreciacoesM = months.map((m) => sumGroupMonth(map, accounts, "64", m));
+  const outrosGastosM = months.map(
     (m) =>
       sumSectionMonth(map, accounts, "despesas", m) +
-      sumSectionMonth(map, accounts, "compras", m) +
-      sumSectionMonth(map, accounts, "pessoal", m),
+      sumSectionMonth(map, accounts, "compras", m) -
+      fseM[m - 1] -
+      depreciacoesM[m - 1],
   );
+  const gastosM = months.map(
+    (m, i) => fseM[i] + pessoalM[i] + depreciacoesM[i] + outrosGastosM[i],
+  );
+  const resultadoM = months.map((_, i) => rendimentosM[i] - gastosM[i]);
 
-  const totalVendas = vendasM.reduce((a, b) => a + b, 0);
+  const vendasM = rendimentosM;
+
+  const totalRendimentos = rendimentosM.reduce((a, b) => a + b, 0);
+  const totalFse = fseM.reduce((a, b) => a + b, 0);
+  const totalPessoal = pessoalM.reduce((a, b) => a + b, 0);
+  const totalDepreciacoes = depreciacoesM.reduce((a, b) => a + b, 0);
+  const totalOutros = outrosGastosM.reduce((a, b) => a + b, 0);
+  const totalVendas = totalRendimentos;
   const totalGastos = gastosM.reduce((a, b) => a + b, 0);
-  const resultado = totalVendas - totalGastos;
+  const resultado = totalRendimentos - totalGastos;
 
   const vTrim = [0, 1, 2, 3].map((q) => vendasM.slice(q * 3, q * 3 + 3).reduce((a, b) => a + b, 0));
   const gTrim = [0, 1, 2, 3].map((q) => gastosM.slice(q * 3, q * 3 + 3).reduce((a, b) => a + b, 0));
@@ -51,9 +67,11 @@ export default function EmpresasDashboard({
 
   const chartData = MONTHS_PT.map((m, i) => ({
     mes: m,
-    Vendas: cents(vendasM[i]),
+    Rendimentos: cents(rendimentosM[i]),
     Gastos: cents(gastosM[i]),
+    Resultado: cents(resultadoM[i]),
   }));
+
 
   const taxa = Number(settings?.corporate_tax_rate ?? 0.16);
   const baseTributavel = Math.max(0, resultado);
@@ -103,11 +121,13 @@ export default function EmpresasDashboard({
   };
 
   const kpis = [
-    { label: "Vendas e serviços", value: totalVendas, tone: "primary" as const },
-    { label: "Gastos totais", value: totalGastos, tone: "neutral" as const },
-    { label: "Resultado do exercício", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
-    { label: "IRC estimado", value: ircTotal, tone: "warn" as const },
+    { label: "Rendimentos", value: totalRendimentos, tone: "primary" as const },
+    { label: "FSE", value: totalFse, tone: "neutral" as const },
+    { label: "Gastos com pessoal", value: totalPessoal, tone: "neutral" as const },
+    { label: "Depreciações", value: totalDepreciacoes, tone: "neutral" as const },
+    { label: "Resultado", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
   ];
+
 
   return (
     <div className="space-y-4">
@@ -127,7 +147,7 @@ export default function EmpresasDashboard({
           <div className="text-sm text-muted-foreground">Análise Empresa · {year}</div>
         </div>
 
-        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
+        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-5 gap-3 auto-rows-fr">
           {kpis.map((k) => (
             <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
               <div className="text-xs text-muted-foreground">{k.label}</div>
@@ -141,22 +161,44 @@ export default function EmpresasDashboard({
           ))}
         </div>
 
+        <div className="col-span-12 rounded-xl border bg-card p-4">
+          <h4 className="font-semibold text-sm mb-3">Estrutura de gastos</h4>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
+            {[
+              { label: "FSE", value: totalFse },
+              { label: "Gastos com pessoal", value: totalPessoal },
+              { label: "Depreciações", value: totalDepreciacoes },
+              { label: "Outros gastos", value: totalOutros },
+            ].map((g) => (
+              <div key={g.label} className="rounded-lg border bg-background p-3 min-h-[92px] flex flex-col justify-center">
+                <div className="text-[11px] text-muted-foreground">{g.label}</div>
+                <div className="text-lg font-bold tabular-nums">{fmtEur(g.value)}</div>
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  {totalGastos > 0 ? `${((g.value / totalGastos) * 100).toFixed(1)}% dos gastos` : "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="col-span-12 lg:col-span-7 rounded-xl border bg-card p-4 h-full flex flex-col">
-          <h4 className="font-semibold text-sm mb-3">Vendas vs Gastos (mensal)</h4>
+          <h4 className="font-semibold text-sm mb-3">Rendimentos, gastos e resultado (mensal)</h4>
           <div className="flex-1 min-h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} barCategoryGap="28%" barGap={4}>
+              <BarChart data={chartData} barCategoryGap="24%" barGap={3}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis dataKey="mes" fontSize={11} interval={0} tickMargin={8} />
                 <YAxis fontSize={11} />
                 <Tooltip formatter={(v: any) => fmtEur(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="Vendas" fill="hsl(var(--primary))" maxBarSize={28} />
-                <Bar dataKey="Gastos" fill="hsl(var(--primary) / 0.62)" maxBarSize={28} />
+                <Bar dataKey="Rendimentos" fill="hsl(var(--primary))" maxBarSize={22} />
+                <Bar dataKey="Gastos" fill="hsl(var(--primary) / 0.62)" maxBarSize={22} />
+                <Bar dataKey="Resultado" fill="hsl(var(--primary) / 0.32)" maxBarSize={22} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
+
 
         <div className="col-span-12 lg:col-span-5 rounded-xl border bg-card p-4 h-full flex flex-col">
           <h4 className="font-semibold text-sm mb-3">Análise trimestral</h4>
@@ -165,7 +207,7 @@ export default function EmpresasDashboard({
               <div key={i} className="rounded-lg border bg-background p-3 space-y-1 min-h-[112px] h-full flex flex-col justify-center">
                 <div className="text-[11px] text-muted-foreground font-semibold">{i + 1}º trimestre</div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Vendas</span>
+                  <span className="text-muted-foreground">Rendimentos</span>
                   <span className="font-semibold tabular-nums text-primary">{fmtEur(vTrim[i])}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
