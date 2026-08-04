@@ -1,5 +1,10 @@
 import * as pdfjsLib from "pdfjs-dist";
+// @ts-ignore - vite worker import
+import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import * as XLSX from "xlsx";
+
+(pdfjsLib as any).GlobalWorkerOptions.workerSrc = pdfWorker;
+
 
 export const findNifInText = (text: string): string | null => {
   const labelled = text.match(
