@@ -111,7 +111,15 @@ export default function EmpresasDashboard({
   const baseTributavel = Math.max(0, resultado);
   const ircBase = baseTributavel * taxa;
   const derrama = baseTributavel * 0.015;
-  const ircTotal = ircBase + derrama;
+
+  // Tributação autónoma
+  const taRepBase = Number(settings?.ta_base_representacao ?? 0);
+  const taAjBase = Number(settings?.ta_base_ajudas_custo ?? 0);
+  const taRep = taRepBase * 0.10;
+  const taAj = taAjBase * 0.05;
+  const taTotal = taRep + taAj;
+
+  const ircTotal = ircBase + derrama + taTotal;
   const taxaEfetiva = baseTributavel > 0 ? (ircTotal / baseTributavel) * 100 : 0;
 
   const reportRef = useRef<HTMLDivElement>(null);
