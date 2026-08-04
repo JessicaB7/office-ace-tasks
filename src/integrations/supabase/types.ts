@@ -101,6 +101,10 @@ export type Database = {
           client_id: string
           corporate_tax_rate: number
           irs_retencoes: number
+          iva_q1: number | null
+          iva_q2: number | null
+          iva_q3: number | null
+          iva_q4: number | null
           ss_q1: number
           ss_q2: number
           ss_q3: number
@@ -116,6 +120,10 @@ export type Database = {
           client_id: string
           corporate_tax_rate?: number
           irs_retencoes?: number
+          iva_q1?: number | null
+          iva_q2?: number | null
+          iva_q3?: number | null
+          iva_q4?: number | null
           ss_q1?: number
           ss_q2?: number
           ss_q3?: number
@@ -131,6 +139,10 @@ export type Database = {
           client_id?: string
           corporate_tax_rate?: number
           irs_retencoes?: number
+          iva_q1?: number | null
+          iva_q2?: number | null
+          iva_q3?: number | null
+          iva_q4?: number | null
           ss_q1?: number
           ss_q2?: number
           ss_q3?: number
