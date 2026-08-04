@@ -17,6 +17,8 @@ import IndicadoresTab from "./financial/IndicadoresTab";
 import TISimplificadoDashboard from "./financial/TISimplificadoDashboard";
 import TIOrganizadoDashboard from "./financial/TIOrganizadoDashboard";
 import EmpresasDashboard from "./financial/EmpresasDashboard";
+import DashboardMensal from "./financial/DashboardMensal";
+
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import * as XLSX from "xlsx";
 import { parseMapaPdf } from "@/lib/pdfMapaImport";
