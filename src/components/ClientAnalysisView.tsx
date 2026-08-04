@@ -17,7 +17,7 @@ import IndicadoresTab from "./financial/IndicadoresTab";
 import TISimplificadoDashboard from "./financial/TISimplificadoDashboard";
 import TIOrganizadoDashboard from "./financial/TIOrganizadoDashboard";
 import EmpresasDashboard from "./financial/EmpresasDashboard";
-import DashboardMensal from "./financial/DashboardMensal";
+import DashboardTrimestral from "./financial/DashboardTrimestral";
 
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import * as XLSX from "xlsx";
@@ -40,7 +40,7 @@ type Section = "dados" | "dashboard" | "mensal";
 const SECTIONS: { key: Section; label: string }[] = [
   { key: "dados", label: "Dados" },
   { key: "dashboard", label: "Dashboard anual" },
-  { key: "mensal", label: "Dashboard mensal" },
+  { key: "mensal", label: "Dashboard trimestral" },
 ];
 
 
@@ -306,7 +306,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
       )}
 
       {section === "mensal" && (
-        <DashboardMensal clientId={clientId} year={year} client={client} />
+        <DashboardTrimestral clientId={clientId} year={year} client={client} />
       )}
 
 
