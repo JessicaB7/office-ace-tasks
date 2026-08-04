@@ -70,13 +70,11 @@ const LeadsView = () => {
             {LEAD_STAGES.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={owner} onValueChange={setOwner}>
+        <Select value={bizType} onValueChange={setBizType}>
           <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os responsáveis</SelectItem>
-            {collaborators.filter((c: any) => c.active).map((c: any) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
+            <SelectItem value="all">Todos os tipos</SelectItem>
+            {BUSINESS_TYPES.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
