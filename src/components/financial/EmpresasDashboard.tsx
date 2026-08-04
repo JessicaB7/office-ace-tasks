@@ -11,7 +11,7 @@ import {
   useFinancialAccounts,
   useUpsertSettings,
 } from "@/hooks/useClientFinancials";
-import { buildEntryMap, MONTHS_PT, fmtEur, sumSectionMonth } from "./financialMath";
+import { buildEntryMap, MONTHS_PT, fmtEur, sumSectionMonth, sumGroupMonth } from "./financialMath";
 import { cn } from "@/lib/utils";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
