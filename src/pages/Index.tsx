@@ -15,10 +15,16 @@ import AnaliseFinanceiraView from "@/components/AnaliseFinanceiraView";
 import NotificationBell from "@/components/NotificationBell";
 import BusinessOverviewView from "@/components/BusinessOverviewView";
 import ComercialView from "@/components/ComercialView";
-
+import PipelineView from "@/components/comercial/PipelineView";
+import LeadsView from "@/components/comercial/LeadsView";
+import PropostasView from "@/components/comercial/PropostasView";
+import FollowUpsView from "@/components/comercial/FollowUpsView";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  const [activeView, setActiveView] = useState("business");
+  const { isAdmin } = useAuth();
+  const [activeView, setActiveView] = useState("dashboard");
+
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
