@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useCollaborators, useLeads } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Euro, TrendingUp, Target, Handshake } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LEAD_STAGES, eur, stageClass, stageLabel } from "./comercial/leadConstants";
