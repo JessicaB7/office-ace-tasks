@@ -27,13 +27,15 @@ const ConsultoriasPanelView = () => {
     const sim = filtered.filter((l) => l.stage === "mensal_sim");
     const nao = filtered.filter((l) => l.stage === "mensal_nao");
     const agendadas = filtered.filter((l) => l.stage === "reuniao_agendada");
-    const valorTotal = filtered.reduce((s, l) => s + semIVA(Number(l.estimated_value || 0)), 0);
+    const valorTotalComIVA = filtered.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
+    const valorTotal = semIVA(valorTotalComIVA);
     return {
       sim,
       nao,
       agendadas,
       taxa: filtered.length ? (sim.length / filtered.length) * 100 : 0,
       valorTotal,
+      valorTotalComIVA,
     };
   }, [filtered]);
 
@@ -131,9 +133,10 @@ const ConsultoriasPanelView = () => {
 
       {isLoading && <p className="text-sm text-muted-foreground">A carregar…</p>}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: "Consultorias agendadas", value: String(stats.agendadas.length), hint: `${filtered.length} no período`, icon: Target },
+          { label: `Valor total com IVA (${periodLabel})`, value: eur(stats.valorTotalComIVA), hint: `${filtered.length} leads`, icon: Handshake },
           { label: `Valor total sem IVA (${periodLabel})`, value: eur(stats.valorTotal), hint: `${filtered.length} leads · valor / 1,23`, icon: Handshake },
           { label: "Taxa de conversão", value: `${stats.taxa.toFixed(0)}%`, hint: `${stats.sim.length} com serviço mensal · ${stats.nao.length} sem`, icon: Users },
         ].map((k) => (
@@ -156,16 +159,27 @@ const ConsultoriasPanelView = () => {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader><CardTitle className="text-base">Leads por estado</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {byStage.map((s) => (
-              <div key={s.id} className="flex items-center justify-between gap-3">
-                <Badge variant="outline" className={stageClass(s.id)}>{s.label}</Badge>
-                <div className="text-right">
-                  <span className="text-sm font-semibold">{s.count}</span>
-                  <span className="block text-xs text-muted-foreground">{eur(s.value)}</span>
+          <CardContent className="space-y-4">
+            {byStage.map((s) => {
+              const pct = filtered.length ? (s.count / filtered.length) * 100 : 0;
+              return (
+                <div key={s.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <Badge variant="outline" className={stageClass(s.id)}>{s.label}</Badge>
+                    <div className="flex items-center gap-3 text-right">
+                      <span className="text-sm font-semibold tabular-nums">{s.count}</span>
+                      <span className="text-xs text-muted-foreground w-20">{eur(s.value)}</span>
+                    </div>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${pct}%`, opacity: 0.6 + (pct / 100) * 0.4 }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
 
