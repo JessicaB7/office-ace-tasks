@@ -144,7 +144,7 @@ const ComercialView = () => {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: "Leads em aberto", value: String(stats.abertas.length), hint: `${eur(stats.pipelineValor)} em pipeline`, icon: Target },
-          { label: `Ganhas em ${year}`, value: String(stats.ganhas.length), hint: `${eur(stats.ganhoValor)}`, icon: Handshake },
+          { label: `Ganhas em ${periodLabel}`, value: String(stats.ganhas.length), hint: `${eur(stats.ganhoValor)}`, icon: Handshake },
           { label: "Taxa de conversão", value: `${stats.taxa.toFixed(0)}%`, hint: `${stats.perdidas.length} perdidas`, icon: TrendingUp },
           { label: "Valor médio ganho", value: eur(stats.ticket), hint: "por lead ganha", icon: Euro },
         ].map((k) => (
