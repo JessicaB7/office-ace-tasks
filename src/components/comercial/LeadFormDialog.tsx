@@ -223,7 +223,9 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
           <div>
             <Label>Próximo follow-up</Label>
             <Input type="date" value={form.next_followup} onChange={(e) => set("next_followup", e.target.value)} />
-            <p className="text-xs text-muted-foreground mt-1">Por defeito, 3 dias após a .</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Por defeito, 3 dias após a {isConsultoria ? "sessão" : "reunião"}.
+            </p>
           </div>
           <div>
             <Label>Tipo de negócio</Label>
