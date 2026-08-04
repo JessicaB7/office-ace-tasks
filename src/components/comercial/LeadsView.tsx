@@ -111,7 +111,11 @@ const LeadsView = () => {
                     )}
                   </td>
                   <td className="p-3 text-right font-medium">{eur(l.estimated_value)}</td>
-                  <td className="p-3 text-xs">{ownerName(l.owner_id)}</td>
+                  <td className="p-3 text-xs">
+                    {businessTypeLabel(l.business_type)}
+                    <span className="block text-muted-foreground">{l.business_area || "—"}</span>
+                  </td>
+                  <td className="p-3 text-xs">{ivaFrameworkLabel(l.iva_framework)}</td>
                   <td className="p-3 text-xs">{l.meeting ? fmtDate(l.meeting_date) : "—"}</td>
                   <td className="p-3 text-xs">{fmtDate(l.next_followup)}</td>
                   <td className="p-3">
