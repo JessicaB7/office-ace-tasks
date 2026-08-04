@@ -63,7 +63,7 @@ const ConsultoriasPanelView = () => {
     () =>
       CONSULTORIA_STAGES.map((s) => {
         const items = filtered.filter((l) => l.stage === s.id);
-        return { ...s, count: items.length, value: items.reduce((a, l) => a + Number(l.estimated_value || 0), 0) };
+        return { ...s, count: items.length, value: items.reduce((a, l) => a + semIVA(Number(l.estimated_value || 0)), 0) };
       }),
     [filtered]
   );
