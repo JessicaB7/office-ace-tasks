@@ -317,23 +317,40 @@ export default function EmpresasDashboard({
           <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
             <h4 className="font-semibold text-sm">IRC estimado</h4>
             {!exporting && (
-            <div className="flex items-center gap-2">
-              <Label htmlFor="irc-taxa" className="text-xs text-muted-foreground whitespace-nowrap">Taxa de IRC (%)</Label>
-              <Input
-                id="irc-taxa"
-                type="number"
-                step="0.5"
-                className="h-8 w-24"
-                value={(taxa * 100).toString()}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  if (Number.isFinite(v)) upsertSettings.mutate({ corporate_tax_rate: v / 100 });
-                }}
-              />
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="irc-taxa" className="text-xs text-muted-foreground whitespace-nowrap">Taxa de IRC (%)</Label>
+                <Input
+                  id="irc-taxa"
+                  type="number"
+                  step="0.5"
+                  className="h-8 w-24"
+                  value={(taxa * 100).toString()}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    if (Number.isFinite(v)) upsertSettings.mutate({ corporate_tax_rate: v / 100 });
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="derrama-taxa" className="text-xs text-muted-foreground whitespace-nowrap">Taxa de derrama (%)</Label>
+                <Input
+                  id="derrama-taxa"
+                  type="number"
+                  step="0.1"
+                  className="h-8 w-24"
+                  value={(derramaTaxa * 100).toString()}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    if (Number.isFinite(v)) upsertSettings.mutate({ derrama_rate: v / 100 } as any);
+                  }}
+                />
+              </div>
             </div>
             )}
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
+
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Matéria coletável</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(baseTributavel)}</div>
