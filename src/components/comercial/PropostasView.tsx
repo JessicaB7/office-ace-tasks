@@ -88,7 +88,7 @@ const PropostasView = () => {
                   <td className="p-3 font-medium">{l.name}</td>
                   <td className="p-3 text-xs">{fmtDate(l.proposal_sent_at)}</td>
                   <td className="p-3 text-right font-medium">{eur(l.estimated_value)}</td>
-                  <td className="p-3 text-xs">{ownerName(l.owner_id)}</td>
+                  <td className="p-3 text-xs">{businessTypeLabel(l.business_type)}</td>
                   <td className="p-3"><Badge variant="outline" className={stageClass(l.stage)}>{stageLabel(l.stage)}</Badge></td>
                   <td className="p-3">
                     <div className="flex justify-end gap-2">
