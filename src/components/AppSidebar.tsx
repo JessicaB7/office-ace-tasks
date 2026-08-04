@@ -33,15 +33,22 @@ type Entry = { kind: "item"; item: Item } | { kind: "group"; group: Group };
 const SECTIONS: { title: string; entries: Entry[] }[] = [
   {
     title: "Visão geral",
+    entries: [{ kind: "item", item: { id: "dashboard", label: "O meu dia", icon: LayoutDashboard } }],
+  },
+  {
+    title: "Comercial",
     entries: [
-      { kind: "item", item: { id: "business", label: "Painel do negócio", icon: Gauge } },
-      { kind: "item", item: { id: "dashboard", label: "O meu dia", icon: LayoutDashboard } },
+      { kind: "item", item: { id: "comercial", label: "Painel comercial", icon: TrendingUp } },
+      { kind: "item", item: { id: "pipeline", label: "Pipeline", icon: Filter } },
+      { kind: "item", item: { id: "leads", label: "Leads", icon: UserPlus } },
+      { kind: "item", item: { id: "propostas", label: "Propostas enviadas", icon: FileText } },
+      { kind: "item", item: { id: "followups", label: "Follow ups", icon: CalendarClock } },
     ],
   },
   {
     title: "Clientes",
     entries: [
-      { kind: "item", item: { id: "clients", label: "Clientes", icon: Building2 } },
+      { kind: "item", item: { id: "clients", label: "Dados de clientes", icon: Building2 } },
       {
         kind: "group",
         group: {
@@ -56,15 +63,6 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
           ],
         },
       },
-    ],
-  },
-  {
-    title: "Comercial",
-    entries: [{ kind: "item", item: { id: "comercial", label: "Painel comercial", icon: TrendingUp } }],
-  },
-  {
-    title: "Processos",
-    entries: [
       { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
       {
         kind: "group",
@@ -85,13 +83,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
         },
       },
       { kind: "item", item: { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays } },
-      { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
-      { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
-    ],
-  },
-  {
-    title: "Financeiro",
-    entries: [
+      { kind: "item", item: { id: "extratos", label: "Extratos Bancários", icon: Banknote } },
       {
         kind: "group",
         group: {
@@ -105,13 +97,20 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
           ],
         },
       },
-      { kind: "item", item: { id: "extratos", label: "Extratos Bancários", icon: Banknote } },
+    ],
+  },
+  {
+    title: "Gestão de negócio",
+    entries: [
+      { kind: "item", item: { id: "business", label: "Painel do negócio", icon: Gauge, adminOnly: true } },
+      { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
+      { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
     ],
   },
 ];
 
-
 const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
+
   const { user, isAdmin, signOut } = useAuth();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     contabilidades: activeView.startsWith("contabilidades"),
