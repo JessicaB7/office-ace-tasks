@@ -13,9 +13,11 @@ import AdminWeeklySummary from "@/components/AdminWeeklySummary";
 import ClientAnalysisView from "@/components/ClientAnalysisView";
 import AnaliseFinanceiraView from "@/components/AnaliseFinanceiraView";
 import NotificationBell from "@/components/NotificationBell";
+import BusinessOverviewView from "@/components/BusinessOverviewView";
 
 const Index = () => {
-  const [activeView, setActiveView] = useState("dashboard");
+  const [activeView, setActiveView] = useState("business");
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [analysisClientId, setAnalysisClientId] = useState<string | null>(null);
