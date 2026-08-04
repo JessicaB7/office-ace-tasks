@@ -23,6 +23,7 @@ import { parseMapaPdf } from "@/lib/pdfMapaImport";
 import { parseBalancetePdf, isBalancetePdf } from "@/lib/pdfBalanceteImport";
 import { parseBalanceteXlsx, isBalanceteXlsx } from "@/lib/xlsxBalanceteImport";
 import { toast } from "sonner";
+import { validateDocumentNif } from "@/lib/nifCheck";
 import { cn } from "@/lib/utils";
 
 type Tab = "analise" | "mapa" | "iva" | "indicadores";
@@ -33,11 +34,19 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "indicadores", label: "Indicadores" },
 ];
 
+type Section = "dados" | "dashboard";
+const SECTIONS: { key: Section; label: string }[] = [
+  { key: "dados", label: "Dados" },
+  { key: "dashboard", label: "Dashboard" },
+];
+
 export default function ClientAnalysisView({ clientId, onBack }: { clientId: string; onBack: () => void }) {
   const { data: clients = [] } = useClients();
   const client = clients.find((c: any) => c.id === clientId);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [section, setSection] = useState<Section>("dashboard");
   const [tab, setTab] = useState<Tab>("analise");
+
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: lastImport } = useLastImportDate(clientId, year);
   const { data: imports = [] } = useFinancialImports(clientId, year);
