@@ -14,6 +14,11 @@ import {
   LineChart,
   Gauge,
   TrendingUp,
+  Filter,
+  UserPlus,
+  FileText,
+  CalendarClock,
+
 
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
