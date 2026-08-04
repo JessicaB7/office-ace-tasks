@@ -21,11 +21,13 @@ const ConsultoriasPanelView = () => {
   const yearLeads = useMemo(() => leads.filter((l) => inYear(l.created_at)), [leads, year]);
   const filtered = useMemo(() => yearLeads.filter((l) => inSelectedMonth(l.created_at)), [yearLeads, month]);
 
+  const semIVA = (v: number) => v / 1.23;
+
   const stats = useMemo(() => {
     const sim = filtered.filter((l) => l.stage === "mensal_sim");
     const nao = filtered.filter((l) => l.stage === "mensal_nao");
     const agendadas = filtered.filter((l) => l.stage === "reuniao_agendada");
-    const valorTotal = filtered.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
+    const valorTotal = filtered.reduce((s, l) => s + semIVA(Number(l.estimated_value || 0)), 0);
     return {
       sim,
       nao,
@@ -48,7 +50,7 @@ const ConsultoriasPanelView = () => {
           sessoes: sessoes.length,
           sim: sim.length,
           nao: novas.filter((l) => l.stage === "mensal_nao").length,
-          valor: novas.reduce((s, l) => s + Number(l.estimated_value || 0), 0),
+          valor: novas.reduce((s, l) => s + semIVA(Number(l.estimated_value || 0)), 0),
         };
       }),
     [leads, yearLeads, year]
@@ -61,7 +63,7 @@ const ConsultoriasPanelView = () => {
     () =>
       CONSULTORIA_STAGES.map((s) => {
         const items = filtered.filter((l) => l.stage === s.id);
-        return { ...s, count: items.length, value: items.reduce((a, l) => a + Number(l.estimated_value || 0), 0) };
+        return { ...s, count: items.length, value: items.reduce((a, l) => a + semIVA(Number(l.estimated_value || 0)), 0) };
       }),
     [filtered]
   );
@@ -74,7 +76,7 @@ const ConsultoriasPanelView = () => {
       map.set(key, {
         total: cur.total + 1,
         sim: cur.sim + (l.stage === "mensal_sim" ? 1 : 0),
-        valor: cur.valor + Number(l.estimated_value || 0),
+        valor: cur.valor + semIVA(Number(l.estimated_value || 0)),
       });
     });
     return [...map.entries()].sort((a, b) => b[1].valor - a[1].valor);
@@ -132,7 +134,7 @@ const ConsultoriasPanelView = () => {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {[
           { label: "Consultorias agendadas", value: String(stats.agendadas.length), hint: `${filtered.length} no período`, icon: Target },
-          { label: `Valor total (${periodLabel})`, value: eur(stats.valorTotal), hint: `${filtered.length} leads`, icon: Handshake },
+          { label: `Valor total sem IVA (${periodLabel})`, value: eur(stats.valorTotal), hint: `${filtered.length} leads · valor / 1,23`, icon: Handshake },
           { label: "Taxa de conversão", value: `${stats.taxa.toFixed(0)}%`, hint: `${stats.sim.length} com serviço mensal · ${stats.nao.length} sem`, icon: Users },
         ].map((k) => (
 
