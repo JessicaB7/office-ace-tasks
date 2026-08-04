@@ -489,6 +489,7 @@ export type Database = {
           owner_id: string | null
           phone: string | null
           proposal_sent_at: string | null
+          segment: string
           source: string | null
           stage: string
           suggested_product: string | null
@@ -512,6 +513,7 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           proposal_sent_at?: string | null
+          segment?: string
           source?: string | null
           stage?: string
           suggested_product?: string | null
@@ -535,6 +537,7 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           proposal_sent_at?: string | null
+          segment?: string
           source?: string | null
           stage?: string
           suggested_product?: string | null

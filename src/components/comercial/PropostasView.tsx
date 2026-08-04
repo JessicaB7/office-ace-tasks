@@ -7,8 +7,8 @@ import { eur, fmtDate, stageClass, stageLabel, businessTypeLabel } from "./leadC
 import LeadFormDialog from "./LeadFormDialog";
 import { FileText, ThumbsUp, ThumbsDown } from "lucide-react";
 
-const PropostasView = () => {
-  const { data: leads = [] } = useLeads();
+const PropostasView = ({ segment = "contabilidade" }: { segment?: string }) => {
+  const { data: leads = [] } = useLeads(segment);
   const upsert = useUpsertLead();
   const [editing, setEditing] = useState<Lead | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -115,7 +115,7 @@ const PropostasView = () => {
         </CardContent>
       </Card>
 
-      <LeadFormDialog open={dialogOpen} lead={editing} onClose={() => setDialogOpen(false)} />
+      <LeadFormDialog segment={segment} open={dialogOpen} lead={editing} onClose={() => setDialogOpen(false)} />
     </div>
   );
 };

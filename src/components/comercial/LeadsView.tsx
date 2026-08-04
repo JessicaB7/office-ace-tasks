@@ -20,8 +20,8 @@ import LeadFormDialog from "./LeadFormDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-const LeadsView = () => {
-  const { data: leads = [], isLoading } = useLeads();
+const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
+  const { data: leads = [], isLoading } = useLeads(segment);
   const del = useDeleteLead();
   const { isAdmin } = useAuth();
   const [search, setSearch] = useState("");
@@ -153,7 +153,7 @@ const LeadsView = () => {
         </CardContent>
       </Card>
 
-      <LeadFormDialog open={dialogOpen} lead={editing} onClose={() => setDialogOpen(false)} />
+      <LeadFormDialog segment={segment} open={dialogOpen} lead={editing} onClose={() => setDialogOpen(false)} />
     </div>
   );
 };
