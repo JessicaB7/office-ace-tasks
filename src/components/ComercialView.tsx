@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useCollaborators, useLeads } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Euro, TrendingUp, Target, Handshake } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LEAD_STAGES, eur, stageClass, stageLabel } from "./comercial/leadConstants";
@@ -12,11 +13,17 @@ const ComercialView = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: collaborators = [] } = useCollaborators();
   const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState<number | null>(null);
 
   const inYear = (d: string | null) => !!d && new Date(d).getFullYear() === year;
   const monthOf = (d: string) => new Date(d).getMonth();
+  const inSelectedMonth = (d: string | null) => month === null || (d ? monthOf(d) === month : false);
 
   const yearLeads = useMemo(() => leads.filter((l) => inYear(l.created_at)), [leads, year]);
+  const filteredLeads = useMemo(
+    () => yearLeads.filter((l) => inSelectedMonth(l.created_at)),
+    [yearLeads, month]
+  );
 
   const monthly = useMemo(
     () =>
@@ -39,12 +46,14 @@ const ComercialView = () => {
     [leads, yearLeads, year]
   );
 
+  const visibleMonthly = useMemo(() => (month === null ? monthly : monthly.filter((_, i) => i === month)), [monthly, month]);
+
   const maxNovas = Math.max(1, ...monthly.map((m) => m.novas));
 
   const stats = useMemo(() => {
-    const ganhas = yearLeads.filter((l) => l.stage === "ganho");
-    const perdidas = yearLeads.filter((l) => l.stage === "perda");
-    const abertas = yearLeads.filter((l) => !["ganho", "perda"].includes(l.stage));
+    const ganhas = filteredLeads.filter((l) => l.stage === "ganho");
+    const perdidas = filteredLeads.filter((l) => l.stage === "perda");
+    const abertas = filteredLeads.filter((l) => !["ganho", "perda"].includes(l.stage));
     const decididas = ganhas.length + perdidas.length;
     const ganhoValor = ganhas.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
     return {
@@ -56,30 +65,30 @@ const ComercialView = () => {
       taxa: decididas ? (ganhas.length / decididas) * 100 : 0,
       ticket: ganhas.length ? ganhoValor / ganhas.length : 0,
     };
-  }, [yearLeads]);
+  }, [filteredLeads]);
 
   const byStage = useMemo(
     () =>
       LEAD_STAGES.map((s) => {
-        const items = yearLeads.filter((l) => l.stage === s.id);
+        const items = filteredLeads.filter((l) => l.stage === s.id);
         return {
           ...s,
           count: items.length,
           value: items.reduce((a, l) => a + Number(l.estimated_value || 0), 0),
         };
       }),
-    [yearLeads]
+    [filteredLeads]
   );
 
   const products = useMemo(() => {
     const map = new Map<string, { count: number; value: number }>();
-    yearLeads.forEach((l) => {
+    filteredLeads.forEach((l) => {
       const key = (l.suggested_product || "Sem produto").trim() || "Sem produto";
       const cur = map.get(key) || { count: 0, value: 0 };
       map.set(key, { count: cur.count + 1, value: cur.value + Number(l.estimated_value || 0) });
     });
     return [...map.entries()].sort((a, b) => b[1].value - a[1].value).slice(0, 8);
-  }, [yearLeads]);
+  }, [filteredLeads]);
 
   const losses = useMemo(() => {
     const map = new Map<string, number>();
@@ -94,6 +103,8 @@ const ComercialView = () => {
 
   const years = [year + 1, year, year - 1, year - 2];
 
+  const periodLabel = month === null ? String(year) : `${MONTHS[month]} ${year}`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
@@ -101,26 +112,39 @@ const ComercialView = () => {
           <h1 className="text-2xl font-bold">Painel comercial</h1>
           <p className="text-sm text-muted-foreground">Atividade e resultados das leads da pipeline</p>
         </div>
-        <div className="flex gap-1 rounded-lg bg-muted p-1">
-          {years.map((y) => (
-            <button
-              key={y}
-              onClick={() => setYear(y)}
-              className={cn(
-                "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                y === year ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {y}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <Select value={month === null ? "all" : String(month)} onValueChange={(v) => setMonth(v === "all" ? null : Number(v))}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Ano todo</SelectItem>
+              {MONTHS.map((m, i) => (
+                <SelectItem key={m} value={String(i)}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-1 rounded-lg bg-muted p-1">
+            {years.map((y) => (
+              <button
+                key={y}
+                onClick={() => setYear(y)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  y === year ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: "Leads em aberto", value: String(stats.abertas.length), hint: `${eur(stats.pipelineValor)} em pipeline`, icon: Target },
-          { label: `Ganhas em ${year}`, value: String(stats.ganhas.length), hint: `${eur(stats.ganhoValor)}`, icon: Handshake },
+          { label: `Ganhas em ${periodLabel}`, value: String(stats.ganhas.length), hint: `${eur(stats.ganhoValor)}`, icon: Handshake },
           { label: "Taxa de conversão", value: `${stats.taxa.toFixed(0)}%`, hint: `${stats.perdidas.length} perdidas`, icon: TrendingUp },
           { label: "Valor médio ganho", value: eur(stats.ticket), hint: "por lead ganha", icon: Euro },
         ].map((k) => (
@@ -143,14 +167,18 @@ const ComercialView = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-12 gap-2 items-end h-40">
-            {monthly.map((m) => (
+            {monthly.map((m, i) => (
               <div key={m.label} className="flex flex-col items-center gap-1 h-full justify-end">
                 <span className="text-[10px] text-muted-foreground">{m.novas || ""}</span>
                 <div
-                  className="w-full rounded-t bg-primary/80"
+                  className={cn(
+                    "w-full rounded-t transition-colors",
+                    month === i ? "bg-primary" : "bg-primary/80",
+                    month !== null && month !== i && "opacity-40"
+                  )}
                   style={{ height: `${(m.novas / maxNovas) * 100}%`, minHeight: m.novas ? 4 : 2 }}
                 />
-                <span className="text-[10px] text-muted-foreground">{m.label}</span>
+                <span className={cn("text-[10px]", month === i ? "text-foreground font-medium" : "text-muted-foreground")}>{m.label}</span>
               </div>
             ))}
           </div>
@@ -159,7 +187,7 @@ const ComercialView = () => {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Atividade comercial mensal — {year}</CardTitle>
+          <CardTitle className="text-base">Atividade comercial — {periodLabel}</CardTitle>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
@@ -175,7 +203,7 @@ const ComercialView = () => {
               </tr>
             </thead>
             <tbody>
-              {monthly.map((m) => (
+              {visibleMonthly.map((m) => (
                 <tr key={m.label} className="border-t">
                   <td className="p-3 font-medium">{m.label}</td>
                   <td className="p-3 text-right">{m.novas || "—"}</td>
