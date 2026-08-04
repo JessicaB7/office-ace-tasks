@@ -206,3 +206,60 @@ export function useClientObligationsHistory(clientId: string | null, obligationT
     enabled: !!clientId,
   });
 }
+
+// ---- LEADS (Comercial) ----
+export interface Lead {
+  id: string;
+  name: string;
+  nif: string | null;
+  email: string | null;
+  phone: string | null;
+  source: string | null;
+  stage: string;
+  estimated_value: number | null;
+  proposal_sent_at: string | null;
+  next_followup: string | null;
+  owner_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useLeads() {
+  return useQuery({
+    queryKey: ["leads"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as Lead[];
+    },
+  });
+}
+
+export function useUpsertLead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (lead: Partial<Lead> & { name: string; id?: string }) => {
+      if (lead.id) {
+        const { data, error } = await supabase.from("leads").update(lead as any).eq("id", lead.id).select().single();
+        if (error) throw error;
+        return data;
+      }
+      const { data, error } = await supabase.from("leads").insert(lead as any).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["leads"] }),
+  });
+}
+
+export function useDeleteLead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("leads").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["leads"] }),
+  });
+}
