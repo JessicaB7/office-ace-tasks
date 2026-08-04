@@ -108,9 +108,10 @@ export default function EmpresasDashboard({
 
 
   const taxa = Number(settings?.corporate_tax_rate ?? 0.16);
+  const derramaTaxa = Number(settings?.derrama_rate ?? 0.015);
   const baseTributavel = Math.max(0, resultado);
   const ircBase = baseTributavel * taxa;
-  const derrama = baseTributavel * 0.015;
+  const derrama = baseTributavel * derramaTaxa;
 
   // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 625; ajudas de custo: 6315 + 6325)
   const sumPrefixYear = (prefix: string) =>
