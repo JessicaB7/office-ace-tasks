@@ -305,6 +305,11 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         )
       )}
 
+      {section === "mensal" && (
+        <DashboardMensal clientId={clientId} year={year} client={client} />
+      )}
+
+
 
       <ClientDetailDialog
         client={fichaOpen ? client : null}
