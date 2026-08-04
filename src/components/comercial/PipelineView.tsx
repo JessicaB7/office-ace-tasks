@@ -66,7 +66,7 @@ const PipelineView = () => {
                 >
                   <CardContent className="p-3 space-y-2">
                     <p className="text-sm font-medium leading-tight">{lead.name}</p>
-                    <p className="text-xs text-muted-foreground">{eur(lead.estimated_value)}/mês</p>
+                    <p className="text-xs text-muted-foreground">{eur(lead.estimated_value)}</p>
                     <p className="text-[11px] text-muted-foreground">{ownerName(lead.owner_id)}</p>
                     {lead.next_followup && (
                       <p className="text-[11px] text-muted-foreground">Follow-up: {fmtDate(lead.next_followup)}</p>
