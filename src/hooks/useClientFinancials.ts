@@ -91,6 +91,11 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         ss_q3: 0,
         ss_q4: 0,
         tco: false,
+        iva_q1: null,
+        iva_q2: null,
+        iva_q3: null,
+        iva_q4: null,
+
       }) as FinancialSettings;
     },
     enabled: !!clientId,
