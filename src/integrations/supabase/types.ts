@@ -100,6 +100,7 @@ export type Database = {
         Row: {
           client_id: string
           corporate_tax_rate: number
+          derrama_rate: number
           irs_retencoes: number
           iva_q1: number | null
           iva_q2: number | null
@@ -121,6 +122,7 @@ export type Database = {
         Insert: {
           client_id: string
           corporate_tax_rate?: number
+          derrama_rate?: number
           irs_retencoes?: number
           iva_q1?: number | null
           iva_q2?: number | null
@@ -142,6 +144,7 @@ export type Database = {
         Update: {
           client_id?: string
           corporate_tax_rate?: number
+          derrama_rate?: number
           irs_retencoes?: number
           iva_q1?: number | null
           iva_q2?: number | null
