@@ -147,7 +147,7 @@ export default function EmpresasDashboard({
           <div className="text-sm text-muted-foreground">Análise Empresa · {year}</div>
         </div>
 
-        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
+        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-5 gap-3 auto-rows-fr">
           {kpis.map((k) => (
             <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
               <div className="text-xs text-muted-foreground">{k.label}</div>
@@ -161,22 +161,44 @@ export default function EmpresasDashboard({
           ))}
         </div>
 
+        <div className="col-span-12 rounded-xl border bg-card p-4">
+          <h4 className="font-semibold text-sm mb-3">Estrutura de gastos</h4>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
+            {[
+              { label: "FSE", value: totalFse },
+              { label: "Gastos com pessoal", value: totalPessoal },
+              { label: "Depreciações", value: totalDepreciacoes },
+              { label: "Outros gastos", value: totalOutros },
+            ].map((g) => (
+              <div key={g.label} className="rounded-lg border bg-background p-3 min-h-[92px] flex flex-col justify-center">
+                <div className="text-[11px] text-muted-foreground">{g.label}</div>
+                <div className="text-lg font-bold tabular-nums">{fmtEur(g.value)}</div>
+                <div className="text-[10px] text-muted-foreground mt-1">
+                  {totalGastos > 0 ? `${((g.value / totalGastos) * 100).toFixed(1)}% dos gastos` : "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="col-span-12 lg:col-span-7 rounded-xl border bg-card p-4 h-full flex flex-col">
-          <h4 className="font-semibold text-sm mb-3">Vendas vs Gastos (mensal)</h4>
+          <h4 className="font-semibold text-sm mb-3">Rendimentos, gastos e resultado (mensal)</h4>
           <div className="flex-1 min-h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} barCategoryGap="28%" barGap={4}>
+              <BarChart data={chartData} barCategoryGap="24%" barGap={3}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis dataKey="mes" fontSize={11} interval={0} tickMargin={8} />
                 <YAxis fontSize={11} />
                 <Tooltip formatter={(v: any) => fmtEur(Number(v))} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="Vendas" fill="hsl(var(--primary))" maxBarSize={28} />
-                <Bar dataKey="Gastos" fill="hsl(var(--primary) / 0.62)" maxBarSize={28} />
+                <Bar dataKey="Rendimentos" fill="hsl(var(--primary))" maxBarSize={22} />
+                <Bar dataKey="Gastos" fill="hsl(var(--primary) / 0.62)" maxBarSize={22} />
+                <Bar dataKey="Resultado" fill="hsl(var(--primary) / 0.32)" maxBarSize={22} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
+
 
         <div className="col-span-12 lg:col-span-5 rounded-xl border bg-card p-4 h-full flex flex-col">
           <h4 className="font-semibold text-sm mb-3">Análise trimestral</h4>
