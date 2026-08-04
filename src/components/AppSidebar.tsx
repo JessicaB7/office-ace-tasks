@@ -117,6 +117,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
     entries: [
       { kind: "item", item: { id: "business", label: "Painel do negócio", icon: Gauge, adminOnly: true } },
       { kind: "item", item: { id: "comercial", label: "Painel comercial", icon: TrendingUp, adminOnly: true } },
+      { kind: "item", item: { id: "consultorias_painel", label: "Painel de consultorias", icon: MessageSquareQuote, adminOnly: true } },
       { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
       { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
     ],
