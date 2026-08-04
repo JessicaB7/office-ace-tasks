@@ -140,11 +140,13 @@ export default function EmpresasDashboard({
 
   const kpis = [
     { label: "Rendimentos", value: totalRendimentos, tone: "primary" as const },
+    { label: "Gastos com mercadorias", value: totalMercadorias, tone: "neutral" as const },
     { label: "FSE", value: totalFse, tone: "neutral" as const },
-    { label: "Gastos com pessoal", value: totalPessoal, tone: "neutral" as const },
+    { label: "Gastos com salários", value: totalPessoal, tone: "neutral" as const },
     { label: "Depreciações", value: totalDepreciacoes, tone: "neutral" as const },
     { label: "Resultado", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
   ];
+
 
 
   return (
