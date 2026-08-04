@@ -21,11 +21,13 @@ const ConsultoriasPanelView = () => {
   const yearLeads = useMemo(() => leads.filter((l) => inYear(l.created_at)), [leads, year]);
   const filtered = useMemo(() => yearLeads.filter((l) => inSelectedMonth(l.created_at)), [yearLeads, month]);
 
+  const semIVA = (v: number) => v / 1.23;
+
   const stats = useMemo(() => {
     const sim = filtered.filter((l) => l.stage === "mensal_sim");
     const nao = filtered.filter((l) => l.stage === "mensal_nao");
     const agendadas = filtered.filter((l) => l.stage === "reuniao_agendada");
-    const valorTotal = filtered.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
+    const valorTotal = filtered.reduce((s, l) => s + semIVA(Number(l.estimated_value || 0)), 0);
     return {
       sim,
       nao,
