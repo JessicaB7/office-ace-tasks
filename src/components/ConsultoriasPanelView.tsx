@@ -27,13 +27,15 @@ const ConsultoriasPanelView = () => {
     const sim = filtered.filter((l) => l.stage === "mensal_sim");
     const nao = filtered.filter((l) => l.stage === "mensal_nao");
     const agendadas = filtered.filter((l) => l.stage === "reuniao_agendada");
-    const valorTotal = filtered.reduce((s, l) => s + semIVA(Number(l.estimated_value || 0)), 0);
+    const valorTotalComIVA = filtered.reduce((s, l) => s + Number(l.estimated_value || 0), 0);
+    const valorTotal = semIVA(valorTotalComIVA);
     return {
       sim,
       nao,
       agendadas,
       taxa: filtered.length ? (sim.length / filtered.length) * 100 : 0,
       valorTotal,
+      valorTotalComIVA,
     };
   }, [filtered]);
 
