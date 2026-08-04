@@ -103,6 +103,8 @@ const ComercialView = () => {
 
   const years = [year + 1, year, year - 1, year - 2];
 
+  const periodLabel = month === null ? String(year) : `${MONTHS[month]} ${year}`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
@@ -110,19 +112,32 @@ const ComercialView = () => {
           <h1 className="text-2xl font-bold">Painel comercial</h1>
           <p className="text-sm text-muted-foreground">Atividade e resultados das leads da pipeline</p>
         </div>
-        <div className="flex gap-1 rounded-lg bg-muted p-1">
-          {years.map((y) => (
-            <button
-              key={y}
-              onClick={() => setYear(y)}
-              className={cn(
-                "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
-                y === year ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {y}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <Select value={month === null ? "all" : String(month)} onValueChange={(v) => setMonth(v === "all" ? null : Number(v))}>
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Ano todo</SelectItem>
+              {MONTHS.map((m, i) => (
+                <SelectItem key={m} value={String(i)}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-1 rounded-lg bg-muted p-1">
+            {years.map((y) => (
+              <button
+                key={y}
+                onClick={() => setYear(y)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                  y === year ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
