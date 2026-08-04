@@ -121,11 +121,13 @@ export default function EmpresasDashboard({
   };
 
   const kpis = [
-    { label: "Vendas e serviços", value: totalVendas, tone: "primary" as const },
-    { label: "Gastos totais", value: totalGastos, tone: "neutral" as const },
-    { label: "Resultado do exercício", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
-    { label: "IRC estimado", value: ircTotal, tone: "warn" as const },
+    { label: "Rendimentos", value: totalRendimentos, tone: "primary" as const },
+    { label: "FSE", value: totalFse, tone: "neutral" as const },
+    { label: "Gastos com pessoal", value: totalPessoal, tone: "neutral" as const },
+    { label: "Depreciações", value: totalDepreciacoes, tone: "neutral" as const },
+    { label: "Resultado", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
   ];
+
 
   return (
     <div className="space-y-4">
