@@ -70,13 +70,16 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
             {LEAD_STAGES.map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={bizType} onValueChange={setBizType}>
-          <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
-            {BUSINESS_TYPES.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        {segment !== "consultoria" && (
+          <Select value={bizType} onValueChange={setBizType}>
+            <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os tipos</SelectItem>
+              {BUSINESS_TYPES.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        )}
+
       </div>
 
       <Card>
