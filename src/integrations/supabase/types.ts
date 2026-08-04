@@ -476,6 +476,9 @@ export type Database = {
           email: string | null
           estimated_value: number | null
           id: string
+          loss_reason: string | null
+          meeting: boolean
+          meeting_date: string | null
           name: string
           next_followup: string | null
           nif: string | null
@@ -485,6 +488,7 @@ export type Database = {
           proposal_sent_at: string | null
           source: string | null
           stage: string
+          suggested_product: string | null
           updated_at: string
         }
         Insert: {
@@ -492,6 +496,9 @@ export type Database = {
           email?: string | null
           estimated_value?: number | null
           id?: string
+          loss_reason?: string | null
+          meeting?: boolean
+          meeting_date?: string | null
           name: string
           next_followup?: string | null
           nif?: string | null
@@ -501,6 +508,7 @@ export type Database = {
           proposal_sent_at?: string | null
           source?: string | null
           stage?: string
+          suggested_product?: string | null
           updated_at?: string
         }
         Update: {
@@ -508,6 +516,9 @@ export type Database = {
           email?: string | null
           estimated_value?: number | null
           id?: string
+          loss_reason?: string | null
+          meeting?: boolean
+          meeting_date?: string | null
           name?: string
           next_followup?: string | null
           nif?: string | null
@@ -517,6 +528,7 @@ export type Database = {
           proposal_sent_at?: string | null
           source?: string | null
           stage?: string
+          suggested_product?: string | null
           updated_at?: string
         }
         Relationships: [
