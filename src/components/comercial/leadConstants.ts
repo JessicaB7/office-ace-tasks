@@ -13,11 +13,10 @@ export const BUSINESS_TYPES = [
 ] as const;
 
 export const IVA_FRAMEWORKS = [
-  { id: "isento_53", label: "Isento art.º 53" },
-  { id: "mensal", label: "Regime normal — mensal" },
-  { id: "trimestral", label: "Regime normal — trimestral" },
-  { id: "misto", label: "Misto" },
-  { id: "outro", label: "Outro" },
+  { id: "isento_53", label: "Isento art.º 53º" },
+  { id: "isento_9", label: "Isento art.º 9º" },
+  { id: "iva_mensal", label: "IVA mensal" },
+  { id: "iva_trimestral", label: "IVA trimestral" },
 ] as const;
 
 export const businessTypeLabel = (id: string | null) =>
