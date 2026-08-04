@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCollaborators, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { LEAD_STAGES } from "./leadConstants";
@@ -18,12 +19,14 @@ interface Props {
 
 const empty = {
   name: "",
-  nif: "",
-  email: "",
   phone: "",
-  source: "",
-  stage: "novo",
+  email: "",
+  meeting: false,
+  meeting_date: "",
+  suggested_product: "",
   estimated_value: "",
+  stage: "reuniao_agendada",
+  loss_reason: "",
   proposal_sent_at: "",
   next_followup: "",
   owner_id: "",
@@ -41,38 +44,46 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
       lead
         ? {
             name: lead.name || "",
-            nif: lead.nif || "",
-            email: lead.email || "",
             phone: lead.phone || "",
-            source: lead.source || "",
-            stage: lead.stage || "novo",
+            email: lead.email || "",
+            meeting: !!lead.meeting,
+            meeting_date: lead.meeting_date || "",
+            suggested_product: lead.suggested_product || "",
             estimated_value: lead.estimated_value != null ? String(lead.estimated_value) : "",
+            stage: lead.stage || "reuniao_agendada",
+            loss_reason: lead.loss_reason || "",
             proposal_sent_at: lead.proposal_sent_at || "",
             next_followup: lead.next_followup || "",
             owner_id: lead.owner_id || "",
             notes: lead.notes || "",
           }
-        : { ...empty, stage: defaultStage || "novo" }
+        : { ...empty, stage: defaultStage || "reuniao_agendada" }
     );
   }, [open, lead, defaultStage]);
 
-  const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+  const set = (k: string, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
 
   const handleSave = async () => {
     if (!form.name.trim()) {
       toast.error("Indica o nome da lead.");
       return;
     }
+    if (form.stage === "perda" && !form.loss_reason.trim()) {
+      toast.error("Indica o motivo da perda.");
+      return;
+    }
     try {
       await upsert.mutateAsync({
         id: lead?.id,
         name: form.name.trim(),
-        nif: form.nif || null,
-        email: form.email || null,
         phone: form.phone || null,
-        source: form.source || null,
-        stage: form.stage,
+        email: form.email || null,
+        meeting: form.meeting,
+        meeting_date: form.meeting ? form.meeting_date || null : null,
+        suggested_product: form.suggested_product || null,
         estimated_value: form.estimated_value ? Number(form.estimated_value) : null,
+        stage: form.stage,
+        loss_reason: form.stage === "perda" ? form.loss_reason.trim() : null,
         proposal_sent_at: form.proposal_sent_at || null,
         next_followup: form.next_followup || null,
         owner_id: form.owner_id || null,
@@ -87,7 +98,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{lead ? "Editar lead" : "Nova lead"}</DialogTitle>
         </DialogHeader>
@@ -98,23 +109,46 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
           </div>
           <div>
-            <Label>NIF</Label>
-            <Input value={form.nif} onChange={(e) => set("nif", e.target.value)} />
-          </div>
-          <div>
-            <Label>Origem</Label>
-            <Input placeholder="Referência, redes sociais…" value={form.source} onChange={(e) => set("source", e.target.value)} />
+            <Label>Contacto</Label>
+            <Input placeholder="Telefone" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
           </div>
           <div>
             <Label>Email</Label>
             <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
           </div>
-          <div>
-            <Label>Telefone</Label>
-            <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label className="cursor-pointer">Reunião</Label>
+              <p className="text-xs text-muted-foreground">{form.meeting ? "Sim" : "Não"}</p>
+            </div>
+            <Switch checked={form.meeting} onCheckedChange={(v) => set("meeting", v)} />
           </div>
           <div>
-            <Label>Fase</Label>
+            <Label>Data da reunião</Label>
+            <Input
+              type="date"
+              disabled={!form.meeting}
+              value={form.meeting_date}
+              onChange={(e) => set("meeting_date", e.target.value)}
+            />
+          </div>
+
+          <div>
+            <Label>Produto sugerido</Label>
+            <Input
+              placeholder="Contabilidade, IRS, consultoria…"
+              value={form.suggested_product}
+              onChange={(e) => set("suggested_product", e.target.value)}
+            />
+          </div>
+          <div>
+            <Label>Valor (€/mês)</Label>
+            <Input type="number" step="0.01" value={form.estimated_value} onChange={(e) => set("estimated_value", e.target.value)} />
+          </div>
+
+          <div>
+            <Label>Estado</Label>
             <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -125,9 +159,15 @@ const LeadFormDialog = ({ open, lead, defaultStage, onClose }: Props) => {
             </Select>
           </div>
           <div>
-            <Label>Mensalidade estimada (€)</Label>
-            <Input type="number" step="0.01" value={form.estimated_value} onChange={(e) => set("estimated_value", e.target.value)} />
+            <Label>Motivo da perda {form.stage === "perda" && "*"}</Label>
+            <Input
+              disabled={form.stage !== "perda"}
+              placeholder="Preço, ficou com o atual…"
+              value={form.loss_reason}
+              onChange={(e) => set("loss_reason", e.target.value)}
+            />
           </div>
+
           <div>
             <Label>Proposta enviada em</Label>
             <Input type="date" value={form.proposal_sent_at} onChange={(e) => set("proposal_sent_at", e.target.value)} />
