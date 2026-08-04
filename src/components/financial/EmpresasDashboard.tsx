@@ -112,9 +112,15 @@ export default function EmpresasDashboard({
   const ircBase = baseTributavel * taxa;
   const derrama = baseTributavel * 0.015;
 
-  // Tributação autónoma
-  const taRepBase = Number(settings?.ta_base_representacao ?? 0);
-  const taAjBase = Number(settings?.ta_base_ajudas_custo ?? 0);
+  // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 625; ajudas de custo: 6315 + 6325)
+  const sumPrefixYear = (prefix: string) =>
+    cents(months.reduce((acc, m) => acc + sumPrefixMonth(prefix, m), 0));
+  const taRepAuto = cents(sumPrefixYear("6266") + sumPrefixYear("625"));
+  const taAjAuto = cents(sumPrefixYear("6315") + sumPrefixYear("6325"));
+  const taRepManual = Number(settings?.ta_base_representacao ?? 0);
+  const taAjManual = Number(settings?.ta_base_ajudas_custo ?? 0);
+  const taRepBase = taRepManual > 0 ? taRepManual : taRepAuto;
+  const taAjBase = taAjManual > 0 ? taAjManual : taAjAuto;
   const taRep = taRepBase * 0.10;
   const taAj = taAjBase * 0.05;
   const taTotal = taRep + taAj;
