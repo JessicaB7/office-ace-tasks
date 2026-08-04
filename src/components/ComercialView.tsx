@@ -153,7 +153,38 @@ const ComercialView = () => {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Atividade comercial mensal — {year}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="text-left p-3">Mês</th>
+                <th className="text-right p-3">Leads novas</th>
+                <th className="text-right p-3">Propostas enviadas</th>
+                <th className="text-right p-3">Ganhas</th>
+                <th className="text-right p-3">Valor ganho</th>
+              </tr>
+            </thead>
+            <tbody>
+              {monthlyLeads.map((m) => (
+                <tr key={m.label} className="border-t">
+                  <td className="p-3 font-medium">{m.label}</td>
+                  <td className="p-3 text-right">{m.novas || "—"}</td>
+                  <td className="p-3 text-right">{m.propostas || "—"}</td>
+                  <td className="p-3 text-right">{m.ganhas || "—"}</td>
+                  <td className="p-3 text-right font-medium">{m.valor ? eur(m.valor) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-2">
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Maiores mensalidades</CardTitle>
