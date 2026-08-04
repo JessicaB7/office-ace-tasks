@@ -44,12 +44,18 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
   {
     title: "Comercial",
     entries: [
-      { kind: "item", item: { id: "comercial", label: "Painel comercial", icon: TrendingUp } },
       { kind: "item", item: { id: "pipeline", label: "Pipeline", icon: Filter } },
       { kind: "item", item: { id: "leads", label: "Leads", icon: UserPlus } },
       { kind: "item", item: { id: "propostas", label: "Propostas enviadas", icon: FileText } },
       { kind: "item", item: { id: "followups", label: "Follow ups", icon: CalendarClock } },
       { kind: "item", item: { id: "scripts", label: "Scripts", icon: MessageSquareQuote } },
+    ],
+  },
+  {
+    title: "Consultorias",
+    entries: [
+      { kind: "item", item: { id: "consultoria_leads", label: "Leads", icon: UserPlus } },
+      { kind: "item", item: { id: "consultoria_followups", label: "Follow ups", icon: CalendarClock } },
     ],
   },
   {
@@ -110,6 +116,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
     title: "Gestão de negócio",
     entries: [
       { kind: "item", item: { id: "business", label: "Painel do negócio", icon: Gauge, adminOnly: true } },
+      { kind: "item", item: { id: "comercial", label: "Painel comercial", icon: TrendingUp, adminOnly: true } },
       { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
       { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
     ],

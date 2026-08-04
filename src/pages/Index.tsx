@@ -50,12 +50,14 @@ const Index = () => {
         </div>
         {activeView === "business" && isAdmin && <BusinessOverviewView onNavigate={setActiveView} />}
         {activeView === "dashboard" && <DashboardView />}
-        {activeView === "comercial" && <ComercialView />}
+        {activeView === "comercial" && isAdmin && <ComercialView />}
         {activeView === "pipeline" && <PipelineView />}
         {activeView === "leads" && <LeadsView />}
         {activeView === "propostas" && <PropostasView />}
         {activeView === "followups" && <FollowUpsView />}
         {activeView === "scripts" && <ScriptsView />}
+        {activeView === "consultoria_leads" && <LeadsView segment="consultoria" />}
+        {activeView === "consultoria_followups" && <FollowUpsView segment="consultoria" />}
 
 
 
