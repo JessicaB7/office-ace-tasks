@@ -47,9 +47,15 @@ const Index = () => {
         <div className="flex justify-end mb-4">
           <NotificationBell />
         </div>
-        {activeView === "business" && <BusinessOverviewView onNavigate={setActiveView} />}
+        {activeView === "business" && isAdmin && <BusinessOverviewView onNavigate={setActiveView} />}
         {activeView === "dashboard" && <DashboardView />}
         {activeView === "comercial" && <ComercialView />}
+        {activeView === "pipeline" && <PipelineView />}
+        {activeView === "leads" && <LeadsView />}
+        {activeView === "propostas" && <PropostasView />}
+        {activeView === "followups" && <FollowUpsView />}
+
+
 
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
