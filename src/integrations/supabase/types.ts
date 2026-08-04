@@ -109,6 +109,8 @@ export type Database = {
           ss_q2: number
           ss_q3: number
           ss_q4: number
+          ta_base_ajudas_custo: number
+          ta_base_representacao: number
           ta_kms: number
           ta_nao_doc: number
           ta_representacao: number
@@ -128,6 +130,8 @@ export type Database = {
           ss_q2?: number
           ss_q3?: number
           ss_q4?: number
+          ta_base_ajudas_custo?: number
+          ta_base_representacao?: number
           ta_kms?: number
           ta_nao_doc?: number
           ta_representacao?: number
@@ -147,6 +151,8 @@ export type Database = {
           ss_q2?: number
           ss_q3?: number
           ss_q4?: number
+          ta_base_ajudas_custo?: number
+          ta_base_representacao?: number
           ta_kms?: number
           ta_nao_doc?: number
           ta_representacao?: number
