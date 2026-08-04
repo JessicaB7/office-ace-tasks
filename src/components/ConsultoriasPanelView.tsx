@@ -133,9 +133,10 @@ const ConsultoriasPanelView = () => {
 
       {isLoading && <p className="text-sm text-muted-foreground">A carregar…</p>}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: "Consultorias agendadas", value: String(stats.agendadas.length), hint: `${filtered.length} no período`, icon: Target },
+          { label: `Valor total com IVA (${periodLabel})`, value: eur(stats.valorTotalComIVA), hint: `${filtered.length} leads`, icon: Handshake },
           { label: `Valor total sem IVA (${periodLabel})`, value: eur(stats.valorTotal), hint: `${filtered.length} leads · valor / 1,23`, icon: Handshake },
           { label: "Taxa de conversão", value: `${stats.taxa.toFixed(0)}%`, hint: `${stats.sim.length} com serviço mensal · ${stats.nao.length} sem`, icon: Users },
         ].map((k) => (
