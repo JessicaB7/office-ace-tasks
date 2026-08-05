@@ -231,9 +231,8 @@ const BALANCETE_SECTIONS = ["iva_vendas", "iva_compras", "impostos"];
 
 /**
  * Recalcula os valores do cliente a partir das importações guardadas.
- * - Mapa de Exploração: faturação, despesas e lucro (secções operacionais).
- * - Balancetes trimestrais: IVA, Segurança Social e retenção na fonte.
- * Cada fonte só escreve nas suas secções, por isso não se sobrepõem.
+ * - Com Mapa de Exploração (TI): mapa = faturação/despesas/lucro; balancetes = IVA, SS e retenção.
+ * - Sem Mapa de Exploração (empresas): os balancetes alimentam todas as secções.
  */
 async function materializeEntries(clientId: string, year: number) {
   const [{ data, error }, accRes] = await Promise.all([
@@ -248,33 +247,36 @@ async function materializeEntries(clientId: string, year: number) {
   if (accRes.error) throw accRes.error;
   const imports = (data ?? []) as unknown as { slot: ImportSlot; entries: FinancialImport["entries"] }[];
   const sectionByCode = new Map((accRes.data ?? []).map((a: any) => [a.code, a.section as string]));
+  const hasMapa = imports.some((i) => i.slot === "mapa");
 
   // month -> code -> value
   const resolved = new Map<number, Map<string, number>>();
   const applySlot = (slot: ImportSlot) => {
     const imp = imports.find((i) => i.slot === slot);
     const months = IMPORT_SLOTS.find((s) => s.slot === slot)!.months;
-    const allowed = slot === "mapa" ? MAPA_SECTIONS : BALANCETE_SECTIONS;
+    const allowed = slot === "mapa" ? MAPA_SECTIONS : hasMapa ? BALANCETE_SECTIONS : null;
+    const isAllowed = (code: string) => !allowed || allowed.includes(sectionByCode.get(code) ?? "");
     if (slot !== "mapa") {
       // limpa apenas as secções que o balancete controla, nos meses do trimestre
       months.forEach((m) => {
         const bucket = resolved.get(m);
         if (!bucket) return;
         Array.from(bucket.keys()).forEach((code) => {
-          if (allowed.includes(sectionByCode.get(code) ?? "")) bucket.delete(code);
+          if (isAllowed(code)) bucket.delete(code);
         });
       });
     }
     if (!imp) return;
     for (const e of imp.entries ?? []) {
       if (!months.includes(e.month)) continue;
-      if (!allowed.includes(sectionByCode.get(e.account_code) ?? "")) continue;
+      if (!isAllowed(e.account_code)) continue;
       const bucket = resolved.get(e.month) ?? new Map<string, number>();
       bucket.set(e.account_code, Number(e.value));
       resolved.set(e.month, bucket);
     }
   };
   (["mapa", "t1", "t2", "t3", "t4"] as ImportSlot[]).forEach(applySlot);
+
 
 
   const rows: { client_id: string; year: number; month: number; account_code: string; value: number }[] = [];
