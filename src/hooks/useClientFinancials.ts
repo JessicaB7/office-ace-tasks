@@ -193,6 +193,10 @@ export const IMPORT_SLOTS: { slot: ImportSlot; label: string; months: number[] }
   { slot: "t4", label: "Balancete 4º trimestre", months: [10, 11, 12] },
 ];
 
+/** Empresas (SQ): só balancetes trimestrais — não existe Mapa de Exploração. */
+export const BALANCETE_ONLY_SLOTS = IMPORT_SLOTS.filter((s) => s.slot !== "mapa");
+
+
 export type FinancialImport = {
   id: string;
   client_id: string;
