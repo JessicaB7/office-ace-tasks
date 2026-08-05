@@ -8,7 +8,7 @@ import {
   useSaveFinancialImport,
   useDeleteFinancialImport,
   IMPORT_SLOTS,
-  BALANCETE_ONLY_SLOTS,
+  
   type ImportSlot,
 
 } from "@/hooks/useClientFinancials";
@@ -54,8 +54,9 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const [section, setSection] = useState<Section>("dashboard");
   const [tab, setTab] = useState<Tab>("analise");
 
-  const slots = isEmpresa ? BALANCETE_ONLY_SLOTS : IMPORT_SLOTS;
-  const tabs = isEmpresa ? TABS.filter((t) => t.key !== "mapa") : TABS;
+  const slots = IMPORT_SLOTS;
+  const tabs = TABS;
+
 
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: lastImport } = useLastImportDate(clientId, year);
@@ -63,7 +64,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const saveImport = useSaveFinancialImport(clientId, year);
   const deleteImport = useDeleteFinancialImport(clientId, year);
   const fileRef = useRef<HTMLInputElement>(null);
-  const pendingSlot = useRef<ImportSlot>(isEmpresa ? "t1" : "mapa");
+  const pendingSlot = useRef<ImportSlot>("mapa");
   const [fichaOpen, setFichaOpen] = useState(false);
 
 
@@ -94,13 +95,10 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           entries = res.entries;
           toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
-          if (isEmpresa) {
-            toast.error("Nas empresas só são aceites balancetes trimestrais.");
-            return;
-          }
           const res = await parseMapaPdf(file, codes);
           entries = res.entries;
         }
+
 
       } else {
 
@@ -237,31 +235,10 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         <div className="flex items-center justify-between gap-3 mb-3">
           <h3 className="text-sm font-semibold">Ficheiros importados {year}</h3>
           <p className="text-xs text-muted-foreground">
-            {isEmpresa
-              ? "Balancetes trimestrais: toda a informação (rendimentos, gastos, IVA, impostos)."
-              : "Mapa de Exploração: faturação, despesas e lucro. Balancetes: IVA, Segurança Social e retenção na fonte."}
+            Mapa de Exploração: faturação, despesas e lucro. Balancetes: IVA, Segurança Social e retenção na fonte.
           </p>
         </div>
-        {isEmpresa && imports.some((i) => i.slot === "mapa") && (
-          <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2">
-            <p className="text-xs text-destructive">
-              Existe um Mapa de Exploração importado que já não é usado nas empresas. Remove-o para os valores vierem apenas dos balancetes.
-            </p>
-            <button
-              onClick={async () => {
-                try {
-                  await deleteImport.mutateAsync("mapa");
-                  toast.success("Mapa de Exploração removido.");
-                } catch (e: any) {
-                  toast.error("Erro a eliminar: " + e.message);
-                }
-              }}
-              className="shrink-0 rounded-lg border border-destructive/40 px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10"
-            >
-              Remover
-            </button>
-          </div>
-        )}
+
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {slots.map((s) => {
 
@@ -326,7 +303,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           </div>
 
           {tab === "analise" && <AnaliseMensalTab clientId={clientId} year={year} />}
-          {tab === "mapa" && !isEmpresa && <MapaExploracaoTab clientId={clientId} year={year} />}
+          {tab === "mapa" && <MapaExploracaoTab clientId={clientId} year={year} />}
           {tab === "iva" && <IvaTab clientId={clientId} year={year} />}
           {tab === "indicadores" && <IndicadoresTab clientId={clientId} year={year} />}
         </>
