@@ -47,9 +47,13 @@ const SECTIONS: { key: Section; label: string }[] = [
 export default function ClientAnalysisView({ clientId, onBack }: { clientId: string; onBack: () => void }) {
   const { data: clients = [] } = useClients();
   const client = clients.find((c: any) => c.id === clientId);
+  const isEmpresa = !!client && client.tipo_contabilidade !== "TI RS" && client.tipo_contabilidade !== "TI CO";
   const [year, setYear] = useState(new Date().getFullYear());
   const [section, setSection] = useState<Section>("dashboard");
   const [tab, setTab] = useState<Tab>("analise");
+
+  const slots = isEmpresa ? BALANCETE_ONLY_SLOTS : IMPORT_SLOTS;
+  const tabs = isEmpresa ? TABS.filter((t) => t.key !== "mapa") : TABS;
 
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: lastImport } = useLastImportDate(clientId, year);
@@ -57,8 +61,9 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const saveImport = useSaveFinancialImport(clientId, year);
   const deleteImport = useDeleteFinancialImport(clientId, year);
   const fileRef = useRef<HTMLInputElement>(null);
-  const pendingSlot = useRef<ImportSlot>("mapa");
+  const pendingSlot = useRef<ImportSlot>(isEmpresa ? "t1" : "mapa");
   const [fichaOpen, setFichaOpen] = useState(false);
+
 
   const handleImport = async (file: File, slot: ImportSlot) => {
     try {
