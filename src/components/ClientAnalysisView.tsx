@@ -235,31 +235,10 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         <div className="flex items-center justify-between gap-3 mb-3">
           <h3 className="text-sm font-semibold">Ficheiros importados {year}</h3>
           <p className="text-xs text-muted-foreground">
-            {isEmpresa
-              ? "Balancetes trimestrais: toda a informação (rendimentos, gastos, IVA, impostos)."
-              : "Mapa de Exploração: faturação, despesas e lucro. Balancetes: IVA, Segurança Social e retenção na fonte."}
+            Mapa de Exploração: faturação, despesas e lucro. Balancetes: IVA, Segurança Social e retenção na fonte.
           </p>
         </div>
-        {isEmpresa && imports.some((i) => i.slot === "mapa") && (
-          <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2">
-            <p className="text-xs text-destructive">
-              Existe um Mapa de Exploração importado que já não é usado nas empresas. Remove-o para os valores vierem apenas dos balancetes.
-            </p>
-            <button
-              onClick={async () => {
-                try {
-                  await deleteImport.mutateAsync("mapa");
-                  toast.success("Mapa de Exploração removido.");
-                } catch (e: any) {
-                  toast.error("Erro a eliminar: " + e.message);
-                }
-              }}
-              className="shrink-0 rounded-lg border border-destructive/40 px-2 py-1 text-xs font-medium text-destructive hover:bg-destructive/10"
-            >
-              Remover
-            </button>
-          </div>
-        )}
+
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {slots.map((s) => {
 
