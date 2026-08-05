@@ -329,20 +329,6 @@ export default function EmpresasDashboard({
             {!exporting && (
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
-                <Label htmlFor="irc-taxa" className="text-xs text-muted-foreground whitespace-nowrap">Taxa de IRC (%)</Label>
-                <Input
-                  id="irc-taxa"
-                  type="number"
-                  step="0.5"
-                  className="h-8 w-24"
-                  value={(taxa * 100).toString()}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (Number.isFinite(v)) upsertSettings.mutate({ corporate_tax_rate: v / 100 });
-                  }}
-                />
-              </div>
-              <div className="flex items-center gap-2">
                 <Label htmlFor="derrama-taxa" className="text-xs text-muted-foreground whitespace-nowrap">Taxa de derrama (%)</Label>
                 <Input
                   id="derrama-taxa"
