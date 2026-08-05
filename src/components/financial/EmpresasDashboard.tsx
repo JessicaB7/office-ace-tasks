@@ -119,6 +119,12 @@ export default function EmpresasDashboard({
     cents(months.reduce((acc, m) => acc + sumGroupMonth(map, accounts, prefix, m), 0));
   const taRepAuto = cents(sumGroupYear("6266") + sumGroupYear("625"));
   const taAjAuto = cents(sumGroupYear("6315") + sumGroupYear("6325"));
+  const taParts = {
+    "6266": sumGroupYear("6266"),
+    "625": sumGroupYear("625"),
+    "6315": sumGroupYear("6315"),
+    "6325": sumGroupYear("6325"),
+  };
   const taRepManual = Number(settings?.ta_base_representacao ?? 0);
   const taAjManual = Number(settings?.ta_base_ajudas_custo ?? 0);
   const taRepBase = taRepManual > 0 ? taRepManual : taRepAuto;
