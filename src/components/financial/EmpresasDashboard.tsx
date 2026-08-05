@@ -107,10 +107,13 @@ export default function EmpresasDashboard({
   }));
 
 
-  const taxa = Number(settings?.corporate_tax_rate ?? 0.16);
   const derramaTaxa = Number(settings?.derrama_rate ?? 0.015);
   const baseTributavel = Math.max(0, resultado);
-  const ircBase = baseTributavel * taxa;
+  const ircBase = cents(
+    Math.min(baseTributavel, 50000) * 0.15 +
+    Math.max(0, baseTributavel - 50000) * 0.19,
+  );
+  const ircMarginal = baseTributavel > 50000 ? "15% até 50.000€, 19% acima" : "15%";
   const derrama = baseTributavel * derramaTaxa;
 
   // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 625; ajudas de custo: 6315 + 6325)
@@ -326,20 +329,6 @@ export default function EmpresasDashboard({
             {!exporting && (
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
-                <Label htmlFor="irc-taxa" className="text-xs text-muted-foreground whitespace-nowrap">Taxa de IRC (%)</Label>
-                <Input
-                  id="irc-taxa"
-                  type="number"
-                  step="0.5"
-                  className="h-8 w-24"
-                  value={(taxa * 100).toString()}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    if (Number.isFinite(v)) upsertSettings.mutate({ corporate_tax_rate: v / 100 });
-                  }}
-                />
-              </div>
-              <div className="flex items-center gap-2">
                 <Label htmlFor="derrama-taxa" className="text-xs text-muted-foreground whitespace-nowrap">Taxa de derrama (%)</Label>
                 <Input
                   id="derrama-taxa"
@@ -363,7 +352,7 @@ export default function EmpresasDashboard({
               <div className="text-lg font-bold tabular-nums">{fmtEur(baseTributavel)}</div>
             </div>
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
-              <div className="text-[11px] text-muted-foreground">IRC ({(taxa * 100).toFixed(1)}%)</div>
+              <div className="text-[11px] text-muted-foreground">IRC ({ircMarginal})</div>
               <div className="text-lg font-bold tabular-nums text-primary">{fmtEur(ircBase)}</div>
             </div>
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
