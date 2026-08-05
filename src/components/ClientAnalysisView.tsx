@@ -8,7 +8,9 @@ import {
   useSaveFinancialImport,
   useDeleteFinancialImport,
   IMPORT_SLOTS,
+  BALANCETE_ONLY_SLOTS,
   type ImportSlot,
+
 } from "@/hooks/useClientFinancials";
 import AnaliseMensalTab from "./financial/AnaliseMensalTab";
 import MapaExploracaoTab from "./financial/MapaExploracaoTab";
