@@ -385,8 +385,8 @@ export default function EmpresasDashboard({
             <h5 className="text-xs font-semibold mb-3">Tributação autónoma</h5>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {([
-                { key: "ta_base_representacao" as const, label: "Despesas de representação", contas: "6266 + 625", rate: 0.10, base: taRepBase, auto: taRepAuto, manual: taRepManual, imposto: taRep },
-                { key: "ta_base_ajudas_custo" as const, label: "Ajudas de custo", contas: "6315 + 6325", rate: 0.05, base: taAjBase, auto: taAjAuto, manual: taAjManual, imposto: taAj },
+                { key: "ta_base_representacao" as const, label: "Despesas de representação", contas: "6266 + 625", codes: ["6266", "625"] as const, rate: 0.10, base: taRepBase, auto: taRepAuto, manual: taRepManual, imposto: taRep },
+                { key: "ta_base_ajudas_custo" as const, label: "Ajudas de custo", contas: "6315 + 6325", codes: ["6315", "6325"] as const, rate: 0.05, base: taAjBase, auto: taAjAuto, manual: taAjManual, imposto: taAj },
               ]).map((row) => (
                 <div key={row.key} className="rounded-lg border bg-background p-3">
                   <div className="flex items-center justify-between gap-3 mb-2">
