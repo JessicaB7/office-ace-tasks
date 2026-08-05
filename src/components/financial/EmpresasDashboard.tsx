@@ -107,10 +107,13 @@ export default function EmpresasDashboard({
   }));
 
 
-  const taxa = Number(settings?.corporate_tax_rate ?? 0.16);
   const derramaTaxa = Number(settings?.derrama_rate ?? 0.015);
   const baseTributavel = Math.max(0, resultado);
-  const ircBase = baseTributavel * taxa;
+  const ircBase = cents(
+    Math.min(baseTributavel, 50000) * 0.15 +
+    Math.max(0, baseTributavel - 50000) * 0.19,
+  );
+  const ircMarginal = baseTributavel > 50000 ? "15% até 50.000€, 19% acima" : "15%";
   const derrama = baseTributavel * derramaTaxa;
 
   // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 625; ajudas de custo: 6315 + 6325)
