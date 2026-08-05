@@ -421,7 +421,7 @@ export default function EmpresasDashboard({
                         />
                       </div>
                       <div className="mt-1 text-[10px] text-muted-foreground">
-                        Balancete: {fmtEur(row.auto)}
+                        Balancete: {row.codes.map((c) => `${c} ${fmtEur(taParts[c])}`).join(" + ")} = {fmtEur(row.auto)}
                         {row.manual > 0 && (
                           <button
                             className="ml-2 underline hover:text-foreground"
