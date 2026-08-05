@@ -303,7 +303,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           </div>
 
           {tab === "analise" && <AnaliseMensalTab clientId={clientId} year={year} />}
-          {tab === "mapa" && !isEmpresa && <MapaExploracaoTab clientId={clientId} year={year} />}
+          {tab === "mapa" && <MapaExploracaoTab clientId={clientId} year={year} />}
           {tab === "iva" && <IvaTab clientId={clientId} year={year} />}
           {tab === "indicadores" && <IndicadoresTab clientId={clientId} year={year} />}
         </>
