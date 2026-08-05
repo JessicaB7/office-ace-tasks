@@ -64,7 +64,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const saveImport = useSaveFinancialImport(clientId, year);
   const deleteImport = useDeleteFinancialImport(clientId, year);
   const fileRef = useRef<HTMLInputElement>(null);
-  const pendingSlot = useRef<ImportSlot>(isEmpresa ? "t1" : "mapa");
+  const pendingSlot = useRef<ImportSlot>("mapa");
   const [fichaOpen, setFichaOpen] = useState(false);
 
 
