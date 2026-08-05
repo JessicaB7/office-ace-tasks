@@ -8,7 +8,7 @@ import {
   useSaveFinancialImport,
   useDeleteFinancialImport,
   IMPORT_SLOTS,
-  BALANCETE_ONLY_SLOTS,
+  
   type ImportSlot,
 
 } from "@/hooks/useClientFinancials";
