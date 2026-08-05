@@ -42,6 +42,7 @@ export default function AnaliseMensalTab({ clientId, year, readOnly }: { clientI
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: entries = [] } = useClientFinancialEntries(clientId, year);
   const upsert = useUpsertEntry(clientId, year);
+  const [showEmpty, setShowEmpty] = useState(false);
 
   const map = useMemo(() => buildEntryMap(entries), [entries]);
   const operationalAccounts = useMemo(
@@ -51,6 +52,7 @@ export default function AnaliseMensalTab({ clientId, year, readOnly }: { clientI
 
   // Total Vendas, Total Pessoal, Total Despesas + Compras, Lucro
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const hasValues = (code: string) => months.some((m) => getValue(map, m, code) !== 0);
   const totVendasM = months.map((m) => sumSectionMonth(map, accounts, "vendas", m));
   const totPessoalM = months.map((m) => sumSectionMonth(map, accounts, "pessoal", m));
   const totDespesasM = months.map((m) => sumSectionMonth(map, accounts, "despesas", m));
@@ -61,6 +63,12 @@ export default function AnaliseMensalTab({ clientId, year, readOnly }: { clientI
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+          <input type="checkbox" checked={showEmpty} onChange={(e) => setShowEmpty(e.target.checked)} className="accent-primary" />
+          Mostrar contas sem valores
+        </label>
+      </div>
       <div className="rounded-xl border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
@@ -74,8 +82,10 @@ export default function AnaliseMensalTab({ clientId, year, readOnly }: { clientI
             </thead>
             <tbody>
               {SECTIONS.map((section) => {
-                const accs = operationalAccounts.filter((a) => a.section === section.key);
+                const all = operationalAccounts.filter((a) => a.section === section.key);
+                const accs = showEmpty ? all : all.filter((a) => hasValues(a.code));
                 const sectionTotalsM = months.map((m) => sumSectionMonth(map, accounts, section.key, m));
+
                 return (
                   <Fragment key={section.key}>
                     <tr className="bg-primary/5">
