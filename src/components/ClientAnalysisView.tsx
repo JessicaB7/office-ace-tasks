@@ -95,13 +95,10 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           entries = res.entries;
           toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
-          if (isEmpresa) {
-            toast.error("Nas empresas só são aceites balancetes trimestrais.");
-            return;
-          }
           const res = await parseMapaPdf(file, codes);
           entries = res.entries;
         }
+
 
       } else {
 
