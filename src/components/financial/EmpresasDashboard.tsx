@@ -114,10 +114,11 @@ export default function EmpresasDashboard({
   const derrama = baseTributavel * derramaTaxa;
 
   // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 625; ajudas de custo: 6315 + 6325)
-  const sumPrefixYear = (prefix: string) =>
-    cents(months.reduce((acc, m) => acc + sumPrefixMonth(prefix, m), 0));
-  const taRepAuto = cents(sumPrefixYear("6266") + sumPrefixYear("625"));
-  const taAjAuto = cents(sumPrefixYear("6315") + sumPrefixYear("6325"));
+  // Usa sumGroupMonth para não duplicar conta-mãe + subcontas.
+  const sumGroupYear = (prefix: string) =>
+    cents(months.reduce((acc, m) => acc + sumGroupMonth(map, accounts, prefix, m), 0));
+  const taRepAuto = cents(sumGroupYear("6266") + sumGroupYear("625"));
+  const taAjAuto = cents(sumGroupYear("6315") + sumGroupYear("6325"));
   const taRepManual = Number(settings?.ta_base_representacao ?? 0);
   const taAjManual = Number(settings?.ta_base_ajudas_custo ?? 0);
   const taRepBase = taRepManual > 0 ? taRepManual : taRepAuto;
