@@ -306,7 +306,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
       {section === "dados" && (
         <>
           <div className="flex gap-1 border-b">
-            {TABS.map((t) => (
+            {tabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
