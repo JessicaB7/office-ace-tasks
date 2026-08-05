@@ -54,8 +54,9 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const [section, setSection] = useState<Section>("dashboard");
   const [tab, setTab] = useState<Tab>("analise");
 
-  const slots = isEmpresa ? BALANCETE_ONLY_SLOTS : IMPORT_SLOTS;
-  const tabs = isEmpresa ? TABS.filter((t) => t.key !== "mapa") : TABS;
+  const slots = IMPORT_SLOTS;
+  const tabs = TABS;
+
 
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: lastImport } = useLastImportDate(clientId, year);
