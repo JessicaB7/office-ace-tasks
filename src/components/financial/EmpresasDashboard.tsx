@@ -138,13 +138,19 @@ export default function EmpresasDashboard({
 
 
   const derramaTaxa = Number(settings?.derrama_rate ?? 0.015);
-  const baseTributavel = Math.max(0, resultado);
+  const ircRegime = (settings?.irc_regime ?? "normal") as "normal" | "simplificado";
+  const ircCoef = Number(settings?.irc_coef ?? 0.10);
+  const baseTributavel =
+    ircRegime === "simplificado"
+      ? cents(Math.max(0, totalRendimentos) * ircCoef)
+      : Math.max(0, resultado);
   const ircBase = cents(
     Math.min(baseTributavel, 50000) * 0.15 +
     Math.max(0, baseTributavel - 50000) * 0.19,
   );
   const ircMarginal = baseTributavel > 50000 ? "15% até 50.000€, 19% acima" : "15%";
   const derrama = baseTributavel * derramaTaxa;
+
 
   // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 625; ajudas de custo: 6315 + 6325)
   // Usa sumGroupMonth para não duplicar conta-mãe + subcontas.
