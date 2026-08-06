@@ -336,10 +336,41 @@ const ScriptsView = () => {
 
             <div className="grid gap-4 lg:grid-cols-2">
               {visible.map((s) => (
-                <Card key={s.id} className="flex flex-col">
+                <Card
+                  key={s.id}
+                  onDragOver={(e) => {
+                    if (!dragId) return;
+                    e.preventDefault();
+                    setOverId(s.id);
+                  }}
+                  onDragLeave={() => setOverId((o) => (o === s.id ? null : o))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDrop(s.id);
+                  }}
+                  className={`flex flex-col transition-all ${dragId === s.id ? "opacity-50" : ""} ${
+                    overId === s.id && dragId !== s.id ? "ring-2 ring-primary" : ""
+                  }`}
+                >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-3">
                       <CardTitle className="text-base flex items-center gap-2">
+                        <span
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = "move";
+                            e.dataTransfer.setData("text/plain", s.id);
+                            setDragId(s.id);
+                          }}
+                          onDragEnd={() => {
+                            setDragId(null);
+                            setOverId(null);
+                          }}
+                          title="Arrastar para reordenar"
+                          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                        >
+                          <GripVertical className="w-4 h-4" />
+                        </span>
                         <MessageSquareQuote className="w-4 h-4 text-primary" />
                         {editingId === s.id ? "A editar" : s.title}
                       </CardTitle>
@@ -348,6 +379,7 @@ const ScriptsView = () => {
                       </Badge>
                     </div>
                   </CardHeader>
+
                   <CardContent className="flex flex-col gap-3 flex-1">
                     {editingId === s.id ? (
                       <>
