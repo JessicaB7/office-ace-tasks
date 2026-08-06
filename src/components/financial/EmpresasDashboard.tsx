@@ -63,7 +63,28 @@ export default function EmpresasDashboard({
     return total;
   };
   // Nos balancetes as contas 2436/2437 vêm acumuladas (saldo desde o início do ano).
-  // O IVA de cada trimestre é a variação do acumulado face ao trimestre anterior.
+  // O IVA de cada período é a variação do acumulado face ao período anterior.
+  const ivaRegime = (settings?.iva_regime ?? "trimestral") as "mensal" | "trimestral";
+
+  const ivaCumMonth = (() => {
+    const out: number[] = [];
+    let prev = 0;
+    for (const m of months) {
+      const v = sumPrefixMonth("2436", m) - sumPrefixMonth("2437", m);
+      const cum = v !== 0 ? v : prev;
+      out.push(cum);
+      prev = cum;
+    }
+    return out;
+  })();
+  const ivaAutoMensal = ivaCumMonth.map((c, i) => cents(c - (i === 0 ? 0 : ivaCumMonth[i - 1])));
+  const ivaMonthlyOverrides: (number | null)[] = Array.isArray(settings?.iva_monthly)
+    ? (settings!.iva_monthly as (number | null)[])
+    : Array(12).fill(null);
+  const ivaMensal = ivaAutoMensal.map((v, i) =>
+    ivaMonthlyOverrides[i] === null || ivaMonthlyOverrides[i] === undefined ? v : cents(Number(ivaMonthlyOverrides[i])),
+  );
+
   const ivaCum: number[] = [];
   let prevCum = 0;
   for (const qi of [0, 1, 2, 3]) {
@@ -80,7 +101,16 @@ export default function EmpresasDashboard({
   const ivaTrim = ivaAuto.map((v, i) =>
     ivaOverrides[i] === null || ivaOverrides[i] === undefined ? v : cents(Number(ivaOverrides[i])),
   );
-  const totalIva = cents(ivaTrim.reduce((a, b) => a + b, 0));
+  const totalIva = cents(
+    (ivaRegime === "mensal" ? ivaMensal : ivaTrim).reduce((a, b) => a + b, 0),
+  );
+
+  const setIvaMonth = (idx: number, value: number | null) => {
+    const next = [...ivaMonthlyOverrides];
+    next[idx] = value;
+    upsertSettings.mutate({ iva_monthly: next } as any);
+  };
+
 
 
 
@@ -108,13 +138,19 @@ export default function EmpresasDashboard({
 
 
   const derramaTaxa = Number(settings?.derrama_rate ?? 0.015);
-  const baseTributavel = Math.max(0, resultado);
+  const ircRegime = (settings?.irc_regime ?? "normal") as "normal" | "simplificado";
+  const ircCoef = Number(settings?.irc_coef ?? 0.10);
+  const baseTributavel =
+    ircRegime === "simplificado"
+      ? cents(Math.max(0, totalRendimentos) * ircCoef)
+      : Math.max(0, resultado);
   const ircBase = cents(
     Math.min(baseTributavel, 50000) * 0.15 +
     Math.max(0, baseTributavel - 50000) * 0.19,
   );
   const ircMarginal = baseTributavel > 50000 ? "15% até 50.000€, 19% acima" : "15%";
   const derrama = baseTributavel * derramaTaxa;
+
 
   // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 625; ajudas de custo: 6315 + 6325)
   // Usa sumGroupMonth para não duplicar conta-mãe + subcontas.
@@ -224,12 +260,78 @@ export default function EmpresasDashboard({
 
         <div className="col-span-12 rounded-xl border bg-card p-4">
 
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold text-sm">IVA pago por trimestre</h4>
-            <div className="text-xs text-muted-foreground">
-              Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(totalIva)}</span>
+          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+            <h4 className="font-semibold text-sm">
+              IVA pago {ivaRegime === "mensal" ? "por mês" : "por trimestre"}
+            </h4>
+            <div className="flex items-center gap-4 flex-wrap">
+              {!exporting && (
+                <div className="flex items-center gap-1 rounded-lg border bg-background p-0.5">
+                  {(["mensal", "trimestral"] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => upsertSettings.mutate({ iva_regime: r } as any)}
+                      className={cn(
+                        "px-3 py-1 text-xs font-semibold rounded-md transition-colors capitalize",
+                        ivaRegime === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="text-xs text-muted-foreground">
+                Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(totalIva)}</span>
+              </div>
             </div>
           </div>
+          {ivaRegime === "mensal" ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 auto-rows-fr">
+              {ivaMensal.map((v, i) => {
+                const edited = ivaMonthlyOverrides[i] !== null && ivaMonthlyOverrides[i] !== undefined;
+                return (
+                  <div key={i} className="rounded-lg border bg-background p-3 min-h-[92px] flex flex-col justify-center gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-[11px] text-muted-foreground">{MONTHS_PT[i]}</div>
+                      {!exporting && edited && (
+                        <button
+                          type="button"
+                          className="text-[10px] text-muted-foreground underline hover:text-foreground"
+                          onClick={() => setIvaMonth(i, null)}
+                        >
+                          repor
+                        </button>
+                      )}
+                    </div>
+                    {exporting ? (
+                      <div className={cn("text-base font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
+                    ) : (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className={cn(
+                          "h-9 text-base font-bold tabular-nums border-transparent bg-transparent px-0 focus-visible:border-input focus-visible:px-2",
+                          v < 0 ? "text-emerald-600" : "text-primary",
+                        )}
+                        value={String(cents(v))}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") return setIvaMonth(i, null);
+                          const n = Number(raw);
+                          if (Number.isFinite(n)) setIvaMonth(i, n);
+                        }}
+                      />
+                    )}
+                    {!exporting && edited && (
+                      <div className="text-[10px] text-muted-foreground">Calculado: {fmtEur(ivaAutoMensal[i])}</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
             {ivaTrim.map((v, i) => {
               const key = `iva_q${i + 1}` as "iva_q1" | "iva_q2" | "iva_q3" | "iva_q4";
@@ -274,6 +376,8 @@ export default function EmpresasDashboard({
               );
             })}
           </div>
+          )}
+
 
         </div>
 
@@ -325,9 +429,42 @@ export default function EmpresasDashboard({
 
         <div className="col-span-12 rounded-xl border bg-card p-4">
           <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
-            <h4 className="font-semibold text-sm">IRC estimado</h4>
+            <h4 className="font-semibold text-sm">
+              IRC estimado <span className="text-xs font-normal text-muted-foreground">· regime {ircRegime}</span>
+            </h4>
             {!exporting && (
             <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-1 rounded-lg border bg-background p-0.5">
+                {(["normal", "simplificado"] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => upsertSettings.mutate({ irc_regime: r } as any)}
+                    className={cn(
+                      "px-3 py-1 text-xs font-semibold rounded-md transition-colors capitalize",
+                      ircRegime === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+              {ircRegime === "simplificado" && (
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="irc-coef" className="text-xs text-muted-foreground whitespace-nowrap">Coeficiente (%)</Label>
+                  <Input
+                    id="irc-coef"
+                    type="number"
+                    step="0.5"
+                    className="h-8 w-24"
+                    value={(ircCoef * 100).toString()}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      if (Number.isFinite(v)) upsertSettings.mutate({ irc_coef: v / 100 } as any);
+                    }}
+                  />
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Label htmlFor="derrama-taxa" className="text-xs text-muted-foreground whitespace-nowrap">Taxa de derrama (%)</Label>
                 <Input
@@ -350,7 +487,13 @@ export default function EmpresasDashboard({
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Matéria coletável</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(baseTributavel)}</div>
+              <div className="text-[10px] text-muted-foreground mt-1">
+                {ircRegime === "simplificado"
+                  ? `Rendimentos × ${(ircCoef * 100).toFixed(1)}%`
+                  : "Resultado do exercício"}
+              </div>
             </div>
+
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">IRC ({ircMarginal})</div>
               <div className="text-lg font-bold tabular-nums text-primary">{fmtEur(ircBase)}</div>

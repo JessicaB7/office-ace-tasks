@@ -36,6 +36,10 @@ export type FinancialSettings = {
   iva_q2: number | null;
   iva_q3: number | null;
   iva_q4: number | null;
+  iva_regime: "mensal" | "trimestral";
+  iva_monthly: (number | null)[] | null;
+  irc_regime: "normal" | "simplificado";
+  irc_coef: number;
 };
 
 
@@ -101,6 +105,10 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         iva_q2: null,
         iva_q3: null,
         iva_q4: null,
+        iva_regime: "trimestral",
+        iva_monthly: null,
+        irc_regime: "normal",
+        irc_coef: 0.10,
 
       }) as FinancialSettings;
     },
