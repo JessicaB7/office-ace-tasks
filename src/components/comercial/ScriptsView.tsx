@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Search, MessageSquareQuote, Pencil, Trash2, Plus, RotateCcw } from "lucide-react";
+import { Copy, Check, Search, MessageSquareQuote, Pencil, Trash2, Plus, RotateCcw, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
 type Category = "diagnostico" | "consultoria" | "infoprodutos";
@@ -188,6 +188,8 @@ const ScriptsView = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ title: string; tag: string; body: string }>({ title: "", tag: "", body: "" });
   const [tab, setTab] = useState<Category>("diagnostico");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -276,6 +278,22 @@ const ScriptsView = () => {
     toast.success("Scripts repostos.");
   };
 
+  const handleDrop = (targetId: string) => {
+    const sourceId = dragId;
+    setDragId(null);
+    setOverId(null);
+    if (!sourceId || sourceId === targetId) return;
+    const from = scripts.findIndex((s) => s.id === sourceId);
+    const to = scripts.findIndex((s) => s.id === targetId);
+    if (from < 0 || to < 0) return;
+    const next = [...scripts];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    persist(next);
+  };
+
+
+
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
@@ -318,10 +336,41 @@ const ScriptsView = () => {
 
             <div className="grid gap-4 lg:grid-cols-2">
               {visible.map((s) => (
-                <Card key={s.id} className="flex flex-col">
+                <Card
+                  key={s.id}
+                  onDragOver={(e) => {
+                    if (!dragId) return;
+                    e.preventDefault();
+                    setOverId(s.id);
+                  }}
+                  onDragLeave={() => setOverId((o) => (o === s.id ? null : o))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDrop(s.id);
+                  }}
+                  className={`flex flex-col transition-all ${dragId === s.id ? "opacity-50" : ""} ${
+                    overId === s.id && dragId !== s.id ? "ring-2 ring-primary" : ""
+                  }`}
+                >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-3">
                       <CardTitle className="text-base flex items-center gap-2">
+                        <span
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.effectAllowed = "move";
+                            e.dataTransfer.setData("text/plain", s.id);
+                            setDragId(s.id);
+                          }}
+                          onDragEnd={() => {
+                            setDragId(null);
+                            setOverId(null);
+                          }}
+                          title="Arrastar para reordenar"
+                          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                        >
+                          <GripVertical className="w-4 h-4" />
+                        </span>
                         <MessageSquareQuote className="w-4 h-4 text-primary" />
                         {editingId === s.id ? "A editar" : s.title}
                       </CardTitle>
@@ -330,6 +379,7 @@ const ScriptsView = () => {
                       </Badge>
                     </div>
                   </CardHeader>
+
                   <CardContent className="flex flex-col gap-3 flex-1">
                     {editingId === s.id ? (
                       <>
