@@ -429,9 +429,42 @@ export default function EmpresasDashboard({
 
         <div className="col-span-12 rounded-xl border bg-card p-4">
           <div className="flex items-center justify-between mb-3 gap-4 flex-wrap">
-            <h4 className="font-semibold text-sm">IRC estimado</h4>
+            <h4 className="font-semibold text-sm">
+              IRC estimado <span className="text-xs font-normal text-muted-foreground">· regime {ircRegime}</span>
+            </h4>
             {!exporting && (
             <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-1 rounded-lg border bg-background p-0.5">
+                {(["normal", "simplificado"] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => upsertSettings.mutate({ irc_regime: r } as any)}
+                    className={cn(
+                      "px-3 py-1 text-xs font-semibold rounded-md transition-colors capitalize",
+                      ircRegime === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+              {ircRegime === "simplificado" && (
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="irc-coef" className="text-xs text-muted-foreground whitespace-nowrap">Coeficiente (%)</Label>
+                  <Input
+                    id="irc-coef"
+                    type="number"
+                    step="0.5"
+                    className="h-8 w-24"
+                    value={(ircCoef * 100).toString()}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      if (Number.isFinite(v)) upsertSettings.mutate({ irc_coef: v / 100 } as any);
+                    }}
+                  />
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Label htmlFor="derrama-taxa" className="text-xs text-muted-foreground whitespace-nowrap">Taxa de derrama (%)</Label>
                 <Input
@@ -454,7 +487,13 @@ export default function EmpresasDashboard({
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Matéria coletável</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(baseTributavel)}</div>
+              <div className="text-[10px] text-muted-foreground mt-1">
+                {ircRegime === "simplificado"
+                  ? `Rendimentos × ${(ircCoef * 100).toFixed(1)}%`
+                  : "Resultado do exercício"}
+              </div>
             </div>
+
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">IRC ({ircMarginal})</div>
               <div className="text-lg font-bold tabular-nums text-primary">{fmtEur(ircBase)}</div>
