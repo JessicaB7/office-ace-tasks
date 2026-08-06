@@ -188,6 +188,8 @@ const ScriptsView = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ title: string; tag: string; body: string }>({ title: "", tag: "", body: "" });
   const [tab, setTab] = useState<Category>("diagnostico");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
