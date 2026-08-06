@@ -101,11 +101,15 @@ export type Database = {
           client_id: string
           corporate_tax_rate: number
           derrama_rate: number
+          irc_coef: number
+          irc_regime: string
           irs_retencoes: number
+          iva_monthly: Json | null
           iva_q1: number | null
           iva_q2: number | null
           iva_q3: number | null
           iva_q4: number | null
+          iva_regime: string
           ss_q1: number
           ss_q2: number
           ss_q3: number
@@ -123,11 +127,15 @@ export type Database = {
           client_id: string
           corporate_tax_rate?: number
           derrama_rate?: number
+          irc_coef?: number
+          irc_regime?: string
           irs_retencoes?: number
+          iva_monthly?: Json | null
           iva_q1?: number | null
           iva_q2?: number | null
           iva_q3?: number | null
           iva_q4?: number | null
+          iva_regime?: string
           ss_q1?: number
           ss_q2?: number
           ss_q3?: number
@@ -145,11 +153,15 @@ export type Database = {
           client_id?: string
           corporate_tax_rate?: number
           derrama_rate?: number
+          irc_coef?: number
+          irc_regime?: string
           irs_retencoes?: number
+          iva_monthly?: Json | null
           iva_q1?: number | null
           iva_q2?: number | null
           iva_q3?: number | null
           iva_q4?: number | null
+          iva_regime?: string
           ss_q1?: number
           ss_q2?: number
           ss_q3?: number
