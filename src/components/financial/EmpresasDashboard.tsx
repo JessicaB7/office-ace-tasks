@@ -260,12 +260,78 @@ export default function EmpresasDashboard({
 
         <div className="col-span-12 rounded-xl border bg-card p-4">
 
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold text-sm">IVA pago por trimestre</h4>
-            <div className="text-xs text-muted-foreground">
-              Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(totalIva)}</span>
+          <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+            <h4 className="font-semibold text-sm">
+              IVA pago {ivaRegime === "mensal" ? "por mês" : "por trimestre"}
+            </h4>
+            <div className="flex items-center gap-4 flex-wrap">
+              {!exporting && (
+                <div className="flex items-center gap-1 rounded-lg border bg-background p-0.5">
+                  {(["mensal", "trimestral"] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => upsertSettings.mutate({ iva_regime: r } as any)}
+                      className={cn(
+                        "px-3 py-1 text-xs font-semibold rounded-md transition-colors capitalize",
+                        ivaRegime === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="text-xs text-muted-foreground">
+                Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(totalIva)}</span>
+              </div>
             </div>
           </div>
+          {ivaRegime === "mensal" ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 auto-rows-fr">
+              {ivaMensal.map((v, i) => {
+                const edited = ivaMonthlyOverrides[i] !== null && ivaMonthlyOverrides[i] !== undefined;
+                return (
+                  <div key={i} className="rounded-lg border bg-background p-3 min-h-[92px] flex flex-col justify-center gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-[11px] text-muted-foreground">{MONTHS_PT[i]}</div>
+                      {!exporting && edited && (
+                        <button
+                          type="button"
+                          className="text-[10px] text-muted-foreground underline hover:text-foreground"
+                          onClick={() => setIvaMonth(i, null)}
+                        >
+                          repor
+                        </button>
+                      )}
+                    </div>
+                    {exporting ? (
+                      <div className={cn("text-base font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
+                    ) : (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className={cn(
+                          "h-9 text-base font-bold tabular-nums border-transparent bg-transparent px-0 focus-visible:border-input focus-visible:px-2",
+                          v < 0 ? "text-emerald-600" : "text-primary",
+                        )}
+                        value={String(cents(v))}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          if (raw === "") return setIvaMonth(i, null);
+                          const n = Number(raw);
+                          if (Number.isFinite(n)) setIvaMonth(i, n);
+                        }}
+                      />
+                    )}
+                    {!exporting && edited && (
+                      <div className="text-[10px] text-muted-foreground">Calculado: {fmtEur(ivaAutoMensal[i])}</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
             {ivaTrim.map((v, i) => {
               const key = `iva_q${i + 1}` as "iva_q1" | "iva_q2" | "iva_q3" | "iva_q4";
@@ -310,6 +376,8 @@ export default function EmpresasDashboard({
               );
             })}
           </div>
+          )}
+
 
         </div>
 
