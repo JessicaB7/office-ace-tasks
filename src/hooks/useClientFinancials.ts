@@ -36,6 +36,10 @@ export type FinancialSettings = {
   iva_q2: number | null;
   iva_q3: number | null;
   iva_q4: number | null;
+  iva_regime: "mensal" | "trimestral";
+  iva_monthly: (number | null)[] | null;
+  irc_regime: "normal" | "simplificado";
+  irc_coef: number;
 };
 
 
