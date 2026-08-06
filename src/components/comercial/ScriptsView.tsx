@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Search, MessageSquareQuote, Pencil, Trash2, Plus, RotateCcw } from "lucide-react";
+import { Copy, Check, Search, MessageSquareQuote, Pencil, Trash2, Plus, RotateCcw, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 
 type Category = "diagnostico" | "consultoria" | "infoprodutos";
