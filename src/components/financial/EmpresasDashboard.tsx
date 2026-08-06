@@ -63,7 +63,28 @@ export default function EmpresasDashboard({
     return total;
   };
   // Nos balancetes as contas 2436/2437 vêm acumuladas (saldo desde o início do ano).
-  // O IVA de cada trimestre é a variação do acumulado face ao trimestre anterior.
+  // O IVA de cada período é a variação do acumulado face ao período anterior.
+  const ivaRegime = (settings?.iva_regime ?? "trimestral") as "mensal" | "trimestral";
+
+  const ivaCumMonth = (() => {
+    const out: number[] = [];
+    let prev = 0;
+    for (const m of months) {
+      const v = sumPrefixMonth("2436", m) - sumPrefixMonth("2437", m);
+      const cum = v !== 0 ? v : prev;
+      out.push(cum);
+      prev = cum;
+    }
+    return out;
+  })();
+  const ivaAutoMensal = ivaCumMonth.map((c, i) => cents(c - (i === 0 ? 0 : ivaCumMonth[i - 1])));
+  const ivaMonthlyOverrides: (number | null)[] = Array.isArray(settings?.iva_monthly)
+    ? (settings!.iva_monthly as (number | null)[])
+    : Array(12).fill(null);
+  const ivaMensal = ivaAutoMensal.map((v, i) =>
+    ivaMonthlyOverrides[i] === null || ivaMonthlyOverrides[i] === undefined ? v : cents(Number(ivaMonthlyOverrides[i])),
+  );
+
   const ivaCum: number[] = [];
   let prevCum = 0;
   for (const qi of [0, 1, 2, 3]) {
@@ -80,7 +101,16 @@ export default function EmpresasDashboard({
   const ivaTrim = ivaAuto.map((v, i) =>
     ivaOverrides[i] === null || ivaOverrides[i] === undefined ? v : cents(Number(ivaOverrides[i])),
   );
-  const totalIva = cents(ivaTrim.reduce((a, b) => a + b, 0));
+  const totalIva = cents(
+    (ivaRegime === "mensal" ? ivaMensal : ivaTrim).reduce((a, b) => a + b, 0),
+  );
+
+  const setIvaMonth = (idx: number, value: number | null) => {
+    const next = [...ivaMonthlyOverrides];
+    next[idx] = value;
+    upsertSettings.mutate({ iva_monthly: next } as any);
+  };
+
 
 
 
