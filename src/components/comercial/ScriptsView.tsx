@@ -278,6 +278,22 @@ const ScriptsView = () => {
     toast.success("Scripts repostos.");
   };
 
+  const handleDrop = (targetId: string) => {
+    const sourceId = dragId;
+    setDragId(null);
+    setOverId(null);
+    if (!sourceId || sourceId === targetId) return;
+    const from = scripts.findIndex((s) => s.id === sourceId);
+    const to = scripts.findIndex((s) => s.id === targetId);
+    if (from < 0 || to < 0) return;
+    const next = [...scripts];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    persist(next);
+  };
+
+
+
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
