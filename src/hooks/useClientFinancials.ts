@@ -40,6 +40,8 @@ export type FinancialSettings = {
   iva_monthly: (number | null)[] | null;
   irc_regime: "normal" | "simplificado";
   irc_coef: number;
+  outras_despesas_label: string;
+  outras_despesas_valor: number;
 };
 
 
