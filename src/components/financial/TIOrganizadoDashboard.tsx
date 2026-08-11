@@ -514,7 +514,7 @@ export default function TIOrganizadoDashboard({
               </label>
             )}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4 auto-rows-fr">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4 auto-rows-fr">
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Faturação</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
@@ -526,6 +526,10 @@ export default function TIOrganizadoDashboard({
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">IRS estimado</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(irsSimplificado)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Deduções à coleta</div>
+              <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(deducoes)}</div>
             </div>
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Retenção na fonte e pagamentos por conta</div>
