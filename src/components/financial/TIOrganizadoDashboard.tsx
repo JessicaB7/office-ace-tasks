@@ -481,9 +481,9 @@ export default function TIOrganizadoDashboard({
                 <input
                   type="number"
                   step="0.01"
-                  value={deducoesInput}
+                  value={deducoes}
                   onChange={(e) => setDeducoesInput(Number(e.target.value))}
-                  onBlur={() => upsertSettings.mutate({ irs_deducoes_colecta: deducoesInput })}
+                  onBlur={() => upsertSettings.mutate({ irs_deducoes_colecta: deducoes })}
                   className="w-36 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               )}
