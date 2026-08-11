@@ -176,9 +176,8 @@ export default function TISimplificadoDashboard({
     setRetencoesInput(Number(settings?.irs_retencoes ?? 0));
   }, [settings?.irs_retencoes]);
 
-  // Deduções à coleta (250 € por defeito, editável)
-  const deducoes = Number(settings?.irs_deducoes_colecta ?? 250);
-  const [deducoesInput, setDeducoesInput] = useState<number>(deducoes);
+  // Deduções à coleta (250 € por defeito, editável em tempo real)
+  const [deducoes, setDeducoesInput] = useState<number>(Number(settings?.irs_deducoes_colecta ?? 250));
   useEffect(() => {
     setDeducoesInput(Number(settings?.irs_deducoes_colecta ?? 250));
   }, [settings?.irs_deducoes_colecta]);
@@ -561,9 +560,9 @@ export default function TISimplificadoDashboard({
                 <input
                   type="number"
                   step="0.01"
-                  value={deducoesInput}
+                  value={deducoes}
                   onChange={(e) => setDeducoesInput(Number(e.target.value))}
-                  onBlur={() => upsertSettings.mutate({ irs_deducoes_colecta: deducoesInput })}
+                  onBlur={() => upsertSettings.mutate({ irs_deducoes_colecta: deducoes })}
                   className="w-32 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </label>
