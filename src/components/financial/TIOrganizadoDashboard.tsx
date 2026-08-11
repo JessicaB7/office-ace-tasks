@@ -183,9 +183,8 @@ export default function TIOrganizadoDashboard({
     setRetencoesInput(Number(settings?.irs_retencoes ?? 0));
   }, [settings?.irs_retencoes]);
 
-  // Deduções à coleta (250 € por defeito, editável)
-  const deducoes = Number(settings?.irs_deducoes_colecta ?? 250);
-  const [deducoesInput, setDeducoesInput] = useState<number>(deducoes);
+  // Deduções à coleta (250 € por defeito, editável em tempo real)
+  const [deducoes, setDeducoesInput] = useState<number>(Number(settings?.irs_deducoes_colecta ?? 250));
   useEffect(() => {
     setDeducoesInput(Number(settings?.irs_deducoes_colecta ?? 250));
   }, [settings?.irs_deducoes_colecta]);
