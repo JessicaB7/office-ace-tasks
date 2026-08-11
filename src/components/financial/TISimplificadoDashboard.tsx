@@ -215,6 +215,12 @@ export default function TISimplificadoDashboard({
   const irsLiquido = irsEstimado - retencoes;
   const resultado = totalFat - totalDesp - outrasValor;
 
+  // Simulação regime organizado: tributação sobre o resultado líquido
+  const resultadoOrganizado = resultado;
+  const irsOrganizado = calcIRS(Math.max(0, resultadoOrganizado));
+  const irsOrganizadoLiquido = irsOrganizado - retencoes;
+  const diffRegimes = irsLiquido - irsOrganizadoLiquido;
+
 
   const chartData = MONTHS_PT.map((m, i) => ({
     mes: m,
