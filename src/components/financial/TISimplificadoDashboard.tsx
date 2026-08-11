@@ -574,6 +574,50 @@ export default function TISimplificadoDashboard({
           </div>
         </div>
       </div>
+
+      {/* Simulação: IRS regime organizado (com base no resultado líquido) */}
+      <div className="col-span-12 rounded-xl border bg-card p-4">
+        <h4 className="font-semibold text-sm">Simulação — IRS regime organizado (com base no resultado líquido)</h4>
+
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4 auto-rows-fr">
+          <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+            <div className="text-[11px] text-muted-foreground">Faturação</div>
+            <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
+          </div>
+          <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+            <div className="text-[11px] text-muted-foreground">Resultado líquido</div>
+            <div className="text-lg font-bold tabular-nums">{fmtEur(resultadoOrganizado)}</div>
+          </div>
+          <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+            <div className="text-[11px] text-muted-foreground">IRS estimado</div>
+            <div className="text-lg font-bold tabular-nums">{fmtEur(irsOrganizado)}</div>
+          </div>
+          <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+            <div className="text-[11px] text-muted-foreground">Retenções na fonte</div>
+            <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(retencoes)}</div>
+          </div>
+          <div className={cn("rounded-lg border bg-background p-3 ring-1 min-h-[78px] h-full flex flex-col justify-center", irsOrganizadoLiquido >= 0 ? "ring-amber-200 dark:ring-amber-900/40" : "ring-emerald-200 dark:ring-emerald-900/40")}>
+            <div className={cn("text-[11px]", irsOrganizadoLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>
+              {irsOrganizadoLiquido >= 0 ? "IRS a pagar" : "IRS a receber"}
+            </div>
+            <div className={cn("text-lg font-bold tabular-nums", irsOrganizadoLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>
+              {fmtEur(Math.abs(irsOrganizadoLiquido))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-lg border bg-muted/40 p-3 flex items-baseline justify-between gap-3 flex-wrap">
+          <span className="text-xs text-muted-foreground">
+            {diffRegimes === 0
+              ? "Ambos os regimes resultam no mesmo IRS"
+              : diffRegimes > 0
+                ? "Regime organizado mais favorável — poupança estimada"
+                : "Regime simplificado mais favorável — poupança estimada"}
+          </span>
+          <span className="text-base font-bold tabular-nums">{fmtEur(Math.abs(diffRegimes))}</span>
+        </div>
+      </div>
+
     </div>
     </div>
   );
