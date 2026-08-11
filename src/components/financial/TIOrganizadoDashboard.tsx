@@ -224,10 +224,10 @@ export default function TIOrganizadoDashboard({
   };
 
   const irsOrganizado = calcIRS(Math.max(0, resultado));
-  const irsOrganizadoLiquido = irsOrganizado - retencoes;
+  const irsOrganizadoLiquido = irsOrganizado - deducoes - retencoes;
   const rendimentoColectavel = totalFat * coef;
   const irsSimplificado = calcIRS(rendimentoColectavel);
-  const irsSimplificadoLiquido = irsSimplificado - retencoes;
+  const irsSimplificadoLiquido = irsSimplificado - deducoes - retencoes;
   const diffRegimes = irsSimplificadoLiquido - irsOrganizadoLiquido;
 
   const chartData = MONTHS_PT.map((m, i) => ({
