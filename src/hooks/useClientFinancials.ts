@@ -27,6 +27,7 @@ export type FinancialSettings = {
   ta_base_representacao: number;
   ta_base_ajudas_custo: number;
   irs_retencoes: number;
+  irs_deducoes_colecta: number;
   ss_q1: number;
   ss_q2: number;
   ss_q3: number;
@@ -98,6 +99,7 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         ta_base_representacao: 0,
         ta_base_ajudas_custo: 0,
         irs_retencoes: 0,
+        irs_deducoes_colecta: 250,
         ss_q1: 0,
         ss_q2: 0,
         ss_q3: 0,

@@ -176,6 +176,13 @@ export default function TISimplificadoDashboard({
     setRetencoesInput(Number(settings?.irs_retencoes ?? 0));
   }, [settings?.irs_retencoes]);
 
+  // Deduções à coleta (250 € por defeito, editável)
+  const deducoes = Number(settings?.irs_deducoes_colecta ?? 250);
+  const [deducoesInput, setDeducoesInput] = useState<number>(deducoes);
+  useEffect(() => {
+    setDeducoesInput(Number(settings?.irs_deducoes_colecta ?? 250));
+  }, [settings?.irs_deducoes_colecta]);
+
   const ssQuarters = [
     Number(settings?.ss_q1 ?? 0),
     Number(settings?.ss_q2 ?? 0),
