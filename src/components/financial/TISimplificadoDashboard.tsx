@@ -194,6 +194,18 @@ export default function TISimplificadoDashboard({
   }, [settings?.ss_q1, settings?.ss_q2, settings?.ss_q3, settings?.ss_q4]);
 
 
+  // Outras despesas (título e valor editáveis) — abate à faturação no cálculo do lucro
+  const outrasLabel = String(settings?.outras_despesas_label ?? "Outras despesas");
+  const outrasValor = Number(settings?.outras_despesas_valor ?? 0);
+  const [outrasLabelInput, setOutrasLabelInput] = useState<string>(outrasLabel);
+  const [outrasValorInput, setOutrasValorInput] = useState<number>(outrasValor);
+  useEffect(() => {
+    setOutrasLabelInput(String(settings?.outras_despesas_label ?? "Outras despesas"));
+  }, [settings?.outras_despesas_label]);
+  useEffect(() => {
+    setOutrasValorInput(Number(settings?.outras_despesas_valor ?? 0));
+  }, [settings?.outras_despesas_valor]);
+
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
@@ -201,7 +213,7 @@ export default function TISimplificadoDashboard({
   const rendimentoColectavel = totalFat * coef;
   const irsEstimado = calcIRS(rendimentoColectavel);
   const irsLiquido = irsEstimado - retencoes;
-  const resultado = totalFat - totalDesp;
+  const resultado = totalFat - totalDesp - outrasValor;
 
 
   const chartData = MONTHS_PT.map((m, i) => ({
@@ -228,8 +240,10 @@ export default function TISimplificadoDashboard({
   const kpis = [
     { label: "Faturação anual", value: totalFat, tone: "primary" as const },
     { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
+    { label: outrasLabel, value: outrasValor, tone: "neutral" as const },
     { label: "Resultado líquido", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
   ];
+
 
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -300,7 +314,7 @@ export default function TISimplificadoDashboard({
           Análise TI Simplificado · {year}
         </div>
       </div>
-      <div className="col-span-12 grid grid-cols-3 gap-3 auto-rows-fr">
+      <div className="col-span-12 grid grid-cols-4 gap-3 auto-rows-fr">
         {kpis.map((k) => (
 
           <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
@@ -318,6 +332,47 @@ export default function TISimplificadoDashboard({
           </div>
         ))}
       </div>
+
+      {!exporting && (
+        <div className="col-span-12 rounded-xl border bg-card p-4">
+          <div className="flex items-end gap-3 flex-wrap">
+            <div className="flex-1 min-w-[220px]">
+              <label className="text-[11px] text-muted-foreground">Título</label>
+              <input
+                type="text"
+                value={outrasLabelInput}
+                onChange={(e) => setOutrasLabelInput(e.target.value)}
+                onBlur={() => {
+                  const v = outrasLabelInput.trim() || "Outras despesas";
+                  setOutrasLabelInput(v);
+                  if (v !== outrasLabel) upsertSettings.mutate({ outras_despesas_label: v });
+                }}
+                placeholder="Outras despesas"
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <div className="w-40">
+              <label className="text-[11px] text-muted-foreground">Valor (€)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={Number.isFinite(outrasValorInput) ? outrasValorInput : 0}
+                onChange={(e) => setOutrasValorInput(Number(e.target.value))}
+                onBlur={() => {
+                  const v = Math.max(0, Number(outrasValorInput) || 0);
+                  setOutrasValorInput(v);
+                  if (v !== outrasValor) upsertSettings.mutate({ outras_despesas_valor: v });
+                }}
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <p className="text-[11px] text-muted-foreground pb-2">
+              Abate à faturação no cálculo do resultado líquido.
+            </p>
+          </div>
+        </div>
+      )}
+
 
       <div className="col-span-7 rounded-xl border bg-card p-4 h-full flex flex-col">
 

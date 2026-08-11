@@ -40,6 +40,8 @@ export type FinancialSettings = {
   iva_monthly: (number | null)[] | null;
   irc_regime: "normal" | "simplificado";
   irc_coef: number;
+  outras_despesas_label: string;
+  outras_despesas_valor: number;
 };
 
 
@@ -109,7 +111,8 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         iva_monthly: null,
         irc_regime: "normal",
         irc_coef: 0.10,
-
+        outras_despesas_label: "Outras despesas",
+        outras_despesas_valor: 0,
       }) as FinancialSettings;
     },
     enabled: !!clientId,

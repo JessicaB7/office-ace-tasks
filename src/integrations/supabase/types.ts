@@ -110,6 +110,8 @@ export type Database = {
           iva_q3: number | null
           iva_q4: number | null
           iva_regime: string
+          outras_despesas_label: string
+          outras_despesas_valor: number
           ss_q1: number
           ss_q2: number
           ss_q3: number
@@ -136,6 +138,8 @@ export type Database = {
           iva_q3?: number | null
           iva_q4?: number | null
           iva_regime?: string
+          outras_despesas_label?: string
+          outras_despesas_valor?: number
           ss_q1?: number
           ss_q2?: number
           ss_q3?: number
@@ -162,6 +166,8 @@ export type Database = {
           iva_q3?: number | null
           iva_q4?: number | null
           iva_regime?: string
+          outras_despesas_label?: string
+          outras_despesas_valor?: number
           ss_q1?: number
           ss_q2?: number
           ss_q3?: number
