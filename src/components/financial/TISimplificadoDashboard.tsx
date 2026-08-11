@@ -555,12 +555,23 @@ export default function TISimplificadoDashboard({
                 />
               </label>
             )}
-
-
+            {!exporting && (
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Deduções à coleta</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={deducoesInput}
+                  onChange={(e) => setDeducoesInput(Number(e.target.value))}
+                  onBlur={() => upsertSettings.mutate({ irs_deducoes_colecta: deducoesInput })}
+                  className="w-32 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </label>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4 auto-rows-fr">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4 auto-rows-fr">
           <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">Faturação</div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
@@ -572,6 +583,10 @@ export default function TISimplificadoDashboard({
           <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">IRS estimado</div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(irsEstimado)}</div>
+          </div>
+          <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+            <div className="text-[11px] text-muted-foreground">Deduções à coleta</div>
+            <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(deducoes)}</div>
           </div>
           <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">Retenção na fonte e pagamentos por conta</div>
