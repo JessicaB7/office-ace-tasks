@@ -517,7 +517,7 @@ export default function TISimplificadoDashboard({
       <div className="col-span-12 rounded-xl border bg-card p-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h4 className="font-semibold text-sm">IRS estimado (regime simplificado)</h4>
+            <h4 className="font-semibold text-sm">IRS Regime Simplificado</h4>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             {!exporting && (
@@ -583,7 +583,7 @@ export default function TISimplificadoDashboard({
 
       {/* Simulação: IRS regime organizado (com base no resultado líquido) */}
       <div className="col-span-12 rounded-xl border bg-card p-4">
-        <h4 className="font-semibold text-sm">Simulação — IRS regime organizado (com base no resultado líquido)</h4>
+        <h4 className="font-semibold text-sm">IRS Regime Organizado</h4>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4 auto-rows-fr">
           <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
