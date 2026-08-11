@@ -1,11 +1,15 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Download } from "lucide-react";
+import { Download, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   useClientFinancialEntries,
+  useClientFinancialSettings,
   useFinancialAccounts,
+  useUpsertSettings,
 } from "@/hooks/useClientFinancials";
 import {
   buildEntryMap,
@@ -18,6 +22,29 @@ import { cn } from "@/lib/utils";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
 const sameCurrency = (a: number, b: number) => Math.abs(cents(a) - cents(b)) <= 0.01;
+
+// Escalões IRS 2026 — método "taxa × rendimento − parcela a abater"
+const IRS_BRACKETS: { upTo: number; rate: number; abate: number }[] = [
+  { upTo: 8342, rate: 0.125, abate: 0 },
+  { upTo: 12587, rate: 0.157, abate: 266.94 },
+  { upTo: 17838, rate: 0.212, abate: 959.26 },
+  { upTo: 23089, rate: 0.241, abate: 1476.45 },
+  { upTo: 29397, rate: 0.311, abate: 3092.77 },
+  { upTo: 43090, rate: 0.349, abate: 4209.94 },
+  { upTo: 46566, rate: 0.431, abate: 7743.27 },
+  { upTo: 86634, rate: 0.446, abate: 8441.48 },
+  { upTo: Infinity, rate: 0.48, abate: 11387.17 },
+];
+
+function calcIRS(rendimentoColectavel: number): number {
+  if (rendimentoColectavel <= 0) return 0;
+  for (const b of IRS_BRACKETS) {
+    if (rendimentoColectavel <= b.upTo) {
+      return Math.max(0, rendimentoColectavel * b.rate - b.abate);
+    }
+  }
+  return 0;
+}
 
 // Balancetes trimestrais ficam concentrados no mês de fecho. Se por algum
 // motivo os valores aparecerem repartidos por igual pelos 3 meses do trimestre,
@@ -65,7 +92,10 @@ export default function TIOrganizadoDashboard({
 }) {
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: entries = [] } = useClientFinancialEntries(clientId, year);
+  const { data: settings } = useClientFinancialSettings(clientId, year);
+  const upsertSettings = useUpsertSettings(clientId, year);
   const map = useMemo(() => buildEntryMap(entries), [entries]);
+  const qc = useQueryClient();
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -100,12 +130,41 @@ export default function TIOrganizadoDashboard({
     }
     return total;
   };
-  const ivaTrim = [0, 1, 2, 3].map((qi) => {
+  const ivaAuto = [0, 1, 2, 3].map((qi) => {
     const lastMonth = qi * 3 + 3;
     const aPagar = sumPrefixMonth("2436", lastMonth);
     const aRecuperar = sumPrefixMonth("2437", lastMonth);
     return aPagar - aRecuperar;
   });
+
+  // IVA por trimestre — valor manual (editável) tem prioridade sobre o automático
+  const ivaManual: (number | null)[] = [
+    settings?.iva_q1 ?? null,
+    settings?.iva_q2 ?? null,
+    settings?.iva_q3 ?? null,
+    settings?.iva_q4 ?? null,
+  ].map((v) => (v === null || v === undefined ? null : Number(v)));
+  const ivaTrim = ivaAuto.map((auto, i) => (ivaManual[i] === null ? auto : (ivaManual[i] as number)));
+  const [ivaInputs, setIvaInputs] = useState<string[]>(
+    ivaTrim.map((v) => String(cents(v))),
+  );
+  useEffect(() => {
+    setIvaInputs(
+      [0, 1, 2, 3].map((i) =>
+        String(cents(ivaManual[i] === null ? ivaAuto[i] : (ivaManual[i] as number))),
+      ),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings?.iva_q1, settings?.iva_q2, settings?.iva_q3, settings?.iva_q4, entries]);
+
+  const saveIva = (i: number) => {
+    const v = Number(ivaInputs[i]);
+    const next = Number.isFinite(v) ? cents(v) : 0;
+    upsertSettings.mutate({ [`iva_q${i + 1}`]: next } as any);
+  };
+  const resetIva = (i: number) => {
+    upsertSettings.mutate({ [`iva_q${i + 1}`]: null } as any);
+  };
 
   // Retenções na fonte (2414 e sub-contas) — soma anual em módulo.
   const retencoes2414 = (() => {
@@ -116,11 +175,53 @@ export default function TIOrganizadoDashboard({
     }
     return total;
   })();
+  const retencoesManual = Number(settings?.irs_retencoes ?? 0);
+  const retencoes = retencoes2414 > 0 ? retencoes2414 : retencoesManual;
+  const retencoesSource: "auto" | "manual" = retencoes2414 > 0 ? "auto" : "manual";
+  const [retencoesInput, setRetencoesInput] = useState<number>(retencoesManual);
+  useEffect(() => {
+    setRetencoesInput(Number(settings?.irs_retencoes ?? 0));
+  }, [settings?.irs_retencoes]);
+
+  // Outras despesas (título e valor editáveis) — abate à faturação no resultado
+  const outrasLabel = String(settings?.outras_despesas_label ?? "Outras despesas");
+  const outrasValor = Number(settings?.outras_despesas_valor ?? 0);
+  const [outrasLabelInput, setOutrasLabelInput] = useState<string>(outrasLabel);
+  const [outrasValorInput, setOutrasValorInput] = useState<number>(outrasValor);
+  useEffect(() => {
+    setOutrasLabelInput(String(settings?.outras_despesas_label ?? "Outras despesas"));
+  }, [settings?.outras_despesas_label]);
+  useEffect(() => {
+    setOutrasValorInput(Number(settings?.outras_despesas_valor ?? 0));
+  }, [settings?.outras_despesas_valor]);
 
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
-  const resultado = totalFat - totalDesp;
+  const resultado = totalFat - totalDesp - outrasValor;
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
+
+  // Simulador IRS
+  const [coef, setCoef] = useState<number>(Number(client?.irs_coeficiente ?? 0.75));
+  useEffect(() => {
+    setCoef(Number(client?.irs_coeficiente ?? 0.75));
+  }, [client?.irs_coeficiente]);
+  const saveCoef = async (val: number) => {
+    const safe = isFinite(val) ? Math.max(0, Math.min(1, val)) : 0.75;
+    setCoef(safe);
+    const { error } = await supabase.from("clients").update({ irs_coeficiente: safe }).eq("id", clientId);
+    if (error) toast.error("Erro a guardar coeficiente");
+    else {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Coeficiente atualizado");
+    }
+  };
+
+  const irsOrganizado = calcIRS(Math.max(0, resultado));
+  const irsOrganizadoLiquido = irsOrganizado - retencoes;
+  const rendimentoColectavel = totalFat * coef;
+  const irsSimplificado = calcIRS(rendimentoColectavel);
+  const irsSimplificadoLiquido = irsSimplificado - retencoes;
+  const diffRegimes = irsSimplificadoLiquido - irsOrganizadoLiquido;
 
   const chartData = MONTHS_PT.map((m, i) => ({
     mes: m,
@@ -131,6 +232,7 @@ export default function TIOrganizadoDashboard({
   const kpis = [
     { label: "Faturação anual", value: totalFat, tone: "primary" as const },
     { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
+    { label: outrasLabel, value: outrasValor, tone: "neutral" as const },
     { label: "Resultado", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
   ];
 
@@ -191,7 +293,7 @@ export default function TIOrganizadoDashboard({
           <div className="text-sm text-muted-foreground">Análise TI Organizado · {year}</div>
         </div>
 
-        <div className="col-span-12 grid grid-cols-3 gap-3 auto-rows-fr">
+        <div className="col-span-12 grid grid-cols-4 gap-3 auto-rows-fr">
           {kpis.map((k) => (
             <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
               <div className="text-xs text-muted-foreground">{k.label}</div>
@@ -204,6 +306,46 @@ export default function TIOrganizadoDashboard({
             </div>
           ))}
         </div>
+
+        {!exporting && (
+          <div className="col-span-12 rounded-xl border bg-card p-4">
+            <div className="flex items-end gap-3 flex-wrap">
+              <div className="flex-1 min-w-[220px]">
+                <label className="text-[11px] text-muted-foreground">Título</label>
+                <input
+                  type="text"
+                  value={outrasLabelInput}
+                  onChange={(e) => setOutrasLabelInput(e.target.value)}
+                  onBlur={() => {
+                    const v = outrasLabelInput.trim() || "Outras despesas";
+                    setOutrasLabelInput(v);
+                    if (v !== outrasLabel) upsertSettings.mutate({ outras_despesas_label: v });
+                  }}
+                  placeholder="Outras despesas"
+                  className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="w-40">
+                <label className="text-[11px] text-muted-foreground">Valor (€)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={Number.isFinite(outrasValorInput) ? outrasValorInput : 0}
+                  onChange={(e) => setOutrasValorInput(Number(e.target.value))}
+                  onBlur={() => {
+                    const v = Math.max(0, Number(outrasValorInput) || 0);
+                    setOutrasValorInput(v);
+                    if (v !== outrasValor) upsertSettings.mutate({ outras_despesas_valor: v });
+                  }}
+                  className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground pb-2">
+                Abate à faturação no cálculo do resultado.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="col-span-7 rounded-xl border bg-card p-4 h-full flex flex-col">
           <h4 className="font-semibold text-sm mb-3">Faturação vs Despesas (mensal)</h4>
@@ -257,8 +399,41 @@ export default function TIOrganizadoDashboard({
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr flex-1">
             {ivaTrim.map((v, i) => (
               <div key={i} className="rounded-lg border bg-background p-3 min-h-[116px] h-full flex flex-col justify-between">
-                <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
-                <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
+                  {!exporting && ivaManual[i] !== null && (
+                    <button
+                      type="button"
+                      onClick={() => resetIva(i)}
+                      title="Repor valor automático"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {exporting ? (
+                  <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={ivaInputs[i] ?? ""}
+                      onChange={(e) => {
+                        const next = [...ivaInputs];
+                        next[i] = e.target.value;
+                        setIvaInputs(next);
+                      }}
+                      onBlur={() => saveIva(i)}
+                      className={cn(
+                        "w-full text-right font-bold tabular-nums text-base py-1.5 pl-2 pr-7 rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-primary/30",
+                        v < 0 ? "text-emerald-600" : "text-primary",
+                      )}
+                    />
+                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">€</span>
+                  </div>
+                )}
                 <div className="text-[10px] text-muted-foreground mt-1">
                   {["Pagar até 25/05", "Pagar até 25/08", "Pagar até 25/11", "Pagar até 25/02 ano seguinte"][i]}
                 </div>
@@ -273,7 +448,108 @@ export default function TIOrganizadoDashboard({
               <h4 className="font-semibold text-sm">Retenções na fonte</h4>
               <p className="text-xs text-muted-foreground mt-1">Conta 2414 · soma anual dos valores retidos por terceiros.</p>
             </div>
-            <div className="text-2xl font-bold tabular-nums text-emerald-700">{fmtEur(retencoes2414)}</div>
+            <div className="flex items-center gap-3 flex-wrap">
+              {!exporting && retencoesSource === "manual" && (
+                <input
+                  type="number"
+                  step="0.01"
+                  value={retencoesInput}
+                  onChange={(e) => setRetencoesInput(Number(e.target.value))}
+                  onBlur={() => upsertSettings.mutate({ irs_retencoes: retencoesInput })}
+                  className="w-36 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              )}
+              <div className="text-2xl font-bold tabular-nums text-emerald-700">{fmtEur(retencoes)}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Simulador de IRS */}
+        <div className="col-span-12 rounded-xl border bg-card p-4">
+          <h4 className="font-semibold text-sm">IRS Regime Organizado</h4>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4 auto-rows-fr">
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Faturação</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Resultado líquido</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(resultado)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">IRS estimado</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(irsOrganizado)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Retenções na fonte</div>
+              <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(retencoes)}</div>
+            </div>
+            <div className={cn("rounded-lg border bg-background p-3 ring-1 min-h-[78px] h-full flex flex-col justify-center", irsOrganizadoLiquido >= 0 ? "ring-amber-200 dark:ring-amber-900/40" : "ring-emerald-200 dark:ring-emerald-900/40")}>
+              <div className={cn("text-[11px]", irsOrganizadoLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>
+                {irsOrganizadoLiquido >= 0 ? "IRS a pagar" : "IRS a receber"}
+              </div>
+              <div className={cn("text-lg font-bold tabular-nums", irsOrganizadoLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>
+                {fmtEur(Math.abs(irsOrganizadoLiquido))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-span-12 rounded-xl border bg-card p-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <h4 className="font-semibold text-sm">IRS Regime Simplificado</h4>
+            {!exporting && (
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Coeficiente</span>
+                <select
+                  value={coef}
+                  onChange={(e) => saveCoef(Number(e.target.value))}
+                  className="py-1.5 px-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value={0.15}>0,15 — Vendas mercadorias</option>
+                  <option value={0.35}>0,35 — Outras prestações de serviços</option>
+                  <option value={0.75}>0,75 — Serviços profissionais (art.º 151)</option>
+                  <option value={0.95}>0,95 — Rend. capitais / prediais</option>
+                </select>
+              </label>
+            )}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4 auto-rows-fr">
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Faturação</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Rendimento colectável</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(rendimentoColectavel)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">IRS estimado</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(irsSimplificado)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Retenções na fonte</div>
+              <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(retencoes)}</div>
+            </div>
+            <div className={cn("rounded-lg border bg-background p-3 ring-1 min-h-[78px] h-full flex flex-col justify-center", irsSimplificadoLiquido >= 0 ? "ring-amber-200 dark:ring-amber-900/40" : "ring-emerald-200 dark:ring-emerald-900/40")}>
+              <div className={cn("text-[11px]", irsSimplificadoLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>
+                {irsSimplificadoLiquido >= 0 ? "IRS a pagar" : "IRS a receber"}
+              </div>
+              <div className={cn("text-lg font-bold tabular-nums", irsSimplificadoLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>
+                {fmtEur(Math.abs(irsSimplificadoLiquido))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-lg border bg-muted/40 p-3 flex items-baseline justify-between gap-3 flex-wrap">
+            <span className="text-xs text-muted-foreground">
+              {diffRegimes === 0
+                ? "Ambos os regimes resultam no mesmo IRS"
+                : diffRegimes > 0
+                  ? "Regime organizado mais favorável — poupança estimada"
+                  : "Regime simplificado mais favorável — poupança estimada"}
+            </span>
+            <span className="text-base font-bold tabular-nums">{fmtEur(Math.abs(diffRegimes))}</span>
           </div>
         </div>
       </div>
