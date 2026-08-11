@@ -103,6 +103,7 @@ export type Database = {
           derrama_rate: number
           irc_coef: number
           irc_regime: string
+          irs_deducoes_colecta: number
           irs_retencoes: number
           iva_monthly: Json | null
           iva_q1: number | null
@@ -131,6 +132,7 @@ export type Database = {
           derrama_rate?: number
           irc_coef?: number
           irc_regime?: string
+          irs_deducoes_colecta?: number
           irs_retencoes?: number
           iva_monthly?: Json | null
           iva_q1?: number | null
@@ -159,6 +161,7 @@ export type Database = {
           derrama_rate?: number
           irc_coef?: number
           irc_regime?: string
+          irs_deducoes_colecta?: number
           irs_retencoes?: number
           iva_monthly?: Json | null
           iva_q1?: number | null

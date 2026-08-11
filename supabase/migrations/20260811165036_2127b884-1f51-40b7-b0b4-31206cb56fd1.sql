@@ -1,0 +1,1 @@
+ALTER TABLE public.client_financial_settings ADD COLUMN IF NOT EXISTS irs_deducoes_colecta numeric NOT NULL DEFAULT 250;

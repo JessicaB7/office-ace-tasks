@@ -183,6 +183,13 @@ export default function TIOrganizadoDashboard({
     setRetencoesInput(Number(settings?.irs_retencoes ?? 0));
   }, [settings?.irs_retencoes]);
 
+  // Deduções à coleta (250 € por defeito, editável)
+  const deducoes = Number(settings?.irs_deducoes_colecta ?? 250);
+  const [deducoesInput, setDeducoesInput] = useState<number>(deducoes);
+  useEffect(() => {
+    setDeducoesInput(Number(settings?.irs_deducoes_colecta ?? 250));
+  }, [settings?.irs_deducoes_colecta]);
+
   // Outras despesas (título e valor editáveis) — abate à faturação no resultado
   const outrasLabel = String(settings?.outras_despesas_label ?? "Outras despesas");
   const outrasValor = Number(settings?.outras_despesas_valor ?? 0);
@@ -217,10 +224,10 @@ export default function TIOrganizadoDashboard({
   };
 
   const irsOrganizado = calcIRS(Math.max(0, resultado));
-  const irsOrganizadoLiquido = irsOrganizado - retencoes;
+  const irsOrganizadoLiquido = irsOrganizado - deducoes - retencoes;
   const rendimentoColectavel = totalFat * coef;
   const irsSimplificado = calcIRS(rendimentoColectavel);
-  const irsSimplificadoLiquido = irsSimplificado - retencoes;
+  const irsSimplificadoLiquido = irsSimplificado - deducoes - retencoes;
   const diffRegimes = irsSimplificadoLiquido - irsOrganizadoLiquido;
 
   const chartData = MONTHS_PT.map((m, i) => ({
@@ -464,10 +471,32 @@ export default function TIOrganizadoDashboard({
           </div>
         </div>
 
+        <div className="col-span-12 rounded-xl border bg-card p-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h4 className="font-semibold text-sm">Deduções à coleta</h4>
+              <p className="text-xs text-muted-foreground mt-1">Valor que abate ao IRS estimado (250 € por defeito).</p>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              {!exporting && (
+                <input
+                  type="number"
+                  step="0.01"
+                  value={deducoesInput}
+                  onChange={(e) => setDeducoesInput(Number(e.target.value))}
+                  onBlur={() => upsertSettings.mutate({ irs_deducoes_colecta: deducoesInput })}
+                  className="w-36 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              )}
+              <div className="text-2xl font-bold tabular-nums text-emerald-700">{fmtEur(deducoes)}</div>
+            </div>
+          </div>
+        </div>
+
         {/* Simulador de IRS */}
         <div className="col-span-12 rounded-xl border bg-card p-4">
           <h4 className="font-semibold text-sm">IRS Regime Organizado</h4>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4 auto-rows-fr">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4 auto-rows-fr">
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Faturação</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
@@ -479,6 +508,10 @@ export default function TIOrganizadoDashboard({
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">IRS estimado</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(irsOrganizado)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Deduções à coleta</div>
+              <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(deducoes)}</div>
             </div>
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Retenção na fonte e pagamentos por conta</div>
@@ -514,7 +547,7 @@ export default function TIOrganizadoDashboard({
               </label>
             )}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-4 auto-rows-fr">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4 auto-rows-fr">
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Faturação</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
@@ -526,6 +559,10 @@ export default function TIOrganizadoDashboard({
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">IRS estimado</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(irsSimplificado)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Deduções à coleta</div>
+              <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(deducoes)}</div>
             </div>
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Retenção na fonte e pagamentos por conta</div>
