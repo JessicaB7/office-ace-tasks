@@ -166,7 +166,7 @@ export default function TIOrganizadoDashboard({
     upsertSettings.mutate({ [`iva_q${i + 1}`]: null } as any);
   };
 
-  // Retenções na fonte (2414 e sub-contas) — soma anual em módulo.
+  // Retenção na fonte e pagamentos por conta (2414 e sub-contas) — soma anual em módulo.
   const retencoes2414 = (() => {
     let total = 0;
     for (const [key, val] of map.entries()) {
@@ -445,7 +445,7 @@ export default function TIOrganizadoDashboard({
         <div className="col-span-12 rounded-xl border bg-card p-4">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h4 className="font-semibold text-sm">Retenções na fonte</h4>
+              <h4 className="font-semibold text-sm">Retenção na fonte e pagamentos por conta</h4>
               <p className="text-xs text-muted-foreground mt-1">Conta 2414 · soma anual dos valores retidos por terceiros.</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
@@ -481,7 +481,7 @@ export default function TIOrganizadoDashboard({
               <div className="text-lg font-bold tabular-nums">{fmtEur(irsOrganizado)}</div>
             </div>
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
-              <div className="text-[11px] text-muted-foreground">Retenções na fonte</div>
+              <div className="text-[11px] text-muted-foreground">Retenção na fonte e pagamentos por conta</div>
               <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(retencoes)}</div>
             </div>
             <div className={cn("rounded-lg border bg-background p-3 ring-1 min-h-[78px] h-full flex flex-col justify-center", irsOrganizadoLiquido >= 0 ? "ring-amber-200 dark:ring-amber-900/40" : "ring-emerald-200 dark:ring-emerald-900/40")}>
@@ -528,7 +528,7 @@ export default function TIOrganizadoDashboard({
               <div className="text-lg font-bold tabular-nums">{fmtEur(irsSimplificado)}</div>
             </div>
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
-              <div className="text-[11px] text-muted-foreground">Retenções na fonte</div>
+              <div className="text-[11px] text-muted-foreground">Retenção na fonte e pagamentos por conta</div>
               <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(retencoes)}</div>
             </div>
             <div className={cn("rounded-lg border bg-background p-3 ring-1 min-h-[78px] h-full flex flex-col justify-center", irsSimplificadoLiquido >= 0 ? "ring-amber-200 dark:ring-amber-900/40" : "ring-emerald-200 dark:ring-emerald-900/40")}>
