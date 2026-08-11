@@ -194,6 +194,18 @@ export default function TISimplificadoDashboard({
   }, [settings?.ss_q1, settings?.ss_q2, settings?.ss_q3, settings?.ss_q4]);
 
 
+  // Outras despesas (título e valor editáveis) — abate à faturação no cálculo do lucro
+  const outrasLabel = String(settings?.outras_despesas_label ?? "Outras despesas");
+  const outrasValor = Number(settings?.outras_despesas_valor ?? 0);
+  const [outrasLabelInput, setOutrasLabelInput] = useState<string>(outrasLabel);
+  const [outrasValorInput, setOutrasValorInput] = useState<number>(outrasValor);
+  useEffect(() => {
+    setOutrasLabelInput(String(settings?.outras_despesas_label ?? "Outras despesas"));
+  }, [settings?.outras_despesas_label]);
+  useEffect(() => {
+    setOutrasValorInput(Number(settings?.outras_despesas_valor ?? 0));
+  }, [settings?.outras_despesas_valor]);
+
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
@@ -201,7 +213,7 @@ export default function TISimplificadoDashboard({
   const rendimentoColectavel = totalFat * coef;
   const irsEstimado = calcIRS(rendimentoColectavel);
   const irsLiquido = irsEstimado - retencoes;
-  const resultado = totalFat - totalDesp;
+  const resultado = totalFat - totalDesp - outrasValor;
 
 
   const chartData = MONTHS_PT.map((m, i) => ({
@@ -228,8 +240,10 @@ export default function TISimplificadoDashboard({
   const kpis = [
     { label: "Faturação anual", value: totalFat, tone: "primary" as const },
     { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
+    { label: outrasLabel, value: outrasValor, tone: "neutral" as const },
     { label: "Resultado líquido", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
   ];
+
 
 
   const reportRef = useRef<HTMLDivElement>(null);
