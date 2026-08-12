@@ -107,8 +107,9 @@ export default function DashboardTrimestral({
     { label: "FSE", arr: fseQ, tone: "neutral" as const },
     ...(hasFseDetail
       ? [
-          ...FSE_SUB.map((s, idx) => ({ label: s.label, arr: fseSubQ[idx], tone: "neutral" as const, sub: true }))
+          ...fseDetail.map((d, idx) => ({ label: d.label, arr: fseSubQ[idx], tone: "neutral" as const, sub: true }))
             .filter((r) => r.arr.some((v) => Math.abs(v) > 0.005)),
+
 
           ...(fseOutrosQ.some((v) => Math.abs(v) > 0.005)
             ? [{ label: "Outros fornecimentos e serviços", arr: fseOutrosQ, tone: "neutral" as const, sub: true }]
