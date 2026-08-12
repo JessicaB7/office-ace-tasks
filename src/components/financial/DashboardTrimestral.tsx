@@ -7,7 +7,7 @@ import {
   useClientFinancialEntries,
   useFinancialAccounts,
 } from "@/hooks/useClientFinancials";
-import { buildEntryMap, fmtEur, sumSectionMonth, sumGroupMonth, quarterSums } from "./financialMath";
+import { buildEntryMap, fmtEur, sumSectionMonth, sumGroupMonth, quarterSums, getValue } from "./financialMath";
 import { cn } from "@/lib/utils";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
