@@ -86,14 +86,23 @@ export default function DashboardTrimestral({
 
   const acumulado = (arr: number[]) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0);
 
+  const hasFseDetail = fseSubQ.some((arr) => arr.some((v) => Math.abs(v) > 0.005));
+
   const rows = [
     { label: "Rendimentos", arr: rendimentosQ, tone: "primary" as const },
     { label: "Gastos com mercadorias", arr: mercadoriasQ, tone: "neutral" as const },
     { label: "FSE", arr: fseQ, tone: "neutral" as const },
-    ...FSE_SUB.map((s, idx) => ({ label: s.label, arr: fseSubQ[idx], tone: "neutral" as const, sub: true })),
-    ...(fseOutrosQ.some((v) => Math.abs(v) > 0.005)
-      ? [{ label: "Outros fornecimentos e serviços", arr: fseOutrosQ, tone: "neutral" as const, sub: true }]
+    ...(hasFseDetail
+      ? [
+          ...FSE_SUB.map((s, idx) => ({ label: s.label, arr: fseSubQ[idx], tone: "neutral" as const, sub: true }))
+            .filter((r) => r.arr.some((v) => Math.abs(v) > 0.005)),
+
+          ...(fseOutrosQ.some((v) => Math.abs(v) > 0.005)
+            ? [{ label: "Outros fornecimentos e serviços", arr: fseOutrosQ, tone: "neutral" as const, sub: true }]
+            : []),
+        ]
       : []),
+
     { label: "Gastos com salários", arr: pessoalQ, tone: "neutral" as const },
     { label: "Depreciações", arr: depreciacoesQ, tone: "neutral" as const },
     { label: "Outros gastos", arr: outrosGastosQ, tone: "neutral" as const },
