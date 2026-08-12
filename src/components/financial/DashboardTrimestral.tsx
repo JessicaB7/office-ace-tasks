@@ -7,7 +7,7 @@ import {
   useClientFinancialEntries,
   useFinancialAccounts,
 } from "@/hooks/useClientFinancials";
-import { buildEntryMap, fmtEur, sumSectionMonth, sumGroupMonth, quarterSums } from "./financialMath";
+import { buildEntryMap, fmtEur, sumSectionMonth, sumGroupMonth, quarterSums, getValue } from "./financialMath";
 import { cn } from "@/lib/utils";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
@@ -47,20 +47,33 @@ export default function DashboardTrimestral({
   );
   const resultadoM = months.map((_, i) => rendimentosM[i] - gastosM[i]);
 
-  // Subdivisão dos FSE por rubricas SNC
-  const FSE_SUB: { label: string; prefixes: string[] }[] = [
-    { label: "Serviços especializados", prefixes: ["621", "622"] },
-    { label: "Materiais", prefixes: ["623"] },
-    { label: "Energia e fluidos", prefixes: ["624"] },
-    { label: "Deslocações, estadas e transportes", prefixes: ["625"] },
-    { label: "Serviços diversos", prefixes: ["626"] },
-  ];
-  const fseSubM = FSE_SUB.map((s) =>
-    months.map((m) => s.prefixes.reduce((acc, p) => acc + sumGroupMonth(map, accounts, p, m), 0)),
-  );
+  // Subdivisão dos FSE pelas contas 62 existentes (nível mais detalhado com valor)
+  const fseDetail = useMemo(() => {
+    const cand = accounts
+      .filter((a) => a.code.startsWith("62") && a.code.length > 2)
+      .sort((a, b) => a.code.localeCompare(b.code));
+
+    const monthly = (code: string) => months.map((m) => getValue(map, m, code));
+    const hasValue = (arr: number[]) => arr.some((v) => Math.abs(v) > 0.005);
+
+    // usa o nível mais detalhado: ignora contas cujos filhos já têm valor
+    const rowsOut: { code: string; label: string; arr: number[] }[] = [];
+    for (const a of cand) {
+      const children = cand.filter((c) => c.code !== a.code && c.code.startsWith(a.code));
+      const childValues = children.map((c) => monthly(c.code));
+      const own = monthly(a.code);
+      if (children.length && childValues.some(hasValue)) continue;
+      if (!hasValue(own)) continue;
+      rowsOut.push({ code: a.code, label: `${a.code} - ${a.name}`, arr: own });
+    }
+    return rowsOut;
+  }, [accounts, map]);
+
+  const fseSubM = fseDetail.map((d) => d.arr);
   const fseOutrosM = months.map(
     (_, idx) => fseM[idx] - fseSubM.reduce((acc, arr) => acc + arr[idx], 0),
   );
+
 
   // Agregação por trimestre
   const rendimentosQ = quarterSums(rendimentosM);
@@ -94,8 +107,9 @@ export default function DashboardTrimestral({
     { label: "FSE", arr: fseQ, tone: "neutral" as const },
     ...(hasFseDetail
       ? [
-          ...FSE_SUB.map((s, idx) => ({ label: s.label, arr: fseSubQ[idx], tone: "neutral" as const, sub: true }))
+          ...fseDetail.map((d, idx) => ({ label: d.label, arr: fseSubQ[idx], tone: "neutral" as const, sub: true }))
             .filter((r) => r.arr.some((v) => Math.abs(v) > 0.005)),
+
 
           ...(fseOutrosQ.some((v) => Math.abs(v) > 0.005)
             ? [{ label: "Outros fornecimentos e serviços", arr: fseOutrosQ, tone: "neutral" as const, sub: true }]
