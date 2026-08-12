@@ -298,8 +298,9 @@ export default function DashboardTrimestral({
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.label} className="border-t">
-                  <td className={cn("px-3 py-1.5", r.tone === "result" && "font-semibold")}>{r.label}</td>
+                <tr key={r.label} className={cn("border-t", r.sub && "bg-muted/20")}>
+                  <td className={cn("px-3 py-1.5", r.tone === "result" && "font-semibold", r.sub && "pl-8 text-muted-foreground")}>{r.label}</td>
+
                   {r.arr.map((v, idx) => (
                     <td key={idx} className={cn(
                       "px-3 py-1.5 text-right tabular-nums",
