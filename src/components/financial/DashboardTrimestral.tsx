@@ -90,14 +90,19 @@ export default function DashboardTrimestral({
     { label: "Rendimentos", arr: rendimentosQ, tone: "primary" as const },
     { label: "Gastos com mercadorias", arr: mercadoriasQ, tone: "neutral" as const },
     { label: "FSE", arr: fseQ, tone: "neutral" as const },
+    ...FSE_SUB.map((s, idx) => ({ label: s.label, arr: fseSubQ[idx], tone: "neutral" as const, sub: true })),
+    ...(fseOutrosQ.some((v) => Math.abs(v) > 0.005)
+      ? [{ label: "Outros fornecimentos e serviços", arr: fseOutrosQ, tone: "neutral" as const, sub: true }]
+      : []),
     { label: "Gastos com salários", arr: pessoalQ, tone: "neutral" as const },
     { label: "Depreciações", arr: depreciacoesQ, tone: "neutral" as const },
     { label: "Outros gastos", arr: outrosGastosQ, tone: "neutral" as const },
     { label: "Total de gastos", arr: gastosQ, tone: "neutral" as const },
     { label: "Resultado", arr: resultadoQ, tone: "result" as const },
-  ];
+  ] as { label: string; arr: number[]; tone: "primary" | "neutral" | "result"; sub?: boolean }[];
 
-  const kpis = rows.filter((r) => r.label !== "Outros gastos" && r.label !== "Total de gastos");
+  const kpis = rows.filter((r) => !r.sub && r.label !== "Outros gastos" && r.label !== "Total de gastos");
+
 
   const margem = rendimentosQ[i] ? (resultadoQ[i] / rendimentosQ[i]) * 100 : 0;
 
