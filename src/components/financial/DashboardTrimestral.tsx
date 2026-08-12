@@ -47,15 +47,33 @@ export default function DashboardTrimestral({
   );
   const resultadoM = months.map((_, i) => rendimentosM[i] - gastosM[i]);
 
+  // Subdivisão dos FSE por rubricas SNC
+  const FSE_SUB: { label: string; prefixes: string[] }[] = [
+    { label: "Serviços especializados", prefixes: ["621", "622"] },
+    { label: "Materiais", prefixes: ["623"] },
+    { label: "Energia e fluidos", prefixes: ["624"] },
+    { label: "Deslocações, estadas e transportes", prefixes: ["625"] },
+    { label: "Serviços diversos", prefixes: ["626"] },
+  ];
+  const fseSubM = FSE_SUB.map((s) =>
+    months.map((m) => s.prefixes.reduce((acc, p) => acc + sumGroupMonth(map, accounts, p, m), 0)),
+  );
+  const fseOutrosM = months.map(
+    (_, idx) => fseM[idx] - fseSubM.reduce((acc, arr) => acc + arr[idx], 0),
+  );
+
   // Agregação por trimestre
   const rendimentosQ = quarterSums(rendimentosM);
   const fseQ = quarterSums(fseM);
+  const fseSubQ = fseSubM.map(quarterSums);
+  const fseOutrosQ = quarterSums(fseOutrosM);
   const pessoalQ = quarterSums(pessoalM);
   const depreciacoesQ = quarterSums(depreciacoesM);
   const mercadoriasQ = quarterSums(mercadoriasM);
   const outrosGastosQ = quarterSums(outrosGastosM);
   const gastosQ = quarterSums(gastosM);
   const resultadoQ = quarterSums(resultadoM);
+
 
   const lastWithData = useMemo(() => {
     for (let q = 3; q >= 0; q--) if (rendimentosQ[q] || gastosQ[q]) return q;
