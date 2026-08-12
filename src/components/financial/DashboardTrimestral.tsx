@@ -47,15 +47,33 @@ export default function DashboardTrimestral({
   );
   const resultadoM = months.map((_, i) => rendimentosM[i] - gastosM[i]);
 
+  // Subdivisão dos FSE por rubricas SNC
+  const FSE_SUB: { label: string; prefixes: string[] }[] = [
+    { label: "Serviços especializados", prefixes: ["621", "622"] },
+    { label: "Materiais", prefixes: ["623"] },
+    { label: "Energia e fluidos", prefixes: ["624"] },
+    { label: "Deslocações, estadas e transportes", prefixes: ["625"] },
+    { label: "Serviços diversos", prefixes: ["626"] },
+  ];
+  const fseSubM = FSE_SUB.map((s) =>
+    months.map((m) => s.prefixes.reduce((acc, p) => acc + sumGroupMonth(map, accounts, p, m), 0)),
+  );
+  const fseOutrosM = months.map(
+    (_, idx) => fseM[idx] - fseSubM.reduce((acc, arr) => acc + arr[idx], 0),
+  );
+
   // Agregação por trimestre
   const rendimentosQ = quarterSums(rendimentosM);
   const fseQ = quarterSums(fseM);
+  const fseSubQ = fseSubM.map(quarterSums);
+  const fseOutrosQ = quarterSums(fseOutrosM);
   const pessoalQ = quarterSums(pessoalM);
   const depreciacoesQ = quarterSums(depreciacoesM);
   const mercadoriasQ = quarterSums(mercadoriasM);
   const outrosGastosQ = quarterSums(outrosGastosM);
   const gastosQ = quarterSums(gastosM);
   const resultadoQ = quarterSums(resultadoM);
+
 
   const lastWithData = useMemo(() => {
     for (let q = 3; q >= 0; q--) if (rendimentosQ[q] || gastosQ[q]) return q;
@@ -72,14 +90,19 @@ export default function DashboardTrimestral({
     { label: "Rendimentos", arr: rendimentosQ, tone: "primary" as const },
     { label: "Gastos com mercadorias", arr: mercadoriasQ, tone: "neutral" as const },
     { label: "FSE", arr: fseQ, tone: "neutral" as const },
+    ...FSE_SUB.map((s, idx) => ({ label: s.label, arr: fseSubQ[idx], tone: "neutral" as const, sub: true })),
+    ...(fseOutrosQ.some((v) => Math.abs(v) > 0.005)
+      ? [{ label: "Outros fornecimentos e serviços", arr: fseOutrosQ, tone: "neutral" as const, sub: true }]
+      : []),
     { label: "Gastos com salários", arr: pessoalQ, tone: "neutral" as const },
     { label: "Depreciações", arr: depreciacoesQ, tone: "neutral" as const },
     { label: "Outros gastos", arr: outrosGastosQ, tone: "neutral" as const },
     { label: "Total de gastos", arr: gastosQ, tone: "neutral" as const },
     { label: "Resultado", arr: resultadoQ, tone: "result" as const },
-  ];
+  ] as { label: string; arr: number[]; tone: "primary" | "neutral" | "result"; sub?: boolean }[];
 
-  const kpis = rows.filter((r) => r.label !== "Outros gastos" && r.label !== "Total de gastos");
+  const kpis = rows.filter((r) => !r.sub && r.label !== "Outros gastos" && r.label !== "Total de gastos");
+
 
   const margem = rendimentosQ[i] ? (resultadoQ[i] / rendimentosQ[i]) * 100 : 0;
 
@@ -275,8 +298,9 @@ export default function DashboardTrimestral({
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.label} className="border-t">
-                  <td className={cn("px-3 py-1.5", r.tone === "result" && "font-semibold")}>{r.label}</td>
+                <tr key={r.label} className={cn("border-t", r.sub && "bg-muted/20")}>
+                  <td className={cn("px-3 py-1.5", r.tone === "result" && "font-semibold", r.sub && "pl-8 text-muted-foreground")}>{r.label}</td>
+
                   {r.arr.map((v, idx) => (
                     <td key={idx} className={cn(
                       "px-3 py-1.5 text-right tabular-nums",
