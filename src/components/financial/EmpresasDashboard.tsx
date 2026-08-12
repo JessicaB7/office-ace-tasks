@@ -282,8 +282,52 @@ export default function EmpresasDashboard({
                   ))}
                 </div>
               )}
-              <div className="text-xs text-muted-foreground">
-                Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(totalIva)}</span>
+              <div className="flex items-center gap-2">
+                {!exporting && (
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground underline hover:text-destructive whitespace-nowrap"
+                    onClick={() => {
+                      if (ivaRegime === "mensal") {
+                        upsertSettings.mutate({ iva_monthly: Array(12).fill(null) } as any);
+                      } else {
+                        upsertSettings.mutate({ iva_q1: null, iva_q2: null, iva_q3: null, iva_q4: null } as any);
+                      }
+                    }}
+                  >
+                    Limpar
+                  </button>
+                )}
+                {exporting ? (
+                  <div className="text-xs text-muted-foreground">
+                    Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(totalIva)}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="iva-total" className="text-xs text-muted-foreground whitespace-nowrap">Total anual</Label>
+                    <Input
+                      id="iva-total"
+                      type="number"
+                      step="0.01"
+                      className="h-8 w-32 tabular-nums"
+                      placeholder={totalIva ? totalIva.toFixed(2) : "0,00"}
+                      onChange={(e) => {
+                        const raw = e.target.value.trim();
+                        if (raw === "") return;
+                        const n = Number(raw.replace(",", "."));
+                        if (!Number.isFinite(n)) return;
+                        if (ivaRegime === "mensal") {
+                          const per = cents(n / 12);
+                          upsertSettings.mutate({ iva_monthly: Array.from({ length: 12 }, () => per) } as any);
+                        } else {
+                          const per = cents(n / 4);
+                          upsertSettings.mutate({ iva_q1: per, iva_q2: per, iva_q3: per, iva_q4: per } as any);
+                        }
+                        (e.target as HTMLInputElement).value = "";
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
