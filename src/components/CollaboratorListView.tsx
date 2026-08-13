@@ -4,7 +4,7 @@ import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTask
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Collaborator } from "@/types/database";
-import { Search, Plus, UserCircle, X, Key } from "lucide-react";
+import { Search, Plus, UserCircle, X, Key, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CollaboratorDetailDialog from "./CollaboratorDetailDialog";
 import CollaboratorClientsDialog from "./CollaboratorClientsDialog";
