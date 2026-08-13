@@ -253,8 +253,24 @@ const CollaboratorListView = () => {
                 <label className="text-sm font-medium mb-1 block flex items-center gap-1.5">
                   <Key className="w-3.5 h-3.5" /> Código de Acesso
                 </label>
-                <input value={form.access_code} onChange={(e) => set("access_code", e.target.value)} placeholder="Código para entrar na plataforma" className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
-                <p className="text-[11px] text-muted-foreground mt-1">{editingId ? "Deixe em branco para manter o código atual. Preencha apenas para definir um novo." : "Defina um código para o colaborador aceder à plataforma"}</p>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type={showCode ? "text" : "password"}
+                      value={form.access_code}
+                      onChange={(e) => set("access_code", e.target.value)}
+                      placeholder="Código para entrar na plataforma"
+                      className="w-full px-3 py-2 pr-9 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring font-mono tracking-wider"
+                    />
+                    <button type="button" onClick={() => setShowCode((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted text-muted-foreground" aria-label={showCode ? "Ocultar código" : "Ver código"}>
+                      {showCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <button type="button" onClick={generateCode} className="px-3 py-2 rounded-lg border text-xs font-medium hover:bg-muted transition-colors whitespace-nowrap">
+                    Gerar
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">{editingId ? "Altere o código e guarde para atualizar o acesso do colaborador." : "Defina um código para o colaborador aceder à plataforma"}</p>
               </div>
               <div className="flex items-center gap-3 pt-2">
                 <button type="submit" disabled={upsert.isPending} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
