@@ -26,6 +26,7 @@ const CollaboratorListView = () => {
   const [detailCollab, setDetailCollab] = useState<Collaborator | null>(null);
   const [clientsCollab, setClientsCollab] = useState<Collaborator | null>(null);
   const [showCode, setShowCode] = useState(false);
+  const [initialCode, setInitialCode] = useState("");
 
   const activeCollabs = collaborators.filter(c => c.active);
   const filtered = activeCollabs.filter((c) => {
@@ -58,14 +59,18 @@ const CollaboratorListView = () => {
       .sort((a, b) => a.name.localeCompare(b.name));
   };
 
-  const openNew = () => { setForm(emptyCollab); setEditingId(null); setShowCode(false); setDialogOpen(true); };
+  const openNew = () => { setForm(emptyCollab); setEditingId(null); setShowCode(false); setInitialCode(""); setDialogOpen(true); };
   const openEdit = async (c: Collaborator) => {
     setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "", access_code: "" });
     setEditingId(c.id);
     setShowCode(false);
+    setInitialCode("");
     setDialogOpen(true);
     const { data } = await supabase.from("collaborator_secrets").select("access_code").eq("collaborator_id", c.id).maybeSingle();
-    if (data?.access_code) setForm((f) => ({ ...f, access_code: data.access_code as string }));
+    if (data?.access_code) {
+      setForm((f) => ({ ...f, access_code: data.access_code as string }));
+      setInitialCode(data.access_code as string);
+    }
   };
   const handleCardClick = (c: Collaborator) => { if (isAdmin) { void openEdit(c); } else { setDetailCollab(c); } };
   const generateCode = () => {
@@ -84,13 +89,26 @@ const CollaboratorListView = () => {
       const result = await upsert.mutateAsync({ ...collabData, ...(editingId ? { id: editingId } : {}) });
       const collabId = editingId || result?.id;
 
-      // If access code is set, sync auth user
-      if (access_code && collabId) {
+      // Only sync auth when the code actually changed (or is new)
+      if (access_code && collabId && access_code !== initialCode) {
         const { data, error: fnError } = await supabase.functions.invoke("manage-collaborator-auth", {
           body: { email: form.email, access_code, collaborator_id: collabId },
         });
-        if (fnError) throw fnError;
-        if (data?.error) throw new Error(data.error);
+        let msg: string | null = data?.error ?? null;
+        if (fnError) {
+          try {
+            const body = await (fnError as any).context?.json?.();
+            msg = body?.error ?? fnError.message;
+          } catch {
+            msg = fnError.message;
+          }
+        }
+        if (msg) {
+          if (/weak|known to be/i.test(msg)) {
+            throw new Error("Este código é demasiado comum e foi recusado por segurança. Use o botão \"Gerar\" para criar um código seguro.");
+          }
+          throw new Error(msg);
+        }
       }
 
       setDialogOpen(false);
@@ -98,6 +116,7 @@ const CollaboratorListView = () => {
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
+
   };
 
   const handleDelete = async (id: string) => {
