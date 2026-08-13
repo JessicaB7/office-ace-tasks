@@ -215,11 +215,12 @@ export default function TISimplificadoDashboard({
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
+  const totalSS = ssQuarters.reduce((a, b) => a + b, 0);
 
   const rendimentoColectavel = totalFat * coef;
   const irsEstimado = calcIRS(rendimentoColectavel);
   const irsLiquido = irsEstimado - deducoes - retencoes;
-  const resultado = totalFat - totalDesp - outrasValor;
+  const resultado = totalFat - totalDesp - outrasValor - totalSS;
 
   // Simulação regime organizado: tributação sobre o resultado líquido
   const resultadoOrganizado = resultado;
