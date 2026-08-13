@@ -84,13 +84,26 @@ const CollaboratorListView = () => {
       const result = await upsert.mutateAsync({ ...collabData, ...(editingId ? { id: editingId } : {}) });
       const collabId = editingId || result?.id;
 
-      // If access code is set, sync auth user
-      if (access_code && collabId) {
+      // Only sync auth when the code actually changed (or is new)
+      if (access_code && collabId && access_code !== initialCode) {
         const { data, error: fnError } = await supabase.functions.invoke("manage-collaborator-auth", {
           body: { email: form.email, access_code, collaborator_id: collabId },
         });
-        if (fnError) throw fnError;
-        if (data?.error) throw new Error(data.error);
+        let msg: string | null = data?.error ?? null;
+        if (fnError) {
+          try {
+            const body = await (fnError as any).context?.json?.();
+            msg = body?.error ?? fnError.message;
+          } catch {
+            msg = fnError.message;
+          }
+        }
+        if (msg) {
+          if (/weak|known to be/i.test(msg)) {
+            throw new Error("Este código é demasiado comum e foi recusado por segurança. Use o botão \"Gerar\" para criar um código seguro.");
+          }
+          throw new Error(msg);
+        }
       }
 
       setDialogOpen(false);
@@ -98,6 +111,7 @@ const CollaboratorListView = () => {
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
+
   };
 
   const handleDelete = async (id: string) => {
