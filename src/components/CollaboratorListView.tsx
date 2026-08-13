@@ -59,14 +59,18 @@ const CollaboratorListView = () => {
       .sort((a, b) => a.name.localeCompare(b.name));
   };
 
-  const openNew = () => { setForm(emptyCollab); setEditingId(null); setShowCode(false); setDialogOpen(true); };
+  const openNew = () => { setForm(emptyCollab); setEditingId(null); setShowCode(false); setInitialCode(""); setDialogOpen(true); };
   const openEdit = async (c: Collaborator) => {
     setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "", access_code: "" });
     setEditingId(c.id);
     setShowCode(false);
+    setInitialCode("");
     setDialogOpen(true);
     const { data } = await supabase.from("collaborator_secrets").select("access_code").eq("collaborator_id", c.id).maybeSingle();
-    if (data?.access_code) setForm((f) => ({ ...f, access_code: data.access_code as string }));
+    if (data?.access_code) {
+      setForm((f) => ({ ...f, access_code: data.access_code as string }));
+      setInitialCode(data.access_code as string);
+    }
   };
   const handleCardClick = (c: Collaborator) => { if (isAdmin) { void openEdit(c); } else { setDetailCollab(c); } };
   const generateCode = () => {
