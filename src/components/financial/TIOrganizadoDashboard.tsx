@@ -222,11 +222,13 @@ export default function TIOrganizadoDashboard({
     }
   };
 
+  // O reembolso nunca pode exceder a retenção na fonte e pagamentos por conta
+  const capReembolso = (v: number) => Math.max(v, -retencoes);
   const irsOrganizado = calcIRS(Math.max(0, resultado));
-  const irsOrganizadoLiquido = irsOrganizado - deducoes - retencoes;
+  const irsOrganizadoLiquido = capReembolso(irsOrganizado - deducoes - retencoes);
   const rendimentoColectavel = totalFat * coef;
   const irsSimplificado = calcIRS(rendimentoColectavel);
-  const irsSimplificadoLiquido = irsSimplificado - deducoes - retencoes;
+  const irsSimplificadoLiquido = capReembolso(irsSimplificado - deducoes - retencoes);
   const diffRegimes = irsSimplificadoLiquido - irsOrganizadoLiquido;
 
   const chartData = MONTHS_PT.map((m, i) => ({

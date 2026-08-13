@@ -219,13 +219,15 @@ export default function TISimplificadoDashboard({
 
   const rendimentoColectavel = totalFat * coef;
   const irsEstimado = calcIRS(rendimentoColectavel);
-  const irsLiquido = irsEstimado - deducoes - retencoes;
+  // O reembolso nunca pode exceder a retenção na fonte e pagamentos por conta
+  const capReembolso = (v: number) => Math.max(v, -retencoes);
+  const irsLiquido = capReembolso(irsEstimado - deducoes - retencoes);
   const resultado = totalFat - totalDesp - outrasValor - totalSS;
 
   // Simulação regime organizado: tributação sobre o resultado líquido
   const resultadoOrganizado = resultado;
   const irsOrganizado = calcIRS(Math.max(0, resultadoOrganizado));
-  const irsOrganizadoLiquido = irsOrganizado - deducoes - retencoes;
+  const irsOrganizadoLiquido = capReembolso(irsOrganizado - deducoes - retencoes);
   const diffRegimes = irsLiquido - irsOrganizadoLiquido;
 
 
