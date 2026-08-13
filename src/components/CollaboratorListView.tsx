@@ -57,9 +57,24 @@ const CollaboratorListView = () => {
       .sort((a, b) => a.name.localeCompare(b.name));
   };
 
-  const openNew = () => { setForm(emptyCollab); setEditingId(null); setDialogOpen(true); };
-  const openEdit = (c: Collaborator) => { setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "", access_code: "" }); setEditingId(c.id); setDialogOpen(true); };
-  const handleCardClick = (c: Collaborator) => { if (isAdmin) { openEdit(c); } else { setDetailCollab(c); } };
+  const openNew = () => { setForm(emptyCollab); setEditingId(null); setShowCode(false); setDialogOpen(true); };
+  const openEdit = async (c: Collaborator) => {
+    setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "", access_code: "" });
+    setEditingId(c.id);
+    setShowCode(false);
+    setDialogOpen(true);
+    const { data } = await supabase.from("collaborator_secrets").select("access_code").eq("collaborator_id", c.id).maybeSingle();
+    if (data?.access_code) setForm((f) => ({ ...f, access_code: data.access_code as string }));
+  };
+  const handleCardClick = (c: Collaborator) => { if (isAdmin) { void openEdit(c); } else { setDetailCollab(c); } };
+  const generateCode = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    set("access_code", code);
+    setShowCode(true);
+  };
+
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
