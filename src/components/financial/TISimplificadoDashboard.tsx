@@ -215,11 +215,12 @@ export default function TISimplificadoDashboard({
   const totalFat = faturacaoM.reduce((a, b) => a + b, 0);
   const totalDesp = despesasM.reduce((a, b) => a + b, 0);
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
+  const totalSS = ssQuarters.reduce((a, b) => a + b, 0);
 
   const rendimentoColectavel = totalFat * coef;
   const irsEstimado = calcIRS(rendimentoColectavel);
   const irsLiquido = irsEstimado - deducoes - retencoes;
-  const resultado = totalFat - totalDesp - outrasValor;
+  const resultado = totalFat - totalDesp - outrasValor - totalSS;
 
   // Simulação regime organizado: tributação sobre o resultado líquido
   const resultadoOrganizado = resultado;
@@ -251,6 +252,7 @@ export default function TISimplificadoDashboard({
 
   const kpis = [
     { label: "Faturação anual", value: totalFat, tone: "primary" as const },
+    { label: "Segurança Social (total)", value: totalSS, tone: "neutral" as const },
     { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
     { label: outrasLabel, value: outrasValor, tone: "neutral" as const },
     { label: "Resultado líquido", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
