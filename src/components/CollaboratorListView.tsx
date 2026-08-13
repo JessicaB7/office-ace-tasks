@@ -26,6 +26,7 @@ const CollaboratorListView = () => {
   const [detailCollab, setDetailCollab] = useState<Collaborator | null>(null);
   const [clientsCollab, setClientsCollab] = useState<Collaborator | null>(null);
   const [showCode, setShowCode] = useState(false);
+  const [initialCode, setInitialCode] = useState("");
 
   const activeCollabs = collaborators.filter(c => c.active);
   const filtered = activeCollabs.filter((c) => {
