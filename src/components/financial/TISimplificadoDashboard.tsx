@@ -330,7 +330,7 @@ export default function TISimplificadoDashboard({
           Análise TI Simplificado · {year}
         </div>
       </div>
-      <div className="col-span-12 grid grid-cols-4 gap-3 auto-rows-fr">
+      <div className="col-span-12 grid grid-cols-5 gap-3 auto-rows-fr">
         {kpis.map((k) => (
 
           <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
