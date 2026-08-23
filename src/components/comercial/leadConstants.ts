@@ -63,8 +63,9 @@ export const stageClass = (id: string) => {
     case "followup":
     case "followup_1":
     case "followup_2":
-
       return "bg-blue-500/10 text-blue-700 border-blue-500/30";
+    case "nao_e_o_momento":
+      return "bg-violet-500/10 text-violet-700 border-violet-500/30";
     case "reuniao_agendada":
       return "bg-primary/10 text-primary border-primary/30";
     default:
