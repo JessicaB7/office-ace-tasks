@@ -472,9 +472,16 @@ const ScriptsView = () => {
                         <MessageSquareQuote className="w-4 h-4 text-primary" />
                         {editingId === s.id ? "A editar" : s.title}
                       </CardTitle>
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 shrink-0">
-                        {s.tag}
-                      </Badge>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {s.category === "infoprodutos" && (
+                          <Badge variant="secondary" className="shrink-0">
+                            {s.group || "Geral"}
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 shrink-0">
+                          {s.tag}
+                        </Badge>
+                      </div>
                     </div>
                   </CardHeader>
 
