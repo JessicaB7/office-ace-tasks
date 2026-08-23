@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 type Category = "diagnostico" | "consultoria" | "infoprodutos";
 
-type Script = { id: string; title: string; tag: string; category: Category; body: string };
+type Script = { id: string; title: string; tag: string; category: Category; body: string; group?: string };
 
 const CATEGORIES: { id: Category; label: string }[] = [
   { id: "diagnostico", label: "Sessão de diagnóstico" },
