@@ -183,6 +183,7 @@ Quer que reserve uma vaga em {{data}}?`,
 ];
 
 const STORAGE_KEY = "comercial_scripts_v1";
+const GROUPS_KEY = "comercial_script_groups_v1";
 
 const ScriptsView = () => {
   const [scripts, setScripts] = useState<Script[]>(DEFAULT_SCRIPTS);
@@ -194,6 +195,7 @@ const ScriptsView = () => {
   const [infoGroup, setInfoGroup] = useState<string>("__all__");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [savedGroups, setSavedGroups] = useState<string[]>([]);
 
   useEffect(() => {
     try {
@@ -201,6 +203,15 @@ const ScriptsView = () => {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length) setScripts(parsed);
+      }
+    } catch {
+      /* ignora */
+    }
+    try {
+      const rawG = localStorage.getItem(GROUPS_KEY);
+      if (rawG) {
+        const parsedG = JSON.parse(rawG);
+        if (Array.isArray(parsedG)) setSavedGroups(parsedG.filter((g: unknown) => typeof g === "string"));
       }
     } catch {
       /* ignora */
@@ -216,13 +227,23 @@ const ScriptsView = () => {
     }
   };
 
+  const persistGroups = (next: string[]) => {
+    const uniq = Array.from(new Set(next.map((g) => g.trim()).filter(Boolean)));
+    setSavedGroups(uniq);
+    try {
+      localStorage.setItem(GROUPS_KEY, JSON.stringify(uniq));
+    } catch {
+      /* ignora */
+    }
+  };
+
   const q = search.trim().toLowerCase();
 
   const infoGroups = useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(savedGroups);
     scripts.filter((s) => s.category === "infoprodutos").forEach((s) => set.add((s.group || "Geral").trim()));
     return Array.from(set);
-  }, [scripts]);
+  }, [scripts, savedGroups]);
 
   const visible = useMemo(
     () =>
@@ -238,29 +259,23 @@ const ScriptsView = () => {
   const addInfoGroup = () => {
     const name = prompt("Nome do infoproduto:")?.trim();
     if (!name) return;
-    const s: Script = {
-      id: `novo-${Date.now()}`,
-      title: "Novo script",
-      tag: "Infoprodutos",
-      category: "infoprodutos",
-      group: name,
-      body: "Escreve aqui o teu guião…",
-    };
-    persist([...scripts, s]);
+    persistGroups([...savedGroups, name]);
     setInfoGroup(name);
-    startEdit(s);
+    toast.success(`Infoproduto "${name}" criado.`);
   };
 
   const renameInfoGroup = (name: string) => {
     const next = prompt("Novo nome do infoproduto:", name)?.trim();
     if (!next || next === name) return;
     persist(scripts.map((s) => (s.category === "infoprodutos" && (s.group || "Geral").trim() === name ? { ...s, group: next } : s)));
+    persistGroups(savedGroups.map((g) => (g.trim() === name ? next : g)).concat(next));
     setInfoGroup(next);
   };
 
   const removeInfoGroup = (name: string) => {
     if (!confirm(`Eliminar o infoproduto "${name}" e todos os seus scripts?`)) return;
     persist(scripts.filter((s) => !(s.category === "infoprodutos" && (s.group || "Geral").trim() === name)));
+    persistGroups(savedGroups.filter((g) => g.trim() !== name));
     setInfoGroup("__all__");
   };
 
