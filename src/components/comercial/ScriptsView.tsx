@@ -288,7 +288,15 @@ const ScriptsView = () => {
     }
     persist(
       scripts.map((s) =>
-        s.id === editingId ? { ...s, title: draft.title.trim(), tag: draft.tag.trim() || "Geral", body: draft.body } : s
+        s.id === editingId
+          ? {
+              ...s,
+              title: draft.title.trim(),
+              tag: draft.tag.trim() || "Geral",
+              body: draft.body,
+              ...(s.category === "infoprodutos" ? { group: draft.group.trim() || "Geral" } : {}),
+            }
+          : s
       )
     );
     setEditingId(null);
@@ -302,6 +310,9 @@ const ScriptsView = () => {
       tag: "Geral",
       category: tab,
       body: "Escreve aqui o teu guião…",
+      ...(tab === "infoprodutos"
+        ? { group: infoGroup === "__all__" ? infoGroups[0] || "Geral" : infoGroup }
+        : {}),
     };
     persist([...scripts, s]);
     startEdit(s);
