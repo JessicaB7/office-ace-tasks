@@ -189,8 +189,9 @@ const ScriptsView = () => {
   const [search, setSearch] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ title: string; tag: string; body: string }>({ title: "", tag: "", body: "" });
+  const [draft, setDraft] = useState<{ title: string; tag: string; body: string; group: string }>({ title: "", tag: "", body: "", group: "" });
   const [tab, setTab] = useState<Category>("diagnostico");
+  const [infoGroup, setInfoGroup] = useState<string>("__all__");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
