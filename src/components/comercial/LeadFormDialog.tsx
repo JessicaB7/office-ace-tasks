@@ -197,7 +197,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
 
           {!isConsultoria && (
             <div>
-              <Label>Produto sugerido</Label>
+              <Label>Produto sugerido {!isConsultoria && form.stage !== "reuniao_agendada" && "*"}</Label>
               <Input
                 placeholder="Contabilidade, IRS, consultoria…"
                 value={form.suggested_product}
@@ -206,7 +206,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
             </div>
           )}
           <div>
-            <Label>Valor (€)</Label>
+            <Label>Valor (€) {!isConsultoria && form.stage !== "reuniao_agendada" && "*"}</Label>
             <Input type="number" step="0.01" value={form.estimated_value} onChange={(e) => set("estimated_value", e.target.value)} />
           </div>
 
