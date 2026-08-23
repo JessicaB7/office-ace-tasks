@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 type Category = "diagnostico" | "consultoria" | "infoprodutos";
 
-type Script = { id: string; title: string; tag: string; category: Category; body: string };
+type Script = { id: string; title: string; tag: string; category: Category; body: string; group?: string };
 
 const CATEGORIES: { id: Category; label: string }[] = [
   { id: "diagnostico", label: "Sessão de diagnóstico" },
@@ -153,6 +153,7 @@ Se preferir acompanhamento contínuo, tenho o plano {{plano}} a {{valor}} €/m�
     title: "Lançamento de infoproduto",
     tag: "Infoprodutos",
     category: "infoprodutos",
+    group: "Geral",
     body: `Abriram as inscrições para {{produto}}.
 Para quem: {{público}}.
 O que resolve: {{problema}}.
@@ -164,6 +165,7 @@ Investimento: {{valor}} €. Inscrições até {{data}}: {{link}}`,
     title: "Email de fecho de inscrições",
     tag: "Infoprodutos",
     category: "infoprodutos",
+    group: "Geral",
     body: `{{nome}}, as inscrições em {{produto}} fecham {{data}} às {{hora}}.
 Se ainda está em dúvida, responda a este email com a sua pergunta — respondo hoje.
 Entrar agora: {{link}}`,
@@ -173,6 +175,7 @@ Entrar agora: {{link}}`,
     title: "Upsell para consultoria",
     tag: "Infoprodutos",
     category: "infoprodutos",
+    group: "Geral",
     body: `{{nome}}, terminou {{produto}} — parabéns.
 Se quiser aplicar isto ao seu caso concreto, tenho uma consultoria individual de {{duração}} a {{valor}} €, com desconto de aluno.
 Quer que reserve uma vaga em {{data}}?`,
@@ -186,8 +189,9 @@ const ScriptsView = () => {
   const [search, setSearch] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ title: string; tag: string; body: string }>({ title: "", tag: "", body: "" });
+  const [draft, setDraft] = useState<{ title: string; tag: string; body: string; group: string }>({ title: "", tag: "", body: "", group: "" });
   const [tab, setTab] = useState<Category>("diagnostico");
+  const [infoGroup, setInfoGroup] = useState<string>("__all__");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
@@ -213,15 +217,53 @@ const ScriptsView = () => {
   };
 
   const q = search.trim().toLowerCase();
+
+  const infoGroups = useMemo(() => {
+    const set = new Set<string>();
+    scripts.filter((s) => s.category === "infoprodutos").forEach((s) => set.add((s.group || "Geral").trim()));
+    return Array.from(set);
+  }, [scripts]);
+
   const visible = useMemo(
     () =>
       scripts.filter(
         (s) =>
           s.category === tab &&
+          (tab !== "infoprodutos" || infoGroup === "__all__" || (s.group || "Geral").trim() === infoGroup) &&
           (!q || s.title.toLowerCase().includes(q) || s.body.toLowerCase().includes(q) || s.tag.toLowerCase().includes(q))
       ),
-    [scripts, tab, q]
+    [scripts, tab, q, infoGroup]
   );
+
+  const addInfoGroup = () => {
+    const name = prompt("Nome do infoproduto:")?.trim();
+    if (!name) return;
+    const s: Script = {
+      id: `novo-${Date.now()}`,
+      title: "Novo script",
+      tag: "Infoprodutos",
+      category: "infoprodutos",
+      group: name,
+      body: "Escreve aqui o teu guião…",
+    };
+    persist([...scripts, s]);
+    setInfoGroup(name);
+    startEdit(s);
+  };
+
+  const renameInfoGroup = (name: string) => {
+    const next = prompt("Novo nome do infoproduto:", name)?.trim();
+    if (!next || next === name) return;
+    persist(scripts.map((s) => (s.category === "infoprodutos" && (s.group || "Geral").trim() === name ? { ...s, group: next } : s)));
+    setInfoGroup(next);
+  };
+
+  const removeInfoGroup = (name: string) => {
+    if (!confirm(`Eliminar o infoproduto "${name}" e todos os seus scripts?`)) return;
+    persist(scripts.filter((s) => !(s.category === "infoprodutos" && (s.group || "Geral").trim() === name)));
+    setInfoGroup("__all__");
+  };
+
 
   const copy = async (s: Script) => {
     try {
@@ -236,7 +278,7 @@ const ScriptsView = () => {
 
   const startEdit = (s: Script) => {
     setEditingId(s.id);
-    setDraft({ title: s.title, tag: s.tag, body: s.body });
+    setDraft({ title: s.title, tag: s.tag, body: s.body, group: s.group || "Geral" });
   };
 
   const saveEdit = () => {
@@ -246,7 +288,15 @@ const ScriptsView = () => {
     }
     persist(
       scripts.map((s) =>
-        s.id === editingId ? { ...s, title: draft.title.trim(), tag: draft.tag.trim() || "Geral", body: draft.body } : s
+        s.id === editingId
+          ? {
+              ...s,
+              title: draft.title.trim(),
+              tag: draft.tag.trim() || "Geral",
+              body: draft.body,
+              ...(s.category === "infoprodutos" ? { group: draft.group.trim() || "Geral" } : {}),
+            }
+          : s
       )
     );
     setEditingId(null);
@@ -260,6 +310,9 @@ const ScriptsView = () => {
       tag: "Geral",
       category: tab,
       body: "Escreve aqui o teu guião…",
+      ...(tab === "infoprodutos"
+        ? { group: infoGroup === "__all__" ? infoGroups[0] || "Geral" : infoGroup }
+        : {}),
     };
     persist([...scripts, s]);
     startEdit(s);
@@ -334,6 +387,51 @@ const ScriptsView = () => {
               />
             </div>
 
+            {c.id === "infoprodutos" && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={infoGroup === "__all__" ? "default" : "outline"}
+                  onClick={() => setInfoGroup("__all__")}
+                >
+                  Todos
+                </Button>
+                {infoGroups.map((g) => (
+                  <div key={g} className="flex items-center">
+                    <Button
+                      size="sm"
+                      variant={infoGroup === g ? "default" : "outline"}
+                      className="rounded-r-none"
+                      onClick={() => setInfoGroup(g)}
+                    >
+                      {g}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-none border-l-0 px-2"
+                      title="Renomear infoproduto"
+                      onClick={() => renameInfoGroup(g)}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-l-none border-l-0 px-2"
+                      title="Eliminar infoproduto"
+                      onClick={() => removeInfoGroup(g)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button size="sm" variant="ghost" onClick={addInfoGroup}>
+                  <Plus className="w-4 h-4 mr-1" /> Novo infoproduto
+                </Button>
+              </div>
+            )}
+
             <div className="grid gap-4 lg:grid-cols-2">
               {visible.map((s) => (
                 <Card
@@ -374,9 +472,16 @@ const ScriptsView = () => {
                         <MessageSquareQuote className="w-4 h-4 text-primary" />
                         {editingId === s.id ? "A editar" : s.title}
                       </CardTitle>
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 shrink-0">
-                        {s.tag}
-                      </Badge>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {s.category === "infoprodutos" && (
+                          <Badge variant="secondary" className="shrink-0">
+                            {s.group || "Geral"}
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 shrink-0">
+                          {s.tag}
+                        </Badge>
+                      </div>
                     </div>
                   </CardHeader>
 
@@ -393,6 +498,13 @@ const ScriptsView = () => {
                           placeholder="Etiqueta"
                           onChange={(e) => setDraft((d) => ({ ...d, tag: e.target.value }))}
                         />
+                        {s.category === "infoprodutos" && (
+                          <Input
+                            value={draft.group}
+                            placeholder="Infoproduto"
+                            onChange={(e) => setDraft((d) => ({ ...d, group: e.target.value }))}
+                          />
+                        )}
                         <Textarea
                           rows={10}
                           value={draft.body}
