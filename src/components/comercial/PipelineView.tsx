@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { useLeads, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Search } from "lucide-react";
 import { LEAD_STAGES, eur, fmtDate, businessTypeLabel } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,14 +14,29 @@ const PipelineView = ({ segment = "contabilidade" }: { segment?: string }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);
   const [defaultStage, setDefaultStage] = useState("novo");
+  const [search, setSearch] = useState("");
+
+  const q = search.trim().toLowerCase();
+  const visibleLeads = useMemo(
+    () =>
+      leads.filter((l) =>
+        !q ||
+        l.name.toLowerCase().includes(q) ||
+        (l.email || "").toLowerCase().includes(q) ||
+        (l.phone || "").toLowerCase().includes(q) ||
+        (l.nif || "").includes(q) ||
+        (l.business_area || "").toLowerCase().includes(q)
+      ),
+    [leads, q]
+  );
 
   const columns = useMemo(
     () =>
       LEAD_STAGES.map((s) => {
-        const items = leads.filter((l) => l.stage === s.id);
+        const items = visibleLeads.filter((l) => l.stage === s.id);
         return { ...s, items, value: items.reduce((a, l) => a + Number(l.estimated_value || 0), 0) };
       }),
-    [leads]
+    [visibleLeads]
   );
 
 
