@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.handle-email-suppression]
 verify_jwt = false
+
+[functions.calendly-webhook]
+verify_jwt = false
+
+[functions.calendly-setup-webhook]
+verify_jwt = false
