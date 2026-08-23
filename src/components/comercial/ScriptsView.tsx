@@ -259,29 +259,23 @@ const ScriptsView = () => {
   const addInfoGroup = () => {
     const name = prompt("Nome do infoproduto:")?.trim();
     if (!name) return;
-    const s: Script = {
-      id: `novo-${Date.now()}`,
-      title: "Novo script",
-      tag: "Infoprodutos",
-      category: "infoprodutos",
-      group: name,
-      body: "Escreve aqui o teu guião…",
-    };
-    persist([...scripts, s]);
+    persistGroups([...savedGroups, name]);
     setInfoGroup(name);
-    startEdit(s);
+    toast.success(`Infoproduto "${name}" criado.`);
   };
 
   const renameInfoGroup = (name: string) => {
     const next = prompt("Novo nome do infoproduto:", name)?.trim();
     if (!next || next === name) return;
     persist(scripts.map((s) => (s.category === "infoprodutos" && (s.group || "Geral").trim() === name ? { ...s, group: next } : s)));
+    persistGroups(savedGroups.map((g) => (g.trim() === name ? next : g)).concat(next));
     setInfoGroup(next);
   };
 
   const removeInfoGroup = (name: string) => {
     if (!confirm(`Eliminar o infoproduto "${name}" e todos os seus scripts?`)) return;
     persist(scripts.filter((s) => !(s.category === "infoprodutos" && (s.group || "Geral").trim() === name)));
+    persistGroups(savedGroups.filter((g) => g.trim() !== name));
     setInfoGroup("__all__");
   };
 
