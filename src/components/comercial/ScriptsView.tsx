@@ -387,6 +387,51 @@ const ScriptsView = () => {
               />
             </div>
 
+            {c.id === "infoprodutos" && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant={infoGroup === "__all__" ? "default" : "outline"}
+                  onClick={() => setInfoGroup("__all__")}
+                >
+                  Todos
+                </Button>
+                {infoGroups.map((g) => (
+                  <div key={g} className="flex items-center">
+                    <Button
+                      size="sm"
+                      variant={infoGroup === g ? "default" : "outline"}
+                      className="rounded-r-none"
+                      onClick={() => setInfoGroup(g)}
+                    >
+                      {g}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-none border-l-0 px-2"
+                      title="Renomear infoproduto"
+                      onClick={() => renameInfoGroup(g)}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-l-none border-l-0 px-2"
+                      title="Eliminar infoproduto"
+                      onClick={() => removeInfoGroup(g)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button size="sm" variant="ghost" onClick={addInfoGroup}>
+                  <Plus className="w-4 h-4 mr-1" /> Novo infoproduto
+                </Button>
+              </div>
+            )}
+
             <div className="grid gap-4 lg:grid-cols-2">
               {visible.map((s) => (
                 <Card
