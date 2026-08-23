@@ -7,6 +7,7 @@ import { Plus, Search } from "lucide-react";
 import { LEAD_STAGES, eur, fmtDate, businessTypeLabel } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 const PipelineView = ({ segment = "contabilidade" }: { segment?: string }) => {
   const { data: leads = [], isLoading } = useLeads(segment);
