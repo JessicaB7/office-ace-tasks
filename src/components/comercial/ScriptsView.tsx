@@ -217,15 +217,53 @@ const ScriptsView = () => {
   };
 
   const q = search.trim().toLowerCase();
+
+  const infoGroups = useMemo(() => {
+    const set = new Set<string>();
+    scripts.filter((s) => s.category === "infoprodutos").forEach((s) => set.add((s.group || "Geral").trim()));
+    return Array.from(set);
+  }, [scripts]);
+
   const visible = useMemo(
     () =>
       scripts.filter(
         (s) =>
           s.category === tab &&
+          (tab !== "infoprodutos" || infoGroup === "__all__" || (s.group || "Geral").trim() === infoGroup) &&
           (!q || s.title.toLowerCase().includes(q) || s.body.toLowerCase().includes(q) || s.tag.toLowerCase().includes(q))
       ),
-    [scripts, tab, q]
+    [scripts, tab, q, infoGroup]
   );
+
+  const addInfoGroup = () => {
+    const name = prompt("Nome do infoproduto:")?.trim();
+    if (!name) return;
+    const s: Script = {
+      id: `novo-${Date.now()}`,
+      title: "Novo script",
+      tag: "Infoprodutos",
+      category: "infoprodutos",
+      group: name,
+      body: "Escreve aqui o teu guião…",
+    };
+    persist([...scripts, s]);
+    setInfoGroup(name);
+    startEdit(s);
+  };
+
+  const renameInfoGroup = (name: string) => {
+    const next = prompt("Novo nome do infoproduto:", name)?.trim();
+    if (!next || next === name) return;
+    persist(scripts.map((s) => (s.category === "infoprodutos" && (s.group || "Geral").trim() === name ? { ...s, group: next } : s)));
+    setInfoGroup(next);
+  };
+
+  const removeInfoGroup = (name: string) => {
+    if (!confirm(`Eliminar o infoproduto "${name}" e todos os seus scripts?`)) return;
+    persist(scripts.filter((s) => !(s.category === "infoprodutos" && (s.group || "Geral").trim() === name)));
+    setInfoGroup("__all__");
+  };
+
 
   const copy = async (s: Script) => {
     try {
