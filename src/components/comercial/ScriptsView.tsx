@@ -278,7 +278,7 @@ const ScriptsView = () => {
 
   const startEdit = (s: Script) => {
     setEditingId(s.id);
-    setDraft({ title: s.title, tag: s.tag, body: s.body });
+    setDraft({ title: s.title, tag: s.tag, body: s.body, group: s.group || "Geral" });
   };
 
   const saveEdit = () => {
