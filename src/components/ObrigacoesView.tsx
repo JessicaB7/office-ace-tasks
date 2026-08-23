@@ -161,6 +161,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showNotasColumn = isDT && subFilter === "Isento";
   const isEmissaoFaturas = activeTab === "emissao_faturas";
   const showIvaPeriodicaCols = isIVAPeriodica;
+  const isTrimestralMode = isIVA && subFilter === "Trimestral";
 
   // Quarter label for DT: Apr=Q1(Jan-Mar), Jul=Q2(Apr-Jun), Oct=Q3(Jul-Sep), Jan=Q4(Oct-Dec)
   const dtQuarterLabel = (() => {
@@ -168,6 +169,28 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     const qMap: Record<number, string> = { 3: "1º Trimestre (Jan–Mar)", 6: "2º Trimestre (Abr–Jun)", 9: "3º Trimestre (Jul–Set)", 0: "4º Trimestre (Out–Dez)" };
     return qMap[month] || "";
   })();
+
+  // Snap to quarter-end month (Mar=2, Jun=5, Set=8, Dez=11) when in trimestral mode
+  const QEND = [2, 2, 2, 5, 5, 5, 8, 8, 8, 11, 11, 11];
+  useEffect(() => {
+    if (!isTrimestralMode) return;
+    if (QEND[month] !== month) setMonth(QEND[month]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTrimestralMode]);
+
+  const prevQuarter = () => {
+    if (month === 2) { setMonth(11); setYear((y) => y - 1); }
+    else setMonth((m) => m - 3);
+  };
+  const nextQuarter = () => {
+    if (month === 11) { setMonth(2); setYear((y) => y + 1); }
+    else setMonth((m) => m + 3);
+  };
+  const trimesterLabel = () => {
+    const q = Math.floor(month / 3) + 1;
+    const ranges = ["Jan–Mar", "Abr–Jun", "Jul–Set", "Out–Dez"];
+    return `${q}º Trimestre (${ranges[q - 1]}) ${year}`;
+  };
 
   const filteredClients = useMemo(() => {
     let list: any[] = [];
