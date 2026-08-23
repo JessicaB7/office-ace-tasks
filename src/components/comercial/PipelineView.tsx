@@ -107,7 +107,7 @@ const PipelineView = ({ segment = "contabilidade" }: { segment?: string }) => {
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select
                         value={lead.stage}
-                        onValueChange={(v) => upsert.mutate({ id: lead.id, name: lead.name, stage: v })}
+                        onValueChange={(v) => changeStage(lead, v)}
                       >
                         <SelectTrigger className="h-7 text-[11px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
