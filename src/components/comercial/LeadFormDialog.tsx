@@ -236,6 +236,15 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
               Por defeito, {followUpDays} dias após a {isConsultoria ? "sessão" : "reunião"}.
             </p>
           </div>
+          {form.stage === "nao_e_o_momento" && (
+            <div>
+              <Label>Data para contactar</Label>
+              <Input type="date" value={form.next_followup} onChange={(e) => set("next_followup", e.target.value)} />
+              <p className="text-xs text-muted-foreground mt-1">
+                Quando retomar o contacto com esta lead.
+              </p>
+            </div>
+          )}
           {!isConsultoria && (
             <>
               <div>
