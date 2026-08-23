@@ -183,6 +183,7 @@ Quer que reserve uma vaga em {{data}}?`,
 ];
 
 const STORAGE_KEY = "comercial_scripts_v1";
+const GROUPS_KEY = "comercial_script_groups_v1";
 
 const ScriptsView = () => {
   const [scripts, setScripts] = useState<Script[]>(DEFAULT_SCRIPTS);
