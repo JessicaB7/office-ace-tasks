@@ -1,7 +1,8 @@
 export const LEAD_STAGES = [
   { id: "reuniao_agendada", label: "Reunião agendada" },
   { id: "proposta_enviada", label: "Proposta enviada" },
-  { id: "followup", label: "Follow up" },
+  { id: "followup_1", label: "1º follow up" },
+  { id: "followup_2", label: "2º follow up" },
   { id: "ganho", label: "Ganho" },
   { id: "perda", label: "Perda" },
 ] as const;
@@ -9,10 +10,12 @@ export const LEAD_STAGES = [
 export const CONSULTORIA_STAGES = [
   { id: "reuniao_agendada", label: "Reunião agendada" },
   { id: "resumo_enviado", label: "Resumo enviado" },
-  { id: "followup", label: "Follow up" },
+  { id: "followup_1", label: "1º follow up" },
+  { id: "followup_2", label: "2º follow up" },
   { id: "mensal_sim", label: "Serviço mensal sim" },
   { id: "mensal_nao", label: "Serviço mensal não" },
 ] as const;
+
 
 export const stagesFor = (segment?: string) =>
   segment === "consultoria" ? CONSULTORIA_STAGES : LEAD_STAGES;
