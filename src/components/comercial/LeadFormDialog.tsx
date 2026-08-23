@@ -96,6 +96,16 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
       toast.error("Indica o motivo da perda.");
       return;
     }
+    if (!isConsultoria && form.stage !== "reuniao_agendada") {
+      if (!form.suggested_product.trim()) {
+        toast.error("Indica o produto sugerido para avançar do estado \"Reunião agendada\".");
+        return;
+      }
+      if (form.estimated_value === "" || isNaN(Number(form.estimated_value))) {
+        toast.error("Indica o valor para avançar do estado \"Reunião agendada\".");
+        return;
+      }
+    }
     try {
       await upsert.mutateAsync({
         id: lead?.id,
