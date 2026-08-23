@@ -46,6 +46,19 @@ const PipelineView = ({ segment = "contabilidade" }: { segment?: string }) => {
     setDialogOpen(true);
   };
 
+  const changeStage = (lead: Lead, stage: string) => {
+    const missing =
+      stage !== "reuniao_agendada" &&
+      (!lead.suggested_product || lead.estimated_value == null || lead.estimated_value === 0);
+    if (missing) {
+      toast.error("Preenche o produto sugerido e o valor antes de sair de \"Reunião agendada\".");
+      setEditing(lead);
+      setDialogOpen(true);
+      return;
+    }
+    upsert.mutate({ id: lead.id, name: lead.name, stage });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
