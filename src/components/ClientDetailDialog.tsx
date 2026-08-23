@@ -176,6 +176,14 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.mensalidade === "" || isNaN(parseFloat(form.mensalidade))) {
+      toast({ title: "Mensalidade obrigatória", description: "Indica o valor da mensalidade.", variant: "destructive" });
+      return;
+    }
+    if (!form.inicio_contrato) {
+      toast({ title: "Início de contrato obrigatório", description: "Indica a data de início de contrato.", variant: "destructive" });
+      return;
+    }
     try {
       const payload: any = {
         name: form.name,
@@ -295,12 +303,12 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                   <input value={form.via_ctt} onChange={(e) => set("via_ctt", e.target.value)} className={inputClass} />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Mensalidade (€)</label>
-                  <input type="number" step="0.01" min="0" value={form.mensalidade} onChange={(e) => set("mensalidade", e.target.value)} placeholder="0,00" className={inputClass} />
+                  <label className="text-sm font-medium mb-1 block">Mensalidade (€) <span className="text-destructive">*</span></label>
+                  <input required type="number" step="0.01" min="0" value={form.mensalidade} onChange={(e) => set("mensalidade", e.target.value)} placeholder="0,00" className={inputClass} />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Início de Contrato</label>
-                  <input type="date" value={form.inicio_contrato} onChange={(e) => set("inicio_contrato", e.target.value)} className={inputClass} />
+                  <label className="text-sm font-medium mb-1 block">Início de Contrato <span className="text-destructive">*</span></label>
+                  <input required type="date" value={form.inicio_contrato} onChange={(e) => set("inicio_contrato", e.target.value)} className={inputClass} />
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm font-medium mb-1 block">Estado</label>
