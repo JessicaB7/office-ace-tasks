@@ -32,18 +32,25 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
 
   const filtered = useMemo(
     () =>
-      leads.filter((l) => {
-        const q = search.trim().toLowerCase();
-        const matchQ =
-          !q ||
-          l.name.toLowerCase().includes(q) ||
-          (l.email || "").toLowerCase().includes(q) ||
-          (l.business_area || "").toLowerCase().includes(q) ||
-          (l.nif || "").includes(q);
-        return matchQ && (stage === "all" || l.stage === stage) && (bizType === "all" || l.business_type === bizType);
-      }),
+      leads
+        .filter((l) => {
+          const q = search.trim().toLowerCase();
+          const matchQ =
+            !q ||
+            l.name.toLowerCase().includes(q) ||
+            (l.email || "").toLowerCase().includes(q) ||
+            (l.business_area || "").toLowerCase().includes(q) ||
+            (l.nif || "").includes(q);
+          return matchQ && (stage === "all" || l.stage === stage) && (bizType === "all" || l.business_type === bizType);
+        })
+        .sort((a, b) => {
+          const da = (a.meeting_date || a.created_at || "").slice(0, 10);
+          const db = (b.meeting_date || b.created_at || "").slice(0, 10);
+          return db.localeCompare(da);
+        }),
     [leads, search, stage, bizType]
   );
+
 
 
   return (
