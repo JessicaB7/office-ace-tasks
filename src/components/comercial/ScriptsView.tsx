@@ -175,6 +175,7 @@ Entrar agora: {{link}}`,
     title: "Upsell para consultoria",
     tag: "Infoprodutos",
     category: "infoprodutos",
+    group: "Geral",
     body: `{{nome}}, terminou {{produto}} — parabéns.
 Se quiser aplicar isto ao seu caso concreto, tenho uma consultoria individual de {{duração}} a {{valor}} €, com desconto de aluno.
 Quer que reserve uma vaga em {{data}}?`,
