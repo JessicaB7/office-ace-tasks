@@ -96,6 +96,16 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
       toast.error("Indica o motivo da perda.");
       return;
     }
+    if (!isConsultoria && form.stage !== "reuniao_agendada") {
+      if (!form.suggested_product.trim()) {
+        toast.error("Indica o produto sugerido para avançar do estado \"Reunião agendada\".");
+        return;
+      }
+      if (form.estimated_value === "" || isNaN(Number(form.estimated_value))) {
+        toast.error("Indica o valor para avançar do estado \"Reunião agendada\".");
+        return;
+      }
+    }
     try {
       await upsert.mutateAsync({
         id: lead?.id,
@@ -187,7 +197,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
 
           {!isConsultoria && (
             <div>
-              <Label>Produto sugerido</Label>
+              <Label>Produto sugerido {!isConsultoria && form.stage !== "reuniao_agendada" && "*"}</Label>
               <Input
                 placeholder="Contabilidade, IRS, consultoria…"
                 value={form.suggested_product}
@@ -196,7 +206,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
             </div>
           )}
           <div>
-            <Label>Valor (€)</Label>
+            <Label>Valor (€) {!isConsultoria && form.stage !== "reuniao_agendada" && "*"}</Label>
             <Input type="number" step="0.01" value={form.estimated_value} onChange={(e) => set("estimated_value", e.target.value)} />
           </div>
 

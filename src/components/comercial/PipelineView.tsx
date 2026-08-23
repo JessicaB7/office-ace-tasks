@@ -7,6 +7,7 @@ import { Plus, Search } from "lucide-react";
 import { LEAD_STAGES, eur, fmtDate, businessTypeLabel } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 const PipelineView = ({ segment = "contabilidade" }: { segment?: string }) => {
   const { data: leads = [], isLoading } = useLeads(segment);
@@ -44,6 +45,19 @@ const PipelineView = ({ segment = "contabilidade" }: { segment?: string }) => {
     setEditing(null);
     setDefaultStage(stage);
     setDialogOpen(true);
+  };
+
+  const changeStage = (lead: Lead, stage: string) => {
+    const missing =
+      stage !== "reuniao_agendada" &&
+      (!lead.suggested_product || lead.estimated_value == null || lead.estimated_value === 0);
+    if (missing) {
+      toast.error("Preenche o produto sugerido e o valor antes de sair de \"Reunião agendada\".");
+      setEditing(lead);
+      setDialogOpen(true);
+      return;
+    }
+    upsert.mutate({ id: lead.id, name: lead.name, stage });
   };
 
   return (
@@ -93,7 +107,7 @@ const PipelineView = ({ segment = "contabilidade" }: { segment?: string }) => {
                     <div onClick={(e) => e.stopPropagation()}>
                       <Select
                         value={lead.stage}
-                        onValueChange={(v) => upsert.mutate({ id: lead.id, name: lead.name, stage: v })}
+                        onValueChange={(v) => changeStage(lead, v)}
                       >
                         <SelectTrigger className="h-7 text-[11px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
