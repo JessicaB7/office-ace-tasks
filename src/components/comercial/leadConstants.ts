@@ -3,6 +3,7 @@ export const LEAD_STAGES = [
   { id: "proposta_enviada", label: "Proposta enviada" },
   { id: "followup_1", label: "1º follow up" },
   { id: "followup_2", label: "2º follow up" },
+  { id: "nao_e_o_momento", label: "Não é o momento" },
   { id: "ganho", label: "Ganho" },
   { id: "perda", label: "Perda" },
 ] as const;
@@ -12,6 +13,7 @@ export const CONSULTORIA_STAGES = [
   { id: "resumo_enviado", label: "Resumo enviado" },
   { id: "followup_1", label: "1º follow up" },
   { id: "followup_2", label: "2º follow up" },
+  { id: "nao_e_o_momento", label: "Não é o momento" },
   { id: "mensal_sim", label: "Serviço mensal sim" },
   { id: "mensal_nao", label: "Serviço mensal não" },
 ] as const;
