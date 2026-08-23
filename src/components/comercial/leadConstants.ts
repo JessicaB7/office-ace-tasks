@@ -43,7 +43,9 @@ export const ivaFrameworkLabel = (id: string | null) =>
   IVA_FRAMEWORKS.find((t) => t.id === id)?.label || "—";
 
 export const stageLabel = (id: string) =>
-  [...LEAD_STAGES, ...CONSULTORIA_STAGES].find((s) => s.id === id)?.label || id;
+  [...LEAD_STAGES, ...CONSULTORIA_STAGES].find((s) => s.id === id)?.label ||
+  (id === "followup" ? "Follow up" : id);
+
 
 export const stageClass = (id: string) => {
   switch (id) {
