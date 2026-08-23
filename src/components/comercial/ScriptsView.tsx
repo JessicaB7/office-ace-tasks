@@ -153,6 +153,7 @@ Se preferir acompanhamento contínuo, tenho o plano {{plano}} a {{valor}} €/m�
     title: "Lançamento de infoproduto",
     tag: "Infoprodutos",
     category: "infoprodutos",
+    group: "Geral",
     body: `Abriram as inscrições para {{produto}}.
 Para quem: {{público}}.
 O que resolve: {{problema}}.
