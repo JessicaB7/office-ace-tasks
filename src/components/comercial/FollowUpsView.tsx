@@ -43,8 +43,10 @@ const FollowUpsView = ({ segment = "contabilidade" }: { segment?: string }) => {
         <p className="text-sm font-medium">{lead.name}</p>
         <p className="text-xs text-muted-foreground">
           {businessTypeLabel(lead.business_type)} · {eur(lead.estimated_value)}
+          {lead.meeting_date && <span> · Reunião: {fmtDate(lead.meeting_date)}</span>}
         </p>
       </div>
+
       <div className="flex items-center gap-2">
         <Badge variant="outline" className={stageClass(lead.stage)}>{stageLabel(lead.stage)}</Badge>
         <span className={cn("text-xs font-medium", tone)}>{fmtDate(lead.next_followup)}</span>
