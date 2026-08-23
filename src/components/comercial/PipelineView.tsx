@@ -60,6 +60,11 @@ const PipelineView = ({ segment = "contabilidade" }: { segment?: string }) => {
 
       {isLoading && <p className="text-sm text-muted-foreground">A carregar…</p>}
 
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input className="pl-9" placeholder="Procurar nome, email, telefone ou NIF…" value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+
       <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         {columns.map((col) => (
           <div key={col.id} className="space-y-2">
