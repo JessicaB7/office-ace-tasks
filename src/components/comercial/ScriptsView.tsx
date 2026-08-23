@@ -165,6 +165,7 @@ Investimento: {{valor}} €. Inscrições até {{data}}: {{link}}`,
     title: "Email de fecho de inscrições",
     tag: "Infoprodutos",
     category: "infoprodutos",
+    group: "Geral",
     body: `{{nome}}, as inscrições em {{produto}} fecham {{data}} às {{hora}}.
 Se ainda está em dúvida, responda a este email com a sua pergunta — respondo hoje.
 Entrar agora: {{link}}`,
