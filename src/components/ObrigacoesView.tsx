@@ -373,9 +373,11 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-          <span className="text-sm font-semibold min-w-[140px] text-center">{MONTH_NAMES[month]} {year}</span>
-          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronRight className="w-4 h-4" /></button>
+          <button onClick={isTrimestralMode ? prevQuarter : prevMonth} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+          <span className="text-sm font-semibold min-w-[180px] text-center">
+            {isTrimestralMode ? trimesterLabel() : `${MONTH_NAMES[month]} ${year}`}
+          </span>
+          <button onClick={isTrimestralMode ? nextQuarter : nextMonth} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
 
