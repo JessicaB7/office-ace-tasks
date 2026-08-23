@@ -498,6 +498,13 @@ const ScriptsView = () => {
                           placeholder="Etiqueta"
                           onChange={(e) => setDraft((d) => ({ ...d, tag: e.target.value }))}
                         />
+                        {s.category === "infoprodutos" && (
+                          <Input
+                            value={draft.group}
+                            placeholder="Infoproduto"
+                            onChange={(e) => setDraft((d) => ({ ...d, group: e.target.value }))}
+                          />
+                        )}
                         <Textarea
                           rows={10}
                           value={draft.body}
