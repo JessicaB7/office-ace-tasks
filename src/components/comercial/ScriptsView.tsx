@@ -195,6 +195,7 @@ const ScriptsView = () => {
   const [infoGroup, setInfoGroup] = useState<string>("__all__");
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [savedGroups, setSavedGroups] = useState<string[]>([]);
 
   useEffect(() => {
     try {
@@ -202,6 +203,15 @@ const ScriptsView = () => {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length) setScripts(parsed);
+      }
+    } catch {
+      /* ignora */
+    }
+    try {
+      const rawG = localStorage.getItem(GROUPS_KEY);
+      if (rawG) {
+        const parsedG = JSON.parse(rawG);
+        if (Array.isArray(parsedG)) setSavedGroups(parsedG.filter((g: unknown) => typeof g === "string"));
       }
     } catch {
       /* ignora */
@@ -217,13 +227,23 @@ const ScriptsView = () => {
     }
   };
 
+  const persistGroups = (next: string[]) => {
+    const uniq = Array.from(new Set(next.map((g) => g.trim()).filter(Boolean)));
+    setSavedGroups(uniq);
+    try {
+      localStorage.setItem(GROUPS_KEY, JSON.stringify(uniq));
+    } catch {
+      /* ignora */
+    }
+  };
+
   const q = search.trim().toLowerCase();
 
   const infoGroups = useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(savedGroups);
     scripts.filter((s) => s.category === "infoprodutos").forEach((s) => set.add((s.group || "Geral").trim()));
     return Array.from(set);
-  }, [scripts]);
+  }, [scripts, savedGroups]);
 
   const visible = useMemo(
     () =>
