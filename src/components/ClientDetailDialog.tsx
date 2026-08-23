@@ -176,6 +176,14 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.mensalidade === "" || isNaN(parseFloat(form.mensalidade))) {
+      toast({ title: "Mensalidade obrigatória", description: "Indica o valor da mensalidade.", variant: "destructive" });
+      return;
+    }
+    if (!form.inicio_contrato) {
+      toast({ title: "Início de contrato obrigatório", description: "Indica a data de início de contrato.", variant: "destructive" });
+      return;
+    }
     try {
       const payload: any = {
         name: form.name,
