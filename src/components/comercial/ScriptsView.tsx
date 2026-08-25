@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Search, MessageSquareQuote, Pencil, Trash2, Plus, RotateCcw, GripVertical } from "lucide-react";
+import { Copy, Check, Search, MessageSquareQuote, Pencil, Trash2, Plus, RotateCcw, GripVertical, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type Category = "diagnostico" | "consultoria" | "infoprodutos";
 
@@ -185,8 +186,28 @@ Quer que reserve uma vaga em {{data}}?`,
 const STORAGE_KEY = "comercial_scripts_v1";
 const GROUPS_KEY = "comercial_script_groups_v1";
 
+type Row = {
+  id: string;
+  title: string;
+  tag: string;
+  category: string;
+  script_group: string | null;
+  body: string;
+  position: number;
+};
+
+const rowToScript = (r: Row): Script => ({
+  id: r.id,
+  title: r.title,
+  tag: r.tag,
+  category: (r.category as Category) || "diagnostico",
+  body: r.body,
+  group: r.script_group ?? undefined,
+});
+
 const ScriptsView = () => {
-  const [scripts, setScripts] = useState<Script[]>(DEFAULT_SCRIPTS);
+  const [scripts, setScripts] = useState<Script[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -197,45 +218,86 @@ const ScriptsView = () => {
   const [overId, setOverId] = useState<string | null>(null);
   const [savedGroups, setSavedGroups] = useState<string[]>([]);
 
-  useEffect(() => {
+  const readLocalScripts = (): Script[] | null => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length) setScripts(parsed);
-      }
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length) return parsed as Script[];
     } catch {
       /* ignora */
     }
+    return null;
+  };
+
+  const readLocalGroups = (): string[] => {
     try {
-      const rawG = localStorage.getItem(GROUPS_KEY);
-      if (rawG) {
-        const parsedG = JSON.parse(rawG);
-        if (Array.isArray(parsedG)) setSavedGroups(parsedG.filter((g: unknown) => typeof g === "string"));
-      }
+      const raw = localStorage.getItem(GROUPS_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter((g: unknown) => typeof g === "string") as string[];
     } catch {
       /* ignora */
     }
+    return [];
+  };
+
+  const seed = async (source: Script[]) => {
+    const payload = source.map((s, i) => ({
+      title: s.title,
+      tag: s.tag || "Geral",
+      category: s.category,
+      script_group: s.category === "infoprodutos" ? s.group || "Geral" : null,
+      body: s.body,
+      position: i,
+    }));
+    const { data, error } = await supabase.from("comercial_scripts").insert(payload).select();
+    if (error) throw error;
+    return ((data as Row[]) || []).sort((a, b) => a.position - b.position).map(rowToScript);
+  };
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("comercial_scripts")
+      .select("*")
+      .order("position", { ascending: true });
+    if (error) {
+      toast.error("Não foi possível carregar os scripts.");
+      setLoading(false);
+      return;
+    }
+    let list = ((data as Row[]) || []).map(rowToScript);
+    if (list.length === 0) {
+      try {
+        list = await seed(readLocalScripts() || DEFAULT_SCRIPTS);
+      } catch {
+        toast.error("Não foi possível preparar os scripts iniciais.");
+      }
+    }
+    setScripts(list);
+
+    const { data: groupRows } = await supabase.from("comercial_script_groups").select("name").order("created_at");
+    let groups = (groupRows || []).map((g: { name: string }) => g.name);
+    if (groups.length === 0) {
+      const local = Array.from(
+        new Set([
+          ...readLocalGroups(),
+          ...list.filter((s) => s.category === "infoprodutos").map((s) => (s.group || "Geral").trim()),
+        ])
+      ).filter(Boolean);
+      if (local.length) {
+        await supabase.from("comercial_script_groups").insert(local.map((name) => ({ name, category: "infoprodutos" })));
+        groups = local;
+      }
+    }
+    setSavedGroups(groups);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    load();
   }, []);
-
-  const persist = (next: Script[]) => {
-    setScripts(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* ignora */
-    }
-  };
-
-  const persistGroups = (next: string[]) => {
-    const uniq = Array.from(new Set(next.map((g) => g.trim()).filter(Boolean)));
-    setSavedGroups(uniq);
-    try {
-      localStorage.setItem(GROUPS_KEY, JSON.stringify(uniq));
-    } catch {
-      /* ignora */
-    }
-  };
 
   const q = search.trim().toLowerCase();
 
@@ -256,29 +318,43 @@ const ScriptsView = () => {
     [scripts, tab, q, infoGroup]
   );
 
-  const addInfoGroup = () => {
+  const addInfoGroup = async () => {
     const name = prompt("Nome do infoproduto:")?.trim();
     if (!name) return;
-    persistGroups([...savedGroups, name]);
+    const { error } = await supabase.from("comercial_script_groups").insert({ name, category: "infoprodutos" });
+    if (error) {
+      toast.error("Não foi possível criar o infoproduto.");
+      return;
+    }
+    setSavedGroups((g) => Array.from(new Set([...g, name])));
     setInfoGroup(name);
     toast.success(`Infoproduto "${name}" criado.`);
   };
 
-  const renameInfoGroup = (name: string) => {
+  const renameInfoGroup = async (name: string) => {
     const next = prompt("Novo nome do infoproduto:", name)?.trim();
     if (!next || next === name) return;
-    persist(scripts.map((s) => (s.category === "infoprodutos" && (s.group || "Geral").trim() === name ? { ...s, group: next } : s)));
-    persistGroups(savedGroups.map((g) => (g.trim() === name ? next : g)).concat(next));
+    const ids = scripts
+      .filter((s) => s.category === "infoprodutos" && (s.group || "Geral").trim() === name)
+      .map((s) => s.id);
+    if (ids.length) await supabase.from("comercial_scripts").update({ script_group: next }).in("id", ids);
+    await supabase.from("comercial_script_groups").update({ name: next }).eq("name", name);
+    setScripts((prev) => prev.map((s) => (ids.includes(s.id) ? { ...s, group: next } : s)));
+    setSavedGroups((g) => Array.from(new Set(g.map((x) => (x.trim() === name ? next : x)))));
     setInfoGroup(next);
   };
 
-  const removeInfoGroup = (name: string) => {
+  const removeInfoGroup = async (name: string) => {
     if (!confirm(`Eliminar o infoproduto "${name}" e todos os seus scripts?`)) return;
-    persist(scripts.filter((s) => !(s.category === "infoprodutos" && (s.group || "Geral").trim() === name)));
-    persistGroups(savedGroups.filter((g) => g.trim() !== name));
+    const ids = scripts
+      .filter((s) => s.category === "infoprodutos" && (s.group || "Geral").trim() === name)
+      .map((s) => s.id);
+    if (ids.length) await supabase.from("comercial_scripts").delete().in("id", ids);
+    await supabase.from("comercial_script_groups").delete().eq("name", name);
+    setScripts((prev) => prev.filter((s) => !ids.includes(s.id)));
+    setSavedGroups((g) => g.filter((x) => x.trim() !== name));
     setInfoGroup("__all__");
   };
-
 
   const copy = async (s: Script) => {
     try {
@@ -296,20 +372,33 @@ const ScriptsView = () => {
     setDraft({ title: s.title, tag: s.tag, body: s.body, group: s.group || "Geral" });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!draft.title.trim() || !draft.body.trim()) {
       toast.error("Preenche o título e o texto do script.");
       return;
     }
-    persist(
-      scripts.map((s) =>
-        s.id === editingId
+    const current = scripts.find((s) => s.id === editingId);
+    if (!current) return;
+    const patch = {
+      title: draft.title.trim(),
+      tag: draft.tag.trim() || "Geral",
+      body: draft.body,
+      ...(current.category === "infoprodutos" ? { script_group: draft.group.trim() || "Geral" } : {}),
+    };
+    const { error } = await supabase.from("comercial_scripts").update(patch).eq("id", current.id);
+    if (error) {
+      toast.error("Não foi possível guardar o script.");
+      return;
+    }
+    setScripts((prev) =>
+      prev.map((s) =>
+        s.id === current.id
           ? {
               ...s,
-              title: draft.title.trim(),
-              tag: draft.tag.trim() || "Geral",
-              body: draft.body,
-              ...(s.category === "infoprodutos" ? { group: draft.group.trim() || "Geral" } : {}),
+              title: patch.title,
+              tag: patch.tag,
+              body: patch.body,
+              ...(current.category === "infoprodutos" ? { group: draft.group.trim() || "Geral" } : {}),
             }
           : s
       )
@@ -318,32 +407,54 @@ const ScriptsView = () => {
     toast.success("Script guardado.");
   };
 
-  const addScript = () => {
-    const s: Script = {
-      id: `novo-${Date.now()}`,
+  const addScript = async () => {
+    const payload = {
       title: "Novo script",
       tag: "Geral",
       category: tab,
       body: "Escreve aqui o teu guião…",
-      ...(tab === "infoprodutos"
-        ? { group: infoGroup === "__all__" ? infoGroups[0] || "Geral" : infoGroup }
-        : {}),
+      script_group: tab === "infoprodutos" ? (infoGroup === "__all__" ? infoGroups[0] || "Geral" : infoGroup) : null,
+      position: scripts.length,
     };
-    persist([...scripts, s]);
+    const { data, error } = await supabase.from("comercial_scripts").insert(payload).select().single();
+    if (error || !data) {
+      toast.error("Não foi possível criar o script.");
+      return;
+    }
+    const s = rowToScript(data as Row);
+    setScripts((prev) => [...prev, s]);
     startEdit(s);
   };
 
-  const removeScript = (s: Script) => {
+  const removeScript = async (s: Script) => {
     if (!confirm(`Eliminar o script "${s.title}"?`)) return;
-    persist(scripts.filter((x) => x.id !== s.id));
+    const { error } = await supabase.from("comercial_scripts").delete().eq("id", s.id);
+    if (error) {
+      toast.error("Não foi possível eliminar o script.");
+      return;
+    }
+    setScripts((prev) => prev.filter((x) => x.id !== s.id));
     toast.success("Script eliminado.");
   };
 
-  const resetAll = () => {
+  const resetAll = async () => {
     if (!confirm("Repor todos os scripts originais? As edições serão perdidas.")) return;
-    persist(DEFAULT_SCRIPTS);
-    setEditingId(null);
-    toast.success("Scripts repostos.");
+    await supabase.from("comercial_scripts").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    try {
+      const list = await seed(DEFAULT_SCRIPTS);
+      setScripts(list);
+      setEditingId(null);
+      toast.success("Scripts repostos.");
+    } catch {
+      toast.error("Não foi possível repor os scripts.");
+    }
+  };
+
+  const persistOrder = async (next: Script[]) => {
+    setScripts(next);
+    await Promise.all(
+      next.map((s, i) => supabase.from("comercial_scripts").update({ position: i }).eq("id", s.id))
+    );
   };
 
   const handleDrop = (targetId: string) => {
@@ -357,10 +468,8 @@ const ScriptsView = () => {
     const next = [...scripts];
     const [moved] = next.splice(from, 1);
     next.splice(to, 0, moved);
-    persist(next);
+    persistOrder(next);
   };
-
-
 
   return (
     <div className="space-y-6">
@@ -368,7 +477,7 @@ const ScriptsView = () => {
         <div>
           <h1 className="text-2xl font-bold">Scripts</h1>
           <p className="text-sm text-muted-foreground">
-            Guiões editáveis por área. Substitui os campos entre chaves.
+            Guiões editáveis por área, guardados na base de dados. Substitui os campos entre chaves.
           </p>
         </div>
         <div className="flex gap-2">
@@ -381,186 +490,192 @@ const ScriptsView = () => {
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as Category)}>
-        <TabsList>
+      {loading ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="w-4 h-4 animate-spin" /> A carregar scripts…
+        </div>
+      ) : (
+        <Tabs value={tab} onValueChange={(v) => setTab(v as Category)}>
+          <TabsList>
+            {CATEGORIES.map((c) => (
+              <TabsTrigger key={c.id} value={c.id}>
+                {c.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
           {CATEGORIES.map((c) => (
-            <TabsTrigger key={c.id} value={c.id}>
-              {c.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {CATEGORIES.map((c) => (
-          <TabsContent key={c.id} value={c.id} className="space-y-4 mt-4">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="Procurar script…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-
-            {c.id === "infoprodutos" && (
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={infoGroup === "__all__" ? "default" : "outline"}
-                  onClick={() => setInfoGroup("__all__")}
-                >
-                  Todos
-                </Button>
-                {infoGroups.map((g) => (
-                  <div key={g} className="flex items-center">
-                    <Button
-                      size="sm"
-                      variant={infoGroup === g ? "default" : "outline"}
-                      className="rounded-r-none"
-                      onClick={() => setInfoGroup(g)}
-                    >
-                      {g}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-none border-l-0 px-2"
-                      title="Renomear infoproduto"
-                      onClick={() => renameInfoGroup(g)}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-l-none border-l-0 px-2"
-                      title="Eliminar infoproduto"
-                      onClick={() => removeInfoGroup(g)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-                <Button size="sm" variant="ghost" onClick={addInfoGroup}>
-                  <Plus className="w-4 h-4 mr-1" /> Novo infoproduto
-                </Button>
+            <TabsContent key={c.id} value={c.id} className="space-y-4 mt-4">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Procurar script…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
-            )}
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              {visible.map((s) => (
-                <Card
-                  key={s.id}
-                  onDragOver={(e) => {
-                    if (!dragId) return;
-                    e.preventDefault();
-                    setOverId(s.id);
-                  }}
-                  onDragLeave={() => setOverId((o) => (o === s.id ? null : o))}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    handleDrop(s.id);
-                  }}
-                  className={`flex flex-col transition-all ${dragId === s.id ? "opacity-50" : ""} ${
-                    overId === s.id && dragId !== s.id ? "ring-2 ring-primary" : ""
-                  }`}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <span
-                          draggable
-                          onDragStart={(e) => {
-                            e.dataTransfer.effectAllowed = "move";
-                            e.dataTransfer.setData("text/plain", s.id);
-                            setDragId(s.id);
-                          }}
-                          onDragEnd={() => {
-                            setDragId(null);
-                            setOverId(null);
-                          }}
-                          title="Arrastar para reordenar"
-                          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
-                        >
-                          <GripVertical className="w-4 h-4" />
-                        </span>
-                        <MessageSquareQuote className="w-4 h-4 text-primary" />
-                        {editingId === s.id ? "A editar" : s.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {s.category === "infoprodutos" && (
-                          <Badge variant="secondary" className="shrink-0">
-                            {s.group || "Geral"}
-                          </Badge>
-                        )}
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 shrink-0">
-                          {s.tag}
-                        </Badge>
-                      </div>
+              {c.id === "infoprodutos" && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={infoGroup === "__all__" ? "default" : "outline"}
+                    onClick={() => setInfoGroup("__all__")}
+                  >
+                    Todos
+                  </Button>
+                  {infoGroups.map((g) => (
+                    <div key={g} className="flex items-center">
+                      <Button
+                        size="sm"
+                        variant={infoGroup === g ? "default" : "outline"}
+                        className="rounded-r-none"
+                        onClick={() => setInfoGroup(g)}
+                      >
+                        {g}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-none border-l-0 px-2"
+                        title="Renomear infoproduto"
+                        onClick={() => renameInfoGroup(g)}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-l-none border-l-0 px-2"
+                        title="Eliminar infoproduto"
+                        onClick={() => removeInfoGroup(g)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </Button>
                     </div>
-                  </CardHeader>
-
-                  <CardContent className="flex flex-col gap-3 flex-1">
-                    {editingId === s.id ? (
-                      <>
-                        <Input
-                          value={draft.title}
-                          placeholder="Título"
-                          onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-                        />
-                        <Input
-                          value={draft.tag}
-                          placeholder="Etiqueta"
-                          onChange={(e) => setDraft((d) => ({ ...d, tag: e.target.value }))}
-                        />
-                        {s.category === "infoprodutos" && (
-                          <Input
-                            value={draft.group}
-                            placeholder="Infoproduto"
-                            onChange={(e) => setDraft((d) => ({ ...d, group: e.target.value }))}
-                          />
-                        )}
-                        <Textarea
-                          rows={10}
-                          value={draft.body}
-                          onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))}
-                        />
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={saveEdit}>
-                            Guardar
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                            Cancelar
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm whitespace-pre-line text-muted-foreground flex-1">{s.body}</p>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => copy(s)}>
-                            {copied === s.id ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                            {copied === s.id ? "Copiado" : "Copiar"}
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => startEdit(s)}>
-                            <Pencil className="w-4 h-4 mr-2" /> Editar
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => removeScript(s)}>
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-              {visible.length === 0 && (
-                <p className="text-sm text-muted-foreground">Sem scripts nesta área.</p>
+                  ))}
+                  <Button size="sm" variant="ghost" onClick={addInfoGroup}>
+                    <Plus className="w-4 h-4 mr-1" /> Novo infoproduto
+                  </Button>
+                </div>
               )}
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                {visible.map((s) => (
+                  <Card
+                    key={s.id}
+                    onDragOver={(e) => {
+                      if (!dragId) return;
+                      e.preventDefault();
+                      setOverId(s.id);
+                    }}
+                    onDragLeave={() => setOverId((o) => (o === s.id ? null : o))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      handleDrop(s.id);
+                    }}
+                    className={`flex flex-col transition-all ${dragId === s.id ? "opacity-50" : ""} ${
+                      overId === s.id && dragId !== s.id ? "ring-2 ring-primary" : ""
+                    }`}
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <span
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData("text/plain", s.id);
+                              setDragId(s.id);
+                            }}
+                            onDragEnd={() => {
+                              setDragId(null);
+                              setOverId(null);
+                            }}
+                            title="Arrastar para reordenar"
+                            className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                          >
+                            <GripVertical className="w-4 h-4" />
+                          </span>
+                          <MessageSquareQuote className="w-4 h-4 text-primary" />
+                          {editingId === s.id ? "A editar" : s.title}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {s.category === "infoprodutos" && (
+                            <Badge variant="secondary" className="shrink-0">
+                              {s.group || "Geral"}
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 shrink-0">
+                            {s.tag}
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="flex flex-col gap-3 flex-1">
+                      {editingId === s.id ? (
+                        <>
+                          <Input
+                            value={draft.title}
+                            placeholder="Título"
+                            onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                          />
+                          <Input
+                            value={draft.tag}
+                            placeholder="Etiqueta"
+                            onChange={(e) => setDraft((d) => ({ ...d, tag: e.target.value }))}
+                          />
+                          {s.category === "infoprodutos" && (
+                            <Input
+                              value={draft.group}
+                              placeholder="Infoproduto"
+                              onChange={(e) => setDraft((d) => ({ ...d, group: e.target.value }))}
+                            />
+                          )}
+                          <Textarea
+                            rows={10}
+                            value={draft.body}
+                            onChange={(e) => setDraft((d) => ({ ...d, body: e.target.value }))}
+                          />
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit}>
+                              Guardar
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                              Cancelar
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm whitespace-pre-line text-muted-foreground flex-1">{s.body}</p>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => copy(s)}>
+                              {copied === s.id ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                              {copied === s.id ? "Copiado" : "Copiar"}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => startEdit(s)}>
+                              <Pencil className="w-4 h-4 mr-2" /> Editar
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => removeScript(s)}>
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+                {visible.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Sem scripts nesta área.</p>
+                )}
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
     </div>
   );
 };
