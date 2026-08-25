@@ -359,6 +359,63 @@ export type Database = {
         }
         Relationships: []
       }
+      comercial_script_groups: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      comercial_scripts: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          id: string
+          position: number
+          script_group: string | null
+          tag: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          category: string
+          created_at?: string
+          id?: string
+          position?: number
+          script_group?: string | null
+          tag?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          position?: number
+          script_group?: string | null
+          tag?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
