@@ -3,9 +3,13 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Download, ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   useClientFinancialEntries,
   useFinancialAccounts,
+  useClientFinancialSettings,
+  useUpsertSettings,
 } from "@/hooks/useClientFinancials";
 import { buildEntryMap, fmtEur, sumSectionMonth, sumGroupMonth, quarterSums, getValue } from "./financialMath";
 import { cn } from "@/lib/utils";
