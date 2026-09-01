@@ -43,6 +43,14 @@ export type FinancialSettings = {
   irc_coef: number;
   outras_despesas_label: string;
   outras_despesas_valor: number;
+  mapa_q1_enviado: boolean;
+  mapa_q2_enviado: boolean;
+  mapa_q3_enviado: boolean;
+  mapa_q4_enviado: boolean;
+  mapa_q1_data: string | null;
+  mapa_q2_data: string | null;
+  mapa_q3_data: string | null;
+  mapa_q4_data: string | null;
 };
 
 
