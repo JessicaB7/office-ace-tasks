@@ -29,9 +29,17 @@ export default function DashboardTrimestral({
 }) {
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: entries = [] } = useClientFinancialEntries(clientId, year);
+  const { data: settings } = useClientFinancialSettings(clientId, year);
+  const upsertSettings = useUpsertSettings(clientId, year);
   const map = useMemo(() => buildEntryMap(entries), [entries]);
 
+  const saveSettings = (patch: Record<string, any>) => {
+    if (!settings) return;
+    upsertSettings.mutate({ ...settings, ...patch } as any);
+  };
+
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
 
   const rendimentosM = months.map((m) => sumSectionMonth(map, accounts, "vendas", m));
   const fseM = months.map((m) => sumGroupMonth(map, accounts, "62", m));
