@@ -43,6 +43,14 @@ export type FinancialSettings = {
   irc_coef: number;
   outras_despesas_label: string;
   outras_despesas_valor: number;
+  mapa_q1_enviado: boolean;
+  mapa_q2_enviado: boolean;
+  mapa_q3_enviado: boolean;
+  mapa_q4_enviado: boolean;
+  mapa_q1_data: string | null;
+  mapa_q2_data: string | null;
+  mapa_q3_data: string | null;
+  mapa_q4_data: string | null;
 };
 
 
@@ -115,6 +123,14 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         irc_coef: 0.10,
         outras_despesas_label: "Outras despesas",
         outras_despesas_valor: 0,
+        mapa_q1_enviado: false,
+        mapa_q2_enviado: false,
+        mapa_q3_enviado: false,
+        mapa_q4_enviado: false,
+        mapa_q1_data: null,
+        mapa_q2_data: null,
+        mapa_q3_data: null,
+        mapa_q4_data: null,
       }) as FinancialSettings;
     },
     enabled: !!clientId,

@@ -3,9 +3,13 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { Download, ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   useClientFinancialEntries,
   useFinancialAccounts,
+  useClientFinancialSettings,
+  useUpsertSettings,
 } from "@/hooks/useClientFinancials";
 import { buildEntryMap, fmtEur, sumSectionMonth, sumGroupMonth, quarterSums, getValue } from "./financialMath";
 import { cn } from "@/lib/utils";
@@ -25,9 +29,17 @@ export default function DashboardTrimestral({
 }) {
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: entries = [] } = useClientFinancialEntries(clientId, year);
+  const { data: settings } = useClientFinancialSettings(clientId, year);
+  const upsertSettings = useUpsertSettings(clientId, year);
   const map = useMemo(() => buildEntryMap(entries), [entries]);
 
+  const saveSettings = (patch: Record<string, any>) => {
+    if (!settings) return;
+    upsertSettings.mutate({ ...settings, ...patch } as any);
+  };
+
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
 
   const rendimentosM = months.map((m) => sumSectionMonth(map, accounts, "vendas", m));
   const fseM = months.map((m) => sumGroupMonth(map, accounts, "62", m));
@@ -340,6 +352,47 @@ export default function DashboardTrimestral({
           </table>
         </div>
       </div>
+
+      {!exporting && (
+        <div className="rounded-lg border bg-card p-4">
+          <h4 className="font-semibold text-sm mb-1">Mapa enviado</h4>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            Registo interno do envio do mapa por trimestre (não aparece no PDF).
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {QUARTERS.map((q, idx) => {
+              const n = idx + 1;
+              const checkedKey = `mapa_q${n}_enviado` as keyof typeof settings;
+              const dateKey = `mapa_q${n}_data` as keyof typeof settings;
+              const checked = Boolean(settings?.[checkedKey]);
+              const dateVal = (settings?.[dateKey] as string | null) ?? "";
+              return (
+                <div key={q} className="rounded-lg border bg-background p-3 space-y-2">
+                  <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                    <Checkbox
+                      checked={checked}
+                      disabled={!settings}
+                      onCheckedChange={(v) => saveSettings({ [`mapa_q${n}_enviado`]: v === true })}
+                    />
+                    {q}
+                  </label>
+                  <div>
+                    <div className="text-[10px] text-muted-foreground mb-1">Data de envio</div>
+                    <Input
+                      type="date"
+                      className="h-8 text-xs"
+                      disabled={!settings}
+                      value={dateVal}
+                      onChange={(e) => saveSettings({ [`mapa_q${n}_data`]: e.target.value || null })}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }

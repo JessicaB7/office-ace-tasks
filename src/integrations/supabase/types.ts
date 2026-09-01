@@ -111,6 +111,14 @@ export type Database = {
           iva_q3: number | null
           iva_q4: number | null
           iva_regime: string
+          mapa_q1_data: string | null
+          mapa_q1_enviado: boolean
+          mapa_q2_data: string | null
+          mapa_q2_enviado: boolean
+          mapa_q3_data: string | null
+          mapa_q3_enviado: boolean
+          mapa_q4_data: string | null
+          mapa_q4_enviado: boolean
           outras_despesas_label: string
           outras_despesas_valor: number
           ss_q1: number
@@ -140,6 +148,14 @@ export type Database = {
           iva_q3?: number | null
           iva_q4?: number | null
           iva_regime?: string
+          mapa_q1_data?: string | null
+          mapa_q1_enviado?: boolean
+          mapa_q2_data?: string | null
+          mapa_q2_enviado?: boolean
+          mapa_q3_data?: string | null
+          mapa_q3_enviado?: boolean
+          mapa_q4_data?: string | null
+          mapa_q4_enviado?: boolean
           outras_despesas_label?: string
           outras_despesas_valor?: number
           ss_q1?: number
@@ -169,6 +185,14 @@ export type Database = {
           iva_q3?: number | null
           iva_q4?: number | null
           iva_regime?: string
+          mapa_q1_data?: string | null
+          mapa_q1_enviado?: boolean
+          mapa_q2_data?: string | null
+          mapa_q2_enviado?: boolean
+          mapa_q3_data?: string | null
+          mapa_q3_enviado?: boolean
+          mapa_q4_data?: string | null
+          mapa_q4_enviado?: boolean
           outras_despesas_label?: string
           outras_despesas_valor?: number
           ss_q1?: number
