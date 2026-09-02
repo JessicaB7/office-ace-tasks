@@ -93,6 +93,7 @@ interface ClientForm {
   inicio_contrato: string;
   tipo_contabilidade: string;
   seguranca_social: string;
+  seguranca_social_isencao_fim: string;
   pag_seguranca_social: string;
   iva: string;
   iva_oss: string;
@@ -108,7 +109,7 @@ const emptyForm: ClientForm = {
   name: "", nif: "", senha_at: "", niss: "", senha_ss: "",
   programa_faturacao: "", utilizador_faturacao: "", senha_faturacao: "",
   saft: "", via_ctt: "", mensalidade: "", inicio_contrato: "",
-  tipo_contabilidade: "SQ", seguranca_social: "", pag_seguranca_social: "",
+  tipo_contabilidade: "SQ", seguranca_social: "", seguranca_social_isencao_fim: "", pag_seguranca_social: "",
   iva: "", iva_oss: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "",
   salarios: "", responsavel_id: "", status: "ativo",
 };
@@ -154,6 +155,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         inicio_contrato: client.inicio_contrato || "",
         tipo_contabilidade: client.tipo_contabilidade || "SQ",
         seguranca_social: client.seguranca_social || "",
+        seguranca_social_isencao_fim: client.seguranca_social_isencao_fim || "",
         pag_seguranca_social: client.pag_seguranca_social || "",
         iva: client.iva || "",
         iva_oss: client.iva_oss || "",
@@ -200,6 +202,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         inicio_contrato: form.inicio_contrato || null,
         tipo_contabilidade: form.tipo_contabilidade,
         seguranca_social: form.seguranca_social || null,
+        seguranca_social_isencao_fim: form.seguranca_social === "Isento" ? (form.seguranca_social_isencao_fim || null) : null,
         pag_seguranca_social: form.pag_seguranca_social || null,
         iva: form.iva || null,
         iva_oss: form.iva_oss || null,
@@ -333,6 +336,12 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                     {SS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
+                {form.seguranca_social === "Isento" && (
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Fim da Isenção</label>
+                    <input type="date" value={form.seguranca_social_isencao_fim} onChange={(e) => set("seguranca_social_isencao_fim", e.target.value)} className={inputClass} />
+                  </div>
+                )}
                 <div>
                   <label className="text-sm font-medium mb-1 block">Pag. Segurança Social</label>
                   <select value={form.pag_seguranca_social} onChange={(e) => set("pag_seguranca_social", e.target.value)} className={inputClass}>

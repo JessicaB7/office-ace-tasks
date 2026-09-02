@@ -238,6 +238,7 @@ export type Database = {
           saft: string | null
           salarios: string | null
           seguranca_social: string | null
+          seguranca_social_isencao_fim: string | null
           senha_at: string | null
           senha_faturacao: string | null
           senha_ss: string | null
@@ -274,6 +275,7 @@ export type Database = {
           saft?: string | null
           salarios?: string | null
           seguranca_social?: string | null
+          seguranca_social_isencao_fim?: string | null
           senha_at?: string | null
           senha_faturacao?: string | null
           senha_ss?: string | null
@@ -310,6 +312,7 @@ export type Database = {
           saft?: string | null
           salarios?: string | null
           seguranca_social?: string | null
+          seguranca_social_isencao_fim?: string | null
           senha_at?: string | null
           senha_faturacao?: string | null
           senha_ss?: string | null
