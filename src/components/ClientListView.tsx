@@ -1,8 +1,28 @@
 import { useState } from "react";
 import { useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
-import { Search, Plus, Building2, BarChart3 } from "lucide-react";
+import { Search, Plus, Building2, BarChart3, AlertTriangle } from "lucide-react";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { cn } from "@/lib/utils";
+
+const MISSING_FIELD_CHECKS: { key: string; label: string }[] = [
+  { key: "nif", label: "NIF" },
+  { key: "senha_at", label: "Senha AT" },
+  { key: "niss", label: "NISS" },
+  { key: "senha_ss", label: "Senha SS" },
+  { key: "programa_faturacao", label: "Programa Faturação" },
+  { key: "saft", label: "SAFT" },
+  { key: "mensalidade", label: "Mensalidade" },
+  { key: "inicio_contrato", label: "Início Contrato" },
+  { key: "seguranca_social", label: "Segurança Social" },
+  { key: "pag_seguranca_social", label: "Pag. SS" },
+  { key: "iva", label: "IVA" },
+  { key: "faturacao", label: "Faturação" },
+  { key: "salarios", label: "Salários" },
+  { key: "responsavel_id", label: "Responsável" },
+];
+
+const getMissingFields = (c: any): string[] =>
+  MISSING_FIELD_CHECKS.filter((f) => !c[f.key] && c[f.key] !== 0).map((f) => f.label);
 
 const TIPO_CONTAB_LABELS: Record<string, string> = {
   SQ: "Empresa",
@@ -57,6 +77,7 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
   const [filterIva, setFilterIva] = useState<string>("all");
   const [filterResponsavel, setFilterResponsavel] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("ativo");
+  const [showMissing, setShowMissing] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
 
@@ -67,9 +88,12 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
       if (filterResponsavel === "none" ? !!c.responsavel_id : c.responsavel_id !== filterResponsavel) return false;
     }
     if (filterStatus !== "all" && clientStatus(c) !== filterStatus) return false;
+    if (showMissing && getMissingFields(c).length === 0) return false;
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) && !(c.nif || "").includes(search)) return false;
     return true;
   });
+
+  const missingCount = clients.filter((c: any) => clientStatus(c) === "ativo" && getMissingFields(c).length > 0).length;
 
   const openNew = () => { setSelectedClient(null); setDialogOpen(true); };
   const openEdit = (c: any) => { setSelectedClient(c); setDialogOpen(true); };
@@ -114,13 +138,24 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
           <option value="a_sair">A sair</option>
           <option value="inativo">Inativos</option>
         </select>
+        <button
+          onClick={() => setShowMissing((v) => !v)}
+          className={cn(
+            "flex items-center gap-1.5 text-sm font-medium rounded-lg border px-3 py-2 transition-colors",
+            showMissing ? "bg-amber-100 border-amber-300 text-amber-800 dark:bg-amber-900/40 dark:border-amber-700 dark:text-amber-300" : "bg-card hover:bg-muted"
+          )}
+        >
+          <AlertTriangle className="w-4 h-4" /> Dados em falta {missingCount > 0 && `(${missingCount})`}
+        </button>
       </div>
 
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">A carregar...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((client: any, i: number) => (
+          {filtered.map((client: any, i: number) => {
+            const missingFields = getMissingFields(client);
+            return (
             <div key={client.id} className="bg-card rounded-xl border p-5 hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 20}ms` }}>
               <div onClick={() => openEdit(client)} className="cursor-pointer">
                 <div className="flex items-start justify-between mb-3">
@@ -142,6 +177,12 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
                     </span>
                   </div>
                 </div>
+                {missingFields.length > 0 && (
+                  <div className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-2.5 py-1.5 mb-1">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>Em falta: {missingFields.join(", ")}</span>
+                  </div>
+                )}
               </div>
               {onOpenAnalysis && (
                 <button
@@ -152,7 +193,8 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
                 </button>
               )}
             </div>
-          ))}
+            );
+          })}
           {filtered.length === 0 && <div className="col-span-full text-center py-12 text-muted-foreground">Nenhum cliente encontrado</div>}
         </div>
       )}
