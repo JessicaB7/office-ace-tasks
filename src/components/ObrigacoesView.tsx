@@ -39,12 +39,12 @@ const hideNif = new Set(["DMR", "SS_TI", "IVA", "IVA_recapitulativa", "retencao_
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
+  { value: "Isento", label: "Isentos" },
 ];
 const SS_TI_DT_FILTERS = [
   { value: "Trimestral", label: "Trimestral" },
   { value: "Mensal", label: "Mensal" },
   { value: "TCO", label: "TCO" },
-  { value: "Isento", label: "Isentos" },
 ];
 
 const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
@@ -159,8 +159,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const isDT = isSSTI && ssTiTab === "SS_TI_DT";
   const isDTMonth = [0, 3, 6, 9].includes(month);
   const showDTContent = !(isDT && !isDTMonth);
-  const showNotasColumn = isDT && subFilter === "Isento";
-  const showFimIsencaoColumn = isDT && subFilter === "Isento";
+  const showNotasColumn = isSSTI && subFilter === "Isento";
+  const showFimIsencaoColumn = isSSTI && subFilter === "Isento";
   const isEmissaoFaturas = activeTab === "emissao_faturas";
   const showIvaPeriodicaCols = isIVAPeriodica;
   const isTrimestralMode = isIVA && subFilter === "Trimestral";
@@ -214,7 +214,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
           if (subFilter !== "all") list = list.filter((c: any) => c.seguranca_social === subFilter);
         } else {
           list = activeClients.filter((c: any) => isTI(c) && !hasSalarios(c));
-          if (subFilter !== "all") list = list.filter((c: any) => c.pag_seguranca_social === subFilter);
+          if (subFilter === "Isento") list = list.filter((c: any) => c.seguranca_social === "Isento");
+          else if (subFilter !== "all") list = list.filter((c: any) => c.pag_seguranca_social === subFilter);
         }
         break;
       case "IVA":
@@ -421,7 +422,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 case "IVA_recapitulativa": return activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && (opt.value === "Mensal" ? c.iva === "Mensal" : opt.value === "Trimestral" ? (c.iva !== "Mensal" && c.recapitulativa !== "Não Aplicável") : c.recapitulativa === "Não Aplicável")).length;
                 case "SS_TI": return ssTiTab === "SS_TI_DT"
                   ? activeClients.filter((c: any) => isTI(c) && c.seguranca_social === opt.value).length
-                  : activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.pag_seguranca_social === opt.value).length;
+                  : opt.value === "Isento"
+                    ? activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.seguranca_social === "Isento").length
+                    : activeClients.filter((c: any) => isTI(c) && !hasSalarios(c) && c.pag_seguranca_social === opt.value).length;
                 case "emissao_faturas": return activeClients.filter((c: any) => c.faturacao === "Emitir" && c.faturacao_frequencia === opt.value).length;
                 default: return 0;
               }
