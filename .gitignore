@@ -15,6 +15,9 @@ dist-ssr
 # Environment variables
 .env
 
+# Backups locais de dados (contêm dados de clientes — nunca versionar)
+backups/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
