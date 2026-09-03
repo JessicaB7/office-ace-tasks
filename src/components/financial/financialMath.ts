@@ -144,6 +144,29 @@ export function quarterSums(monthly: number[]): number[] {
 
 export const VAT_DUE_DATES = ["A pagar até 25/05", "A pagar até 25/08", "A pagar até 25/11", "A pagar até 25/02 ano seguinte"];
 
+const sameCurrency = (a: number, b: number) => Math.abs(a - b) <= 0.01;
+
+/**
+ * Balancetes trimestrais ficam concentrados no mês de fecho. Se por algum
+ * motivo os valores aparecerem repartidos por igual pelos 3 meses do
+ * trimestre (ex.: importação duplicada), colapsa-os no último mês para que
+ * o trimestre não fique inflacionado.
+ */
+export function closeRepeatedQuarterValues(monthly: number[]): number[] {
+  const out = monthly.map((v) => Math.round(v * 100) / 100);
+  for (let qi = 0; qi < 4; qi++) {
+    const s = qi * 3;
+    const q = out.slice(s, s + 3);
+    const nz = q.filter((v) => Math.abs(v) > 0.01);
+    if (nz.length === 3 && nz.every((v) => sameCurrency(v, nz[0]))) {
+      out[s] = 0;
+      out[s + 1] = 0;
+      out[s + 2] = Math.round(q.reduce((a, b) => a + b, 0) * 100) / 100;
+    }
+  }
+  return out;
+}
+
 /** Soma um grupo de contas por prefixo (evita duplicar pai + filhos). */
 export function sumGroupMonth(
   map: Map<string, number>,

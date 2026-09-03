@@ -11,7 +11,7 @@ import {
   useClientFinancialSettings,
   useUpsertSettings,
 } from "@/hooks/useClientFinancials";
-import { buildEntryMap, fmtEur, sumSectionMonth, sumGroupMonth, quarterSums, getValue } from "./financialMath";
+import { buildEntryMap, fmtEur, sumSectionMonth, sumGroupMonth, quarterSums, getValue, closeRepeatedQuarterValues } from "./financialMath";
 import { cn } from "@/lib/utils";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
@@ -41,18 +41,25 @@ export default function DashboardTrimestral({
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
 
-  const rendimentosM = months.map((m) => sumSectionMonth(map, accounts, "vendas", m));
-  const fseM = months.map((m) => sumGroupMonth(map, accounts, "62", m));
-  const pessoalM = months.map((m) => sumSectionMonth(map, accounts, "pessoal", m));
-  const depreciacoesM = months.map((m) => sumGroupMonth(map, accounts, "64", m));
-  const mercadoriasM = months.map((m) => sumGroupMonth(map, accounts, "31", m));
+  // Balancetes trimestrais por vezes chegam com o valor do trimestre repetido
+  // pelos 3 meses — closeRepeatedQuarterValues colapsa-os no mês de fecho,
+  // tal como nos dashboards anuais (TI Simplificado/Organizado), para que a
+  // conta 31 (mercadorias) e as restantes rubricas reflitam corretamente o
+  // valor do Mapa de Exploração / balancete por trimestre.
+  const rendimentosM = closeRepeatedQuarterValues(months.map((m) => sumSectionMonth(map, accounts, "vendas", m)));
+  const fseM = closeRepeatedQuarterValues(months.map((m) => sumGroupMonth(map, accounts, "62", m)));
+  const pessoalM = closeRepeatedQuarterValues(months.map((m) => sumSectionMonth(map, accounts, "pessoal", m)));
+  const depreciacoesM = closeRepeatedQuarterValues(months.map((m) => sumGroupMonth(map, accounts, "64", m)));
+  const mercadoriasM = closeRepeatedQuarterValues(months.map((m) => sumGroupMonth(map, accounts, "31", m)));
+  const despesasRawM = closeRepeatedQuarterValues(months.map((m) => sumSectionMonth(map, accounts, "despesas", m)));
+  const comprasRawM = closeRepeatedQuarterValues(months.map((m) => sumSectionMonth(map, accounts, "compras", m)));
   const outrosGastosM = months.map(
-    (m) =>
-      sumSectionMonth(map, accounts, "despesas", m) +
-      sumSectionMonth(map, accounts, "compras", m) -
-      fseM[m - 1] -
-      depreciacoesM[m - 1] -
-      mercadoriasM[m - 1],
+    (_, i) =>
+      despesasRawM[i] +
+      comprasRawM[i] -
+      fseM[i] -
+      depreciacoesM[i] -
+      mercadoriasM[i],
   );
   const gastosM = months.map(
     (_, i) => fseM[i] + pessoalM[i] + depreciacoesM[i] + mercadoriasM[i] + outrosGastosM[i],
@@ -65,7 +72,7 @@ export default function DashboardTrimestral({
       .filter((a) => a.code.startsWith("62") && a.code.length > 2)
       .sort((a, b) => a.code.localeCompare(b.code));
 
-    const monthly = (code: string) => months.map((m) => getValue(map, m, code));
+    const monthly = (code: string) => closeRepeatedQuarterValues(months.map((m) => getValue(map, m, code)));
     const hasValue = (arr: number[]) => arr.some((v) => Math.abs(v) > 0.005);
 
     // usa o nível mais detalhado: ignora contas cujos filhos já têm valor
