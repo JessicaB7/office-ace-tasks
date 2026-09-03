@@ -95,7 +95,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           entries = res.entries;
           toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
-          const res = await parseMapaPdf(file, codes);
+          const res = await parseMapaPdf(file, accounts.map((a) => ({ code: a.code, section: a.section })));
           entries = res.entries;
         }
 

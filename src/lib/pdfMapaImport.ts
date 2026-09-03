@@ -25,6 +25,8 @@ export interface ImportedEntry { month: number; account_code: string; value: num
 
 export interface MapaParseResult { entries: ImportedEntry[]; nif: string | null; }
 
+export interface MapaAccountInfo { code: string; section: string; }
+
 const findNif = (text: string): string | null => {
   const labelled = text.match(/(?:NIF|N\.?\s*I\.?\s*F\.?|NIPC|Contribuinte)[^0-9]{0,15}(\d[\d\s.]{7,12}\d)/i);
   const raw = labelled?.[1] ?? text.match(/\b([125-9]\d{8})\b/)?.[1] ?? null;
@@ -33,7 +35,15 @@ const findNif = (text: string): string | null => {
   return digits.length === 9 ? digits : null;
 };
 
-export async function parseMapaPdf(file: File, knownCodes: Set<string>): Promise<MapaParseResult> {
+// Secções cujo mapa mostra valores negativos por convenção (despesas/compras/pessoal).
+// Uma linha com esse código que apareça POSITIVA no PDF é uma exceção (ex.: devolução/
+// correção) e deve reduzir o total, não somar — por isso invertemos o sinal em vez de
+// converter para valor absoluto. Rendimentos (vendas) já vêm positivos no PDF.
+const SIGN_FLIPPED_SECTIONS = new Set(["despesas", "compras", "pessoal", "pessoal_socios", "pessoal_colab"]);
+
+export async function parseMapaPdf(file: File, accountsInfo: MapaAccountInfo[]): Promise<MapaParseResult> {
+  const knownCodes = new Set(accountsInfo.map((a) => a.code));
+  const sectionByCode = new Map(accountsInfo.map((a) => [a.code, a.section]));
   const buf = await file.arrayBuffer();
   const pdf = await (pdfjsLib as any).getDocument({ data: buf }).promise;
   const entries: ImportedEntry[] = [];
@@ -81,15 +91,20 @@ export async function parseMapaPdf(file: File, knownCodes: Set<string>): Promise
       // Some rows have exactly 13 (12 months + total). Drop the last only if length >= 13.
       const monthly = nums.length >= 13 ? nums.slice(0, 12) : nums.slice(0, 12);
 
+      const flipSign = SIGN_FLIPPED_SECTIONS.has(sectionByCode.get(code) ?? "");
       monthly.forEach((n, idx) => {
         const month = idx + 1;
         const k = `${code}-${month}`;
         if (seen.has(k)) return;
         seen.add(k);
         if (n.v !== 0) {
-          // PDF stores expenses as negatives; convert to absolute positive
-          // because our model stores expenses with sign=1 and aggregates as expense.
-          entries.push({ month, account_code: code, value: Math.abs(n.v) });
+          // PDF stores expenses/compras/pessoal as negatives normalmente; convertemos
+          // para positivo (valor normal a somar como gasto). Se a linha aparecer
+          // positiva no PDF é uma exceção (devolução/correção) — nesse caso o sinal
+          // invertido dá um valor negativo, que reduz o total em vez de o inflacionar.
+          // Rendimentos (vendas) não sofrem esta inversão: vêm positivos no PDF.
+          const value = flipSign ? -n.v : Math.abs(n.v);
+          entries.push({ month, account_code: code, value });
         }
       });
     }
