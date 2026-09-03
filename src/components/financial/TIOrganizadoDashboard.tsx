@@ -17,11 +17,12 @@ import {
   MONTHS_PT,
   fmtEur,
   sumSectionMonth,
+  sumGroupMonth,
+  closeRepeatedQuarterValues,
 } from "./financialMath";
 import { cn } from "@/lib/utils";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
-const sameCurrency = (a: number, b: number) => Math.abs(cents(a) - cents(b)) <= 0.01;
 
 // Escalões IRS 2026 — método "taxa × rendimento − parcela a abater"
 const IRS_BRACKETS: { upTo: number; rate: number; abate: number }[] = [
@@ -46,23 +47,8 @@ function calcIRS(rendimentoColectavel: number): number {
   return 0;
 }
 
-// Balancetes trimestrais ficam concentrados no mês de fecho. Se por algum
-// motivo os valores aparecerem repartidos por igual pelos 3 meses do trimestre,
-// colapsa-os no último mês para o gráfico.
-function closeRepeatedQuarterValues(monthly: number[]): number[] {
-  const out = monthly.map(cents);
-  for (let qi = 0; qi < 4; qi++) {
-    const s = qi * 3;
-    const q = out.slice(s, s + 3);
-    const nz = q.filter((v) => Math.abs(v) > 0.01);
-    if (nz.length === 3 && nz.every((v) => sameCurrency(v, nz[0]))) {
-      out[s] = 0;
-      out[s + 1] = 0;
-      out[s + 2] = cents(q.reduce((a, b) => a + b, 0));
-    }
-  }
-  return out;
-}
+// closeRepeatedQuarterValues (balancetes trimestrais concentrados no mês de
+// fecho) vem agora de financialMath.ts — partilhado com o Dashboard trimestral.
 
 function sumSectionMonthClosedByQuarter(
   map: Map<string, number>,
@@ -113,6 +99,19 @@ export default function TIOrganizadoDashboard({
   const despesasChartM = months.map((m) =>
     sumSectionMonthClosedByQuarter(map, accounts, ["despesas", "compras", "pessoal"], m),
   );
+
+  // Distinção das despesas por rubrica (tal como no Dashboard trimestral):
+  // gastos com mercadorias (conta 31), FSE (conta 62), gastos com salários e
+  // depreciações (conta 64). Só para os cartões — o resultado/IRS continuam a
+  // usar despesasM (total, sem fecho de trimestre) como antes.
+  const mercadoriasM = closeRepeatedQuarterValues(months.map((m) => sumGroupMonth(map, accounts, "31", m)));
+  const fseM = closeRepeatedQuarterValues(months.map((m) => sumGroupMonth(map, accounts, "62", m)));
+  const depreciacoesM = closeRepeatedQuarterValues(months.map((m) => sumGroupMonth(map, accounts, "64", m)));
+  const pessoalM = months.map((m) => sumSectionMonthClosedByQuarter(map, accounts, ["pessoal"], m));
+  const totalMercadorias = mercadoriasM.reduce((a, b) => a + b, 0);
+  const totalFse = fseM.reduce((a, b) => a + b, 0);
+  const totalDepreciacoes = depreciacoesM.reduce((a, b) => a + b, 0);
+  const totalPessoal = pessoalM.reduce((a, b) => a + b, 0);
 
   const facTrim = [0, 1, 2, 3].map((qi) =>
     faturacaoM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0),
@@ -239,7 +238,10 @@ export default function TIOrganizadoDashboard({
 
   const kpis = [
     { label: "Faturação anual", value: totalFat, tone: "primary" as const },
-    { label: "Despesas totais", value: totalDesp, tone: "neutral" as const },
+    { label: "Gastos com mercadorias", value: totalMercadorias, tone: "neutral" as const },
+    { label: "FSE", value: totalFse, tone: "neutral" as const },
+    { label: "Gastos com salários", value: totalPessoal, tone: "neutral" as const },
+    { label: "Depreciações", value: totalDepreciacoes, tone: "neutral" as const },
     { label: outrasLabel, value: outrasValor, tone: "neutral" as const },
     { label: "Resultado", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
   ];
@@ -301,7 +303,7 @@ export default function TIOrganizadoDashboard({
           <div className="text-sm text-muted-foreground">Análise TI Organizado · {year}</div>
         </div>
 
-        <div className="col-span-12 grid grid-cols-4 gap-3 auto-rows-fr">
+        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
           {kpis.map((k) => (
             <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
               <div className="text-xs text-muted-foreground">{k.label}</div>
