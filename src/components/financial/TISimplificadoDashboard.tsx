@@ -3,7 +3,7 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Download } from "lucide-react";
+import { Download, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -150,13 +150,42 @@ export default function TISimplificadoDashboard({
     }
     return total;
   };
-  const ivaTrim = [0, 1, 2, 3].map((qi) => {
+  const ivaAuto = [0, 1, 2, 3].map((qi) => {
     const lastMonth = qi * 3 + 3;
     const aPagar = sumPrefixMonth("2436", lastMonth);
     const aRecuperar = sumPrefixMonth("2437", lastMonth);
     if (aPagar !== 0 || aRecuperar !== 0) return aPagar - aRecuperar;
     return ivaM.slice(qi * 3, qi * 3 + 3).reduce((a, b) => a + b, 0);
   });
+
+  // Valor manual (editável) tem prioridade sobre o automático.
+  const ivaManual: (number | null)[] = [
+    settings?.iva_q1 ?? null,
+    settings?.iva_q2 ?? null,
+    settings?.iva_q3 ?? null,
+    settings?.iva_q4 ?? null,
+  ].map((v) => (v === null || v === undefined ? null : Number(v)));
+  const ivaTrim = ivaAuto.map((auto, i) => (ivaManual[i] === null ? auto : (ivaManual[i] as number)));
+  const [ivaInputs, setIvaInputs] = useState<string[]>(
+    ivaTrim.map((v) => String(cents(v))),
+  );
+  useEffect(() => {
+    setIvaInputs(
+      [0, 1, 2, 3].map((i) =>
+        String(cents(ivaManual[i] === null ? ivaAuto[i] : (ivaManual[i] as number))),
+      ),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings?.iva_q1, settings?.iva_q2, settings?.iva_q3, settings?.iva_q4, entries]);
+
+  const saveIva = (i: number) => {
+    const v = Number(ivaInputs[i]);
+    const next = Number.isFinite(v) ? cents(v) : 0;
+    upsertSettings.mutate({ [`iva_q${i + 1}`]: next } as any);
+  };
+  const resetIva = (i: number) => {
+    upsertSettings.mutate({ [`iva_q${i + 1}`]: null } as any);
+  };
 
   // Retenção na fonte e pagamentos por conta: soma anual da conta 2414 (qualquer subconta) do balancete.
   const retencoes2414 = (() => {
@@ -442,12 +471,50 @@ export default function TISimplificadoDashboard({
 
       <div className="col-span-6 rounded-xl border bg-card p-4 h-full flex flex-col">
 
-        <h4 className="font-semibold text-sm mb-3">IVA por trimestre</h4>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-semibold text-sm">IVA por trimestre</h4>
+          <div className="text-xs text-muted-foreground">
+            Total anual: <span className="font-bold tabular-nums text-foreground">{fmtEur(totalIva)}</span>
+          </div>
+        </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr flex-1">
           {ivaTrim.map((v, i) => (
             <div key={i} className="rounded-lg border bg-background p-3 min-h-[116px] h-full flex flex-col justify-between">
-              <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
-              <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
+              <div className="flex items-center justify-between">
+                <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
+                {!exporting && ivaManual[i] !== null && (
+                  <button
+                    type="button"
+                    onClick={() => resetIva(i)}
+                    title="Repor valor automático"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              {exporting ? (
+                <div className={cn("text-lg font-bold tabular-nums", v < 0 ? "text-emerald-600" : "text-primary")}>{fmtEur(v)}</div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={ivaInputs[i] ?? ""}
+                    onChange={(e) => {
+                      const next = [...ivaInputs];
+                      next[i] = e.target.value;
+                      setIvaInputs(next);
+                    }}
+                    onBlur={() => saveIva(i)}
+                    className={cn(
+                      "w-full text-right font-bold tabular-nums text-base py-1.5 pl-2 pr-7 rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-primary/30",
+                      v < 0 ? "text-emerald-600" : "text-primary",
+                    )}
+                  />
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">€</span>
+                </div>
+              )}
               <div className="text-[10px] text-muted-foreground mt-1">
                 {["Pagar até 25/05", "Pagar até 25/08", "Pagar até 25/11", "Pagar até 25/02 ano seguinte"][i]}
               </div>
