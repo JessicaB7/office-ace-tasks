@@ -3,7 +3,6 @@ import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAx
 import { Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -250,46 +249,6 @@ export default function EmpresasDashboard({
           {exporting ? "A exportar..." : "Exportar PDF"}
         </Button>
       </div>
-
-      {!exporting && (
-        <div className="rounded-lg border bg-card p-4">
-          <h4 className="font-semibold text-sm mb-1">Relatórios entregues e com visto</h4>
-          <p className="text-[11px] text-muted-foreground mb-3">
-            Registo interno do envio dos relatórios por trimestre (não aparece no PDF).
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {[0, 1, 2, 3].map((i) => {
-              const n = i + 1;
-              const checkedKey = `relatorio_q${n}_entregue` as keyof typeof settings;
-              const dateKey = `relatorio_q${n}_data` as keyof typeof settings;
-              const checked = Boolean(settings?.[checkedKey]);
-              const dateVal = (settings?.[dateKey] as string | null) ?? "";
-              return (
-                <div key={i} className="rounded-lg border bg-background p-3 space-y-2">
-                  <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                    <Checkbox
-                      checked={checked}
-                      disabled={!settings}
-                      onCheckedChange={(v) => upsertSettings.mutate({ [`relatorio_q${n}_entregue`]: v === true } as any)}
-                    />
-                    {n}º trimestre
-                  </label>
-                  <div>
-                    <div className="text-[10px] text-muted-foreground mb-1">Data de entrega</div>
-                    <Input
-                      type="date"
-                      className="h-8 text-xs"
-                      disabled={!settings}
-                      value={dateVal}
-                      onChange={(e) => upsertSettings.mutate({ [`relatorio_q${n}_data`]: e.target.value || null } as any)}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <div ref={reportRef} className="bg-background p-4 grid grid-cols-12 gap-3 items-stretch" style={{ width: exporting ? 1400 : undefined }}>
         <div className="col-span-12 flex items-start justify-between border-b pb-3">

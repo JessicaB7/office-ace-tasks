@@ -7,11 +7,15 @@ import {
   useFinancialImports,
   useSaveFinancialImport,
   useDeleteFinancialImport,
+  useClientFinancialSettings,
+  useUpsertSettings,
   IMPORT_SLOTS,
-  
+
   type ImportSlot,
 
 } from "@/hooks/useClientFinancials";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import AnaliseMensalTab from "./financial/AnaliseMensalTab";
 import MapaExploracaoTab from "./financial/MapaExploracaoTab";
 import IvaTab from "./financial/IvaTab";
@@ -63,6 +67,8 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const { data: imports = [] } = useFinancialImports(clientId, year);
   const saveImport = useSaveFinancialImport(clientId, year);
   const deleteImport = useDeleteFinancialImport(clientId, year);
+  const { data: settings } = useClientFinancialSettings(clientId, year);
+  const upsertSettings = useUpsertSettings(clientId, year);
   const fileRef = useRef<HTMLInputElement>(null);
   const pendingSlot = useRef<ImportSlot>("mapa");
   const [fichaOpen, setFichaOpen] = useState(false);
@@ -179,6 +185,44 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
 
   return (
     <div className="space-y-5">
+      <div className="rounded-lg border bg-card p-4">
+        <h4 className="font-semibold text-sm mb-1">Relatórios entregues e com visto</h4>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          Registo interno do envio dos relatórios por trimestre (não aparece em nenhum PDF exportado).
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[0, 1, 2, 3].map((i) => {
+            const n = i + 1;
+            const checkedKey = `relatorio_q${n}_entregue` as keyof typeof settings;
+            const dateKey = `relatorio_q${n}_data` as keyof typeof settings;
+            const checked = Boolean(settings?.[checkedKey]);
+            const dateVal = (settings?.[dateKey] as string | null) ?? "";
+            return (
+              <div key={i} className="rounded-lg border bg-background p-3 space-y-2">
+                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                  <Checkbox
+                    checked={checked}
+                    disabled={!settings}
+                    onCheckedChange={(v) => upsertSettings.mutate({ [`relatorio_q${n}_entregue`]: v === true } as any)}
+                  />
+                  {n}º trimestre
+                </label>
+                <div>
+                  <div className="text-[10px] text-muted-foreground mb-1">Data de entrega</div>
+                  <Input
+                    type="date"
+                    className="h-8 text-xs"
+                    disabled={!settings}
+                    value={dateVal}
+                    onChange={(e) => upsertSettings.mutate({ [`relatorio_q${n}_data`]: e.target.value || null } as any)}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Voltar">

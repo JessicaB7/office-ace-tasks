@@ -233,46 +233,6 @@ export default function DashboardTrimestral({
         </Button>
       </div>
 
-      {!exporting && (
-        <div className="rounded-lg border bg-card p-4">
-          <h4 className="font-semibold text-sm mb-1">Relatórios entregues e com visto</h4>
-          <p className="text-[11px] text-muted-foreground mb-3">
-            Registo interno do envio dos relatórios por trimestre (não aparece no PDF).
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {QUARTERS.map((q, idx) => {
-              const n = idx + 1;
-              const checkedKey = `relatorio_q${n}_entregue` as keyof typeof settings;
-              const dateKey = `relatorio_q${n}_data` as keyof typeof settings;
-              const checked = Boolean(settings?.[checkedKey]);
-              const dateVal = (settings?.[dateKey] as string | null) ?? "";
-              return (
-                <div key={q} className="rounded-lg border bg-background p-3 space-y-2">
-                  <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                    <Checkbox
-                      checked={checked}
-                      disabled={!settings}
-                      onCheckedChange={(v) => saveSettings({ [`relatorio_q${n}_entregue`]: v === true })}
-                    />
-                    {q}
-                  </label>
-                  <div>
-                    <div className="text-[10px] text-muted-foreground mb-1">Data de entrega</div>
-                    <Input
-                      type="date"
-                      className="h-8 text-xs"
-                      disabled={!settings}
-                      value={dateVal}
-                      onChange={(e) => saveSettings({ [`relatorio_q${n}_data`]: e.target.value || null })}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       <div ref={reportRef} className="bg-background p-4 grid grid-cols-12 gap-3 items-stretch" style={{ width: exporting ? 1400 : undefined }}>
         <div className="col-span-12 flex items-start justify-between border-b pb-3">
           <div>
