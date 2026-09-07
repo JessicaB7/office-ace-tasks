@@ -55,6 +55,14 @@ export type FinancialSettings = {
   mapa_q2_data: string | null;
   mapa_q3_data: string | null;
   mapa_q4_data: string | null;
+  relatorio_q1_entregue: boolean;
+  relatorio_q2_entregue: boolean;
+  relatorio_q3_entregue: boolean;
+  relatorio_q4_entregue: boolean;
+  relatorio_q1_data: string | null;
+  relatorio_q2_data: string | null;
+  relatorio_q3_data: string | null;
+  relatorio_q4_data: string | null;
 };
 
 
@@ -139,6 +147,14 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         mapa_q2_data: null,
         mapa_q3_data: null,
         mapa_q4_data: null,
+        relatorio_q1_entregue: false,
+        relatorio_q2_entregue: false,
+        relatorio_q3_entregue: false,
+        relatorio_q4_entregue: false,
+        relatorio_q1_data: null,
+        relatorio_q2_data: null,
+        relatorio_q3_data: null,
+        relatorio_q4_data: null,
       }) as FinancialSettings;
     },
     enabled: !!clientId,

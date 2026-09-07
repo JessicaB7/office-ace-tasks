@@ -122,6 +122,14 @@ export type Database = {
           mapa_q4_enviado: boolean
           outras_despesas_label: string
           outras_despesas_valor: number
+          relatorio_q1_data: string | null
+          relatorio_q1_entregue: boolean
+          relatorio_q2_data: string | null
+          relatorio_q2_entregue: boolean
+          relatorio_q3_data: string | null
+          relatorio_q3_entregue: boolean
+          relatorio_q4_data: string | null
+          relatorio_q4_entregue: boolean
           ss_q1: number
           ss_q2: number
           ss_q3: number
@@ -163,6 +171,14 @@ export type Database = {
           mapa_q4_enviado?: boolean
           outras_despesas_label?: string
           outras_despesas_valor?: number
+          relatorio_q1_data?: string | null
+          relatorio_q1_entregue?: boolean
+          relatorio_q2_data?: string | null
+          relatorio_q2_entregue?: boolean
+          relatorio_q3_data?: string | null
+          relatorio_q3_entregue?: boolean
+          relatorio_q4_data?: string | null
+          relatorio_q4_entregue?: boolean
           ss_q1?: number
           ss_q2?: number
           ss_q3?: number
@@ -204,6 +220,14 @@ export type Database = {
           mapa_q4_enviado?: boolean
           outras_despesas_label?: string
           outras_despesas_valor?: number
+          relatorio_q1_data?: string | null
+          relatorio_q1_entregue?: boolean
+          relatorio_q2_data?: string | null
+          relatorio_q2_entregue?: boolean
+          relatorio_q3_data?: string | null
+          relatorio_q3_entregue?: boolean
+          relatorio_q4_data?: string | null
+          relatorio_q4_entregue?: boolean
           ss_q1?: number
           ss_q2?: number
           ss_q3?: number
