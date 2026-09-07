@@ -101,6 +101,7 @@ export type Database = {
           client_id: string
           corporate_tax_rate: number
           derrama_rate: number
+          despesas_nao_aceites: number
           irc_coef: number
           irc_regime: string
           irs_deducoes_colecta: number
@@ -126,9 +127,12 @@ export type Database = {
           ss_q3: number
           ss_q4: number
           ta_base_ajudas_custo: number
+          ta_base_nao_doc: number
           ta_base_representacao: number
+          ta_base_viaturas: number
           ta_kms: number
           ta_nao_doc: number
+          ta_rate_viaturas: number
           ta_representacao: number
           tco: boolean
           updated_at: string
@@ -138,6 +142,7 @@ export type Database = {
           client_id: string
           corporate_tax_rate?: number
           derrama_rate?: number
+          despesas_nao_aceites?: number
           irc_coef?: number
           irc_regime?: string
           irs_deducoes_colecta?: number
@@ -163,9 +168,12 @@ export type Database = {
           ss_q3?: number
           ss_q4?: number
           ta_base_ajudas_custo?: number
+          ta_base_nao_doc?: number
           ta_base_representacao?: number
+          ta_base_viaturas?: number
           ta_kms?: number
           ta_nao_doc?: number
+          ta_rate_viaturas?: number
           ta_representacao?: number
           tco?: boolean
           updated_at?: string
@@ -175,6 +183,7 @@ export type Database = {
           client_id?: string
           corporate_tax_rate?: number
           derrama_rate?: number
+          despesas_nao_aceites?: number
           irc_coef?: number
           irc_regime?: string
           irs_deducoes_colecta?: number
@@ -200,9 +209,12 @@ export type Database = {
           ss_q3?: number
           ss_q4?: number
           ta_base_ajudas_custo?: number
+          ta_base_nao_doc?: number
           ta_base_representacao?: number
+          ta_base_viaturas?: number
           ta_kms?: number
           ta_nao_doc?: number
+          ta_rate_viaturas?: number
           ta_representacao?: number
           tco?: boolean
           updated_at?: string
