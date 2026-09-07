@@ -140,10 +140,13 @@ export default function EmpresasDashboard({
   const derramaTaxa = Number(settings?.derrama_rate ?? 0.015);
   const ircRegime = (settings?.irc_regime ?? "normal") as "normal" | "simplificado";
   const ircCoef = Number(settings?.irc_coef ?? 0.10);
+  // Despesas não aceites fiscalmente: acrescem ao resultado contabilístico
+  // para apurar a matéria coletável (não se aplica ao regime simplificado).
+  const despesasNaoAceites = Number(settings?.despesas_nao_aceites ?? 0);
   const baseTributavel =
     ircRegime === "simplificado"
       ? cents(Math.max(0, totalRendimentos) * ircCoef)
-      : Math.max(0, resultado);
+      : Math.max(0, resultado + despesasNaoAceites);
   const ircBase = cents(
     Math.min(baseTributavel, 50000) * 0.15 +
     Math.max(0, baseTributavel - 50000) * 0.19,
@@ -170,7 +173,19 @@ export default function EmpresasDashboard({
   const taAjBase = taAjManual > 0 ? taAjManual : taAjAuto;
   const taRep = taRepBase * 0.10;
   const taAj = taAjBase * 0.05;
-  const taTotal = taRep + taAj;
+
+  // Despesas não documentadas — sem conta SNC própria, base é sempre manual. Taxa fixa 50%.
+  const taNaoDocRate = Number(settings?.ta_nao_doc ?? 0.50);
+  const taNaoDocBase = Number(settings?.ta_base_nao_doc ?? 0);
+  const taNaoDoc = taNaoDocBase * taNaoDocRate;
+
+  // Despesas de viaturas — taxa variável consoante o custo de aquisição (10% / 27,5% / 35%),
+  // por isso é editável em vez de fixa.
+  const taViaturasRate = Number(settings?.ta_rate_viaturas ?? 0.10);
+  const taViaturasBase = Number(settings?.ta_base_viaturas ?? 0);
+  const taViaturas = taViaturasBase * taViaturasRate;
+
+  const taTotal = taRep + taAj + taNaoDoc + taViaturas;
 
   const ircTotal = ircBase + derrama + taTotal;
   const taxaEfetiva = baseTributavel > 0 ? (ircTotal / baseTributavel) * 100 : 0;
@@ -528,13 +543,34 @@ export default function EmpresasDashboard({
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
 
+            {ircRegime === "normal" && (
+              <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
+                <div className="text-[11px] text-muted-foreground">Despesas não aceites</div>
+                {exporting ? (
+                  <div className="text-lg font-bold tabular-nums">{fmtEur(despesasNaoAceites)}</div>
+                ) : (
+                  <Input
+                    type="number"
+                    step="0.01"
+                    className="mt-1 h-9 text-lg font-bold tabular-nums border-transparent bg-transparent px-0 focus-visible:border-input focus-visible:px-2"
+                    value={String(despesasNaoAceites)}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      if (Number.isFinite(v)) upsertSettings.mutate({ despesas_nao_aceites: v } as any);
+                    }}
+                  />
+                )}
+                <div className="text-[10px] text-muted-foreground mt-1">Acresce à matéria coletável</div>
+              </div>
+            )}
+
             <div className="rounded-lg border bg-background p-3 min-h-[100px] flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Matéria coletável</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(baseTributavel)}</div>
               <div className="text-[10px] text-muted-foreground mt-1">
                 {ircRegime === "simplificado"
                   ? `Rendimentos × ${(ircCoef * 100).toFixed(1)}%`
-                  : "Resultado do exercício"}
+                  : "Resultado do exercício + despesas não aceites"}
               </div>
             </div>
 
@@ -561,20 +597,38 @@ export default function EmpresasDashboard({
             <h5 className="text-xs font-semibold mb-3">Tributação autónoma</h5>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {([
-                { key: "ta_base_representacao" as const, label: "Despesas de representação", contas: "6266 + 625", codes: ["6266", "625"] as const, rate: 0.10, base: taRepBase, auto: taRepAuto, manual: taRepManual, imposto: taRep },
-                { key: "ta_base_ajudas_custo" as const, label: "Ajudas de custo", contas: "6315 + 6325", codes: ["6315", "6325"] as const, rate: 0.05, base: taAjBase, auto: taAjAuto, manual: taAjManual, imposto: taAj },
+                { key: "ta_base_representacao" as const, label: "Despesas de representação", contas: "6266 + 625", codes: ["6266", "625"] as const, rate: 0.10, rateEditable: false as const, base: taRepBase, auto: taRepAuto, manual: taRepManual, imposto: taRep },
+                { key: "ta_base_ajudas_custo" as const, label: "Ajudas de custo", contas: "6315 + 6325", codes: ["6315", "6325"] as const, rate: 0.05, rateEditable: false as const, base: taAjBase, auto: taAjAuto, manual: taAjManual, imposto: taAj },
+                { key: "ta_base_nao_doc" as const, label: "Despesas não documentadas", contas: null, codes: [] as const, rate: taNaoDocRate, rateEditable: false as const, base: taNaoDocBase, auto: 0, manual: taNaoDocBase, imposto: taNaoDoc },
+                { key: "ta_base_viaturas" as const, label: "Despesas de viaturas", contas: null, codes: [] as const, rate: taViaturasRate, rateEditable: true as const, rateKey: "ta_rate_viaturas" as const, base: taViaturasBase, auto: 0, manual: taViaturasBase, imposto: taViaturas },
               ]).map((row) => (
                 <div key={row.key} className="rounded-lg border bg-background p-3">
                   <div className="flex items-center justify-between gap-3 mb-2">
                     <div>
                       <div className="text-[11px] font-medium">{row.label}</div>
-                      {!exporting && (
+                      {!exporting && row.contas && (
                         <div className="text-[10px] text-muted-foreground">Contas {row.contas}</div>
                       )}
                     </div>
-                    <span className="text-[10px] rounded-full bg-primary/10 text-primary px-2 py-0.5 font-semibold">
-                      {(row.rate * 100).toFixed(0)}%
-                    </span>
+                    {row.rateEditable && !exporting ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          step="0.5"
+                          className="h-6 w-16 text-[10px] text-right px-1.5"
+                          value={(row.rate * 100).toString()}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            if (Number.isFinite(v)) upsertSettings.mutate({ [row.rateKey]: v / 100 } as any);
+                          }}
+                        />
+                        <span className="text-[10px] text-muted-foreground">%</span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] rounded-full bg-primary/10 text-primary px-2 py-0.5 font-semibold">
+                        {(row.rate * 100).toFixed(0)}%
+                      </span>
+                    )}
                   </div>
                   {exporting ? (
                     <div className="text-xs text-muted-foreground">Base: {fmtEur(row.base)}</div>
@@ -596,17 +650,19 @@ export default function EmpresasDashboard({
                           }}
                         />
                       </div>
-                      <div className="mt-1 text-[10px] text-muted-foreground">
-                        Balancete: {row.codes.map((c) => `${c} ${fmtEur(taParts[c])}`).join(" + ")} = {fmtEur(row.auto)}
-                        {row.manual > 0 && (
-                          <button
-                            className="ml-2 underline hover:text-foreground"
-                            onClick={() => upsertSettings.mutate({ [row.key]: 0 } as any)}
-                          >
-                            repor
-                          </button>
-                        )}
-                      </div>
+                      {row.codes.length > 0 && (
+                        <div className="mt-1 text-[10px] text-muted-foreground">
+                          Balancete: {row.codes.map((c) => `${c} ${fmtEur(taParts[c])}`).join(" + ")} = {fmtEur(row.auto)}
+                          {row.manual > 0 && (
+                            <button
+                              className="ml-2 underline hover:text-foreground"
+                              onClick={() => upsertSettings.mutate({ [row.key]: 0 } as any)}
+                            >
+                              repor
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
                   <div className="mt-2 text-sm font-bold tabular-nums">{fmtEur(row.imposto)}</div>

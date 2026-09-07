@@ -26,6 +26,10 @@ export type FinancialSettings = {
   ta_nao_doc: number;
   ta_base_representacao: number;
   ta_base_ajudas_custo: number;
+  ta_base_nao_doc: number;
+  ta_base_viaturas: number;
+  ta_rate_viaturas: number;
+  despesas_nao_aceites: number;
   irs_retencoes: number;
   irs_deducoes_colecta: number;
   ss_q1: number;
@@ -106,6 +110,10 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         ta_nao_doc: 0.50,
         ta_base_representacao: 0,
         ta_base_ajudas_custo: 0,
+        ta_base_nao_doc: 0,
+        ta_base_viaturas: 0,
+        ta_rate_viaturas: 0.10,
+        despesas_nao_aceites: 0,
         irs_retencoes: 0,
         irs_deducoes_colecta: 250,
         ss_q1: 0,
