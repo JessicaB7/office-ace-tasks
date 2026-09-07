@@ -347,6 +347,47 @@ export default function TISimplificadoDashboard({
           {exporting ? "A exportar..." : "Exportar PDF"}
         </Button>
       </div>
+
+      {!exporting && (
+        <div className="rounded-lg border bg-card p-4">
+          <h4 className="font-semibold text-sm mb-1">Relatórios entregues e com visto</h4>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            Registo interno do envio dos relatórios por trimestre (não aparece no PDF).
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[0, 1, 2, 3].map((i) => {
+              const n = i + 1;
+              const checkedKey = `relatorio_q${n}_entregue` as keyof typeof settings;
+              const dateKey = `relatorio_q${n}_data` as keyof typeof settings;
+              const checked = Boolean(settings?.[checkedKey]);
+              const dateVal = (settings?.[dateKey] as string | null) ?? "";
+              return (
+                <div key={i} className="rounded-lg border bg-background p-3 space-y-2">
+                  <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
+                    <Checkbox
+                      checked={checked}
+                      disabled={!settings}
+                      onCheckedChange={(v) => upsertSettings.mutate({ [`relatorio_q${n}_entregue`]: v === true } as any)}
+                    />
+                    {n}º trimestre
+                  </label>
+                  <div>
+                    <div className="text-[10px] text-muted-foreground mb-1">Data de entrega</div>
+                    <input
+                      type="date"
+                      disabled={!settings}
+                      value={dateVal}
+                      onChange={(e) => upsertSettings.mutate({ [`relatorio_q${n}_data`]: e.target.value || null } as any)}
+                      className="w-full py-1.5 px-2 rounded-lg border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div ref={reportRef} className="bg-background p-4 grid grid-cols-12 gap-3 items-stretch" style={{ width: exporting ? 1400 : undefined }}>
       <div className="col-span-12 flex items-start justify-between border-b pb-3">
 
@@ -722,46 +763,6 @@ export default function TISimplificadoDashboard({
       </div>
 
     </div>
-
-    {!exporting && (
-      <div className="rounded-lg border bg-card p-4">
-        <h4 className="font-semibold text-sm mb-1">Relatórios entregues e com visto</h4>
-        <p className="text-[11px] text-muted-foreground mb-3">
-          Registo interno do envio dos relatórios por trimestre (não aparece no PDF).
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {[0, 1, 2, 3].map((i) => {
-            const n = i + 1;
-            const checkedKey = `relatorio_q${n}_entregue` as keyof typeof settings;
-            const dateKey = `relatorio_q${n}_data` as keyof typeof settings;
-            const checked = Boolean(settings?.[checkedKey]);
-            const dateVal = (settings?.[dateKey] as string | null) ?? "";
-            return (
-              <div key={i} className="rounded-lg border bg-background p-3 space-y-2">
-                <label className="flex items-center gap-2 text-xs font-medium cursor-pointer">
-                  <Checkbox
-                    checked={checked}
-                    disabled={!settings}
-                    onCheckedChange={(v) => upsertSettings.mutate({ [`relatorio_q${n}_entregue`]: v === true } as any)}
-                  />
-                  {n}º trimestre
-                </label>
-                <div>
-                  <div className="text-[10px] text-muted-foreground mb-1">Data de entrega</div>
-                  <input
-                    type="date"
-                    disabled={!settings}
-                    value={dateVal}
-                    onChange={(e) => upsertSettings.mutate({ [`relatorio_q${n}_data`]: e.target.value || null } as any)}
-                    className="w-full py-1.5 px-2 rounded-lg border bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    )}
     </div>
   );
 
