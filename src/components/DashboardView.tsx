@@ -1,12 +1,24 @@
 import { useState, useMemo } from "react";
 import { useTasks, useMonthlyObligations, useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
-import { CalendarClock, CheckCircle2, Clock, AlertTriangle, XCircle, CalendarDays, ClipboardList } from "lucide-react";
+import { CheckCircle2, Clock, AlertTriangle, CalendarDays, ClipboardList, Users, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const QUARTER_REF: Record<number, string> = { 1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT" };
+
+const AVATAR_PALETTES = [
+  "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+  "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+  "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+  "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
+];
+
+const getInitials = (name: string) =>
+  name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
 const hasSalarios = (c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "";
 const isTI = (c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO";
@@ -59,6 +71,7 @@ const DashboardView = () => {
   const [expandedType, setExpandedType] = useState<string | null>(null);
   const [expandedTab, setExpandedTab] = useState<"pendentes" | "concluidos">("pendentes");
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
+  const [expandedCollabId, setExpandedCollabId] = useState<string | null>(null);
 
   const today = new Date();
   const curMonth = today.getMonth();
@@ -91,6 +104,38 @@ const DashboardView = () => {
   const overdueTasks = myTasks.filter(
     (t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()
   );
+
+  const myPendente = myTasks.filter((t: any) => t.status === "pendente").length;
+  const myEmProgresso = myTasks.filter((t: any) => t.status === "em_progresso").length;
+  const myConcluida = myTasks.filter((t: any) => t.status === "concluida").length;
+  const myAtrasada = overdueTasks.length;
+
+  const greeting = today.getHours() < 12 ? "Bom dia" : today.getHours() < 20 ? "Boa tarde" : "Boa noite";
+  const firstName = currentCollaborator?.name?.split(" ")[0];
+  const formattedDate = useMemo(() => {
+    const s = today.toLocaleDateString("pt-PT", { weekday: "long", day: "numeric", month: "long" });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }, []);
+
+  // Tarefas pendentes de cada colaborador (não só as do utilizador atual)
+  const tasksByCollaborator = useMemo(() => {
+    const activeCollabs = collaborators.filter((c: any) => c.active);
+    const map = new Map<string, { collab: any; items: any[] }>();
+    activeCollabs.forEach((c: any) => map.set(c.id, { collab: c, items: [] }));
+    tasks.forEach((t: any) => {
+      if (t.status === "concluida" || t.status === "cancelada") return;
+      if (!t.collaborator_id || !map.has(t.collaborator_id)) return;
+      map.get(t.collaborator_id)!.items.push(t);
+    });
+    return Array.from(map.values())
+      .filter((e) => e.items.length > 0)
+      .map((e) => {
+        const items = [...e.items].sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+        const overdueCount = items.filter((t: any) => new Date(t.due_date) < new Date()).length;
+        return { ...e, items, overdueCount };
+      })
+      .sort((a, b) => b.items.length - a.items.length);
+  }, [tasks, collaborators]);
 
   const obligationsByOffset: Record<number, any[]> = useMemo(() => ({
     1: obligations1,
@@ -374,13 +419,108 @@ const DashboardView = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Dashboard</h2>
-        <p className="text-muted-foreground text-sm mt-1">Visão geral das tarefas do gabinete</p>
+      <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 animate-fade-in">
+        <div className="pointer-events-none absolute -right-8 -top-8 w-40 h-40 rounded-full bg-primary/10 blur-2xl" />
+        <div className="relative flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-primary" /> {formattedDate}
+            </p>
+            <h2 className="text-2xl md:text-3xl font-bold mt-1">
+              {greeting}{firstName ? `, ${firstName}` : ""}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {currentCollaborator
+                ? `${myPendente + myEmProgresso} tarefa${myPendente + myEmProgresso !== 1 ? "s" : ""} por concluir · ${weekDeadlines.length} prazo${weekDeadlines.length !== 1 ? "s" : ""} esta semana`
+                : "O seu email não está associado a nenhum colaborador."}
+            </p>
+          </div>
+          {currentCollaborator && (
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="text-center px-3 py-2 rounded-lg bg-card/80 border">
+                <p className="text-lg font-bold text-warning leading-none">{myPendente + myEmProgresso}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Por fazer</p>
+              </div>
+              <div className="text-center px-3 py-2 rounded-lg bg-card/80 border">
+                <p className="text-lg font-bold text-destructive leading-none">{myAtrasada}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Atrasadas</p>
+              </div>
+              <div className="text-center px-3 py-2 rounded-lg bg-card/80 border">
+                <p className="text-lg font-bold text-success leading-none">{myConcluida}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Concluídas</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* As Minhas Tarefas */}
+      <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "60ms" }}>
+        <div className="flex items-center gap-2 mb-4">
+          <ClipboardList className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold">As Minhas Tarefas</h3>
+          {currentCollaborator && <span className="text-xs text-muted-foreground ml-1">({currentCollaborator.name})</span>}
+        </div>
+        {!currentCollaborator ? (
+          <p className="text-sm text-muted-foreground">O seu email não está associado a nenhum colaborador.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              <div className="text-center p-2.5 rounded-lg bg-warning/10 flex flex-col items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-warning" />
+                <p className="text-lg font-bold text-warning leading-none">{myPendente}</p>
+                <p className="text-[10px] text-muted-foreground">Pendente</p>
+              </div>
+              <div className="text-center p-2.5 rounded-lg bg-info/10 flex flex-col items-center gap-1">
+                <Loader2 className="w-3.5 h-3.5 text-info" />
+                <p className="text-lg font-bold text-info leading-none">{myEmProgresso}</p>
+                <p className="text-[10px] text-muted-foreground">Em Progresso</p>
+              </div>
+              <div className="text-center p-2.5 rounded-lg bg-success/10 flex flex-col items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                <p className="text-lg font-bold text-success leading-none">{myConcluida}</p>
+                <p className="text-[10px] text-muted-foreground">Concluída</p>
+              </div>
+              <div className="text-center p-2.5 rounded-lg bg-destructive/10 flex flex-col items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
+                <p className="text-lg font-bold text-destructive leading-none">{myAtrasada}</p>
+                <p className="text-[10px] text-muted-foreground">Atrasada</p>
+              </div>
+            </div>
+            {myTasks.filter((t: any) => t.status !== "concluida" && t.status !== "cancelada").length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem tarefas pendentes</p>
+            ) : (
+              <div className="divide-y border rounded-lg overflow-hidden">
+                {myTasks
+                  .filter((t: any) => t.status !== "concluida" && t.status !== "cancelada")
+                  .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+                  .map((task: any) => {
+                    const isOverdue = new Date(task.due_date) < new Date();
+                    return (
+                      <div key={task.id} className="flex items-center justify-between px-4 py-2.5 text-sm hover:bg-muted/30 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{task.title}</p>
+                          <p className="text-xs text-muted-foreground">{task.clients?.name || "—"} · {CATEGORY_LABELS[task.category as TaskCategory]}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-3">
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${task.status === "pendente" ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary"}`}>
+                            {STATUS_LABELS[task.status as TaskStatus]}
+                          </span>
+                          <span className={`text-xs whitespace-nowrap ${isOverdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                            {new Date(task.due_date).toLocaleDateString("pt-PT")}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {overdueTasks.length > 0 && (
-        <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "60ms" }}>
+        <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "120ms" }}>
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-4 h-4 text-destructive" />
             <h3 className="font-semibold">Tarefas em Atraso</h3>
@@ -402,77 +542,71 @@ const DashboardView = () => {
         </div>
       )}
 
-      {renderDeadlineSection(weekDeadlines, "Prazos desta Semana", "primary", "120ms")}
-      {renderDeadlineSection(nextWeekDeadlines, "Prazos da Próxima Semana", "muted", "200ms")}
+      {renderDeadlineSection(weekDeadlines, "Prazos desta Semana", "primary", "180ms")}
+      {renderDeadlineSection(nextWeekDeadlines, "Prazos da Próxima Semana", "muted", "240ms")}
 
-      {/* As Minhas Tarefas */}
-      {(() => {
-        const myPendente = myTasks.filter((t: any) => t.status === "pendente").length;
-        const myEmProgresso = myTasks.filter((t: any) => t.status === "em_progresso").length;
-        const myConcluida = myTasks.filter((t: any) => t.status === "concluida").length;
-        const myAtrasada = myTasks.filter((t: any) => t.status !== "concluida" && t.status !== "cancelada" && new Date(t.due_date) < new Date()).length;
-        return (
-          <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "280ms" }}>
-            <div className="flex items-center gap-2 mb-4">
-              <ClipboardList className="w-4 h-4 text-primary" />
-              <h3 className="font-semibold">As Minhas Tarefas</h3>
-              {currentCollaborator && <span className="text-xs text-muted-foreground ml-1">({currentCollaborator.name})</span>}
-            </div>
-            {!currentCollaborator ? (
-              <p className="text-sm text-muted-foreground">O seu email não está associado a nenhum colaborador.</p>
-            ) : (
-              <>
-                <div className="grid grid-cols-4 gap-2 mb-4">
-                  <div className="text-center p-2 rounded-lg bg-warning/10">
-                    <p className="text-lg font-bold text-warning">{myPendente}</p>
-                    <p className="text-[10px] text-muted-foreground">Pendente</p>
+      {/* Tarefas de cada colaborador */}
+      {tasksByCollaborator.length > 0 && (
+        <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "300ms" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="w-4 h-4 text-primary" />
+            <h3 className="font-semibold">Tarefas de Cada Colaborador</h3>
+            <span className="ml-auto text-xs text-muted-foreground">{tasksByCollaborator.length} com tarefas pendentes</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {tasksByCollaborator.map((entry, i) => {
+              const isExpanded = expandedCollabId === entry.collab.id;
+              const palette = AVATAR_PALETTES[i % AVATAR_PALETTES.length];
+              return (
+                <div key={entry.collab.id} className="border rounded-lg overflow-hidden">
+                  <div
+                    className="flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/40 transition-colors"
+                    onClick={() => setExpandedCollabId(isExpanded ? null : entry.collab.id)}
+                  >
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 ${palette}`}>
+                      {getInitials(entry.collab.name)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{entry.collab.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {entry.items.length} tarefa{entry.items.length !== 1 ? "s" : ""} pendente{entry.items.length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    {entry.overdueCount > 0 && (
+                      <span className="text-[10px] font-semibold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-full shrink-0">
+                        {entry.overdueCount} atrasada{entry.overdueCount !== 1 ? "s" : ""}
+                      </span>
+                    )}
                   </div>
-                  <div className="text-center p-2 rounded-lg bg-info/10">
-                    <p className="text-lg font-bold text-info">{myEmProgresso}</p>
-                    <p className="text-[10px] text-muted-foreground">Em Progresso</p>
-                  </div>
-                  <div className="text-center p-2 rounded-lg bg-success/10">
-                    <p className="text-lg font-bold text-success">{myConcluida}</p>
-                    <p className="text-[10px] text-muted-foreground">Concluída</p>
-                  </div>
-                  <div className="text-center p-2 rounded-lg bg-destructive/10">
-                    <p className="text-lg font-bold text-destructive">{myAtrasada}</p>
-                    <p className="text-[10px] text-muted-foreground">Atrasada</p>
-                  </div>
-                </div>
-                {myTasks.filter((t: any) => t.status !== "concluida" && t.status !== "cancelada").length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Sem tarefas pendentes</p>
-                ) : (
-                  <div className="divide-y border rounded-lg overflow-hidden">
-                    {myTasks
-                      .filter((t: any) => t.status !== "concluida" && t.status !== "cancelada")
-                      .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-                      .map((task: any) => {
+                  {isExpanded && (
+                    <div className="border-t divide-y max-h-[240px] overflow-y-auto animate-fade-in">
+                      {entry.items.map((task: any) => {
                         const isOverdue = new Date(task.due_date) < new Date();
                         return (
-                          <div key={task.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                          <div
+                            key={task.id}
+                            onClick={() => task.clients && setSelectedClient(clients.find((cc: any) => cc.id === task.client_id) || null)}
+                            className="flex items-center justify-between px-3 py-2 text-xs hover:bg-muted/30 cursor-pointer"
+                          >
                             <div className="min-w-0 flex-1">
                               <p className="font-medium truncate">{task.title}</p>
-                              <p className="text-xs text-muted-foreground">{task.clients?.name || "—"} · {CATEGORY_LABELS[task.category as TaskCategory]}</p>
+                              <p className="text-muted-foreground truncate">{task.clients?.name || "—"}</p>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0 ml-3">
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${task.status === "pendente" ? "bg-warning/15 text-warning" : "bg-primary/10 text-primary"}`}>
-                                {STATUS_LABELS[task.status as TaskStatus]}
-                              </span>
-                              <span className={`text-xs whitespace-nowrap ${isOverdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
-                                {new Date(task.due_date).toLocaleDateString("pt-PT")}
-                              </span>
-                            </div>
+                            <span className={`whitespace-nowrap ml-2 ${isOverdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                              {new Date(task.due_date).toLocaleDateString("pt-PT")}
+                            </span>
                           </div>
                         );
                       })}
-                  </div>
-                )}
-              </>
-            )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        );
-      })()}
+        </div>
+      )}
+
       <ClientDetailDialog
         client={selectedClient}
         open={!!selectedClient}
