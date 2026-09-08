@@ -53,9 +53,9 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
         .sort((a, b) => {
           const da = (a.meeting_date || a.created_at || "").slice(0, 10);
           const db = (b.meeting_date || b.created_at || "").slice(0, 10);
-          return db.localeCompare(da);
+          return segment === "consultoria" ? da.localeCompare(db) : db.localeCompare(da);
         }),
-    [leads, search, stage, bizType]
+    [leads, search, stage, bizType, segment]
   );
 
   // Consultorias: mostra o mês corrente por omissão, com setas para navegar por mês,
@@ -68,6 +68,10 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
   const noDateLeads = useMemo(
     () => (segment === "consultoria" ? filtered.filter((l) => !l.meeting_date) : []),
     [filtered, segment]
+  );
+  const monthTotal = useMemo(
+    () => monthLeads.reduce((sum, l) => sum + Number(l.estimated_value || 0), 0),
+    [monthLeads]
   );
 
   const colCount = segment === "consultoria" ? 7 : 10;
@@ -138,7 +142,13 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold">Leads</h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} de {leads.length} leads</p>
+          {segment === "consultoria" ? (
+            <p className="text-sm text-muted-foreground">
+              {monthLeads.length} sessõe{monthLeads.length === 1 ? "" : "s"} neste mês · Total: <span className="font-medium text-foreground">{eur(monthTotal)}</span>
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">{filtered.length} de {leads.length} leads</p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {segment === "consultoria" && (
