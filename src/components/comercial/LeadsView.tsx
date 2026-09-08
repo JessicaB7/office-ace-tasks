@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Trash2, Pencil } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   stagesFor,
@@ -31,6 +31,11 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
   const [bizType, setBizType] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);
+  const now = new Date();
+  const [navMonth, setNavMonth] = useState(now.getMonth()); // 0-indexed
+  const [navYear, setNavYear] = useState(now.getFullYear());
+  const prevMonth = () => { if (navMonth === 0) { setNavMonth(11); setNavYear((y) => y - 1); } else setNavMonth((m) => m - 1); };
+  const nextMonth = () => { if (navMonth === 11) { setNavMonth(0); setNavYear((y) => y + 1); } else setNavMonth((m) => m + 1); };
 
   const filtered = useMemo(
     () =>
@@ -53,17 +58,17 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
     [leads, search, stage, bizType]
   );
 
-  // Consultorias: separa a listagem por mês, de acordo com a data da sessão (meeting_date).
-  const groupedByMonth = useMemo(() => {
-    if (segment !== "consultoria") return null;
-    const groups = new Map<string, Lead[]>();
-    filtered.forEach((l) => {
-      const key = monthKey(l.meeting_date);
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(l);
-    });
-    return Array.from(groups.entries()).map(([key, items]) => ({ key, items }));
-  }, [filtered, segment]);
+  // Consultorias: mostra o mês corrente por omissão, com setas para navegar por mês,
+  // de acordo com a data da sessão (meeting_date).
+  const selectedMonthKey = `${navYear}-${String(navMonth + 1).padStart(2, "0")}`;
+  const monthLeads = useMemo(
+    () => (segment === "consultoria" ? filtered.filter((l) => monthKey(l.meeting_date) === selectedMonthKey) : []),
+    [filtered, segment, selectedMonthKey]
+  );
+  const noDateLeads = useMemo(
+    () => (segment === "consultoria" ? filtered.filter((l) => !l.meeting_date) : []),
+    [filtered, segment]
+  );
 
   const colCount = segment === "consultoria" ? 7 : 10;
 
@@ -135,9 +140,18 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
           <h1 className="text-2xl font-bold">Leads</h1>
           <p className="text-sm text-muted-foreground">{filtered.length} de {leads.length} leads</p>
         </div>
-        <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Nova lead
-        </Button>
+        <div className="flex items-center gap-2">
+          {segment === "consultoria" && (
+            <div className="flex items-center gap-2 bg-card rounded-lg border px-2 py-1">
+              <button onClick={prevMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+              <span className="text-sm font-medium min-w-[160px] text-center">{monthLabel(selectedMonthKey)}</span>
+              <button onClick={nextMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
+            </div>
+          )}
+          <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" /> Nova lead
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-3 flex-wrap">
@@ -183,18 +197,30 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
               </tr>
             </thead>
             <tbody>
-              {(groupedByMonth
-                ? groupedByMonth.flatMap((g) => [
-                    <tr key={`h-${g.key}`} className="border-t bg-muted/30">
-                      <td colSpan={colCount} className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        {monthLabel(g.key)} <span className="font-normal normal-case">({g.items.length})</span>
-                      </td>
-                    </tr>,
-                    ...g.items.map((l) => renderRow(l)),
-                  ])
-                : filtered.map((l) => renderRow(l)))}
-              {!isLoading && filtered.length === 0 && (
-                <tr><td colSpan={colCount} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
+              {segment === "consultoria" ? (
+                <>
+                  {monthLeads.map((l) => renderRow(l))}
+                  {noDateLeads.length > 0 && (
+                    <>
+                      <tr className="border-t bg-muted/30">
+                        <td colSpan={colCount} className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Sem data de sessão <span className="font-normal normal-case">({noDateLeads.length})</span>
+                        </td>
+                      </tr>
+                      {noDateLeads.map((l) => renderRow(l))}
+                    </>
+                  )}
+                  {!isLoading && monthLeads.length === 0 && noDateLeads.length === 0 && (
+                    <tr><td colSpan={colCount} className="p-6 text-center text-muted-foreground">Sem leads neste mês.</td></tr>
+                  )}
+                </>
+              ) : (
+                <>
+                  {filtered.map((l) => renderRow(l))}
+                  {!isLoading && filtered.length === 0 && (
+                    <tr><td colSpan={colCount} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
+                  )}
+                </>
               )}
             </tbody>
           </table>
