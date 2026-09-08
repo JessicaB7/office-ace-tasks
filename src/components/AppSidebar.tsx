@@ -39,7 +39,11 @@ type Entry = { kind: "item"; item: Item } | { kind: "group"; group: Group };
 const SECTIONS: { title: string; entries: Entry[] }[] = [
   {
     title: "Visão geral",
-    entries: [{ kind: "item", item: { id: "dashboard", label: "O meu dia", icon: LayoutDashboard } }],
+    entries: [
+      { kind: "item", item: { id: "dashboard", label: "O meu dia a dia", icon: LayoutDashboard } },
+      { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
+      { kind: "item", item: { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays } },
+    ],
   },
   {
     title: "Comercial",
@@ -76,7 +80,6 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
           ],
         },
       },
-      { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
       {
         kind: "group",
         group: {
@@ -95,7 +98,6 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
           ],
         },
       },
-      { kind: "item", item: { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays } },
       { kind: "item", item: { id: "extratos", label: "Extratos Bancários", icon: Banknote } },
       {
         kind: "group",
