@@ -64,7 +64,7 @@ const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
 };
 
 const DashboardView = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { data: tasks = [], isLoading } = useTasks();
   const { data: clients = [] } = useClients();
   const { data: collaborators = [] } = useCollaborators();
@@ -117,8 +117,9 @@ const DashboardView = () => {
     return s.charAt(0).toUpperCase() + s.slice(1);
   }, []);
 
-  // Tarefas pendentes de cada colaborador (não só as do utilizador atual)
+  // Tarefas pendentes de cada colaborador (não só as do utilizador atual) — só para admins
   const tasksByCollaborator = useMemo(() => {
+    if (!isAdmin) return [];
     const activeCollabs = collaborators.filter((c: any) => c.active);
     const map = new Map<string, { collab: any; items: any[] }>();
     activeCollabs.forEach((c: any) => map.set(c.id, { collab: c, items: [] }));
@@ -135,7 +136,7 @@ const DashboardView = () => {
         return { ...e, items, overdueCount };
       })
       .sort((a, b) => b.items.length - a.items.length);
-  }, [tasks, collaborators]);
+  }, [tasks, collaborators, isAdmin]);
 
   const obligationsByOffset: Record<number, any[]> = useMemo(() => ({
     1: obligations1,
@@ -519,34 +520,11 @@ const DashboardView = () => {
         )}
       </div>
 
-      {overdueTasks.length > 0 && (
-        <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "120ms" }}>
-          <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="w-4 h-4 text-destructive" />
-            <h3 className="font-semibold">Tarefas em Atraso</h3>
-            <span className="ml-auto text-xs font-medium bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">{overdueTasks.length}</span>
-          </div>
-          <div className="space-y-3">
-            {overdueTasks.map((task: any) => (
-              <div key={task.id} className="flex items-center justify-between text-sm">
-                <div>
-                  <p className="font-medium">{task.title}</p>
-                  <p className="text-muted-foreground text-xs">{task.clients?.name || "—"}</p>
-                </div>
-                <span className="text-destructive text-xs font-medium whitespace-nowrap ml-3">
-                  {new Date(task.due_date).toLocaleDateString("pt-PT")}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {renderDeadlineSection(weekDeadlines, "Prazos desta Semana", "primary", "120ms")}
+      {renderDeadlineSection(nextWeekDeadlines, "Prazos da Próxima Semana", "muted", "180ms")}
 
-      {renderDeadlineSection(weekDeadlines, "Prazos desta Semana", "primary", "180ms")}
-      {renderDeadlineSection(nextWeekDeadlines, "Prazos da Próxima Semana", "muted", "240ms")}
-
-      {/* Tarefas de cada colaborador */}
-      {tasksByCollaborator.length > 0 && (
+      {/* Tarefas de cada colaborador — apenas para administradores */}
+      {isAdmin && tasksByCollaborator.length > 0 && (
         <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "300ms" }}>
           <div className="flex items-center gap-2 mb-4">
             <Users className="w-4 h-4 text-primary" />
