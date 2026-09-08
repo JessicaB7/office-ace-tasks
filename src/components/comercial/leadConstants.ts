@@ -78,3 +78,13 @@ export const eur = (v: number | null | undefined) =>
 
 export const fmtDate = (d: string | null) =>
   d ? new Date(`${d}T12:00:00`).toLocaleDateString("pt-PT") : "—";
+
+/** Chave "AAAA-MM" para agrupar por mês (ou "sem-data" se a data não existir). */
+export const monthKey = (d: string | null) => (d ? d.slice(0, 7) : "sem-data");
+
+/** Rótulo "Mês de AAAA" (capitalizado) a partir de uma chave "AAAA-MM". */
+export const monthLabel = (key: string) => {
+  if (key === "sem-data") return "Sem data de sessão";
+  const label = new Date(`${key}-01T12:00:00`).toLocaleDateString("pt-PT", { month: "long", year: "numeric" });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};

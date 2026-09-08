@@ -15,6 +15,8 @@ import {
   fmtDate,
   stageClass,
   stageLabel,
+  monthKey,
+  monthLabel,
 } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,7 +53,80 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
     [leads, search, stage, bizType]
   );
 
+  // Consultorias: separa a listagem por mês, de acordo com a data da sessão (meeting_date).
+  const groupedByMonth = useMemo(() => {
+    if (segment !== "consultoria") return null;
+    const groups = new Map<string, Lead[]>();
+    filtered.forEach((l) => {
+      const key = monthKey(l.meeting_date);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(l);
+    });
+    return Array.from(groups.entries()).map(([key, items]) => ({ key, items }));
+  }, [filtered, segment]);
 
+  const colCount = segment === "consultoria" ? 7 : 10;
+
+  const renderRow = (l: Lead) => (
+    <tr key={l.id} className="border-t hover:bg-muted/30">
+      <td className="p-3 font-medium">{l.name}{l.nif && <span className="block text-xs text-muted-foreground">NIF {l.nif}</span>}</td>
+      <td className="p-3 text-xs text-muted-foreground">
+        {l.email || "—"}
+        {l.phone && <span className="block">{l.phone}</span>}
+      </td>
+      {segment !== "consultoria" && (
+        <td className="p-3 text-xs text-muted-foreground">{l.suggested_product || "—"}</td>
+      )}
+      <td className="p-3">
+        <Badge variant="outline" className={stageClass(l.stage)}>{stageLabel(l.stage)}</Badge>
+        {segment !== "consultoria" && l.stage === "perda" && l.loss_reason && (
+          <span className="block text-xs text-muted-foreground mt-1">{l.loss_reason}</span>
+        )}
+      </td>
+      <td className="p-3 text-right font-medium">{eur(l.estimated_value)}</td>
+      {segment !== "consultoria" && (
+        <td className="p-3 text-xs">
+          {businessTypeLabel(l.business_type)}
+          <span className="block text-muted-foreground">{l.business_area || "—"}</span>
+        </td>
+      )}
+      {segment !== "consultoria" && (
+        <td className="p-3 text-xs">{ivaFrameworkLabel(l.iva_framework)}</td>
+      )}
+
+      <td className="p-3 text-xs">
+        {segment === "consultoria" ? fmtDate(l.meeting_date) : l.meeting ? fmtDate(l.meeting_date) : "—"}
+        {segment === "consultoria" && l.given_by && (
+          <span className="block text-muted-foreground">{l.given_by}</span>
+        )}
+      </td>
+      <td className="p-3 text-xs">{fmtDate(l.next_followup)}</td>
+      <td className="p-3">
+        <div className="flex justify-end gap-1">
+          <Button size="icon" variant="ghost" onClick={() => { setEditing(l); setDialogOpen(true); }}>
+            <Pencil className="w-4 h-4" />
+          </Button>
+          {isAdmin && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={async () => {
+                if (!confirm(`Eliminar a lead "${l.name}"?`)) return;
+                try {
+                  await del.mutateAsync(l.id);
+                  toast.success("Lead eliminada.");
+                } catch (e: any) {
+                  toast.error(e.message || "Erro ao eliminar.");
+                }
+              }}
+            >
+              <Trash2 className="w-4 h-4 text-destructive" />
+            </Button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
 
   return (
     <div className="space-y-6">
@@ -108,68 +183,18 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((l) => (
-                <tr key={l.id} className="border-t hover:bg-muted/30">
-                  <td className="p-3 font-medium">{l.name}{l.nif && <span className="block text-xs text-muted-foreground">NIF {l.nif}</span>}</td>
-                  <td className="p-3 text-xs text-muted-foreground">
-                    {l.email || "—"}
-                    {l.phone && <span className="block">{l.phone}</span>}
-                  </td>
-                  {segment !== "consultoria" && (
-                    <td className="p-3 text-xs text-muted-foreground">{l.suggested_product || "—"}</td>
-                  )}
-                  <td className="p-3">
-                    <Badge variant="outline" className={stageClass(l.stage)}>{stageLabel(l.stage)}</Badge>
-                    {segment !== "consultoria" && l.stage === "perda" && l.loss_reason && (
-                      <span className="block text-xs text-muted-foreground mt-1">{l.loss_reason}</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right font-medium">{eur(l.estimated_value)}</td>
-                  {segment !== "consultoria" && (
-                    <td className="p-3 text-xs">
-                      {businessTypeLabel(l.business_type)}
-                      <span className="block text-muted-foreground">{l.business_area || "—"}</span>
-                    </td>
-                  )}
-                  {segment !== "consultoria" && (
-                    <td className="p-3 text-xs">{ivaFrameworkLabel(l.iva_framework)}</td>
-                  )}
-
-                  <td className="p-3 text-xs">
-                    {segment === "consultoria" ? fmtDate(l.meeting_date) : l.meeting ? fmtDate(l.meeting_date) : "—"}
-                    {segment === "consultoria" && l.given_by && (
-                      <span className="block text-muted-foreground">{l.given_by}</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-xs">{fmtDate(l.next_followup)}</td>
-                  <td className="p-3">
-                    <div className="flex justify-end gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => { setEditing(l); setDialogOpen(true); }}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      {isAdmin && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={async () => {
-                            if (!confirm(`Eliminar a lead "${l.name}"?`)) return;
-                            try {
-                              await del.mutateAsync(l.id);
-                              toast.success("Lead eliminada.");
-                            } catch (e: any) {
-                              toast.error(e.message || "Erro ao eliminar.");
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {(groupedByMonth
+                ? groupedByMonth.flatMap((g) => [
+                    <tr key={`h-${g.key}`} className="border-t bg-muted/30">
+                      <td colSpan={colCount} className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        {monthLabel(g.key)} <span className="font-normal normal-case">({g.items.length})</span>
+                      </td>
+                    </tr>,
+                    ...g.items.map((l) => renderRow(l)),
+                  ])
+                : filtered.map((l) => renderRow(l)))}
               {!isLoading && filtered.length === 0 && (
-                <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
+                <tr><td colSpan={colCount} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
               )}
             </tbody>
           </table>
