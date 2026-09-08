@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { Search, ChevronRight, Filter, X } from "lucide-react";
 import { useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
+import { useReportDeliveryStatusByYear } from "@/hooks/useClientFinancials";
 import ClientAnalysisView from "@/components/ClientAnalysisView";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
+import { cn } from "@/lib/utils";
 
 const TYPE_CONFIG: Record<string, { label: string; tipo: string; accentClass: string }> = {
   TI_simplificado: {
@@ -32,6 +34,12 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
   const [ivaFilter, setIvaFilter] = useState("");
   const [respFilter, setRespFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const year = new Date().getFullYear();
+  const { data: reportStatus = [] } = useReportDeliveryStatusByYear(year);
+  const statusByClient = useMemo(
+    () => new Map(reportStatus.map((s) => [s.client_id, s])),
+    [reportStatus],
+  );
 
   const ivaOptions = useMemo(() => {
     const set = new Set<string>();
@@ -146,8 +154,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Nome</th>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-32">NIF</th>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-32">IVA</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-40">Relatórios entregues</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-40">Responsável</th>
                 <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Estado</th>
                 <th className="w-10"></th>
@@ -171,8 +178,27 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
                         {c.name}
                       </button>
                     </td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{c.nif || "—"}</td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{c.iva || "—"}</td>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4].map((q) => {
+                          const st = statusByClient.get(c.id);
+                          const done = st ? Boolean(st[`relatorio_q${q}_entregue` as keyof typeof st]) : false;
+                          return (
+                            <button
+                              key={q}
+                              onClick={(e) => { e.stopPropagation(); setSelectedId(c.id); }}
+                              title={`${q}º trimestre — ${done ? "entregue" : "por entregar"}`}
+                              className={cn(
+                                "w-6 h-6 rounded-full text-[10px] font-semibold flex items-center justify-center transition-colors",
+                                done ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-muted text-muted-foreground hover:bg-muted/70",
+                              )}
+                            >
+                              {q}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </td>
                     <td className="px-4 py-2.5 text-muted-foreground">{resp?.name || "—"}</td>
                     <td className="px-4 py-2.5">
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${

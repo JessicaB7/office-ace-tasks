@@ -161,6 +161,30 @@ export function useClientFinancialSettings(clientId: string, year: number) {
   });
 }
 
+/** Estado de "relatório entregue" por trimestre, para todos os clientes num ano —
+ * usado na listagem da Análise Financeira (evita uma query por cliente). */
+export type ReportDeliveryStatus = {
+  client_id: string;
+  relatorio_q1_entregue: boolean;
+  relatorio_q2_entregue: boolean;
+  relatorio_q3_entregue: boolean;
+  relatorio_q4_entregue: boolean;
+};
+
+export function useReportDeliveryStatusByYear(year: number) {
+  return useQuery({
+    queryKey: ["cfs_relatorios", year],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_financial_settings")
+        .select("client_id,relatorio_q1_entregue,relatorio_q2_entregue,relatorio_q3_entregue,relatorio_q4_entregue")
+        .eq("year", year);
+      if (error) throw error;
+      return (data ?? []) as ReportDeliveryStatus[];
+    },
+  });
+}
+
 export function useUpsertEntry(clientId: string, year: number) {
   const qc = useQueryClient();
   return useMutation({
