@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.sync_consultoria_followup_task() FROM anon, authenticated, PUBLIC;
