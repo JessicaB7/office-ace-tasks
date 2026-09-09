@@ -12,9 +12,11 @@ export interface TemplateEntry {
 import { template as taskAssignment } from './task-assignment.tsx'
 import { template as weeklyTasksDigest } from './weekly-tasks-digest.tsx'
 import { template as dailyCompletedSummary } from './daily-completed-summary.tsx'
+import { template as dailyTasksReminder } from './daily-tasks-reminder.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'task-assignment': taskAssignment,
   'weekly-tasks-digest': weeklyTasksDigest,
   'daily-completed-summary': dailyCompletedSummary,
+  'daily-tasks-reminder': dailyTasksReminder,
 }

@@ -21,6 +21,7 @@ import LeadsView from "@/components/comercial/LeadsView";
 import PropostasView from "@/components/comercial/PropostasView";
 import FollowUpsView from "@/components/comercial/FollowUpsView";
 import ScriptsView from "@/components/comercial/ScriptsView";
+import WeeklyTasksReminderDialog from "@/components/WeeklyTasksReminderDialog";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
@@ -75,6 +76,7 @@ const Index = () => {
         {activeView === "calendar" && <FiscalCalendarView />}
       </main>
       <TaskFormDialog open={dialogOpen} task={editingTask} onClose={() => setDialogOpen(false)} />
+      <WeeklyTasksReminderDialog onViewTasks={() => setActiveView("tasks")} />
     </div>
   );
 };
