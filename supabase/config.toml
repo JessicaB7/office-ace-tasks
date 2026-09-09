@@ -6,6 +6,9 @@ verify_jwt = true
 [functions.send-transactional-email]
 verify_jwt = true
 
+[functions.send-daily-tasks-reminder]
+verify_jwt = true
+
 [functions.preview-transactional-email]
 verify_jwt = false
 
