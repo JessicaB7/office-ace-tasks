@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTasks, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
 import { PRIORITY_LABELS, type TaskPriority } from "@/types/database";
@@ -6,9 +6,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { CalendarClock } from "lucide-react";
 
-const STORAGE_KEY = "weeklyReminderLastShown";
+const STORAGE_KEY = "tasksReminderLastShownAt";
+const INTERVAL_MS = 2 * 60 * 60 * 1000; // 2 em 2 horas
+const CHECK_EVERY_MS = 60 * 1000; // verifica a cada minuto se já passaram as 2h
 
-/** Pop-up diário (1x por dia, por browser) com as tarefas da semana do utilizador atual. */
+/** Pop-up com as tarefas da semana do utilizador atual — reaparece de 2 em 2 horas enquanto a app estiver aberta. */
 const WeeklyTasksReminderDialog = ({ onViewTasks }: { onViewTasks?: () => void }) => {
   const { user } = useAuth();
   const { data: tasks = [] } = useTasks();
@@ -41,24 +43,34 @@ const WeeklyTasksReminderDialog = ({ onViewTasks }: { onViewTasks?: () => void }
       .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
   }, [tasks, currentCollaborator]);
 
+  // Guarda a contagem mais recente de tarefas numa ref para o intervalo não
+  // depender de recriar o timer sempre que a lista de tarefas muda.
+  const weekTasksCountRef = useRef(0);
+  weekTasksCountRef.current = weekTasks.length;
+
   useEffect(() => {
     if (!currentCollaborator) return;
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const lastShown = localStorage.getItem(STORAGE_KEY);
-    if (lastShown !== todayStr && weekTasks.length > 0) {
-      setOpen(true);
-    }
-  }, [currentCollaborator, weekTasks.length]);
 
-  const dismiss = () => {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    try {
-      localStorage.setItem(STORAGE_KEY, todayStr);
-    } catch {
-      // localStorage indisponível — não bloqueia o encerramento do pop-up
-    }
-    setOpen(false);
-  };
+    const maybeShow = () => {
+      if (weekTasksCountRef.current === 0) return;
+      const lastShownAt = Number(localStorage.getItem(STORAGE_KEY) || 0);
+      const now = Date.now();
+      if (now - lastShownAt >= INTERVAL_MS) {
+        setOpen(true);
+        try {
+          localStorage.setItem(STORAGE_KEY, String(now));
+        } catch {
+          // localStorage indisponível — o pop-up ainda assim é mostrado nesta sessão
+        }
+      }
+    };
+
+    maybeShow(); // mostra logo ao abrir a app, se já passaram 2h desde a última vez
+    const id = setInterval(maybeShow, CHECK_EVERY_MS);
+    return () => clearInterval(id);
+  }, [currentCollaborator]);
+
+  const dismiss = () => setOpen(false);
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
