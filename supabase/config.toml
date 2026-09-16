@@ -23,6 +23,3 @@ verify_jwt = false
 
 [functions.calendly-setup-webhook]
 verify_jwt = false
-
-[functions.poll-buk-bookings]
-verify_jwt = true
