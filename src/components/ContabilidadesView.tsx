@@ -235,7 +235,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="min-w-[260px]">
-          <h2 className="text-2xl font-bold">{config?.label || "Contabilidades"}</h2>
+          <h2 className="text-2xl font-bold">{config?.label || "Gestão Mensal"}</h2>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             {pendingCount > 0 && isEndOfMonth ? (
               <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-destructive/15 text-destructive animate-pulse">

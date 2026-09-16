@@ -56,7 +56,7 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
 
 1. **Visão geral** — landing "O meu dia" (`DashboardView.tsx`): métricas pessoais, prazos da semana.
 2. **Comercial** — pipeline (Kanban), leads, propostas enviadas, follow ups, scripts.
-3. **Clientes** — dados, contabilidades, tarefas, obrigações, calendário fiscal, extratos, análise financeira.
+3. **Clientes** — dados, gestão mensal (contabilidades), tarefas, obrigações, calendário fiscal, extratos, análise financeira.
 4. **Gestão de negócio** (admin) — painel, painel comercial, painel de consultorias, colaboradores, resumo mensal.
 
 ## 7. Módulos

@@ -71,7 +71,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
         kind: "group",
         group: {
           id: "contabilidades",
-          label: "Contabilidades",
+          label: "Gestão Mensal",
           icon: BookOpen,
           items: [
             { id: "contabilidades_TI_isento", label: "TI Simplificado - Isento IVA" },
