@@ -1,11 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
-import { Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Check, PartyPopper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import ClientMonthlyHistoryDialog from "@/components/ClientMonthlyHistoryDialog";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+
+const PENDING_FILTER_STORAGE_KEY = "contabilidadesShowOnlyPending";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -77,6 +81,22 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [showOnlyPending, setShowOnlyPending] = useState(() => {
+    try {
+      return localStorage.getItem(PENDING_FILTER_STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleShowOnlyPending = (v: boolean) => {
+    setShowOnlyPending(v);
+    try {
+      localStorage.setItem(PENDING_FILTER_STORAGE_KEY, v ? "1" : "0");
+    } catch {
+      // localStorage indisponível — a preferência só dura esta sessão
+    }
+  };
 
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
@@ -140,6 +160,13 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     return map;
   }, [obligations]);
 
+  const isClientDone = (c: any) => {
+    if (hasMultiColumns) {
+      return colMaps.every((map) => map[c.id]?.status === "concluida");
+    }
+    return oblMap[c.id]?.status === "concluida";
+  };
+
   const filteredClients = useMemo(() => {
     if (!config) return [];
     let list = activeClients.filter(config.filter);
@@ -159,8 +186,15 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
       const q = search.toLowerCase();
       list = list.filter((c: any) => c.name.toLowerCase().includes(q) || (c.nif || "").includes(q));
     }
-    return list.sort((a: any, b: any) => a.name.localeCompare(b.name));
-  }, [activeClients, config, collabFilter, search, hasIvaTabs, subFilter]);
+    // Pendentes primeiro, depois por nome — facilita ver de imediato o que falta.
+    return list.sort((a: any, b: any) => {
+      const doneA = isClientDone(a);
+      const doneB = isClientDone(b);
+      if (doneA !== doneB) return doneA ? 1 : -1;
+      return a.name.localeCompare(b.name);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClients, config, collabFilter, search, hasIvaTabs, subFilter, colMaps, oblMap, hasMultiColumns]);
 
   const toggleObl = (clientId: string, type: string, map: Record<string, any>) => {
     const obl = map[clientId];
@@ -176,12 +210,11 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     });
   };
 
-  const doneCount = filteredClients.filter((c: any) => {
-    if (hasMultiColumns) {
-      return colMaps.every((map) => map[c.id]?.status === "concluida");
-    }
-    return oblMap[c.id]?.status === "concluida";
-  }).length;
+  const doneCount = filteredClients.filter(isClientDone).length;
+  const totalCount = filteredClients.length;
+  const progressPct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+  const displayedClients = showOnlyPending ? filteredClients.filter((c: any) => !isClientDone(c)) : filteredClients;
 
   // Sub-filter counts
   const baseClients = useMemo(() => {
@@ -202,12 +235,15 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="min-w-[220px]">
           <h2 className="text-2xl font-bold">{config?.label || "Contabilidades"}</h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            {doneCount}/{filteredClients.length} concluídos
-          </p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <Progress value={progressPct} className="h-2 w-32" />
+            <p className="text-muted-foreground text-xs whitespace-nowrap">
+              {doneCount}/{totalCount} concluídos ({progressPct}%)
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2 bg-card rounded-lg border px-2 py-1">
           <button onClick={prevMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronLeft className="w-4 h-4" /></button>
@@ -240,6 +276,10 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
           ))}
           <option value="none">Sem responsável</option>
         </select>
+        <label className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border bg-card cursor-pointer whitespace-nowrap">
+          <Switch checked={showOnlyPending} onCheckedChange={toggleShowOnlyPending} />
+          Só pendentes
+        </label>
       </div>
 
       <div className="bg-card rounded-xl border overflow-hidden">
@@ -261,7 +301,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
               </tr>
             </thead>
             <tbody>
-              {filteredClients.map((client: any) => {
+              {displayedClients.map((client: any) => {
                 const singleDone = oblMap[client.id]?.status === "concluida";
                 const allDone = hasMultiColumns
                   ? colMaps.every((map) => map[client.id]?.status === "concluida")
@@ -303,8 +343,18 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                   </tr>
                 );
               })}
-              {filteredClients.length === 0 && (
-                <tr><td colSpan={totalCols} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
+              {displayedClients.length === 0 && (
+                <tr>
+                  <td colSpan={totalCols} className="px-4 py-12 text-center text-muted-foreground">
+                    {showOnlyPending && filteredClients.length > 0 ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <PartyPopper className="w-4 h-4" /> Tudo concluído este mês!
+                      </span>
+                    ) : (
+                      "Nenhum cliente encontrado"
+                    )}
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
