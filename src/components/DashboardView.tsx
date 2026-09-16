@@ -4,21 +4,10 @@ import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } fr
 import { CheckCircle2, Clock, AlertTriangle, CalendarDays, ClipboardList, Users, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
+import { getInitials, getAvatarPalette } from "@/lib/avatar";
 
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 const QUARTER_REF: Record<number, string> = { 1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT" };
-
-const AVATAR_PALETTES = [
-  "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
-  "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
-  "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
-];
-
-const getInitials = (name: string) =>
-  name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 
 const hasSalarios = (c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "";
 const isTI = (c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO";
@@ -532,9 +521,9 @@ const DashboardView = () => {
             <span className="ml-auto text-xs text-muted-foreground">{tasksByCollaborator.length} com tarefas pendentes</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {tasksByCollaborator.map((entry, i) => {
+            {tasksByCollaborator.map((entry) => {
               const isExpanded = expandedCollabId === entry.collab.id;
-              const palette = AVATAR_PALETTES[i % AVATAR_PALETTES.length];
+              const palette = getAvatarPalette(entry.collab.id);
               return (
                 <div key={entry.collab.id} className="border rounded-lg overflow-hidden">
                   <div

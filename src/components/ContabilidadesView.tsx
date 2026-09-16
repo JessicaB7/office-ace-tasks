@@ -8,6 +8,8 @@ import ClientMonthlyHistoryDialog from "@/components/ClientMonthlyHistoryDialog"
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { getInitials, getAvatarPalette } from "@/lib/avatar";
 
 const PENDING_FILTER_STORAGE_KEY = "contabilidadesShowOnlyPending";
 
@@ -62,11 +64,35 @@ interface ContabilidadesViewProps {
 
 const CheckboxCell = ({ done, onClick }: { done: boolean; onClick: () => void }) => (
   <button onClick={onClick}
-    className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-colors mx-auto",
-      done ? "bg-emerald-500 border-emerald-500 text-white" : "border-muted-foreground/30 hover:border-primary")}>
+    className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-all mx-auto hover:scale-110",
+      done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/30 hover:border-primary")}>
     {done && <Check className="w-4 h-4" />}
   </button>
 );
+
+const ProgressCell = ({ done, total }: { done: number; total: number }) => {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  return (
+    <div className="flex items-center gap-2 min-w-[96px]">
+      <Progress value={pct} className={cn("h-1.5 w-14", pct === 100 && "[&>div]:bg-success")} />
+      <span className={cn("text-xs font-medium whitespace-nowrap", pct === 100 ? "text-success" : "text-muted-foreground")}>
+        {done}/{total}
+      </span>
+    </div>
+  );
+};
+
+const CollabCell = ({ id, name }: { id: string | null; name: string }) => {
+  if (!id || name === "—") return <span className="text-muted-foreground">—</span>;
+  return (
+    <div className="flex items-center gap-2">
+      <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0", getAvatarPalette(id))}>
+        {getInitials(name)}
+      </div>
+      <span className="text-muted-foreground truncate">{name}</span>
+    </div>
+  );
+};
 
 const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
@@ -231,7 +257,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   }, [config, baseClients]);
 
   const showNotes = activeTab === "empresas" || activeTab === "organizada";
-  const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length : 1);
+  const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length + 1 : 1);
 
   return (
     <div className="space-y-5">
@@ -239,10 +265,11 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         <div className="min-w-[220px]">
           <h2 className="text-2xl font-bold">{config?.label || "Contabilidades"}</h2>
           <div className="flex items-center gap-2 mt-1.5">
-            <Progress value={progressPct} className="h-2 w-32" />
-            <p className="text-muted-foreground text-xs whitespace-nowrap">
-              {doneCount}/{totalCount} concluídos ({progressPct}%)
-            </p>
+            <Progress value={progressPct} className={cn("h-2 w-32", progressPct === 100 && "[&>div]:bg-success")} />
+            <span className={cn("text-xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap",
+              progressPct === 100 ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>
+              {doneCount}/{totalCount} ({progressPct}%)
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-2 bg-card rounded-lg border px-2 py-1">
@@ -292,30 +319,33 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
                 {showNotes && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {hasMultiColumns ? (
-                  columns!.map((col) => (
-                    <th key={col} className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">{col}</th>
-                  ))
+                  <>
+                    <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Progresso</th>
+                    {columns!.map((col) => (
+                      <th key={col} className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">{col}</th>
+                    ))}
+                  </>
                 ) : (
-                  <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>
+                  <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-28">Estado</th>
                 )}
               </tr>
             </thead>
             <tbody>
               {displayedClients.map((client: any) => {
                 const singleDone = oblMap[client.id]?.status === "concluida";
-                const allDone = hasMultiColumns
-                  ? colMaps.every((map) => map[client.id]?.status === "concluida")
-                  : singleDone;
+                const doneColsCount = hasMultiColumns ? colMaps.filter((map) => map[client.id]?.status === "concluida").length : 0;
+                const allDone = hasMultiColumns ? doneColsCount === columns!.length : singleDone;
 
                 return (
-                  <tr key={client.id} className={cn("border-b last:border-0 transition-colors", allDone ? "bg-green-50 dark:bg-green-950/20" : "hover:bg-muted/30")}>
+                  <tr key={client.id} className={cn("border-b last:border-0 transition-colors border-l-2",
+                    allDone ? "bg-success/10 border-l-success" : "border-l-transparent hover:bg-muted/30")}>
                     <td className={cn("px-4 py-3 font-medium", allDone && "line-through text-muted-foreground")}>
                       <button type="button" onClick={() => setSelectedClient(client)} className="hover:underline text-left">
                         {client.name}
                       </button>
                     </td>
                     {!hideNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
-                    <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
+                    <td className="px-4 py-3"><CollabCell id={client.responsavel_id} name={getCollabName(client.responsavel_id)} /></td>
                     {showNotes && (
                       <td className="px-4 py-3 align-top">
                         <MonthlyNoteCell
@@ -327,17 +357,25 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                       </td>
                     )}
                     {hasMultiColumns ? (
-                      colMaps.map((map, i) => {
-                        const done = map[client.id]?.status === "concluida";
-                        return (
-                          <td key={colOblTypes[i]} className="text-center px-3 py-3">
-                            <CheckboxCell done={done} onClick={() => toggleObl(client.id, colOblTypes[i], map)} />
-                          </td>
-                        );
-                      })
+                      <>
+                        <td className="px-3 py-3"><ProgressCell done={doneColsCount} total={columns!.length} /></td>
+                        {colMaps.map((map, i) => {
+                          const done = map[client.id]?.status === "concluida";
+                          return (
+                            <td key={colOblTypes[i]} className="text-center px-3 py-3">
+                              <CheckboxCell done={done} onClick={() => toggleObl(client.id, colOblTypes[i], map)} />
+                            </td>
+                          );
+                        })}
+                      </>
                     ) : (
                       <td className="text-center px-3 py-3">
-                        <CheckboxCell done={singleDone} onClick={() => toggleObl(client.id, oblType, oblMap)} />
+                        <button type="button" onClick={() => toggleObl(client.id, oblType, oblMap)}>
+                          <Badge variant="outline" className={cn("cursor-pointer transition-colors",
+                            singleDone ? "bg-success/15 text-success border-success/30 hover:bg-success/25" : "bg-warning/15 text-warning border-warning/30 hover:bg-warning/25")}>
+                            {singleDone ? "Concluído" : "Pendente"}
+                          </Badge>
+                        </button>
                       </td>
                     )}
                   </tr>
