@@ -25,6 +25,7 @@ import {
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useContabilidadesPending } from "@/hooks/useContabilidadesPending";
 
 interface AppSidebarProps {
   activeView: string;
@@ -129,6 +130,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
 const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
 
   const { user, isAdmin, signOut } = useAuth();
+  const { perTab: contabPending, totalPending: contabTotalPending } = useContabilidadesPending();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     contabilidades: activeView.startsWith("contabilidades"),
     analise: activeView.startsWith("analise"),
@@ -179,29 +181,45 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
                 const group = entry.group;
                 const isActive = activeView.startsWith(group.id);
                 const open = openGroups[group.id];
+                const isContabilidades = group.id === "contabilidades";
                 return (
                   <div key={group.id}>
                     <button onClick={() => handleGroupClick(group)} className={itemClass(isActive)}>
                       <group.icon className="w-4 h-4" />
                       <span className="flex-1 text-left">{group.label}</span>
+                      {isContabilidades && contabTotalPending > 0 && (
+                        <span className="text-[10px] font-semibold bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full mr-1">
+                          {contabTotalPending}
+                        </span>
+                      )}
                       <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
                     </button>
                     {open && (
                       <div className="ml-4 pl-3 border-l border-primary-foreground/20 mb-1">
-                        {group.items.map((sub) => (
-                          <button
-                            key={sub.id}
-                            onClick={() => onViewChange(sub.id)}
-                            className={cn(
-                              "w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium mb-0.5 transition-colors",
-                              activeView === sub.id
-                                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                                : "text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50"
-                            )}
-                          >
-                            {sub.label}
-                          </button>
-                        ))}
+                        {group.items.map((sub) => {
+                          const subPending = isContabilidades
+                            ? contabPending[sub.id.replace("contabilidades_", "")]?.pending
+                            : undefined;
+                          return (
+                            <button
+                              key={sub.id}
+                              onClick={() => onViewChange(sub.id)}
+                              className={cn(
+                                "w-full flex items-center gap-2 text-left px-3 py-1.5 rounded-lg text-xs font-medium mb-0.5 transition-colors",
+                                activeView === sub.id
+                                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                                  : "text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50"
+                              )}
+                            >
+                              <span className="flex-1 truncate">{sub.label}</span>
+                              {!!subPending && (
+                                <span className="text-[10px] font-semibold bg-primary-foreground/15 px-1.5 py-0.5 rounded-full shrink-0">
+                                  {subPending}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

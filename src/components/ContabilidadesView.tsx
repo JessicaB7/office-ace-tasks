@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
-import { Search, ChevronLeft, ChevronRight, Check, PartyPopper, Clock, CheckCircle2 } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Check, PartyPopper, Clock, CheckCircle2, AlertTriangle, UserCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
@@ -10,53 +10,14 @@ import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
+import { SUB_PAGE_CONFIG } from "@/lib/contabilidadesConfig";
 
 const PENDING_FILTER_STORAGE_KEY = "contabilidadesShowOnlyPending";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
-interface TabConfig {
-  label: string;
-  filter: (c: any) => boolean;
-  hasIvaTabs?: boolean;
-  hideNif?: boolean;
-  columns?: string[];
-  subFilters?: { value: string; label: string; match: (c: any) => boolean }[];
-}
-
-const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
-  TI_isento: {
-    label: "TI Simplificado - Isento IVA",
-    filter: (c) => c.tipo_contabilidade === "TI RS" && (c.iva === "Art.53º" || c.iva === "Art. 9º"),
-  },
-  TI_iva: {
-    label: "TI Simplificado - Reg. IVA",
-    filter: (c) => c.tipo_contabilidade === "TI RS" && c.iva !== "Art.53º" && c.iva !== "Art. 9º" && c.iva !== "" && c.iva != null,
-    hasIvaTabs: true,
-    hideNif: true,
-    columns: ["Vendas", "Compras", "E-Fatura"],
-    subFilters: [
-      { value: "Mensal", label: "Mensal", match: (c) => c.iva === "Mensal" },
-      { value: "Trimestral", label: "Trimestral", match: (c) => c.iva === "Trimestral" },
-    ],
-  },
-  organizada: {
-    label: "TI Contabilidade Organizada",
-    filter: (c) => c.tipo_contabilidade === "TI CO",
-    hasIvaTabs: true,
-    hideNif: true,
-    columns: ["Vendas", "Compras", "Bancos", "E-Fatura", "Análise"],
-    subFilters: [
-      { value: "Isento", label: "Isento", match: (c) => c.iva === "Art.53º" || c.iva === "Art. 9º" },
-      { value: "Trimestral", label: "Trimestral", match: (c) => c.iva === "Trimestral" },
-    ],
-  },
-  empresas: {
-    label: "Empresas",
-    filter: (c) => c.tipo_contabilidade === "SQ",
-    hideNif: true,
-  },
-};
+/** Últimos N dias do mês em que se considera "fim de mês próximo" (inclui o último dia). */
+const END_OF_MONTH_URGENCY_DAYS = 3;
 
 interface ContabilidadesViewProps {
   subPage?: string;
@@ -148,6 +109,16 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
 
   const activeClients = useMemo(() => clients.filter((c: any) => c.active), [clients]);
+
+  const currentCollaborator = useMemo(() => {
+    if (!user?.email) return null;
+    return collaborators.find((c: any) => c.email?.toLowerCase() === user.email!.toLowerCase()) || null;
+  }, [user, collaborators]);
+
+  // Alerta de fim de mês: só faz sentido quando se está a ver o mês corrente.
+  const isViewingCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+  const daysLeftInMonth = new Date(year, month + 1, 0).getDate() - now.getDate();
+  const isEndOfMonth = isViewingCurrentMonth && daysLeftInMonth <= END_OF_MONTH_URGENCY_DAYS;
 
   const getCollabName = (id: string | null) => {
     if (!id) return "—";
@@ -266,7 +237,11 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         <div className="min-w-[260px]">
           <h2 className="text-2xl font-bold">{config?.label || "Contabilidades"}</h2>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
-            {pendingCount > 0 ? (
+            {pendingCount > 0 && isEndOfMonth ? (
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-destructive/15 text-destructive animate-pulse">
+                <AlertTriangle className="w-3.5 h-3.5" /> {pendingCount} por concluir — fim do mês!
+              </span>
+            ) : pendingCount > 0 ? (
               <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-warning/15 text-warning">
                 <Clock className="w-3.5 h-3.5" /> {pendingCount} por concluir
               </span>
@@ -315,6 +290,16 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
           ))}
           <option value="none">Sem responsável</option>
         </select>
+        {currentCollaborator && (
+          <button
+            type="button"
+            onClick={() => setCollabFilter((f) => (f === currentCollaborator.id ? "all" : currentCollaborator.id))}
+            className={cn("flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border whitespace-nowrap transition-colors",
+              collabFilter === currentCollaborator.id ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted")}
+          >
+            <UserCircle2 className="w-4 h-4" /> Só os meus clientes
+          </button>
+        )}
         <label className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border bg-card cursor-pointer whitespace-nowrap">
           <Switch checked={showOnlyPending} onCheckedChange={toggleShowOnlyPending} />
           Só pendentes
