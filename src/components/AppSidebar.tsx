@@ -74,6 +74,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
           label: "Gestão Mensal",
           icon: BookOpen,
           items: [
+            { id: "contabilidades_painel", label: "Painel" },
             { id: "contabilidades_TI_isento", label: "TI Simplificado - Isento IVA" },
             { id: "contabilidades_TI_iva", label: "TI Simplificado - Reg. IVA" },
             { id: "contabilidades_organizada", label: "TI Contabilidade Organizada" },

@@ -152,6 +152,25 @@ export function useMonthlyObligations(referenceMonth: string) {
   });
 }
 
+/** Obrigações de vários meses de uma vez (todos os clientes) — usado pelo painel
+ * de Gestão Mensal para calcular a evolução de conclusão ao longo dos meses. */
+export function useMonthlyObligationsRange(referenceMonths: string[]) {
+  const key = referenceMonths.join(",");
+  return useQuery({
+    queryKey: ["monthly_obligations_range", key],
+    queryFn: async () => {
+      if (referenceMonths.length === 0) return [];
+      const { data, error } = await supabase
+        .from("monthly_obligations")
+        .select("*")
+        .in("reference_month", referenceMonths);
+      if (error) throw error;
+      return data;
+    },
+    enabled: referenceMonths.length > 0,
+  });
+}
+
 export function useUpsertObligation() {
   const qc = useQueryClient();
   return useMutation({
