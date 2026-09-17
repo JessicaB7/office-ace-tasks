@@ -233,7 +233,8 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     }));
   }, [config, baseClients]);
 
-  const showNotes = activeTab === "empresas" || activeTab === "organizada";
+  // Notas mensais só fazem sentido nos separadores em galeria (têm ficha do cliente).
+  const showNotes = isGallery;
   const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length + 1 : 1);
 
   return (

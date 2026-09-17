@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { X, Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { useClientObligationsHistory, useCollaborators, useUpsertObligation } from "@/hooks/useSupabaseQuery";
+import { useClientObligationsHistory, useCollaborators, useUpsertObligation, useUpsertClient } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
@@ -26,6 +26,59 @@ const Field = ({ label, value }: { label: string; value?: string | null }) => (
     <div className="text-sm truncate">{value || "—"}</div>
   </div>
 );
+
+/** Notas gerais do cliente (campo `clients.notas_internas`) — ao contrário das
+ * notas do mês, não estão presas a um mês: aparecem sempre, em qualquer mês. */
+const GeneralNotesField = ({ clientId, name, initialNotes }: { clientId: string; name: string; initialNotes: string }) => {
+  const [value, setValue] = useState(initialNotes || "");
+  const [saving, setSaving] = useState(false);
+  const upsertClient = useUpsertClient();
+  const lastSavedRef = useRef(initialNotes || "");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setValue(initialNotes || "");
+    lastSavedRef.current = initialNotes || "";
+  }, [initialNotes, clientId]);
+
+  const persist = (next: string) => {
+    if (next === lastSavedRef.current) return;
+    setSaving(true);
+    upsertClient.mutate({ id: clientId, name, notas_internas: next || null }, {
+      onSettled: () => setSaving(false),
+    });
+    lastSavedRef.current = next;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const v = e.target.value;
+    setValue(v);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => persist(v), 600);
+  };
+
+  const handleBlur = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    persist(value);
+  };
+
+  return (
+    <div className="relative">
+      <textarea
+        value={value}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        placeholder="Notas gerais do cliente (aparecem em todos os meses)..."
+        rows={2}
+        className="w-full text-xs rounded border bg-background px-2 py-1 resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+      />
+      {saving && <span className="absolute top-1 right-1 text-[10px] text-muted-foreground">a guardar…</span>}
+    </div>
+  );
+};
 
 /** Ficha do cliente — abre ao clicar num "ícone" da galeria (TI RS Reg. IVA, TI CO,
  * Empresas): junta os dados do cliente com a grelha de meses/obrigações do ano,
@@ -135,6 +188,13 @@ const ClientMonthlyHistoryDialog = ({
           <Field label="IVA" value={client.iva} />
           <Field label="Salários" value={client.salarios} />
           <Field label="Responsável" value={responsavelName} />
+        </div>
+
+        <div className="px-5 pt-4">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+            Notas gerais
+          </div>
+          <GeneralNotesField clientId={client.id} name={client.name} initialNotes={client.notas_internas || ""} />
         </div>
 
         {showNotes && referenceMonth && (
