@@ -325,7 +325,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
             {displayedClients.map((client: any) => (
               <ClientObligationCard
                 key={client.id}
@@ -333,12 +333,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                 columns={columns!}
                 colOblTypes={colOblTypes}
                 colMaps={colMaps}
-                collabName={getCollabName(client.responsavel_id)}
-                referenceMonth={referenceMonth}
-                showNotes={showNotes}
-                notesObligation={notesMap[client.id]}
-                onOpenHistory={() => setSelectedClient(client)}
-                onToggle={(i) => toggleObl(client.id, colOblTypes[i], colMaps[i])}
+                onOpen={() => setSelectedClient(client)}
               />
             ))}
           </div>
@@ -442,6 +437,9 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
           onClose={() => setSelectedClient(null)}
           activeTab={activeTab}
           columns={columns}
+          referenceMonth={referenceMonth}
+          showNotes={showNotes}
+          notesObligation={selectedClient ? notesMap[selectedClient.id] : undefined}
         />
       ) : (
         <ClientDetailDialog client={selectedClient} open={!!selectedClient} onClose={() => setSelectedClient(null)} allowDelete={false} />
