@@ -85,7 +85,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
         kind: "group",
         group: {
           id: "obrigacoes",
-          label: "Obrigações",
+          label: "Obrigações Mensais",
           icon: ClipboardList,
           items: [
             { id: "obrigacoes_SAFT", label: "SAFT" },
