@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import ClientMonthlyHistoryDialog from "@/components/ClientMonthlyHistoryDialog";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
+import ClientObligationCard from "@/components/ClientObligationCard";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -94,6 +95,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const hideNif = config?.hideNif ?? false;
   const columns = config?.columns;
   const hasMultiColumns = !!columns && columns.length > 0;
+  const isGallery = config?.gallery ?? false;
   // TI Simplificado - Isento de IVA não tem tarefas mensais a cumprir
   // (não há IVA a entregar) — não faz sentido mostrar pendentes/progresso.
   const noTasksTab = activeTab === "TI_isento";
@@ -311,95 +313,127 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         </label>
       </div>
 
-      <div className="bg-card rounded-xl border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
-                {!hideNif && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>}
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
-                {showNotes && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
-                {hasMultiColumns ? (
-                  <>
-                    <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Progresso</th>
-                    {columns!.map((col) => (
-                      <th key={col} className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">{col}</th>
-                    ))}
-                  </>
-                ) : (
-                  <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-28">Estado</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {displayedClients.map((client: any) => {
-                const singleDone = oblMap[client.id]?.status === "concluida";
-                const doneColsCount = hasMultiColumns ? colMaps.filter((map) => map[client.id]?.status === "concluida").length : 0;
-                const allDone = hasMultiColumns ? doneColsCount === columns!.length : singleDone;
+      {isGallery ? (
+        displayedClients.length === 0 ? (
+          <div className="bg-card rounded-xl border px-4 py-12 text-center text-muted-foreground">
+            {showOnlyPending && filteredClients.length > 0 ? (
+              <span className="flex items-center justify-center gap-2">
+                <PartyPopper className="w-4 h-4" /> Tudo concluído este mês!
+              </span>
+            ) : (
+              "Nenhum cliente encontrado"
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {displayedClients.map((client: any) => (
+              <ClientObligationCard
+                key={client.id}
+                client={client}
+                columns={columns!}
+                colOblTypes={colOblTypes}
+                colMaps={colMaps}
+                collabName={getCollabName(client.responsavel_id)}
+                referenceMonth={referenceMonth}
+                showNotes={showNotes}
+                notesObligation={notesMap[client.id]}
+                onOpenHistory={() => setSelectedClient(client)}
+                onToggle={(i) => toggleObl(client.id, colOblTypes[i], colMaps[i])}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        <div className="bg-card rounded-xl border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
+                  {!hideNif && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>}
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
+                  {showNotes && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
+                  {hasMultiColumns ? (
+                    <>
+                      <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Progresso</th>
+                      {columns!.map((col) => (
+                        <th key={col} className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">{col}</th>
+                      ))}
+                    </>
+                  ) : (
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-28">Estado</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {displayedClients.map((client: any) => {
+                  const singleDone = oblMap[client.id]?.status === "concluida";
+                  const doneColsCount = hasMultiColumns ? colMaps.filter((map) => map[client.id]?.status === "concluida").length : 0;
+                  const allDone = hasMultiColumns ? doneColsCount === columns!.length : singleDone;
 
-                return (
-                  <tr key={client.id} className={cn("border-b last:border-0 transition-colors border-l-2",
-                    allDone ? "bg-success/10 border-l-success" : "border-l-transparent hover:bg-muted/30")}>
-                    <td className={cn("px-4 py-3 font-medium", allDone && "line-through text-muted-foreground")}>
-                      <button type="button" onClick={() => setSelectedClient(client)} className="hover:underline text-left">
-                        {client.name}
-                      </button>
-                    </td>
-                    {!hideNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
-                    <td className="px-4 py-3"><CollabCell id={client.responsavel_id} name={getCollabName(client.responsavel_id)} /></td>
-                    {showNotes && (
-                      <td className="px-4 py-3 align-top">
-                        <MonthlyNoteCell
-                          clientId={client.id}
-                          referenceMonth={referenceMonth}
-                          obligationId={notesMap[client.id]?.id}
-                          initialNotes={notesMap[client.id]?.notes || ""}
-                        />
-                      </td>
-                    )}
-                    {hasMultiColumns ? (
-                      <>
-                        <td className="px-3 py-3"><ProgressCell done={doneColsCount} total={columns!.length} /></td>
-                        {colMaps.map((map, i) => {
-                          const done = map[client.id]?.status === "concluida";
-                          return (
-                            <td key={colOblTypes[i]} className="text-center px-3 py-3">
-                              <CheckboxCell done={done} onClick={() => toggleObl(client.id, colOblTypes[i], map)} />
-                            </td>
-                          );
-                        })}
-                      </>
-                    ) : (
-                      <td className="text-center px-3 py-3">
-                        <button type="button" onClick={() => toggleObl(client.id, oblType, oblMap)}>
-                          <Badge variant="outline" className={cn("cursor-pointer transition-colors",
-                            singleDone ? "bg-success/15 text-success border-success/30 hover:bg-success/25" : "bg-warning/15 text-warning border-warning/30 hover:bg-warning/25")}>
-                            {singleDone ? "Concluído" : "Pendente"}
-                          </Badge>
+                  return (
+                    <tr key={client.id} className={cn("border-b last:border-0 transition-colors border-l-2",
+                      allDone ? "bg-success/10 border-l-success" : "border-l-transparent hover:bg-muted/30")}>
+                      <td className={cn("px-4 py-3 font-medium", allDone && "line-through text-muted-foreground")}>
+                        <button type="button" onClick={() => setSelectedClient(client)} className="hover:underline text-left">
+                          {client.name}
                         </button>
                       </td>
-                    )}
+                      {!hideNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
+                      <td className="px-4 py-3"><CollabCell id={client.responsavel_id} name={getCollabName(client.responsavel_id)} /></td>
+                      {showNotes && (
+                        <td className="px-4 py-3 align-top">
+                          <MonthlyNoteCell
+                            clientId={client.id}
+                            referenceMonth={referenceMonth}
+                            obligationId={notesMap[client.id]?.id}
+                            initialNotes={notesMap[client.id]?.notes || ""}
+                          />
+                        </td>
+                      )}
+                      {hasMultiColumns ? (
+                        <>
+                          <td className="px-3 py-3"><ProgressCell done={doneColsCount} total={columns!.length} /></td>
+                          {colMaps.map((map, i) => {
+                            const done = map[client.id]?.status === "concluida";
+                            return (
+                              <td key={colOblTypes[i]} className="text-center px-3 py-3">
+                                <CheckboxCell done={done} onClick={() => toggleObl(client.id, colOblTypes[i], map)} />
+                              </td>
+                            );
+                          })}
+                        </>
+                      ) : (
+                        <td className="text-center px-3 py-3">
+                          <button type="button" onClick={() => toggleObl(client.id, oblType, oblMap)}>
+                            <Badge variant="outline" className={cn("cursor-pointer transition-colors",
+                              singleDone ? "bg-success/15 text-success border-success/30 hover:bg-success/25" : "bg-warning/15 text-warning border-warning/30 hover:bg-warning/25")}>
+                              {singleDone ? "Concluído" : "Pendente"}
+                            </Badge>
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+                {displayedClients.length === 0 && (
+                  <tr>
+                    <td colSpan={totalCols} className="px-4 py-12 text-center text-muted-foreground">
+                      {showOnlyPending && filteredClients.length > 0 ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <PartyPopper className="w-4 h-4" /> Tudo concluído este mês!
+                        </span>
+                      ) : (
+                        "Nenhum cliente encontrado"
+                      )}
+                    </td>
                   </tr>
-                );
-              })}
-              {displayedClients.length === 0 && (
-                <tr>
-                  <td colSpan={totalCols} className="px-4 py-12 text-center text-muted-foreground">
-                    {showOnlyPending && filteredClients.length > 0 ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <PartyPopper className="w-4 h-4" /> Tudo concluído este mês!
-                      </span>
-                    ) : (
-                      "Nenhum cliente encontrado"
-                    )}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {(activeTab === "TI_iva" || activeTab === "organizada" || activeTab === "empresas") ? (
         <ClientMonthlyHistoryDialog

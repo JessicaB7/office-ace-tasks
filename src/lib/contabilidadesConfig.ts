@@ -9,6 +9,9 @@ export interface TabConfig {
   hideNif?: boolean;
   columns?: string[];
   subFilters?: { value: string; label: string; match: (c: any) => boolean }[];
+  /** Mostra clientes em cartões (galeria) com os dados do cliente à vista,
+   * em vez da tabela genérica — usado em TI_iva, organizada e empresas. */
+  gallery?: boolean;
 }
 
 export const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
@@ -21,7 +24,8 @@ export const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     filter: (c) => c.tipo_contabilidade === "TI RS" && c.iva !== "Art.53º" && c.iva !== "Art. 9º" && c.iva !== "" && c.iva != null,
     hasIvaTabs: true,
     hideNif: true,
-    columns: ["Vendas", "Compras", "E-Fatura"],
+    gallery: true,
+    columns: ["Vendas", "Compras", "E-Fatura", "Salários"],
     subFilters: [
       { value: "Mensal", label: "Mensal", match: (c) => c.iva === "Mensal" },
       { value: "Trimestral", label: "Trimestral", match: (c) => c.iva === "Trimestral" },
@@ -32,7 +36,8 @@ export const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     filter: (c) => c.tipo_contabilidade === "TI CO",
     hasIvaTabs: true,
     hideNif: true,
-    columns: ["Vendas", "Compras", "Bancos", "E-Fatura", "Análise"],
+    gallery: true,
+    columns: ["Vendas", "Compras", "Bancos", "E-Fatura", "Análise", "Salários"],
     subFilters: [
       { value: "Isento", label: "Isento", match: (c) => c.iva === "Art.53º" || c.iva === "Art. 9º" },
       { value: "Trimestral", label: "Trimestral", match: (c) => c.iva === "Trimestral" },
@@ -42,7 +47,8 @@ export const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     label: "Empresas",
     filter: (c) => c.tipo_contabilidade === "SQ",
     hideNif: true,
-    columns: ["Vendas", "Compras", "Bancos", "Balancete"],
+    gallery: true,
+    columns: ["Vendas", "Compras", "Bancos", "Balancete", "Salários"],
   },
 };
 
