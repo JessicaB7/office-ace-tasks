@@ -20,6 +20,10 @@ export function useContabilidadesPending(referenceMonth?: string) {
     let totalPending = 0;
 
     for (const [key, config] of Object.entries(SUB_PAGE_CONFIG)) {
+      // TI Simplificado - Isento de IVA não tem tarefas mensais a cumprir
+      // (não há IVA a entregar) — não entra na contagem de pendentes.
+      if (key === "TI_isento") continue;
+
       const tabClients = activeClients.filter(config.filter);
       const obTypes = obligationTypesFor(key, config);
 

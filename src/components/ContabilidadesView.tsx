@@ -94,6 +94,9 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const hideNif = config?.hideNif ?? false;
   const columns = config?.columns;
   const hasMultiColumns = !!columns && columns.length > 0;
+  // TI Simplificado - Isento de IVA não tem tarefas mensais a cumprir
+  // (não há IVA a entregar) — não faz sentido mostrar pendentes/progresso.
+  const noTasksTab = activeTab === "TI_isento";
 
   useEffect(() => {
     if (subPage) {
@@ -236,28 +239,30 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="min-w-[260px]">
           <h2 className="text-2xl font-bold">{config?.label || "Gestão Mensal"}</h2>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            {pendingCount > 0 && isEndOfMonth ? (
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-destructive/15 text-destructive animate-pulse">
-                <AlertTriangle className="w-3.5 h-3.5" /> {pendingCount} por concluir — fim do mês!
+          {!noTasksTab && (
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {pendingCount > 0 && isEndOfMonth ? (
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-destructive/15 text-destructive animate-pulse">
+                  <AlertTriangle className="w-3.5 h-3.5" /> {pendingCount} por concluir — fim do mês!
+                </span>
+              ) : pendingCount > 0 ? (
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-warning/15 text-warning">
+                  <Clock className="w-3.5 h-3.5" /> {pendingCount} por concluir
+                </span>
+              ) : totalCount > 0 ? (
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-success/15 text-success">
+                  <PartyPopper className="w-3.5 h-3.5" /> Tudo concluído
+                </span>
+              ) : null}
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                <CheckCircle2 className="w-3.5 h-3.5 text-success" /> {doneCount} concluídos
               </span>
-            ) : pendingCount > 0 ? (
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-warning/15 text-warning">
-                <Clock className="w-3.5 h-3.5" /> {pendingCount} por concluir
-              </span>
-            ) : totalCount > 0 ? (
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-success/15 text-success">
-                <PartyPopper className="w-3.5 h-3.5" /> Tudo concluído
-              </span>
-            ) : null}
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-              <CheckCircle2 className="w-3.5 h-3.5 text-success" /> {doneCount} concluídos
-            </span>
-            <div className="flex items-center gap-1.5">
-              <Progress value={progressPct} className={cn("h-1.5 w-20", progressPct === 100 && "[&>div]:bg-success")} />
-              <span className="text-xs text-muted-foreground whitespace-nowrap">{progressPct}%</span>
+              <div className="flex items-center gap-1.5">
+                <Progress value={progressPct} className={cn("h-1.5 w-20", progressPct === 100 && "[&>div]:bg-success")} />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{progressPct}%</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         <div className="flex items-center gap-2 bg-card rounded-lg border px-2 py-1">
           <button onClick={prevMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronLeft className="w-4 h-4" /></button>
