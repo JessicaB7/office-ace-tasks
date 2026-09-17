@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, PartyPopper } from "lucide-react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useClients, useMonthlyObligations, useMonthlyObligationsRange } from "@/hooks/useSupabaseQuery";
+import { useClients, useCollaborators, useMonthlyObligations, useMonthlyObligationsRange } from "@/hooks/useSupabaseQuery";
 import { SUB_PAGE_CONFIG, obligationTypesFor } from "@/lib/contabilidadesConfig";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -27,17 +27,30 @@ const ContabilidadesPainelView = () => {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
 
+  const [collabFilter, setCollabFilter] = useState<string>("all");
+  const [regimeFilter, setRegimeFilter] = useState<string>("all");
+
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const { data: clients = [] } = useClients();
+  const { data: collaborators = [] } = useCollaborators();
   const { data: obligations = [] } = useMonthlyObligations(referenceMonth);
 
-  const activeClients = useMemo(() => clients.filter((c: any) => c.active), [clients]);
+  const activeClients = useMemo(() => {
+    let list = clients.filter((c: any) => c.active);
+    if (collabFilter === "none") list = list.filter((c: any) => !c.responsavel_id);
+    else if (collabFilter !== "all") list = list.filter((c: any) => c.responsavel_id === collabFilter);
+    return list;
+  }, [clients, collabFilter]);
+
+  const visibleRegimeKeys = useMemo(() =>
+    regimeFilter === "all" ? REGIME_KEYS : REGIME_KEYS.filter(([key]) => key === regimeFilter),
+  [regimeFilter]);
 
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
 
   const regimeSummaries = useMemo(() => {
-    return REGIME_KEYS.map(([key, cfg]) => {
+    return visibleRegimeKeys.map(([key, cfg]) => {
       const tabClients = activeClients.filter(cfg.filter);
       const obTypes = obligationTypesFor(key, cfg);
       const doneTypesByClient = new Map<string, Set<string>>();
@@ -58,7 +71,7 @@ const ContabilidadesPainelView = () => {
         pct: tabClients.length > 0 ? Math.round((doneCount / tabClients.length) * 100) : 0,
       };
     });
-  }, [activeClients, obligations]);
+  }, [activeClients, obligations, visibleRegimeKeys]);
 
   const trendMonths = useMemo(() => {
     const arr: { key: string; label: string }[] = [];
@@ -78,7 +91,7 @@ const ContabilidadesPainelView = () => {
     return trendMonths.map((m) => {
       const monthObls = rangeObligations.filter((o: any) => o.reference_month === m.key);
       const row: Record<string, number | string> = { mes: m.label };
-      REGIME_KEYS.forEach(([key, cfg]) => {
+      visibleRegimeKeys.forEach(([key, cfg]) => {
         const tabClients = activeClients.filter(cfg.filter);
         const obTypes = obligationTypesFor(key, cfg);
         const doneCount = tabClients.filter((c: any) =>
@@ -88,7 +101,7 @@ const ContabilidadesPainelView = () => {
       });
       return row;
     });
-  }, [trendMonths, rangeObligations, activeClients]);
+  }, [trendMonths, rangeObligations, activeClients, visibleRegimeKeys]);
 
   return (
     <div className="space-y-5">
@@ -104,7 +117,25 @@ const ContabilidadesPainelView = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="flex gap-3 items-center flex-wrap">
+        <select value={collabFilter} onChange={(e) => setCollabFilter(e.target.value)}
+          className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
+          <option value="all">Todos os responsáveis</option>
+          {collaborators.filter((c: any) => c.active).map((col: any) => (
+            <option key={col.id} value={col.id}>{col.name}</option>
+          ))}
+          <option value="none">Sem responsável</option>
+        </select>
+        <select value={regimeFilter} onChange={(e) => setRegimeFilter(e.target.value)}
+          className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
+          <option value="all">Todos os regimes</option>
+          {REGIME_KEYS.map(([key, cfg]) => (
+            <option key={key} value={key}>{cfg.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className={cn("grid grid-cols-1 gap-4", visibleRegimeKeys.length > 1 && "md:grid-cols-3")}>
         {regimeSummaries.map((r) => (
           <div key={r.key} className="bg-card rounded-xl border p-4 space-y-3">
             <div className="flex items-center justify-between gap-2">
@@ -150,7 +181,7 @@ const ContabilidadesPainelView = () => {
             <YAxis fontSize={11} unit="%" domain={[0, 100]} />
             <Tooltip formatter={(v: number) => `${v}%`} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            {REGIME_KEYS.map(([key]) => (
+            {visibleRegimeKeys.map(([key]) => (
               <Line key={key} type="monotone" dataKey={REGIME_STYLE[key].short}
                 stroke={REGIME_STYLE[key].color} strokeWidth={2} dot={{ r: 3 }} />
             ))}

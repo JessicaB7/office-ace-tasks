@@ -65,7 +65,6 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [activeTab, setActiveTab] = useState<string>(subPage || "TI_isento");
-  const [subFilter, setSubFilter] = useState<string>("all");
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
@@ -91,7 +90,6 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const upsert = useUpsertObligation();
 
   const config = SUB_PAGE_CONFIG[activeTab];
-  const hasIvaTabs = config?.hasIvaTabs ?? false;
   const hideNif = config?.hideNif ?? false;
   const columns = config?.columns;
   const hasMultiColumns = !!columns && columns.length > 0;
@@ -103,8 +101,6 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   useEffect(() => {
     if (subPage) {
       setActiveTab(subPage);
-      const cfg = SUB_PAGE_CONFIG[subPage];
-      setSubFilter(cfg?.subFilters?.[0]?.value || "all");
       setCollabFilter("all");
       setSearch("");
     }
@@ -180,10 +176,6 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         list = list.filter((c: any) => c.responsavel_id === collabFilter);
       }
     }
-    if (hasIvaTabs && subFilter !== "all" && config.subFilters) {
-      const sf = config.subFilters.find((f) => f.value === subFilter);
-      if (sf) list = list.filter(sf.match);
-    }
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((c: any) => c.name.toLowerCase().includes(q) || (c.nif || "").includes(q));
@@ -196,7 +188,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
       return a.name.localeCompare(b.name);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeClients, config, collabFilter, search, hasIvaTabs, subFilter, colMaps, oblMap, hasMultiColumns]);
+  }, [activeClients, config, collabFilter, search, colMaps, oblMap, hasMultiColumns]);
 
   const toggleObl = (clientId: string, type: string, map: Record<string, any>) => {
     const obl = map[clientId];
@@ -218,20 +210,6 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const progressPct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
   const displayedClients = showOnlyPending ? filteredClients.filter((c: any) => !isClientDone(c)) : filteredClients;
-
-  // Sub-filter counts
-  const baseClients = useMemo(() => {
-    if (!hasIvaTabs || !config) return [];
-    return activeClients.filter(config.filter);
-  }, [activeClients, config, hasIvaTabs]);
-
-  const subFilterCounts = useMemo(() => {
-    if (!config?.subFilters) return [];
-    return config.subFilters.map((sf) => ({
-      ...sf,
-      count: baseClients.filter(sf.match).length,
-    }));
-  }, [config, baseClients]);
 
   // Notas mensais só fazem sentido nos separadores em galeria (têm ficha do cliente).
   const showNotes = isGallery;
@@ -273,18 +251,6 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
           <button onClick={nextMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
-
-      {hasIvaTabs && subFilterCounts.length > 0 && (
-        <div className="flex gap-1 border-b pb-1">
-          {subFilterCounts.map((tab) => (
-            <button key={tab.value} onClick={() => setSubFilter(tab.value)}
-              className={cn("px-3 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
-                subFilter === tab.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-              {tab.label} ({tab.count})
-            </button>
-          ))}
-        </div>
-      )}
 
       <div className="flex gap-3 items-center">
         <div className="relative max-w-sm flex-1">
