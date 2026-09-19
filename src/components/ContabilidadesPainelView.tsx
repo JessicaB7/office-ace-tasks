@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, PartyPopper } from "lucide-react";
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { BarChart3, CheckCircle2, ChevronLeft, ChevronRight, Clock, PartyPopper, Users } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useClients, useCollaborators, useMonthlyObligations, useMonthlyObligationsRange } from "@/hooks/useSupabaseQuery";
 import { SUB_PAGE_CONFIG, obligationTypesFor } from "@/lib/contabilidadesConfig";
-import { Progress } from "@/components/ui/progress";
+import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -12,21 +12,56 @@ const TREND_MONTHS = 6;
 
 // Mesma paleta categórica já usada em toda a app para estes 3 regimes
 // (ver ObrigacoesView/ClientListView): TI RS verde, TI CO âmbar, SQ/Empresas azul.
-const REGIME_STYLE: Record<string, { color: string; short: string; dot: string }> = {
-  TI_iva: { color: "#10b981", short: "TI RS", dot: "bg-emerald-500" },
-  organizada: { color: "#f59e0b", short: "TI CO", dot: "bg-amber-500" },
-  empresas: { color: "#3b82f6", short: "Empresas", dot: "bg-blue-500" },
+const REGIME_STYLE: Record<string, { color: string; short: string }> = {
+  TI_iva: { color: "#10b981", short: "TI RS" },
+  organizada: { color: "#f59e0b", short: "TI CO" },
+  empresas: { color: "#3b82f6", short: "Empresas" },
 };
+
+// Mesma paleta de estados já usada em ClientListView.
+const STATUS_STYLE: Record<string, { label: string; dot: string; text: string }> = {
+  ativo: { label: "Ativo", dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
+  a_sair: { label: "A sair", dot: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" },
+  inativo: { label: "Inativo", dot: "bg-muted-foreground/40", text: "text-muted-foreground" },
+};
+const clientStatus = (c: any): string => c.status || (c.active === false ? "inativo" : "ativo");
 
 // Regimes com obrigações mensais reais (mesmos que têm galeria) — TI Isento
 // fica de fora, não tem tarefas a cumprir.
 const REGIME_KEYS = Object.entries(SUB_PAGE_CONFIG).filter(([, cfg]) => cfg.gallery);
 
+const RadialProgress = ({ pct, color, size = 56, stroke = 5 }: { pct: number; color: string; size?: number; stroke?: number }) => {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full -rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-muted" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={c - (pct / 100) * c}
+          style={{ stroke: color }} className="transition-all duration-500" />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">{pct}%</div>
+    </div>
+  );
+};
+
+const StatTile = ({ icon: Icon, label, value, accent }: { icon: any; label: string; value: string | number; accent: string }) => (
+  <div className="bg-card rounded-2xl border p-4 flex items-center gap-3">
+    <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shrink-0", accent)}>
+      <Icon className="w-5 h-5" />
+    </div>
+    <div className="min-w-0">
+      <div className="text-2xl font-bold leading-tight">{value}</div>
+      <div className="text-xs text-muted-foreground truncate">{label}</div>
+    </div>
+  </div>
+);
+
 const ContabilidadesPainelView = () => {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
-
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [regimeFilter, setRegimeFilter] = useState<string>("all");
 
@@ -35,16 +70,27 @@ const ContabilidadesPainelView = () => {
   const { data: collaborators = [] } = useCollaborators();
   const { data: obligations = [] } = useMonthlyObligations(referenceMonth);
 
-  const activeClients = useMemo(() => {
-    let list = clients.filter((c: any) => c.active);
-    if (collabFilter === "none") list = list.filter((c: any) => !c.responsavel_id);
-    else if (collabFilter !== "all") list = list.filter((c: any) => c.responsavel_id === collabFilter);
-    return list;
-  }, [clients, collabFilter]);
-
   const visibleRegimeKeys = useMemo(() =>
     regimeFilter === "all" ? REGIME_KEYS : REGIME_KEYS.filter(([key]) => key === regimeFilter),
   [regimeFilter]);
+
+  // Todos os clientes dos regimes visíveis (qualquer estado), já filtrados por
+  // responsável — usados para o resumo de "estado dos clientes".
+  const scopedAllClients = useMemo(() => {
+    let list = clients as any[];
+    if (collabFilter === "none") list = list.filter((c) => !c.responsavel_id);
+    else if (collabFilter !== "all") list = list.filter((c) => c.responsavel_id === collabFilter);
+    return list.filter((c) => visibleRegimeKeys.some(([, cfg]) => cfg.filter(c)));
+  }, [clients, collabFilter, visibleRegimeKeys]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { ativo: 0, a_sair: 0, inativo: 0 };
+    scopedAllClients.forEach((c) => { counts[clientStatus(c)] = (counts[clientStatus(c)] || 0) + 1; });
+    return counts;
+  }, [scopedAllClients]);
+
+  // Clientes ativos (ativo + a sair) — só estes têm obrigações mensais a cumprir.
+  const activeClients = useMemo(() => scopedAllClients.filter((c) => c.active), [scopedAllClients]);
 
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
@@ -72,6 +118,11 @@ const ContabilidadesPainelView = () => {
       };
     });
   }, [activeClients, obligations, visibleRegimeKeys]);
+
+  const overallTotal = regimeSummaries.reduce((s, r) => s + r.total, 0);
+  const overallDone = regimeSummaries.reduce((s, r) => s + r.doneCount, 0);
+  const overallPending = overallTotal - overallDone;
+  const overallPct = overallTotal > 0 ? Math.round((overallDone / overallTotal) * 100) : 0;
 
   const trendMonths = useMemo(() => {
     const arr: { key: string; label: string }[] = [];
@@ -106,9 +157,14 @@ const ContabilidadesPainelView = () => {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h2 className="text-2xl font-bold">Painel — Gestão Mensal</h2>
-          <p className="text-sm text-muted-foreground mt-1">Análise geral de todos os clientes, por mês</p>
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <BarChart3 className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold">Painel — Gestão Mensal</h2>
+            <p className="text-sm text-muted-foreground">Análise geral de todos os clientes, por mês</p>
+          </div>
         </div>
         <div className="flex items-center gap-2 bg-card rounded-lg border px-2 py-1">
           <button onClick={prevMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronLeft className="w-4 h-4" /></button>
@@ -135,29 +191,50 @@ const ContabilidadesPainelView = () => {
         </select>
       </div>
 
-      <div className={cn("grid grid-cols-1 gap-4", visibleRegimeKeys.length > 1 && "md:grid-cols-3")}>
-        {regimeSummaries.map((r) => (
-          <div key={r.key} className="bg-card rounded-xl border p-4 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", REGIME_STYLE[r.key].dot)} />
-                <h3 className="font-semibold text-sm truncate">{r.label}</h3>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatTile icon={Users} label="Clientes com obrigações" value={overallTotal} accent="bg-primary/10 text-primary" />
+        <StatTile icon={CheckCircle2} label="Concluído este mês" value={`${overallPct}%`} accent="bg-success/15 text-success" />
+        <StatTile icon={Clock} label="Ainda pendentes" value={overallPending} accent="bg-warning/15 text-warning" />
+        <div className="bg-card rounded-2xl border p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Estado dos clientes</div>
+          <div className="space-y-1.5">
+            {(["ativo", "a_sair", "inativo"] as const).map((s) => (
+              <div key={s} className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <span className={cn("w-2 h-2 rounded-full", STATUS_STYLE[s].dot)} />
+                  {STATUS_STYLE[s].label}
+                </span>
+                <span className={cn("font-semibold", STATUS_STYLE[s].text)}>{statusCounts[s] || 0}</span>
               </div>
-              <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full shrink-0",
-                r.pct === 100 ? "bg-success/15 text-success" : "bg-warning/15 text-warning")}>
-                {r.pct}%
-              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {regimeSummaries.map((r) => (
+          <div key={r.key} className="relative bg-card rounded-2xl border p-5 space-y-4 overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-1" style={{ background: REGIME_STYLE[r.key].color }} />
+            <div className="flex items-center gap-3">
+              <RadialProgress pct={r.pct} color={REGIME_STYLE[r.key].color} />
+              <div className="min-w-0">
+                <h3 className="font-semibold text-sm truncate">{r.label}</h3>
+                <div className="text-xs text-muted-foreground">{r.doneCount}/{r.total} clientes concluídos</div>
+              </div>
             </div>
-            <Progress value={r.pct} className={cn("h-1.5", r.pct === 100 && "[&>div]:bg-success")} />
-            <div className="text-xs text-muted-foreground">{r.doneCount}/{r.total} clientes concluídos</div>
             {r.pendingClients.length > 0 ? (
               <div>
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
                   Pendentes ({r.pendingClients.length})
                 </div>
-                <ul className="text-xs space-y-0.5 max-h-40 overflow-y-auto">
+                <ul className="space-y-1 max-h-40 overflow-y-auto">
                   {r.pendingClients.map((c: any) => (
-                    <li key={c.id} className="truncate text-muted-foreground">{c.name}</li>
+                    <li key={c.id} className="flex items-center gap-2 text-xs">
+                      <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0", getAvatarPalette(c.id))}>
+                        {getInitials(c.name)}
+                      </span>
+                      <span className="truncate text-muted-foreground">{c.name}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -172,20 +249,29 @@ const ContabilidadesPainelView = () => {
         ))}
       </div>
 
-      <div className="bg-card rounded-xl border p-4">
+      <div className="bg-card rounded-2xl border p-4">
         <h3 className="font-semibold text-sm mb-3">Evolução da conclusão — últimos {TREND_MONTHS} meses</h3>
         <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={trendData}>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis dataKey="mes" fontSize={11} />
-            <YAxis fontSize={11} unit="%" domain={[0, 100]} />
-            <Tooltip formatter={(v: number) => `${v}%`} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
+          <AreaChart data={trendData}>
+            <defs>
+              {visibleRegimeKeys.map(([key]) => (
+                <linearGradient key={key} id={`painel-grad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={REGIME_STYLE[key].color} stopOpacity={0.35} />
+                  <stop offset="95%" stopColor={REGIME_STYLE[key].color} stopOpacity={0} />
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.25} vertical={false} />
+            <XAxis dataKey="mes" fontSize={11} tickLine={false} axisLine={false} />
+            <YAxis fontSize={11} unit="%" domain={[0, 100]} tickLine={false} axisLine={false} width={36} />
+            <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+            <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
             {visibleRegimeKeys.map(([key]) => (
-              <Line key={key} type="monotone" dataKey={REGIME_STYLE[key].short}
-                stroke={REGIME_STYLE[key].color} strokeWidth={2} dot={{ r: 3 }} />
+              <Area key={key} type="monotone" dataKey={REGIME_STYLE[key].short}
+                stroke={REGIME_STYLE[key].color} strokeWidth={2}
+                fill={`url(#painel-grad-${key})`} dot={{ r: 3 }} activeDot={{ r: 5 }} />
             ))}
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
