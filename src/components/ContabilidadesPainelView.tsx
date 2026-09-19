@@ -1,14 +1,24 @@
 import { useState, useMemo } from "react";
-import { BarChart3, CheckCircle2, ChevronLeft, ChevronRight, Clock, PartyPopper, Users } from "lucide-react";
+import { BarChart3, CheckCircle2, ChevronLeft, ChevronRight, Clock, PartyPopper, UserCircle2, Users } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useClients, useCollaborators, useMonthlyObligations, useMonthlyObligationsRange } from "@/hooks/useSupabaseQuery";
+import { useAuth } from "@/hooks/useAuth";
 import { SUB_PAGE_CONFIG, obligationTypesFor } from "@/lib/contabilidadesConfig";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-const MONTH_ABBR = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-const TREND_MONTHS = 6;
+
+// Intervalo fixo pedido para o gráfico de evolução — Julho a Dezembro de 2026.
+const TREND_RANGE = [
+  { key: "2026-07-01", label: "Jul 26" },
+  { key: "2026-08-01", label: "Ago 26" },
+  { key: "2026-09-01", label: "Set 26" },
+  { key: "2026-10-01", label: "Out 26" },
+  { key: "2026-11-01", label: "Nov 26" },
+  { key: "2026-12-01", label: "Dez 26" },
+];
 
 // Mesma paleta categórica já usada em toda a app para estes 3 regimes
 // (ver ObrigacoesView/ClientListView): TI RS verde, TI CO âmbar, SQ/Empresas azul.
@@ -64,24 +74,39 @@ const ContabilidadesPainelView = () => {
   const [month, setMonth] = useState(now.getMonth());
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [regimeFilter, setRegimeFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  const { user, isAdmin } = useAuth();
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const { data: clients = [] } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const { data: obligations = [] } = useMonthlyObligations(referenceMonth);
+
+  // Colaborador correspondente ao utilizador com sessão iniciada — quem não é
+  // admin só pode ver os próprios clientes neste painel.
+  const currentCollaborator = useMemo(() => {
+    if (!user?.email) return null;
+    return collaborators.find((c: any) => c.email?.toLowerCase() === user.email!.toLowerCase()) || null;
+  }, [user, collaborators]);
 
   const visibleRegimeKeys = useMemo(() =>
     regimeFilter === "all" ? REGIME_KEYS : REGIME_KEYS.filter(([key]) => key === regimeFilter),
   [regimeFilter]);
 
   // Todos os clientes dos regimes visíveis (qualquer estado), já filtrados por
-  // responsável — usados para o resumo de "estado dos clientes".
+  // responsável e estado — usados para os KPIs e o resumo de "estado dos clientes".
   const scopedAllClients = useMemo(() => {
     let list = clients as any[];
-    if (collabFilter === "none") list = list.filter((c) => !c.responsavel_id);
-    else if (collabFilter !== "all") list = list.filter((c) => c.responsavel_id === collabFilter);
+    if (isAdmin) {
+      if (collabFilter === "none") list = list.filter((c) => !c.responsavel_id);
+      else if (collabFilter !== "all") list = list.filter((c) => c.responsavel_id === collabFilter);
+    } else {
+      // Não-admin: só os clientes de que é responsável, sem exceção.
+      list = list.filter((c) => c.responsavel_id === currentCollaborator?.id);
+    }
+    if (statusFilter !== "all") list = list.filter((c) => clientStatus(c) === statusFilter);
     return list.filter((c) => visibleRegimeKeys.some(([, cfg]) => cfg.filter(c)));
-  }, [clients, collabFilter, visibleRegimeKeys]);
+  }, [clients, isAdmin, collabFilter, currentCollaborator, statusFilter, visibleRegimeKeys]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { ativo: 0, a_sair: 0, inativo: 0 };
@@ -124,22 +149,10 @@ const ContabilidadesPainelView = () => {
   const overallPending = overallTotal - overallDone;
   const overallPct = overallTotal > 0 ? Math.round((overallDone / overallTotal) * 100) : 0;
 
-  const trendMonths = useMemo(() => {
-    const arr: { key: string; label: string }[] = [];
-    for (let i = TREND_MONTHS - 1; i >= 0; i--) {
-      const d = new Date(year, month - i, 1);
-      arr.push({
-        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`,
-        label: `${MONTH_ABBR[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`,
-      });
-    }
-    return arr;
-  }, [year, month]);
-
-  const { data: rangeObligations = [] } = useMonthlyObligationsRange(trendMonths.map((m) => m.key));
+  const { data: rangeObligations = [] } = useMonthlyObligationsRange(TREND_RANGE.map((m) => m.key));
 
   const trendData = useMemo(() => {
-    return trendMonths.map((m) => {
+    return TREND_RANGE.map((m) => {
       const monthObls = rangeObligations.filter((o: any) => o.reference_month === m.key);
       const row: Record<string, number | string> = { mes: m.label };
       visibleRegimeKeys.forEach(([key, cfg]) => {
@@ -152,7 +165,47 @@ const ContabilidadesPainelView = () => {
       });
       return row;
     });
-  }, [trendMonths, rangeObligations, activeClients, visibleRegimeKeys]);
+  }, [rangeObligations, activeClients, visibleRegimeKeys]);
+
+  // Clientes de todos os regimes/estados visíveis, ignorando o filtro de
+  // responsável — só para a repartição "Por colaborador" (admin).
+  const collaboratorScopedClients = useMemo(() => {
+    let list = clients as any[];
+    if (statusFilter !== "all") list = list.filter((c) => clientStatus(c) === statusFilter);
+    return list.filter((c) => c.active && visibleRegimeKeys.some(([, cfg]) => cfg.filter(c)));
+  }, [clients, statusFilter, visibleRegimeKeys]);
+
+  const collaboratorBreakdown = useMemo(() => {
+    if (!isAdmin) return [];
+    const byCollab = new Map<string, any[]>();
+    collaboratorScopedClients.forEach((c: any) => {
+      const key = c.responsavel_id || "__none__";
+      if (!byCollab.has(key)) byCollab.set(key, []);
+      byCollab.get(key)!.push(c);
+    });
+
+    const rows = Array.from(byCollab.entries()).map(([collabId, list]) => {
+      let done = 0, total = 0;
+      list.forEach((c: any) => {
+        visibleRegimeKeys.forEach(([key, cfg]) => {
+          if (!cfg.filter(c)) return;
+          total++;
+          const obTypes = obligationTypesFor(key, cfg);
+          const isDone = obTypes.every((t) =>
+            obligations.some((o: any) => o.client_id === c.id && o.obligation_type === t && o.status === "concluida"));
+          if (isDone) done++;
+        });
+      });
+      const collab = collaborators.find((c: any) => c.id === collabId);
+      return {
+        id: collabId, name: collab ? collab.name : "Sem responsável",
+        total, done, pending: total - done,
+        pct: total > 0 ? Math.round((done / total) * 100) : 0,
+      };
+    });
+
+    return rows.sort((a, b) => b.pending - a.pending || a.name.localeCompare(b.name));
+  }, [isAdmin, collaboratorScopedClients, visibleRegimeKeys, obligations, collaborators]);
 
   return (
     <div className="space-y-5">
@@ -174,20 +227,33 @@ const ContabilidadesPainelView = () => {
       </div>
 
       <div className="flex gap-3 items-center flex-wrap">
-        <select value={collabFilter} onChange={(e) => setCollabFilter(e.target.value)}
-          className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
-          <option value="all">Todos os responsáveis</option>
-          {collaborators.filter((c: any) => c.active).map((col: any) => (
-            <option key={col.id} value={col.id}>{col.name}</option>
-          ))}
-          <option value="none">Sem responsável</option>
-        </select>
+        {isAdmin ? (
+          <select value={collabFilter} onChange={(e) => setCollabFilter(e.target.value)}
+            className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="all">Todos os responsáveis</option>
+            {collaborators.filter((c: any) => c.active).map((col: any) => (
+              <option key={col.id} value={col.id}>{col.name}</option>
+            ))}
+            <option value="none">Sem responsável</option>
+          </select>
+        ) : (
+          <span className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border bg-card text-muted-foreground">
+            <UserCircle2 className="w-4 h-4" /> Só os teus clientes
+          </span>
+        )}
         <select value={regimeFilter} onChange={(e) => setRegimeFilter(e.target.value)}
           className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
           <option value="all">Todos os regimes</option>
           {REGIME_KEYS.map(([key, cfg]) => (
             <option key={key} value={key}>{cfg.label}</option>
           ))}
+        </select>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
+          <option value="all">Todos os estados</option>
+          <option value="ativo">Ativo</option>
+          <option value="a_sair">A sair</option>
+          <option value="inativo">Inativo</option>
         </select>
       </div>
 
@@ -250,7 +316,7 @@ const ContabilidadesPainelView = () => {
       </div>
 
       <div className="bg-card rounded-2xl border p-4">
-        <h3 className="font-semibold text-sm mb-3">Evolução da conclusão — últimos {TREND_MONTHS} meses</h3>
+        <h3 className="font-semibold text-sm mb-3">Evolução da conclusão — Julho a Dezembro de 2026</h3>
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={trendData}>
             <defs>
@@ -274,6 +340,37 @@ const ContabilidadesPainelView = () => {
           </AreaChart>
         </ResponsiveContainer>
       </div>
+
+      {isAdmin && (
+        <div className="bg-card rounded-2xl border p-4">
+          <h3 className="font-semibold text-sm mb-3">Por colaborador</h3>
+          {collaboratorBreakdown.length === 0 ? (
+            <div className="text-xs text-muted-foreground">Sem dados para os filtros escolhidos.</div>
+          ) : (
+            <div className="space-y-1">
+              {collaboratorBreakdown.map((row) => (
+                <div key={row.id} className="flex items-center gap-3 py-2 border-b last:border-0">
+                  <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0",
+                    row.id === "__none__" ? "bg-muted text-muted-foreground" : getAvatarPalette(row.id))}>
+                    {row.id === "__none__" ? "—" : getInitials(row.name)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium truncate">{row.name}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Progress value={row.pct} className={cn("h-1.5 flex-1", row.pct === 100 && "[&>div]:bg-success")} />
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">{row.done}/{row.total}</span>
+                    </div>
+                  </div>
+                  <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full shrink-0",
+                    row.pct === 100 ? "bg-success/15 text-success" : "bg-warning/15 text-warning")}>
+                    {row.pct}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
