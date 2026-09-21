@@ -299,20 +299,6 @@ const ClientMonthlyHistoryDialog = ({
         <div className="bg-card rounded-2xl border p-5 space-y-4">
           <h3 className="font-semibold text-sm">Meses — {historyYear}</h3>
 
-          {showNotes && referenceMonth && (
-            <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-                Notas do mês atual
-              </div>
-              <MonthlyNoteCell
-                clientId={client.id}
-                referenceMonth={referenceMonth}
-                obligationId={notesObligation?.id}
-                initialNotes={notesObligation?.notes || ""}
-              />
-            </div>
-          )}
-
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">A carregar...</div>
           ) : (
