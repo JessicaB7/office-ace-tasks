@@ -8,6 +8,8 @@ import {
   LogOut,
   ClipboardList,
   ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
   BookOpen,
   BarChart3,
   Banknote,
@@ -128,6 +130,8 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
   },
 ];
 
+const SIDEBAR_COLLAPSED_KEY = "appSidebarCollapsed";
+
 const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
 
   const { user, isAdmin, signOut } = useAuth();
@@ -137,28 +141,68 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
     analise: activeView.startsWith("analise"),
     obrigacoes: activeView.startsWith("obrigacoes"),
   });
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+      } catch {
+        // localStorage indisponível — a preferência só dura esta sessão
+      }
+      return next;
+    });
+  };
 
   const itemClass = (active: boolean) =>
     cn(
-      "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors",
+      "w-full flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors",
+      collapsed ? "justify-center px-0" : "px-4",
       active
         ? "bg-sidebar-accent text-sidebar-accent-foreground"
         : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-sidebar-accent/50"
     );
 
   const handleGroupClick = (group: Group) => {
+    if (collapsed) {
+      setCollapsed(false);
+      try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, "0"); } catch { /* ignora */ }
+      setOpenGroups((prev) => ({ ...prev, [group.id]: true }));
+      return;
+    }
     const isActive = activeView.startsWith(group.id);
     setOpenGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }));
     if (!isActive) onViewChange(group.items[0].id);
   };
 
   return (
-    <aside className="w-64 bg-primary text-primary-foreground min-h-screen flex flex-col">
-      <div className="p-6 flex items-center justify-center">
-        <img src={logoWhite} alt="Contabilista Explica" className="w-full max-w-[240px]" />
+    <aside className={cn("bg-primary text-primary-foreground min-h-screen flex flex-col transition-[width] duration-200",
+      collapsed ? "w-[68px]" : "w-64")}>
+      <div className={cn("flex items-center", collapsed ? "flex-col gap-2 p-3" : "justify-between p-4")}>
+        {collapsed ? (
+          <div className="w-9 h-9 rounded-lg bg-primary-foreground/15 flex items-center justify-center font-bold text-xs shrink-0" title="Contabilista Explica">
+            CE
+          </div>
+        ) : (
+          <img src={logoWhite} alt="Contabilista Explica" className="max-w-[190px]" />
+        )}
+        <button
+          onClick={toggleCollapsed}
+          className="p-1.5 rounded-lg text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-colors shrink-0"
+          title={collapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
+        >
+          {collapsed ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
+        </button>
       </div>
 
-      <nav className="flex-1 px-3 pb-4 overflow-y-auto">
+      <nav className="flex-1 px-3 pb-4 overflow-y-auto overflow-x-hidden">
         {SECTIONS.map((section) => {
           const entries = section.entries.filter((e) =>
             e.kind === "item" ? !e.item.adminOnly || isAdmin : !e.group.adminOnly || isAdmin
@@ -166,34 +210,44 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
           if (entries.length === 0) return null;
           return (
             <div key={section.title} className="mb-4">
-              <p className="px-4 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/40">
-                {section.title}
-              </p>
+              {collapsed ? (
+                <div className="mx-2 mb-1.5 border-t border-primary-foreground/15" />
+              ) : (
+                <p className="px-4 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/40">
+                  {section.title}
+                </p>
+              )}
               {entries.map((entry) => {
                 if (entry.kind === "item") {
                   const item = entry.item;
                   return (
-                    <button key={item.id} onClick={() => onViewChange(item.id)} className={itemClass(activeView === item.id)}>
-                      {item.icon && <item.icon className="w-4 h-4" />}
-                      {item.label}
+                    <button key={item.id} onClick={() => onViewChange(item.id)} className={itemClass(activeView === item.id)}
+                      title={collapsed ? item.label : undefined}>
+                      {item.icon && <item.icon className="w-4 h-4 shrink-0" />}
+                      {!collapsed && item.label}
                     </button>
                   );
                 }
                 const group = entry.group;
                 const isActive = activeView.startsWith(group.id);
-                const open = openGroups[group.id];
+                const open = openGroups[group.id] && !collapsed;
                 const isContabilidades = group.id === "contabilidades";
                 return (
                   <div key={group.id}>
-                    <button onClick={() => handleGroupClick(group)} className={itemClass(isActive)}>
-                      <group.icon className="w-4 h-4" />
-                      <span className="flex-1 text-left">{group.label}</span>
+                    <button onClick={() => handleGroupClick(group)} className={cn(itemClass(isActive), "relative")}
+                      title={collapsed ? group.label : undefined}>
+                      <group.icon className="w-4 h-4 shrink-0" />
+                      {!collapsed && <span className="flex-1 text-left">{group.label}</span>}
                       {isContabilidades && contabTotalPending > 0 && (
-                        <span className="text-[10px] font-semibold bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full mr-1">
-                          {contabTotalPending}
-                        </span>
+                        collapsed ? (
+                          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-warning" />
+                        ) : (
+                          <span className="text-[10px] font-semibold bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full mr-1">
+                            {contabTotalPending}
+                          </span>
+                        )
                       )}
-                      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />
+                      {!collapsed && <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />}
                     </button>
                     {open && (
                       <div className="ml-4 pl-3 border-l border-primary-foreground/20 mb-1">
@@ -231,16 +285,22 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
         })}
       </nav>
 
-      <div className="p-4 mx-3 mb-2 rounded-lg bg-sidebar-accent/50 text-xs text-primary-foreground/60">
-        <p className="font-medium text-primary-foreground/80 mb-1">{user?.email}</p>
-        <p>Período fiscal 2026</p>
-      </div>
-      <div className="px-4 mb-4">
+      {!collapsed && (
+        <div className="p-4 mx-3 mb-2 rounded-lg bg-sidebar-accent/50 text-xs text-primary-foreground/60">
+          <p className="font-medium text-primary-foreground/80 mb-1 truncate">{user?.email}</p>
+          <p>Período fiscal 2026</p>
+        </div>
+      )}
+      <div className={cn("mb-4", collapsed ? "px-3" : "px-4")}>
         <button
           onClick={signOut}
-          className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-colors"
+          title={collapsed ? "Terminar sessão" : undefined}
+          className={cn(
+            "w-full flex items-center gap-2 py-2 rounded-lg text-sm text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50 transition-colors",
+            collapsed ? "justify-center px-0" : "px-4"
+          )}
         >
-          <LogOut className="w-4 h-4" /> Terminar sessão
+          <LogOut className="w-4 h-4 shrink-0" /> {!collapsed && "Terminar sessão"}
         </button>
       </div>
     </aside>
