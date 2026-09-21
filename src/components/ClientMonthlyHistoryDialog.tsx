@@ -260,6 +260,7 @@ const ClientMonthlyHistoryDialog = ({
 
   // Group obligations by month
   const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
+  const now = new Date();
 
   const monthlyData = useMemo(() => {
     const months: { key: string; label: string; year: number; month: number }[] = [];
@@ -376,48 +377,80 @@ const ClientMonthlyHistoryDialog = ({
         </div>
 
         <div className="bg-card rounded-2xl border p-5 space-y-4">
-          <h3 className="font-semibold text-sm">Meses — {historyYear}</h3>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className="font-semibold text-sm">Meses — {historyYear}</h3>
+            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success" /> Completo</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-warning" /> Por concluir</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-muted-foreground/30" /> Ainda não chegou</span>
+            </div>
+          </div>
 
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">A carregar...</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm border-separate border-spacing-0">
                 <thead>
-                  <tr className="border-b bg-muted/40">
-                    <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Mês</th>
+                  <tr className="bg-muted/40">
+                    <th className="text-left px-3 py-2 font-semibold text-muted-foreground rounded-l-lg">Mês</th>
+                    {hasMultiColumns && (
+                      <th className="text-left px-3 py-2 font-semibold text-muted-foreground w-28">Progresso</th>
+                    )}
                     {hasMultiColumns ? (
                       columns!.map((col) => (
                         <th key={col} className="text-center px-2 py-2 font-semibold text-muted-foreground text-xs">{col}</th>
                       ))
                     ) : (
-                      <th className="text-center px-3 py-2 font-semibold text-muted-foreground">Estado</th>
+                      <th className="text-center px-3 py-2 font-semibold text-muted-foreground rounded-r-lg">Estado</th>
                     )}
                   </tr>
                 </thead>
                 <tbody>
-                  {monthlyData.map((row: any) => (
-                    <tr key={row.key} className={cn("border-b last:border-0", row.key === referenceMonth && "bg-primary/5")}>
-                      <td className={cn("px-3 py-2.5 font-medium", row.allDone && "text-muted-foreground")}>{row.label}</td>
-                      {hasMultiColumns ? (
-                        row.colObls.map((existing: any, i: number) => (
-                          <td key={colOblTypes[i]} className="text-center px-2 py-2.5">
+                  {monthlyData.map((row: any) => {
+                    const isFuture = new Date(row.year, row.month, 1) > new Date(now.getFullYear(), now.getMonth(), 1);
+                    const doneCount = hasMultiColumns ? row.colStatus.filter(Boolean).length : (row.done ? 1 : 0);
+                    const total = hasMultiColumns ? columns!.length : 1;
+                    const rowAccent = isFuture
+                      ? "border-l-muted-foreground/20"
+                      : row.allDone ? "border-l-success bg-success/5" : "border-l-warning bg-warning/5";
+                    return (
+                      <tr key={row.key} className={cn("border-b last:border-0 border-l-4 transition-colors hover:bg-muted/20", rowAccent,
+                        row.key === referenceMonth && "ring-1 ring-inset ring-primary/30")}>
+                        <td className={cn("px-3 py-2.5 font-medium", (row.allDone || isFuture) && "text-muted-foreground", row.allDone && "line-through")}>
+                          {row.label}
+                        </td>
+                        {hasMultiColumns && (
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-2 min-w-[88px]">
+                              <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                                <div className={cn("h-full rounded-full transition-all", row.allDone ? "bg-success" : "bg-warning")}
+                                  style={{ width: `${(doneCount / total) * 100}%` }} />
+                              </div>
+                              <span className="text-[11px] text-muted-foreground whitespace-nowrap">{doneCount}/{total}</span>
+                            </div>
+                          </td>
+                        )}
+                        {hasMultiColumns ? (
+                          row.colObls.map((existing: any, i: number) => (
+                            <td key={colOblTypes[i]} className="text-center px-2 py-2.5">
+                              <ObligationStatusCell
+                                existing={existing}
+                                onUpdate={(patch) => updateCell(row.key, colOblTypes[i], existing, patch)}
+                              />
+                            </td>
+                          ))
+                        ) : (
+                          <td className="text-center px-3 py-2.5">
                             <ObligationStatusCell
-                              existing={existing}
-                              onUpdate={(patch) => updateCell(row.key, colOblTypes[i], existing, patch)}
+                              existing={row.singleObl}
+                              onUpdate={(patch) => updateCell(row.key, oblPrefix, row.singleObl, patch)}
                             />
                           </td>
-                        ))
-                      ) : (
-                        <td className="text-center px-3 py-2.5">
-                          <ObligationStatusCell
-                            existing={row.singleObl}
-                            onUpdate={(patch) => updateCell(row.key, oblPrefix, row.singleObl, patch)}
-                          />
-                        </td>
-                      )}
-                    </tr>
-                  ))}
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
