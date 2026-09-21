@@ -280,7 +280,7 @@ const ClientMonthlyHistoryDialog = ({
             <Field label="Salários" value={client.salarios} />
             <Field label="Responsável" value={responsavelName} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
                 Tempo de trabalho
