@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { BarChart3, CheckCircle2, ChevronLeft, ChevronRight, Clock, LayoutGrid, PartyPopper, TrendingUp, UserCircle2, Users } from "lucide-react";
+import { BarChart3, ChevronLeft, ChevronRight, LayoutGrid, PartyPopper, TrendingUp, UserCircle2, Users } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useClients, useCollaborators, useMonthlyObligations, useMonthlyObligationsRange, useTimeEntriesRange } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,7 +41,9 @@ const clientStatus = (c: any): string => c.status || (c.active === false ? "inat
 // fica de fora, não tem tarefas a cumprir.
 const REGIME_KEYS = Object.entries(SUB_PAGE_CONFIG).filter(([, cfg]) => cfg.gallery);
 
-const RadialProgress = ({ pct, color, size = 56, stroke = 5 }: { pct: number; color: string; size?: number; stroke?: number }) => {
+const RadialProgress = ({ pct, color, size = 56, stroke = 5, textClassName = "text-xs font-bold" }: {
+  pct: number; color: string; size?: number; stroke?: number; textClassName?: string;
+}) => {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   return (
@@ -52,20 +54,35 @@ const RadialProgress = ({ pct, color, size = 56, stroke = 5 }: { pct: number; co
           strokeDasharray={c} strokeDashoffset={c - (pct / 100) * c}
           style={{ stroke: color }} className="transition-all duration-500" />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">{pct}%</div>
+      <div className={cn("absolute inset-0 flex items-center justify-center", textClassName)}>{pct}%</div>
     </div>
   );
 };
 
-const StatTile = ({ icon: Icon, label, value, accent }: { icon: any; label: string; value: string | number; accent: string }) => (
-  <div className="bg-card rounded-2xl border p-4 flex items-center gap-3">
-    <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center shrink-0", accent)}>
-      <Icon className="w-5 h-5" />
-    </div>
-    <div className="min-w-0">
-      <div className="text-2xl font-bold leading-tight">{value}</div>
-      <div className="text-xs text-muted-foreground truncate">{label}</div>
-    </div>
+/** Mini-gráfico decorativo (sem eixos/legenda) com a evolução de um regime —
+ * dá mais densidade visual ao cartão sem introduzir informação nova. */
+const Sparkline = ({ data, dataKey, color }: { data: Record<string, number | string>[]; dataKey: string; color: string }) => {
+  const gradId = `painel-spark-${dataKey.replace(/\s+/g, "-")}`;
+  return (
+    <ResponsiveContainer width="100%" height={44}>
+      <AreaChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={color} stopOpacity={0.4} />
+            <stop offset="95%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={1.5}
+          fill={`url(#${gradId})`} dot={false} isAnimationActive={false} />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+};
+
+const StatBlock = ({ value, label, valueClassName }: { value: string | number; label: string; valueClassName?: string }) => (
+  <div>
+    <div className={cn("text-3xl font-bold leading-tight", valueClassName)}>{value}</div>
+    <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
   </div>
 );
 
@@ -301,37 +318,56 @@ const ContabilidadesPainelView = () => {
         <div className="flex-1 min-w-0 w-full space-y-5">
           {section === "resumo" && (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatTile icon={Users} label="Clientes com obrigações" value={overallTotal} accent="bg-primary/10 text-primary" />
-                <StatTile icon={CheckCircle2} label="Concluído este mês" value={`${overallPct}%`} accent="bg-success/15 text-success" />
-                <StatTile icon={Clock} label="Ainda pendentes" value={overallPending} accent="bg-warning/15 text-warning" />
-                <div className="bg-card rounded-2xl border p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Estado dos clientes</div>
-                  <div className="space-y-1.5">
-                    {(["ativo", "a_sair", "inativo"] as const).map((s) => (
-                      <div key={s} className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                          <span className={cn("w-2 h-2 rounded-full", STATUS_STYLE[s].dot)} />
-                          {STATUS_STYLE[s].label}
+              <div className="relative overflow-hidden rounded-2xl border p-6"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.10), hsl(var(--primary) / 0.02))" }}>
+                <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                  <div className="flex items-center gap-5 shrink-0">
+                    <RadialProgress pct={overallPct} color="hsl(var(--primary))" size={104} stroke={9} textClassName="text-xl font-bold" />
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                      <StatBlock value={overallTotal} label="Clientes com obrigações" />
+                      <StatBlock value={overallDone} label="Concluídos" valueClassName="text-success" />
+                      <StatBlock value={overallPending} label="Ainda pendentes" valueClassName="text-warning" />
+                    </div>
+                  </div>
+
+                  <div className="flex-1 lg:pl-6 lg:border-l lg:border-border/60 min-w-0">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2.5">Estado dos clientes</div>
+                    <div className="flex h-3 rounded-full overflow-hidden bg-muted">
+                      {(["ativo", "a_sair", "inativo"] as const).map((s) => {
+                        const total = statusCounts.ativo + statusCounts.a_sair + statusCounts.inativo;
+                        const pct = total > 0 ? (statusCounts[s] / total) * 100 : 0;
+                        if (pct === 0) return null;
+                        return <div key={s} className={STATUS_STYLE[s].dot} style={{ width: `${pct}%` }} />;
+                      })}
+                    </div>
+                    <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3">
+                      {(["ativo", "a_sair", "inativo"] as const).map((s) => (
+                        <span key={s} className="flex items-center gap-1.5 text-xs">
+                          <span className={cn("w-2 h-2 rounded-full shrink-0", STATUS_STYLE[s].dot)} />
+                          <span className="text-muted-foreground">{STATUS_STYLE[s].label}</span>
+                          <span className={cn("font-semibold", STATUS_STYLE[s].text)}>{statusCounts[s] || 0}</span>
                         </span>
-                        <span className={cn("font-semibold", STATUS_STYLE[s].text)}>{statusCounts[s] || 0}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {regimeSummaries.map((r) => (
-                  <div key={r.key} className="relative bg-card rounded-2xl border p-5 space-y-4 overflow-hidden">
+                  <div key={r.key} className="relative rounded-2xl border p-5 space-y-4 overflow-hidden"
+                    style={{ background: `linear-gradient(160deg, ${REGIME_STYLE[r.key].color}14, hsl(var(--card)) 55%)` }}>
                     <div className="absolute inset-x-0 top-0 h-1" style={{ background: REGIME_STYLE[r.key].color }} />
                     <div className="flex items-center gap-3">
-                      <RadialProgress pct={r.pct} color={REGIME_STYLE[r.key].color} />
+                      <RadialProgress pct={r.pct} color={REGIME_STYLE[r.key].color} size={72} stroke={6} textClassName="text-sm font-bold" />
                       <div className="min-w-0">
                         <h3 className="font-semibold text-sm truncate">{r.label}</h3>
                         <div className="text-xs text-muted-foreground">{r.doneCount}/{r.total} clientes concluídos</div>
                       </div>
                     </div>
+
+                    <Sparkline data={trendData} dataKey={REGIME_STYLE[r.key].short} color={REGIME_STYLE[r.key].color} />
+
                     {r.pendingClients.length > 0 ? (
                       <div>
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
