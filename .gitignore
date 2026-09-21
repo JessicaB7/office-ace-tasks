@@ -30,3 +30,4 @@ backups/
 *.sw?
 .vercel
 .env*
+supabase/.temp

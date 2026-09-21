@@ -1,9 +1,13 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { X, Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { useClientObligationsHistory, useCollaborators, useUpsertObligation, useUpsertClient } from "@/hooks/useSupabaseQuery";
+import { X, Check, ChevronLeft, ChevronRight, Play, Square } from "lucide-react";
+import {
+  useClientObligationsHistory, useCollaborators, useUpsertObligation, useUpsertClient,
+  useRunningTimeEntry, useStartTimer, useStopTimer,
+} from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { formatDurationClock } from "@/lib/formatDuration";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
 
 const MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -80,6 +84,76 @@ const GeneralNotesField = ({ clientId, name, initialNotes }: { clientId: string;
   );
 };
 
+/** Cronómetro de trabalho neste cliente — mede quanto tempo o colaborador com
+ * sessão iniciada passa realmente a tratar dele. Só um cronómetro por
+ * colaborador de cada vez (garantido pela BD); se já houver um a decorrer
+ * noutro cliente, oferece trocar para este. */
+const TimerSection = ({ clientId, clientName, collaboratorId }: { clientId: string; clientName: string; collaboratorId: string | null }) => {
+  const { data: runningEntry } = useRunningTimeEntry(collaboratorId);
+  const start = useStartTimer();
+  const stop = useStopTimer();
+  const [tick, setTick] = useState(Date.now());
+
+  const isRunningHere = runningEntry?.client_id === clientId;
+  const isRunningElsewhere = !!runningEntry && !isRunningHere;
+
+  useEffect(() => {
+    if (!isRunningHere) return;
+    const t = setInterval(() => setTick(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [isRunningHere]);
+
+  if (!collaboratorId) {
+    return (
+      <div className="text-xs text-muted-foreground">
+        Não foi possível identificar o teu perfil de colaborador — o cronómetro fica indisponível.
+      </div>
+    );
+  }
+
+  const elapsedLabel = isRunningHere && runningEntry
+    ? formatDurationClock(tick - new Date(runningEntry.started_at).getTime())
+    : null;
+
+  const handleStart = () => start.mutate({ clientId, collaboratorId });
+  const handleStop = () => { if (runningEntry) stop.mutate(runningEntry.id); };
+  const handleSwitch = () => {
+    if (!runningEntry) return;
+    stop.mutate(runningEntry.id, { onSuccess: () => start.mutate({ clientId, collaboratorId }) });
+  };
+
+  if (isRunningHere) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-success/30 bg-success/5 px-3 py-2">
+        <span className="text-sm font-mono font-semibold text-success">{elapsedLabel}</span>
+        <button type="button" onClick={handleStop} disabled={stop.isPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-colors disabled:opacity-50">
+          <Square className="w-3 h-3 fill-current" /> Parar
+        </button>
+      </div>
+    );
+  }
+
+  if (isRunningElsewhere) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2">
+        <span className="text-xs text-muted-foreground">A decorrer noutro cliente</span>
+        <button type="button" onClick={handleSwitch} disabled={start.isPending || stop.isPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors disabled:opacity-50">
+          <Play className="w-3 h-3 fill-current" /> Trocar para {clientName}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button type="button" onClick={handleStart} disabled={start.isPending}
+      className="flex items-center gap-1.5 px-3 py-2 rounded-lg border bg-card text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-50">
+      <Play className="w-3.5 h-3.5 fill-current text-success" /> Iniciar cronómetro
+    </button>
+  );
+};
+
 /** Ficha do cliente — abre ao clicar num "ícone" da galeria (TI RS Reg. IVA, TI CO,
  * Empresas): junta os dados do cliente com a grelha de meses/obrigações do ano,
  * já interativa (dá para marcar/desmarcar aqui, não só consultar). */
@@ -102,6 +176,13 @@ const ClientMonthlyHistoryDialog = ({
     if (!client?.responsavel_id) return null;
     return collaborators.find((c: any) => c.id === client.responsavel_id)?.name || null;
   }, [collaborators, client]);
+
+  // Colaborador correspondente ao utilizador com sessão iniciada — é o dono
+  // do cronómetro (cada um só regista o próprio tempo).
+  const currentCollaboratorId = useMemo(() => {
+    if (!user?.email) return null;
+    return collaborators.find((c: any) => c.email?.toLowerCase() === user.email!.toLowerCase())?.id || null;
+  }, [user, collaborators]);
 
   // Build column obligation type keys
   const colOblTypes = useMemo(() => {
@@ -188,6 +269,13 @@ const ClientMonthlyHistoryDialog = ({
           <Field label="IVA" value={client.iva} />
           <Field label="Salários" value={client.salarios} />
           <Field label="Responsável" value={responsavelName} />
+        </div>
+
+        <div className="px-5 pt-4">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+            Tempo de trabalho
+          </div>
+          <TimerSection clientId={client.id} clientName={client.name} collaboratorId={currentCollaboratorId} />
         </div>
 
         <div className="px-5 pt-4">

@@ -82,6 +82,92 @@ export function useDeleteCollaborator() {
   });
 }
 
+// ---- CRONÓMETRO DE TRABALHO (time_entries) ----
+// Um registo "em curso" tem ended_at = null; a BD garante só um por
+// colaborador de cada vez (índice único parcial).
+export interface TimeEntry {
+  id: string;
+  client_id: string;
+  collaborator_id: string | null;
+  started_at: string;
+  ended_at: string | null;
+  created_at: string;
+}
+
+export function useRunningTimeEntry(collaboratorId: string | null) {
+  return useQuery({
+    queryKey: ["time_entries_running", collaboratorId],
+    queryFn: async () => {
+      if (!collaboratorId) return null;
+      const { data, error } = await supabase
+        .from("time_entries")
+        .select("*")
+        .eq("collaborator_id", collaboratorId)
+        .is("ended_at", null)
+        .maybeSingle();
+      if (error) throw error;
+      return data as TimeEntry | null;
+    },
+    enabled: !!collaboratorId,
+  });
+}
+
+export function useStartTimer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ clientId, collaboratorId }: { clientId: string; collaboratorId: string }) => {
+      const { data, error } = await supabase
+        .from("time_entries")
+        .insert({ client_id: clientId, collaborator_id: collaboratorId })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as TimeEntry;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["time_entries_running"] });
+      qc.invalidateQueries({ queryKey: ["time_entries"] });
+    },
+  });
+}
+
+export function useStopTimer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase
+        .from("time_entries")
+        .update({ ended_at: new Date().toISOString() })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as TimeEntry;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["time_entries_running"] });
+      qc.invalidateQueries({ queryKey: ["time_entries"] });
+    },
+  });
+}
+
+/** Registos de tempo concluídos com início no intervalo [fromISO, toISO) —
+ * usado para somar tempo por colaborador/cliente num período (Painel). */
+export function useTimeEntriesRange(fromISO: string, toISO: string) {
+  return useQuery({
+    queryKey: ["time_entries", fromISO, toISO],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("time_entries")
+        .select("*")
+        .gte("started_at", fromISO)
+        .lt("started_at", toISO);
+      if (error) throw error;
+      return data as TimeEntry[];
+    },
+  });
+}
+
 // ---- TASKS ----
 export function useTasks() {
   return useQuery({

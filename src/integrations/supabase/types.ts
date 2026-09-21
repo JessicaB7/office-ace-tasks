@@ -902,6 +902,48 @@ export type Database = {
           },
         ]
       }
+      time_entries: {
+        Row: {
+          client_id: string
+          collaborator_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          started_at: string
+        }
+        Insert: {
+          client_id: string
+          collaborator_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+        }
+        Update: {
+          client_id?: string
+          collaborator_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "collaborators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

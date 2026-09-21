@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { BarChart3, CheckCircle2, ChevronLeft, ChevronRight, Clock, PartyPopper, UserCircle2, Users } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useClients, useCollaborators, useMonthlyObligations, useMonthlyObligationsRange } from "@/hooks/useSupabaseQuery";
+import { useClients, useCollaborators, useMonthlyObligations, useMonthlyObligationsRange, useTimeEntriesRange } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
 import { SUB_PAGE_CONFIG, obligationTypesFor } from "@/lib/contabilidadesConfig";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
+import { formatDurationCompact } from "@/lib/formatDuration";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
@@ -175,6 +176,23 @@ const ContabilidadesPainelView = () => {
     return list.filter((c) => c.active && visibleRegimeKeys.some(([, cfg]) => cfg.filter(c)));
   }, [clients, statusFilter, visibleRegimeKeys]);
 
+  // Tempo de trabalho registado (cronómetro) no mês em curso, por colaborador
+  // — só entradas já terminadas (uma em curso conta a partir do momento em
+  // que for parada).
+  const monthStartISO = `${referenceMonth}T00:00:00.000Z`;
+  const monthEndISO = new Date(year, month + 1, 1).toISOString();
+  const { data: monthTimeEntries = [] } = useTimeEntriesRange(monthStartISO, monthEndISO);
+
+  const timeByCollaborator = useMemo(() => {
+    const totals = new Map<string, number>();
+    monthTimeEntries.forEach((e) => {
+      if (!e.ended_at || !e.collaborator_id) return;
+      const ms = new Date(e.ended_at).getTime() - new Date(e.started_at).getTime();
+      totals.set(e.collaborator_id, (totals.get(e.collaborator_id) || 0) + ms);
+    });
+    return totals;
+  }, [monthTimeEntries]);
+
   const collaboratorBreakdown = useMemo(() => {
     if (!isAdmin) return [];
     const byCollab = new Map<string, any[]>();
@@ -201,11 +219,12 @@ const ContabilidadesPainelView = () => {
         id: collabId, name: collab ? collab.name : "Sem responsável",
         total, done, pending: total - done,
         pct: total > 0 ? Math.round((done / total) * 100) : 0,
+        timeMs: timeByCollaborator.get(collabId) || 0,
       };
     });
 
     return rows.sort((a, b) => b.pending - a.pending || a.name.localeCompare(b.name));
-  }, [isAdmin, collaboratorScopedClients, visibleRegimeKeys, obligations, collaborators]);
+  }, [isAdmin, collaboratorScopedClients, visibleRegimeKeys, obligations, collaborators, timeByCollaborator]);
 
   return (
     <div className="space-y-5">
@@ -343,7 +362,8 @@ const ContabilidadesPainelView = () => {
 
       {isAdmin && (
         <div className="bg-card rounded-2xl border p-4">
-          <h3 className="font-semibold text-sm mb-3">Por colaborador</h3>
+          <h3 className="font-semibold text-sm">Por colaborador</h3>
+          <p className="text-xs text-muted-foreground mb-3">Progresso e tempo de trabalho registado (cronómetro) em {MONTH_NAMES[month]}</p>
           {collaboratorBreakdown.length === 0 ? (
             <div className="text-xs text-muted-foreground">Sem dados para os filtros escolhidos.</div>
           ) : (
@@ -361,6 +381,9 @@ const ContabilidadesPainelView = () => {
                       <span className="text-xs text-muted-foreground whitespace-nowrap">{row.done}/{row.total}</span>
                     </div>
                   </div>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                    {row.timeMs > 0 ? formatDurationCompact(row.timeMs) : "—"}
+                  </span>
                   <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full shrink-0",
                     row.pct === 100 ? "bg-success/15 text-success" : "bg-warning/15 text-warning")}>
                     {row.pct}%
