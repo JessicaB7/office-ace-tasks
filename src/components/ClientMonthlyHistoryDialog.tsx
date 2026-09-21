@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { X, Check, ChevronLeft, ChevronRight, Play, Square, User, History, ArrowLeft, Building2 } from "lucide-react";
+import { X, Check, ChevronLeft, ChevronRight, Play, Square, User, History, ArrowLeft, Building2, StickyNote } from "lucide-react";
 import {
   useClientObligationsHistory, useCollaborators, useUpsertObligation, useUpsertClient,
   useRunningTimeEntry, useStartTimer, useStopTimer,
@@ -9,8 +9,19 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { formatDurationClock } from "@/lib/formatDuration";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+// Estado de cada obrigação em Empresas (galeria "page") — três estados em vez
+// do simples visto, com uma nota por obrigação/mês ao lado.
+const STATUS_OPTIONS = [
+  { value: "nao_iniciado", label: "Não iniciado", className: "bg-muted text-muted-foreground border-border" },
+  { value: "em_andamento", label: "Em andamento", className: "bg-warning/15 text-warning border-warning/30" },
+  { value: "concluida", label: "Concluído", className: "bg-success/15 text-success border-success/30" },
+] as const;
+const normalizeStatus = (s?: string | null) =>
+  s === "concluida" || s === "em_andamento" ? s : "nao_iniciado";
 
 interface ClientMonthlyHistoryDialogProps {
   client: any | null;
@@ -158,6 +169,56 @@ const TimerSection = ({ clientId, clientName, collaboratorId }: { clientId: stri
   );
 };
 
+/** Célula de uma obrigação (Empresas, aba completa) — estado com 3 opções
+ * (Não iniciado / Em andamento / Concluído) mais uma nota ao lado, em vez do
+ * simples visto usado nos outros regimes. */
+const ObligationStatusCell = ({ existing, onUpdate }: { existing: any | undefined; onUpdate: (patch: { status?: string; notes?: string | null }) => void }) => {
+  const status = normalizeStatus(existing?.status);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesValue, setNotesValue] = useState(existing?.notes || "");
+
+  useEffect(() => {
+    setNotesValue(existing?.notes || "");
+  }, [existing?.notes, existing?.id]);
+
+  const hasNotes = !!(existing?.notes && existing.notes.trim());
+  const opt = STATUS_OPTIONS.find((o) => o.value === status)!;
+
+  const handleNotesBlur = () => {
+    if (notesValue !== (existing?.notes || "")) onUpdate({ notes: notesValue || null });
+  };
+
+  return (
+    <div className="flex items-center justify-center gap-1">
+      <select
+        value={status}
+        onChange={(e) => onUpdate({ status: e.target.value })}
+        className={cn("text-[10px] font-medium rounded border px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-ring", opt.className)}
+      >
+        {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <Popover open={notesOpen} onOpenChange={setNotesOpen}>
+        <PopoverTrigger asChild>
+          <button type="button" title="Notas" className="shrink-0 p-0.5">
+            <StickyNote className={cn("w-3.5 h-3.5", hasNotes ? "text-primary" : "text-muted-foreground/30 hover:text-muted-foreground")} />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-2" align="center">
+          <textarea
+            value={notesValue}
+            onChange={(e) => setNotesValue(e.target.value)}
+            onBlur={handleNotesBlur}
+            placeholder="Notas..."
+            rows={3}
+            autoFocus
+            className="w-full text-xs rounded border bg-background px-2 py-1 resize-y focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+};
+
 /** Ficha do cliente — abre ao clicar num "ícone" da galeria (TI RS Reg. IVA, TI CO,
  * Empresas): junta os dados do cliente com a grelha de meses/obrigações do ano,
  * já interativa (dá para marcar/desmarcar aqui, não só consultar). */
@@ -246,6 +307,24 @@ const ClientMonthlyHistoryDialog = ({
     }, { onSuccess: invalidateHistory });
   };
 
+  // Como toggleCell, mas para a célula de 3 estados + notas (Empresas): só
+  // altera o campo dado (status ou notas), preservando o outro.
+  const updateCell = (monthKey: string, type: string, existing: any | undefined, patch: { status?: string; notes?: string | null }) => {
+    if (!client) return;
+    const nextStatus = patch.status ?? existing?.status ?? "nao_iniciado";
+    const isDone = nextStatus === "concluida";
+    upsert.mutate({
+      client_id: client.id,
+      obligation_type: type,
+      reference_month: monthKey,
+      status: nextStatus,
+      notes: patch.notes !== undefined ? patch.notes : (existing?.notes ?? null),
+      completed_at: isDone ? new Date().toISOString() : null,
+      completed_by: isDone ? (user?.id || null) : null,
+      ...(existing?.id ? { id: existing.id } : {}),
+    }, { onSuccess: invalidateHistory });
+  };
+
   if (!open || !client) return null;
 
   if (variant === "page") {
@@ -321,26 +400,20 @@ const ClientMonthlyHistoryDialog = ({
                     <tr key={row.key} className={cn("border-b last:border-0", row.key === referenceMonth && "bg-primary/5")}>
                       <td className={cn("px-3 py-2.5 font-medium", row.allDone && "text-muted-foreground")}>{row.label}</td>
                       {hasMultiColumns ? (
-                        row.colStatus.map((done: boolean, i: number) => (
+                        row.colObls.map((existing: any, i: number) => (
                           <td key={colOblTypes[i]} className="text-center px-2 py-2.5">
-                            <button type="button" onClick={() => toggleCell(row.key, colOblTypes[i], row.colObls[i])}
-                              className={cn(
-                                "w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-colors hover:border-primary",
-                                done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/20"
-                              )}>
-                              {done && <Check className="w-3 h-3" />}
-                            </button>
+                            <ObligationStatusCell
+                              existing={existing}
+                              onUpdate={(patch) => updateCell(row.key, colOblTypes[i], existing, patch)}
+                            />
                           </td>
                         ))
                       ) : (
                         <td className="text-center px-3 py-2.5">
-                          <button type="button" onClick={() => toggleCell(row.key, oblPrefix, row.singleObl)}
-                            className={cn(
-                              "w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-colors hover:border-primary",
-                              row.done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/20"
-                            )}>
-                            {row.done && <Check className="w-3 h-3" />}
-                          </button>
+                          <ObligationStatusCell
+                            existing={row.singleObl}
+                            onUpdate={(patch) => updateCell(row.key, oblPrefix, row.singleObl, patch)}
+                          />
                         </td>
                       )}
                     </tr>

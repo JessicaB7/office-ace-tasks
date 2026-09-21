@@ -36,7 +36,7 @@ export const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     filter: (c) => c.tipo_contabilidade === "SQ",
     hideNif: true,
     gallery: true,
-    columns: ["Vendas", "Compras", "Bancos", "Balancete", "Salários"],
+    columns: ["Vendas", "Compras", "Bancos", "Salários", "Balancete"],
   },
 };
 
