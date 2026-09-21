@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { BarChart3, CheckCircle2, ChevronLeft, ChevronRight, Clock, PartyPopper, UserCircle2, Users } from "lucide-react";
+import { BarChart3, CheckCircle2, ChevronLeft, ChevronRight, Clock, LayoutGrid, PartyPopper, TrendingUp, UserCircle2, Users } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useClients, useCollaborators, useMonthlyObligations, useMonthlyObligationsRange, useTimeEntriesRange } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
@@ -76,6 +76,7 @@ const ContabilidadesPainelView = () => {
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [regimeFilter, setRegimeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [section, setSection] = useState<"resumo" | "evolucao" | "colaborador">("resumo");
 
   const { user, isAdmin } = useAuth();
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -276,124 +277,154 @@ const ContabilidadesPainelView = () => {
         </select>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatTile icon={Users} label="Clientes com obrigações" value={overallTotal} accent="bg-primary/10 text-primary" />
-        <StatTile icon={CheckCircle2} label="Concluído este mês" value={`${overallPct}%`} accent="bg-success/15 text-success" />
-        <StatTile icon={Clock} label="Ainda pendentes" value={overallPending} accent="bg-warning/15 text-warning" />
-        <div className="bg-card rounded-2xl border p-4">
-          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Estado dos clientes</div>
-          <div className="space-y-1.5">
-            {(["ativo", "a_sair", "inativo"] as const).map((s) => (
-              <div key={s} className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <span className={cn("w-2 h-2 rounded-full", STATUS_STYLE[s].dot)} />
-                  {STATUS_STYLE[s].label}
-                </span>
-                <span className={cn("font-semibold", STATUS_STYLE[s].text)}>{statusCounts[s] || 0}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <div className="flex flex-col sm:flex-row gap-5 items-start">
+        <nav className="flex sm:flex-col gap-1 shrink-0 overflow-x-auto sm:overflow-visible sm:w-44 bg-card rounded-xl border p-2">
+          <button type="button" onClick={() => setSection("resumo")}
+            className={cn("flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
+              section === "resumo" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+            <LayoutGrid className="w-4 h-4" /> Resumo
+          </button>
+          <button type="button" onClick={() => setSection("evolucao")}
+            className={cn("flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
+              section === "evolucao" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+            <TrendingUp className="w-4 h-4" /> Evolução
+          </button>
+          {isAdmin && (
+            <button type="button" onClick={() => setSection("colaborador")}
+              className={cn("flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
+                section === "colaborador" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+              <Users className="w-4 h-4" /> Por colaborador
+            </button>
+          )}
+        </nav>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {regimeSummaries.map((r) => (
-          <div key={r.key} className="relative bg-card rounded-2xl border p-5 space-y-4 overflow-hidden">
-            <div className="absolute inset-x-0 top-0 h-1" style={{ background: REGIME_STYLE[r.key].color }} />
-            <div className="flex items-center gap-3">
-              <RadialProgress pct={r.pct} color={REGIME_STYLE[r.key].color} />
-              <div className="min-w-0">
-                <h3 className="font-semibold text-sm truncate">{r.label}</h3>
-                <div className="text-xs text-muted-foreground">{r.doneCount}/{r.total} clientes concluídos</div>
-              </div>
-            </div>
-            {r.pendingClients.length > 0 ? (
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-                  Pendentes ({r.pendingClients.length})
-                </div>
-                <ul className="space-y-1 max-h-40 overflow-y-auto">
-                  {r.pendingClients.map((c: any) => (
-                    <li key={c.id} className="flex items-center gap-2 text-xs">
-                      <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0", getAvatarPalette(c.id))}>
-                        {getInitials(c.name)}
-                      </span>
-                      <span className="truncate text-muted-foreground">{c.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : r.total > 0 ? (
-              <div className="flex items-center gap-1.5 text-xs text-success font-medium">
-                <PartyPopper className="w-3.5 h-3.5" /> Tudo concluído
-              </div>
-            ) : (
-              <div className="text-xs text-muted-foreground">Sem clientes</div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-card rounded-2xl border p-4">
-        <h3 className="font-semibold text-sm mb-3">Evolução da conclusão — Julho a Dezembro de 2026</h3>
-        <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={trendData}>
-            <defs>
-              {visibleRegimeKeys.map(([key]) => (
-                <linearGradient key={key} id={`painel-grad-${key}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={REGIME_STYLE[key].color} stopOpacity={0.35} />
-                  <stop offset="95%" stopColor={REGIME_STYLE[key].color} stopOpacity={0} />
-                </linearGradient>
-              ))}
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.25} vertical={false} />
-            <XAxis dataKey="mes" fontSize={11} tickLine={false} axisLine={false} />
-            <YAxis fontSize={11} unit="%" domain={[0, 100]} tickLine={false} axisLine={false} width={36} />
-            <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-            <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
-            {visibleRegimeKeys.map(([key]) => (
-              <Area key={key} type="monotone" dataKey={REGIME_STYLE[key].short}
-                stroke={REGIME_STYLE[key].color} strokeWidth={2}
-                fill={`url(#painel-grad-${key})`} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-            ))}
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      {isAdmin && (
-        <div className="bg-card rounded-2xl border p-4">
-          <h3 className="font-semibold text-sm">Por colaborador</h3>
-          <p className="text-xs text-muted-foreground mb-3">Progresso e tempo de trabalho registado (cronómetro) em {MONTH_NAMES[month]}</p>
-          {collaboratorBreakdown.length === 0 ? (
-            <div className="text-xs text-muted-foreground">Sem dados para os filtros escolhidos.</div>
-          ) : (
-            <div className="space-y-1">
-              {collaboratorBreakdown.map((row) => (
-                <div key={row.id} className="flex items-center gap-3 py-2 border-b last:border-0">
-                  <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0",
-                    row.id === "__none__" ? "bg-muted text-muted-foreground" : getAvatarPalette(row.id))}>
-                    {row.id === "__none__" ? "—" : getInitials(row.name)}
+        <div className="flex-1 min-w-0 w-full space-y-5">
+          {section === "resumo" && (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatTile icon={Users} label="Clientes com obrigações" value={overallTotal} accent="bg-primary/10 text-primary" />
+                <StatTile icon={CheckCircle2} label="Concluído este mês" value={`${overallPct}%`} accent="bg-success/15 text-success" />
+                <StatTile icon={Clock} label="Ainda pendentes" value={overallPending} accent="bg-warning/15 text-warning" />
+                <div className="bg-card rounded-2xl border p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Estado dos clientes</div>
+                  <div className="space-y-1.5">
+                    {(["ativo", "a_sair", "inativo"] as const).map((s) => (
+                      <div key={s} className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className={cn("w-2 h-2 rounded-full", STATUS_STYLE[s].dot)} />
+                          {STATUS_STYLE[s].label}
+                        </span>
+                        <span className={cn("font-semibold", STATUS_STYLE[s].text)}>{statusCounts[s] || 0}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium truncate">{row.name}</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Progress value={row.pct} className={cn("h-1.5 flex-1", row.pct === 100 && "[&>div]:bg-success")} />
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">{row.done}/{row.total}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {regimeSummaries.map((r) => (
+                  <div key={r.key} className="relative bg-card rounded-2xl border p-5 space-y-4 overflow-hidden">
+                    <div className="absolute inset-x-0 top-0 h-1" style={{ background: REGIME_STYLE[r.key].color }} />
+                    <div className="flex items-center gap-3">
+                      <RadialProgress pct={r.pct} color={REGIME_STYLE[r.key].color} />
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm truncate">{r.label}</h3>
+                        <div className="text-xs text-muted-foreground">{r.doneCount}/{r.total} clientes concluídos</div>
+                      </div>
                     </div>
+                    {r.pendingClients.length > 0 ? (
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                          Pendentes ({r.pendingClients.length})
+                        </div>
+                        <ul className="space-y-1 max-h-40 overflow-y-auto">
+                          {r.pendingClients.map((c: any) => (
+                            <li key={c.id} className="flex items-center gap-2 text-xs">
+                              <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0", getAvatarPalette(c.id))}>
+                                {getInitials(c.name)}
+                              </span>
+                              <span className="truncate text-muted-foreground">{c.name}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : r.total > 0 ? (
+                      <div className="flex items-center gap-1.5 text-xs text-success font-medium">
+                        <PartyPopper className="w-3.5 h-3.5" /> Tudo concluído
+                      </div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground">Sem clientes</div>
+                    )}
                   </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
-                    {row.timeMs > 0 ? formatDurationCompact(row.timeMs) : "—"}
-                  </span>
-                  <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full shrink-0",
-                    row.pct === 100 ? "bg-success/15 text-success" : "bg-warning/15 text-warning")}>
-                    {row.pct}%
-                  </span>
+                ))}
+              </div>
+            </>
+          )}
+
+          {section === "evolucao" && (
+            <div className="bg-card rounded-2xl border p-4">
+              <h3 className="font-semibold text-sm mb-3">Evolução da conclusão — Julho a Dezembro de 2026</h3>
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={trendData}>
+                  <defs>
+                    {visibleRegimeKeys.map(([key]) => (
+                      <linearGradient key={key} id={`painel-grad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={REGIME_STYLE[key].color} stopOpacity={0.35} />
+                        <stop offset="95%" stopColor={REGIME_STYLE[key].color} stopOpacity={0} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.25} vertical={false} />
+                  <XAxis dataKey="mes" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis fontSize={11} unit="%" domain={[0, 100]} tickLine={false} axisLine={false} width={36} />
+                  <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
+                  {visibleRegimeKeys.map(([key]) => (
+                    <Area key={key} type="monotone" dataKey={REGIME_STYLE[key].short}
+                      stroke={REGIME_STYLE[key].color} strokeWidth={2}
+                      fill={`url(#painel-grad-${key})`} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  ))}
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {section === "colaborador" && isAdmin && (
+            <div className="bg-card rounded-2xl border p-4">
+              <h3 className="font-semibold text-sm">Por colaborador</h3>
+              <p className="text-xs text-muted-foreground mb-3">Progresso e tempo de trabalho registado (cronómetro) em {MONTH_NAMES[month]}</p>
+              {collaboratorBreakdown.length === 0 ? (
+                <div className="text-xs text-muted-foreground">Sem dados para os filtros escolhidos.</div>
+              ) : (
+                <div className="space-y-1">
+                  {collaboratorBreakdown.map((row) => (
+                    <div key={row.id} className="flex items-center gap-3 py-2 border-b last:border-0">
+                      <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0",
+                        row.id === "__none__" ? "bg-muted text-muted-foreground" : getAvatarPalette(row.id))}>
+                        {row.id === "__none__" ? "—" : getInitials(row.name)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium truncate">{row.name}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Progress value={row.pct} className={cn("h-1.5 flex-1", row.pct === 100 && "[&>div]:bg-success")} />
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">{row.done}/{row.total}</span>
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                        {row.timeMs > 0 ? formatDurationCompact(row.timeMs) : "—"}
+                      </span>
+                      <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full shrink-0",
+                        row.pct === 100 ? "bg-success/15 text-success" : "bg-warning/15 text-warning")}>
+                        {row.pct}%
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { X, Check, ChevronLeft, ChevronRight, Play, Square } from "lucide-react";
+import { X, Check, ChevronLeft, ChevronRight, Play, Square, User, History } from "lucide-react";
 import {
   useClientObligationsHistory, useCollaborators, useUpsertObligation, useUpsertClient,
   useRunningTimeEntry, useStartTimer, useStopTimer,
@@ -190,6 +190,9 @@ const ClientMonthlyHistoryDialog = ({
     return columns.map((col) => `contabilidade_${activeTab}_${col.toLowerCase().replace(/[- ]/g, "_")}`);
   }, [columns, activeTab]);
 
+  // Secção ativa — navegação lateral em vez de tudo empilhado.
+  const [section, setSection] = useState<"dados" | "historico">("dados");
+
   // Group obligations by month
   const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
 
@@ -244,110 +247,133 @@ const ClientMonthlyHistoryDialog = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card rounded-2xl border shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
+      <div className="relative bg-card rounded-2xl border shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
         <div className="flex items-center justify-between p-5 border-b">
           <div>
             <h3 className="text-lg font-bold">{client.name}</h3>
             <p className="text-sm text-muted-foreground">Ficha do cliente</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-muted rounded-lg px-2 py-1">
-              <button onClick={() => setHistoryYear(y => y - 1)} className="p-0.5 hover:bg-background rounded transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-              <span className="text-sm font-medium min-w-[50px] text-center">{historyYear}</span>
-              <button onClick={() => setHistoryYear(y => y + 1)} className="p-0.5 hover:bg-background rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
-            </div>
+            {section === "historico" && (
+              <div className="flex items-center gap-1 bg-muted rounded-lg px-2 py-1">
+                <button onClick={() => setHistoryYear(y => y - 1)} className="p-0.5 hover:bg-background rounded transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                <span className="text-sm font-medium min-w-[50px] text-center">{historyYear}</span>
+                <button onClick={() => setHistoryYear(y => y + 1)} className="p-0.5 hover:bg-background rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
+              </div>
+            )}
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-muted transition-colors">
             <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 px-5 py-4 border-b bg-muted/20">
-          <Field label="NIF" value={client.nif} />
-          <Field label="NISS" value={client.niss} />
-          <Field label="Programa de Faturação" value={client.programa_faturacao} />
-          <Field label="IVA" value={client.iva} />
-          <Field label="Salários" value={client.salarios} />
-          <Field label="Responsável" value={responsavelName} />
-        </div>
+        <div className="flex flex-col sm:flex-row">
+          <nav className="flex sm:flex-col gap-1 shrink-0 overflow-x-auto sm:overflow-visible p-3 sm:w-40 sm:border-r">
+            <button type="button" onClick={() => setSection("dados")}
+              className={cn("flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
+                section === "dados" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+              <User className="w-4 h-4" /> Dados
+            </button>
+            <button type="button" onClick={() => setSection("historico")}
+              className={cn("flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
+                section === "historico" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
+              <History className="w-4 h-4" /> Histórico
+            </button>
+          </nav>
 
-        <div className="px-5 pt-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-            Tempo de trabalho
+          <div className="flex-1 min-w-0">
+            {section === "dados" ? (
+              <div className="p-5 space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3">
+                  <Field label="NIF" value={client.nif} />
+                  <Field label="NISS" value={client.niss} />
+                  <Field label="Programa de Faturação" value={client.programa_faturacao} />
+                  <Field label="IVA" value={client.iva} />
+                  <Field label="Salários" value={client.salarios} />
+                  <Field label="Responsável" value={responsavelName} />
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                    Tempo de trabalho
+                  </div>
+                  <TimerSection clientId={client.id} clientName={client.name} collaboratorId={currentCollaboratorId} />
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                    Notas gerais
+                  </div>
+                  <GeneralNotesField clientId={client.id} name={client.name} initialNotes={client.notas_internas || ""} />
+                </div>
+              </div>
+            ) : (
+              <div className="p-5 space-y-4">
+                {showNotes && referenceMonth && (
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                      Notas do mês atual
+                    </div>
+                    <MonthlyNoteCell
+                      clientId={client.id}
+                      referenceMonth={referenceMonth}
+                      obligationId={notesObligation?.id}
+                      initialNotes={notesObligation?.notes || ""}
+                    />
+                  </div>
+                )}
+
+                {isLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">A carregar...</div>
+                ) : (
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/40">
+                        <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Mês</th>
+                        {hasMultiColumns ? (
+                          columns!.map((col) => (
+                            <th key={col} className="text-center px-2 py-2 font-semibold text-muted-foreground text-xs">{col}</th>
+                          ))
+                        ) : (
+                          <th className="text-center px-3 py-2 font-semibold text-muted-foreground">Estado</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monthlyData.map((row: any) => (
+                        <tr key={row.key} className={cn("border-b last:border-0", row.key === referenceMonth && "bg-primary/5")}>
+                          <td className={cn("px-3 py-2.5 font-medium", row.allDone && "text-muted-foreground")}>{row.label}</td>
+                          {hasMultiColumns ? (
+                            row.colStatus.map((done: boolean, i: number) => (
+                              <td key={colOblTypes[i]} className="text-center px-2 py-2.5">
+                                <button type="button" onClick={() => toggleCell(row.key, colOblTypes[i], row.colObls[i])}
+                                  className={cn(
+                                    "w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-colors hover:border-primary",
+                                    done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/20"
+                                  )}>
+                                  {done && <Check className="w-3 h-3" />}
+                                </button>
+                              </td>
+                            ))
+                          ) : (
+                            <td className="text-center px-3 py-2.5">
+                              <button type="button" onClick={() => toggleCell(row.key, oblPrefix, row.singleObl)}
+                                className={cn(
+                                  "w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-colors hover:border-primary",
+                                  row.done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/20"
+                                )}>
+                                {row.done && <Check className="w-3 h-3" />}
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
           </div>
-          <TimerSection clientId={client.id} clientName={client.name} collaboratorId={currentCollaboratorId} />
-        </div>
-
-        <div className="px-5 pt-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-            Notas gerais
-          </div>
-          <GeneralNotesField clientId={client.id} name={client.name} initialNotes={client.notas_internas || ""} />
-        </div>
-
-        {showNotes && referenceMonth && (
-          <div className="px-5 pt-4">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
-              Notas do mês atual
-            </div>
-            <MonthlyNoteCell
-              clientId={client.id}
-              referenceMonth={referenceMonth}
-              obligationId={notesObligation?.id}
-              initialNotes={notesObligation?.notes || ""}
-            />
-          </div>
-        )}
-
-        <div className="p-5">
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">A carregar...</div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40">
-                  <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Mês</th>
-                  {hasMultiColumns ? (
-                    columns!.map((col) => (
-                      <th key={col} className="text-center px-2 py-2 font-semibold text-muted-foreground text-xs">{col}</th>
-                    ))
-                  ) : (
-                    <th className="text-center px-3 py-2 font-semibold text-muted-foreground">Estado</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {monthlyData.map((row: any) => (
-                  <tr key={row.key} className={cn("border-b last:border-0", row.key === referenceMonth && "bg-primary/5")}>
-                    <td className={cn("px-3 py-2.5 font-medium", row.allDone && "text-muted-foreground")}>{row.label}</td>
-                    {hasMultiColumns ? (
-                      row.colStatus.map((done: boolean, i: number) => (
-                        <td key={colOblTypes[i]} className="text-center px-2 py-2.5">
-                          <button type="button" onClick={() => toggleCell(row.key, colOblTypes[i], row.colObls[i])}
-                            className={cn(
-                              "w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-colors hover:border-primary",
-                              done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/20"
-                            )}>
-                            {done && <Check className="w-3 h-3" />}
-                          </button>
-                        </td>
-                      ))
-                    ) : (
-                      <td className="text-center px-3 py-2.5">
-                        <button type="button" onClick={() => toggleCell(row.key, oblPrefix, row.singleObl)}
-                          className={cn(
-                            "w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-colors hover:border-primary",
-                            row.done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/20"
-                          )}>
-                          {row.done && <Check className="w-3 h-3" />}
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
         </div>
       </div>
     </div>
