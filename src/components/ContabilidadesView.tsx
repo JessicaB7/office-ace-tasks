@@ -215,6 +215,24 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const showNotes = isGallery;
   const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length + 1 : 1);
 
+  // Empresas: selecionar um cliente abre uma aba completa (não um diálogo) com
+  // os dados e a tabela de meses sempre visível.
+  if (activeTab === "empresas" && selectedClient) {
+    return (
+      <ClientMonthlyHistoryDialog
+        variant="page"
+        client={selectedClient}
+        open={true}
+        onClose={() => setSelectedClient(null)}
+        activeTab={activeTab}
+        columns={columns}
+        referenceMonth={referenceMonth}
+        showNotes={showNotes}
+        notesObligation={notesMap[selectedClient.id]}
+      />
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -397,7 +415,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         </div>
       )}
 
-      {(activeTab === "TI_iva" || activeTab === "organizada" || activeTab === "empresas") ? (
+      {(activeTab === "TI_iva" || activeTab === "organizada") ? (
         <ClientMonthlyHistoryDialog
           client={selectedClient}
           open={!!selectedClient}

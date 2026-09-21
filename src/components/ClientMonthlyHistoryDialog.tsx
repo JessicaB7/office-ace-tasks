@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { X, Check, ChevronLeft, ChevronRight, Play, Square, User, History } from "lucide-react";
+import { X, Check, ChevronLeft, ChevronRight, Play, Square, User, History, ArrowLeft, Building2 } from "lucide-react";
 import {
   useClientObligationsHistory, useCollaborators, useUpsertObligation, useUpsertClient,
   useRunningTimeEntry, useStartTimer, useStopTimer,
@@ -22,6 +22,10 @@ interface ClientMonthlyHistoryDialogProps {
   referenceMonth?: string;
   showNotes?: boolean;
   notesObligation?: any;
+  /** "modal" (omissão): diálogo sobreposto, como hoje. "page": ocupa a aba
+   * inteira (usado em Empresas) — sem overlay, com botão "Voltar" e a
+   * tabela de meses sempre visível, sem navegação lateral. */
+  variant?: "modal" | "page";
 }
 
 const Field = ({ label, value }: { label: string; value?: string | null }) => (
@@ -158,7 +162,7 @@ const TimerSection = ({ clientId, clientName, collaboratorId }: { clientId: stri
  * Empresas): junta os dados do cliente com a grelha de meses/obrigações do ano,
  * já interativa (dá para marcar/desmarcar aqui, não só consultar). */
 const ClientMonthlyHistoryDialog = ({
-  client, open, onClose, activeTab, columns, referenceMonth, showNotes, notesObligation,
+  client, open, onClose, activeTab, columns, referenceMonth, showNotes, notesObligation, variant = "modal",
 }: ClientMonthlyHistoryDialogProps) => {
   const oblPrefix = `contabilidade_${activeTab}`;
   const { data: obligations = [], isLoading } = useClientObligationsHistory(
@@ -243,6 +247,126 @@ const ClientMonthlyHistoryDialog = ({
   };
 
   if (!open || !client) return null;
+
+  if (variant === "page") {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Voltar">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <Building2 className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">{client.name}</h2>
+              <p className="text-sm text-muted-foreground">Ficha do cliente</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 bg-card border rounded-lg px-2 py-1">
+            <button onClick={() => setHistoryYear(y => y - 1)} className="p-1 hover:bg-muted rounded transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+            <span className="text-sm font-medium min-w-[60px] text-center">{historyYear}</span>
+            <button onClick={() => setHistoryYear(y => y + 1)} className="p-1 hover:bg-muted rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
+          </div>
+        </div>
+
+        <div className="bg-card rounded-2xl border p-5 space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-3">
+            <Field label="NIF" value={client.nif} />
+            <Field label="NISS" value={client.niss} />
+            <Field label="Programa de Faturação" value={client.programa_faturacao} />
+            <Field label="IVA" value={client.iva} />
+            <Field label="Salários" value={client.salarios} />
+            <Field label="Responsável" value={responsavelName} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                Tempo de trabalho
+              </div>
+              <TimerSection clientId={client.id} clientName={client.name} collaboratorId={currentCollaboratorId} />
+            </div>
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                Notas gerais
+              </div>
+              <GeneralNotesField clientId={client.id} name={client.name} initialNotes={client.notas_internas || ""} />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-card rounded-2xl border p-5 space-y-4">
+          <h3 className="font-semibold text-sm">Meses — {historyYear}</h3>
+
+          {showNotes && referenceMonth && (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                Notas do mês atual
+              </div>
+              <MonthlyNoteCell
+                clientId={client.id}
+                referenceMonth={referenceMonth}
+                obligationId={notesObligation?.id}
+                initialNotes={notesObligation?.notes || ""}
+              />
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">A carregar...</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40">
+                    <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Mês</th>
+                    {hasMultiColumns ? (
+                      columns!.map((col) => (
+                        <th key={col} className="text-center px-2 py-2 font-semibold text-muted-foreground text-xs">{col}</th>
+                      ))
+                    ) : (
+                      <th className="text-center px-3 py-2 font-semibold text-muted-foreground">Estado</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyData.map((row: any) => (
+                    <tr key={row.key} className={cn("border-b last:border-0", row.key === referenceMonth && "bg-primary/5")}>
+                      <td className={cn("px-3 py-2.5 font-medium", row.allDone && "text-muted-foreground")}>{row.label}</td>
+                      {hasMultiColumns ? (
+                        row.colStatus.map((done: boolean, i: number) => (
+                          <td key={colOblTypes[i]} className="text-center px-2 py-2.5">
+                            <button type="button" onClick={() => toggleCell(row.key, colOblTypes[i], row.colObls[i])}
+                              className={cn(
+                                "w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-colors hover:border-primary",
+                                done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/20"
+                              )}>
+                              {done && <Check className="w-3 h-3" />}
+                            </button>
+                          </td>
+                        ))
+                      ) : (
+                        <td className="text-center px-3 py-2.5">
+                          <button type="button" onClick={() => toggleCell(row.key, oblPrefix, row.singleObl)}
+                            className={cn(
+                              "w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-colors hover:border-primary",
+                              row.done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/20"
+                            )}>
+                            {row.done && <Check className="w-3 h-3" />}
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
