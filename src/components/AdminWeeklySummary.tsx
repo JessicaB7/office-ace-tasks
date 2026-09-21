@@ -1,7 +1,10 @@
 import { useState, useMemo } from "react";
+import { format } from "date-fns";
+import { pt } from "date-fns/locale";
 import { useClients, useCollaborators, useTasks, useMonthlyObligations } from "@/hooks/useSupabaseQuery";
 import { Users, CheckCircle2, AlertTriangle, UserPlus, UserMinus, ChevronLeft, ChevronRight, Building2, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line, ComposedChart } from "recharts";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -39,26 +42,35 @@ const AdminWeeklySummary = () => {
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
 
+  // Mesma definição de "ativo" usada em ClientListView (Dados de clientes):
+  // status === "ativo" — não conta "a_sair" nem "inativo". O campo booleano
+  // `active` (usado nas obrigações/galeria) inclui "a_sair", por isso não
+  // serve para este total, ou os dois ecrãs mostram números diferentes.
+  const clientStatus = (c: any): string => c.status || (c.active === false ? "inativo" : "ativo");
+
   // Clients: entries based on inicio_contrato
-  const newClientsCount = useMemo(() => {
+  const newClientsList = useMemo(() => {
     return clients.filter((c: any) => {
       if (!c.inicio_contrato) return false;
       const d = new Date(c.inicio_contrato);
       return d >= monthStart && d <= monthEnd;
-    }).length;
+    }).sort((a: any, b: any) => a.name.localeCompare(b.name));
   }, [clients, monthStart, monthEnd]);
+  const newClientsCount = newClientsList.length;
 
-  // Clients: exits (deactivated this month)
-  const exitClientsCount = useMemo(() => {
+  // Clients: exits (deactivated this month) — sem campo de data de saída na
+  // BD, usa-se updated_at como aproximação de quando deixou de estar ativo.
+  const exitClientsList = useMemo(() => {
     return clients.filter((c: any) => {
       if (c.active) return false;
       const d = new Date(c.updated_at);
       return d >= monthStart && d <= monthEnd;
-    }).length;
+    }).sort((a: any, b: any) => a.name.localeCompare(b.name));
   }, [clients, monthStart, monthEnd]);
+  const exitClientsCount = exitClientsList.length;
 
-  // Total active clients
-  const totalActiveClients = useMemo(() => clients.filter((c: any) => c.active).length, [clients]);
+  // Total de clientes ativos — alinhado com "Dados de clientes"
+  const totalActiveClients = useMemo(() => clients.filter((c: any) => clientStatus(c) === "ativo").length, [clients]);
 
   // Annual chart data
   const annualData = useMemo(() => {
@@ -200,6 +212,59 @@ const AdminWeeklySummary = () => {
               <Building2 className="w-6 h-6 text-foreground mx-auto mb-2" />
               <p className="text-3xl font-bold">{totalActiveClients}</p>
               <p className="text-sm text-muted-foreground mt-1">Total Atual</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-card rounded-xl border p-5">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-primary" /> Entradas — {MONTH_NAMES[month]}
+              </h3>
+              {newClientsList.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum cliente entrou este mês.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {newClientsList.map((c: any) => (
+                    <li key={c.id} className="flex items-center gap-2.5 text-sm">
+                      <span className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0", getAvatarPalette(c.id))}>
+                        {getInitials(c.name)}
+                      </span>
+                      <span className="flex-1 truncate font-medium">{c.name}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {format(new Date(c.inicio_contrato), "d MMM", { locale: pt })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="bg-card rounded-xl border p-5">
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <UserMinus className="w-4 h-4 text-destructive" /> Saídas — {MONTH_NAMES[month]}
+              </h3>
+              {exitClientsList.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum cliente saiu este mês.</p>
+              ) : (
+                <>
+                  <ul className="space-y-2">
+                    {exitClientsList.map((c: any) => (
+                      <li key={c.id} className="flex items-center gap-2.5 text-sm">
+                        <span className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0", getAvatarPalette(c.id))}>
+                          {getInitials(c.name)}
+                        </span>
+                        <span className="flex-1 truncate font-medium">{c.name}</span>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {format(new Date(c.updated_at), "d MMM", { locale: pt })}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[10px] text-muted-foreground mt-3">
+                    Data aproximada (não há campo de data de saída — usa-se a última alteração do cliente).
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
