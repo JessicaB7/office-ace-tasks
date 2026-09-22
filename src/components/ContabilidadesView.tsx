@@ -215,9 +215,9 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const showNotes = isGallery;
   const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length + 1 : 1);
 
-  // Empresas: selecionar um cliente abre uma aba completa (não um diálogo) com
-  // os dados e a tabela de meses sempre visível.
-  if (activeTab === "empresas" && selectedClient) {
+  // Empresas e TI Contabilidade Organizada: selecionar um cliente abre uma aba
+  // completa (não um diálogo) com os dados e a tabela de meses sempre visível.
+  if ((activeTab === "empresas" || activeTab === "organizada") && selectedClient) {
     return (
       <ClientMonthlyHistoryDialog
         variant="page"
@@ -415,7 +415,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         </div>
       )}
 
-      {(activeTab === "TI_iva" || activeTab === "organizada") ? (
+      {activeTab === "TI_iva" ? (
         <ClientMonthlyHistoryDialog
           client={selectedClient}
           open={!!selectedClient}
