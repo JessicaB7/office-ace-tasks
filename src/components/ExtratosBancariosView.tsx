@@ -15,6 +15,7 @@ import {
   detectBank,
   type BankTransaction,
 } from "@/lib/bankParsers";
+import { isStaleChunkError, recoverFromStaleChunk } from "@/lib/staleChunk";
 
 const BANCOS = ["Auto", "Abanca", "ActivoBank", "BPI", "CGD", "Genérico", "Millennium", "Novo Banco", "Revolut", "Santander"];
 
@@ -91,7 +92,9 @@ const ExtratosBancariosView = () => {
     } catch (err: any) {
       const msg = err?.message || String(err);
       const name = err?.name || "";
-      if (name === "PasswordException" || /password/i.test(msg)) {
+      if (isStaleChunkError(err)) {
+        recoverFromStaleChunk(toast.info);
+      } else if (name === "PasswordException" || /password/i.test(msg)) {
         setPendingPdf(file);
         toast.info("Este PDF está protegido. Introduza a palavra-passe.");
       } else {
@@ -173,6 +176,10 @@ const ExtratosBancariosView = () => {
       URL.revokeObjectURL(url);
       toast.success("Ficheiro TOConline gerado!");
     } catch (err: any) {
+      if (isStaleChunkError(err)) {
+        recoverFromStaleChunk(toast.info);
+        return;
+      }
       console.error(err);
       toast.error("Erro a gerar ficheiro: " + (err?.message || ""));
     }
