@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getInitials } from "@/lib/avatar";
+import { isColumnApplicable } from "@/lib/contabilidadesConfig";
 
 interface ClientObligationCardProps {
   client: any;
@@ -23,8 +24,9 @@ const TIER_STYLE = {
  * anel de progresso do mês + nome; todos os dados do cliente e as obrigações do
  * mês vivem na ficha, que abre ao clicar (ver ClientMonthlyHistoryDialog). */
 const ClientObligationCard = ({ client, columns, colOblTypes, colMaps, onOpen }: ClientObligationCardProps) => {
-  const total = columns.length;
-  const statuses = colOblTypes.map((_, i) => colMaps[i]?.[client.id]?.status);
+  const applicable = columns.map((col, i) => (isColumnApplicable(client, col) ? i : -1)).filter((i) => i >= 0);
+  const total = applicable.length;
+  const statuses = applicable.map((i) => colMaps[i]?.[client.id]?.status);
   const doneCount = statuses.filter((s) => s === "concluida").length;
   const startedCount = statuses.filter((s) => s === "concluida" || s === "em_andamento").length;
   const allDone = total > 0 && doneCount === total;

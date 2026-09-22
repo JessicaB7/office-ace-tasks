@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
-import { SUB_PAGE_CONFIG } from "@/lib/contabilidadesConfig";
+import { SUB_PAGE_CONFIG, isObligationSatisfied } from "@/lib/contabilidadesConfig";
 
 const PENDING_FILTER_STORAGE_KEY = "contabilidadesShowOnlyPending";
 
@@ -160,7 +160,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
 
   const isClientDone = (c: any) => {
     if (hasMultiColumns) {
-      return colMaps.every((map) => map[c.id]?.status === "concluida");
+      return colMaps.every((map, i) => isObligationSatisfied(c, columns![i], map[c.id]?.status));
     }
     return oblMap[c.id]?.status === "concluida";
   };

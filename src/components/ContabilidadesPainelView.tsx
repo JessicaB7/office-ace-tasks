@@ -3,7 +3,7 @@ import { BarChart3, ChevronLeft, ChevronRight, LayoutGrid, PartyPopper, Trending
 import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useClients, useCollaborators, useMonthlyObligations, useMonthlyObligationsRange, useTimeEntriesRange } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
-import { SUB_PAGE_CONFIG, obligationTypesFor } from "@/lib/contabilidadesConfig";
+import { SUB_PAGE_CONFIG, obligationTypesFor, isColumnApplicable } from "@/lib/contabilidadesConfig";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { formatDurationCompact } from "@/lib/formatDuration";
 import { Progress } from "@/components/ui/progress";
@@ -153,7 +153,7 @@ const ContabilidadesPainelView = () => {
       let doneCount = 0;
       tabClients.forEach((c: any) => {
         const done = doneTypesByClient.get(c.id);
-        const isDone = !!done && obTypes.every((t) => done.has(t));
+        const isDone = obTypes.every((t, i) => done?.has(t) || !isColumnApplicable(c, cfg.columns![i]));
         if (isDone) doneCount++; else pendingClients.push(c);
       });
       return {
@@ -178,7 +178,9 @@ const ContabilidadesPainelView = () => {
         const tabClients = activeClients.filter(cfg.filter);
         const obTypes = obligationTypesFor(key, cfg);
         const doneCount = tabClients.filter((c: any) =>
-          obTypes.every((t) => monthObls.some((o: any) => o.client_id === c.id && o.obligation_type === t && o.status === "concluida"))
+          obTypes.every((t, i) =>
+            !isColumnApplicable(c, cfg.columns![i]) ||
+            monthObls.some((o: any) => o.client_id === c.id && o.obligation_type === t && o.status === "concluida"))
         ).length;
         row[REGIME_STYLE[key].short] = tabClients.length > 0 ? Math.round((doneCount / tabClients.length) * 100) : 0;
       });
@@ -227,7 +229,8 @@ const ContabilidadesPainelView = () => {
           if (!cfg.filter(c)) return;
           total++;
           const obTypes = obligationTypesFor(key, cfg);
-          const isDone = obTypes.every((t) =>
+          const isDone = obTypes.every((t, i) =>
+            !isColumnApplicable(c, cfg.columns![i]) ||
             obligations.some((o: any) => o.client_id === c.id && o.obligation_type === t && o.status === "concluida"));
           if (isDone) done++;
         });

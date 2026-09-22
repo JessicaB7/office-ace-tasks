@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useClients, useMonthlyObligations } from "./useSupabaseQuery";
-import { SUB_PAGE_CONFIG, obligationTypesFor } from "@/lib/contabilidadesConfig";
+import { SUB_PAGE_CONFIG, obligationTypesFor, isColumnApplicable } from "@/lib/contabilidadesConfig";
 
 const currentReferenceMonth = () => {
   const now = new Date();
@@ -37,7 +37,8 @@ export function useContabilidadesPending(referenceMonth?: string) {
       let pending = 0;
       tabClients.forEach((c: any) => {
         const done = doneSets.get(c.id);
-        const isDone = !!done && obTypes.every((t) => done.has(t));
+        const isDone = obTypes.every((t, i) =>
+          (done?.has(t)) || (config.columns && !isColumnApplicable(c, config.columns[i])));
         if (!isDone) pending++;
       });
 

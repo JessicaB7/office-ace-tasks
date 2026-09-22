@@ -48,3 +48,20 @@ export const obligationTypesFor = (key: string, config: TabConfig): string[] => 
   }
   return [`contabilidade_${key}`];
 };
+
+/** Uma coluna pode não se aplicar a um cliente específico, apesar de existir
+ * no regime — ex.: "Salários" quando o próprio cliente tem `salarios ===
+ * "Não tem"` na ficha (não há folha de vencimentos a processar, não faz
+ * sentido pedir para marcar/desmarcar). Nesse caso a coluna conta sempre
+ * como satisfeita e mostra "Não aplicável" em vez de um estado editável. */
+export const isColumnApplicable = (client: any, column: string): boolean => {
+  if (column === "Salários" && client?.salarios === "Não tem") return false;
+  return true;
+};
+
+/** Uma obrigação está satisfeita se estiver concluída, OU se a coluna nem
+ * se aplicar a este cliente (ver isColumnApplicable). */
+export const isObligationSatisfied = (client: any, column: string, status: string | null | undefined): boolean => {
+  if (!isColumnApplicable(client, column)) return true;
+  return status === "concluida";
+};

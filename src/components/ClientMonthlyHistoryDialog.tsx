@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatDurationClock } from "@/lib/formatDuration";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { isColumnApplicable, isObligationSatisfied } from "@/lib/contabilidadesConfig";
 
 const MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -280,7 +281,7 @@ const ClientMonthlyHistoryDialog = ({
 
       if (hasMultiColumns) {
         const colObls = colOblTypes.map((type) => monthObls.find((o: any) => o.obligation_type === type));
-        const colStatus = colObls.map((o: any) => o?.status === "concluida");
+        const colStatus = colObls.map((o: any, i: number) => isObligationSatisfied(client, columns![i], o?.status));
         return { ...monthInfo, colObls, colStatus, allDone: colStatus.every(Boolean) };
       } else {
         const obl = monthObls.find((o: any) => o.obligation_type === oblPrefix);
@@ -288,7 +289,7 @@ const ClientMonthlyHistoryDialog = ({
         return { ...monthInfo, singleObl: obl, colStatus: [] as boolean[], done, allDone: done };
       }
     });
-  }, [obligations, oblPrefix, hasMultiColumns, colOblTypes, historyYear]);
+  }, [obligations, oblPrefix, hasMultiColumns, colOblTypes, historyYear, client, columns]);
 
   const invalidateHistory = () => {
     qc.invalidateQueries({ queryKey: ["client_obligations_history", client?.id, oblPrefix] });
@@ -409,8 +410,10 @@ const ClientMonthlyHistoryDialog = ({
                 <tbody>
                   {monthlyData.map((row: any) => {
                     const isFuture = new Date(row.year, row.month, 1) > new Date(now.getFullYear(), now.getMonth(), 1);
-                    const doneCount = hasMultiColumns ? row.colStatus.filter(Boolean).length : (row.done ? 1 : 0);
-                    const total = hasMultiColumns ? columns!.length : 1;
+                    const doneCount = hasMultiColumns
+                      ? columns!.reduce((n, col, i) => n + (isColumnApplicable(client, col) && row.colStatus[i] ? 1 : 0), 0)
+                      : (row.done ? 1 : 0);
+                    const total = hasMultiColumns ? columns!.filter((col) => isColumnApplicable(client, col)).length : 1;
                     const rowAccent = isFuture
                       ? "border-l-muted-foreground/20"
                       : row.allDone ? "border-l-success bg-success/5" : "border-l-warning bg-warning/5";
@@ -434,10 +437,16 @@ const ClientMonthlyHistoryDialog = ({
                         {hasMultiColumns ? (
                           row.colObls.map((existing: any, i: number) => (
                             <td key={colOblTypes[i]} className="text-center px-2 py-2.5">
-                              <ObligationStatusCell
-                                existing={existing}
-                                onUpdate={(patch) => updateCell(row.key, colOblTypes[i], existing, patch)}
-                              />
+                              {isColumnApplicable(client, columns![i]) ? (
+                                <ObligationStatusCell
+                                  existing={existing}
+                                  onUpdate={(patch) => updateCell(row.key, colOblTypes[i], existing, patch)}
+                                />
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground/60 italic" title="Cliente sem folha de vencimentos">
+                                  Não aplicável
+                                </span>
+                              )}
                             </td>
                           ))
                         ) : (
@@ -562,13 +571,17 @@ const ClientMonthlyHistoryDialog = ({
                           {hasMultiColumns ? (
                             row.colStatus.map((done: boolean, i: number) => (
                               <td key={colOblTypes[i]} className="text-center px-2 py-2.5">
-                                <button type="button" onClick={() => toggleCell(row.key, colOblTypes[i], row.colObls[i])}
-                                  className={cn(
-                                    "w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-colors hover:border-primary",
-                                    done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/20"
-                                  )}>
-                                  {done && <Check className="w-3 h-3" />}
-                                </button>
+                                {isColumnApplicable(client, columns![i]) ? (
+                                  <button type="button" onClick={() => toggleCell(row.key, colOblTypes[i], row.colObls[i])}
+                                    className={cn(
+                                      "w-5 h-5 rounded border-2 flex items-center justify-center mx-auto transition-colors hover:border-primary",
+                                      done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/20"
+                                    )}>
+                                    {done && <Check className="w-3 h-3" />}
+                                  </button>
+                                ) : (
+                                  <span className="text-[9px] text-muted-foreground/60 italic" title="Cliente sem folha de vencimentos">N/A</span>
+                                )}
                               </td>
                             ))
                           ) : (
