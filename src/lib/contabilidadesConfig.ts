@@ -29,7 +29,7 @@ export const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     filter: (c) => c.tipo_contabilidade === "TI CO",
     hideNif: true,
     gallery: true,
-    columns: ["Vendas", "Compras", "Bancos", "E-Fatura", "Análise", "Salários"],
+    columns: ["Vendas", "Compras", "Bancos", "Salários", "E-Fatura", "Análise"],
   },
   empresas: {
     label: "Empresas",
