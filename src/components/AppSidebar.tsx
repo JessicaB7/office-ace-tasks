@@ -247,7 +247,7 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
             CE
           </div>
         ) : (
-          <img src={logoWhite} alt="Contabilista Explica" className="max-w-[190px]" />
+          <img src={logoWhite} alt="Contabilista Explica" className="w-[200px] h-auto" />
         )}
         <button
           onClick={toggleCollapsed}

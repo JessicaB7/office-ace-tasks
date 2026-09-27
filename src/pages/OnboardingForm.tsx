@@ -127,7 +127,7 @@ const OnboardingForm = () => {
       <div className="max-w-2xl mx-auto px-4 -mt-28 sm:-mt-32 pb-12">
         <div className="bg-card rounded-2xl border shadow-sm overflow-hidden">
           <div className="p-6 sm:p-8 border-b">
-            <img src={logo} alt="Contabilista Explica" className="h-10 mb-6" />
+            <img src={logo} alt="Contabilista Explica" className="h-14 mb-6" />
             <h1 className="text-2xl font-bold">📩 Informações novo cliente</h1>
             {info && <p className="text-sm text-primary font-medium mt-1">{formTypeLabel(info.form_type)}</p>}
             {status === "ready" || status === "sending" ? (

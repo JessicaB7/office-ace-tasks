@@ -36,7 +36,7 @@ const Auth = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="Contabilista Explica" className="h-16 mb-2" />
+          <img src={logo} alt="Contabilista Explica" className="h-20 mb-4" />
           <p className="text-sm text-muted-foreground mt-1">Gestor de Tarefas</p>
         </div>
 
