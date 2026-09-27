@@ -1,8 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { WebhookError, verifyWebhookRequest } from 'npm:@lovable.dev/webhooks-js'
 
-// Suppression event payload sent by the Go API when Mailgun reports
-// a bounce, complaint, or unsubscribe.
+// Webhook do Resend (email.bounced / email.complained). Assinado com Svix:
+// https://resend.com/docs/dashboard/webhooks/verify-webhooks-requests
 interface SuppressionPayload {
   email: string
   reason: 'bounce' | 'complaint' | 'unsubscribe'
@@ -12,16 +11,20 @@ interface SuppressionPayload {
   retry_count: number
 }
 
-function parseSuppressionPayload(body: string): SuppressionPayload {
-  const parsed = JSON.parse(body)
-  if (!parsed.data) {
-    throw new Error('Missing data field in payload')
-  }
-  const data = parsed.data as SuppressionPayload
-  if (!data.email || !data.reason) {
-    throw new Error('Missing required fields: email, reason')
-  }
-  return data
+const TOLERANCE_SECONDS = 5 * 60
+
+async function verifySvix(req: Request, body: string, secret: string): Promise<boolean> {
+  const id = req.headers.get('svix-id')
+  const timestamp = req.headers.get('svix-timestamp')
+  const signatures = req.headers.get('svix-signature')
+  if (!id || !timestamp || !signatures) return false
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > TOLERANCE_SECONDS) return false
+
+  const keyBytes = Uint8Array.from(atob(secret.replace(/^whsec_/, '')), (c) => c.charCodeAt(0))
+  const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${id}.${timestamp}.${body}`))
+  const expected = btoa(String.fromCharCode(...new Uint8Array(mac)))
+  return signatures.split(' ').some((s) => s.split(',')[1] === expected)
 }
 
 function jsonResponse(data: Record<string, unknown>, status = 200): Response {
@@ -36,47 +39,44 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Method not allowed' }, 405)
   }
 
-  const apiKey = Deno.env.get('LOVABLE_API_KEY')
+  const webhookSecret = Deno.env.get('RESEND_WEBHOOK_SECRET')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-  if (!apiKey || !supabaseUrl || !supabaseServiceKey) {
+  if (!webhookSecret || !supabaseUrl || !supabaseServiceKey) {
     console.error('Missing required environment variables')
     return jsonResponse({ error: 'Server configuration error' }, 500)
   }
 
-  // Verify HMAC signature using the Lovable API Key (same as auth-email-hook)
-  let payload: SuppressionPayload
+  const body = await req.text()
+  if (!(await verifySvix(req, body, webhookSecret))) {
+    console.error('Invalid webhook signature')
+    return jsonResponse({ error: 'Invalid signature' }, 401)
+  }
+
+  let event: { type?: string; data?: { email_id?: string; to?: string[]; bounce?: { type?: string } } }
   try {
-    const verified = await verifyWebhookRequest({
-      req,
-      secret: apiKey,
-      parser: parseSuppressionPayload,
-    })
-    payload = verified.payload
-  } catch (error) {
-    if (error instanceof WebhookError) {
-      switch (error.code) {
-        case 'invalid_signature':
-          console.error('Invalid webhook signature')
-          return jsonResponse({ error: 'Invalid signature' }, 401)
-        case 'stale_timestamp':
-          console.error('Stale webhook timestamp')
-          return jsonResponse({ error: 'Stale timestamp' }, 401)
-        case 'invalid_payload':
-        case 'invalid_json':
-          console.error('Invalid payload', { code: error.code })
-          return jsonResponse({ error: 'Invalid payload' }, 400)
-        default:
-          console.error('Webhook verification failed', {
-            code: error.code,
-            message: error.message,
-          })
-          return jsonResponse({ error: 'Verification failed' }, 401)
-      }
-    }
-    console.error('Unexpected error during verification', { error })
-    return jsonResponse({ error: 'Internal error' }, 500)
+    event = JSON.parse(body)
+  } catch {
+    return jsonResponse({ error: 'Invalid payload' }, 400)
+  }
+
+  const reason =
+    event.type === 'email.bounced' ? 'bounce' : event.type === 'email.complained' ? 'complaint' : null
+  // Só os bounces permanentes suprimem o endereço; outros eventos são ignorados.
+  if (!reason || (reason === 'bounce' && event.data?.bounce?.type && event.data.bounce.type !== 'Permanent')) {
+    return jsonResponse({ ignored: true })
+  }
+  const email = event.data?.to?.[0]
+  if (!email) return jsonResponse({ error: 'Missing recipient' }, 400)
+
+  const payload: SuppressionPayload = {
+    email,
+    reason,
+    message_id: event.data?.email_id,
+    metadata: { resend_event: event.type },
+    is_retry: false,
+    retry_count: 0,
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey)

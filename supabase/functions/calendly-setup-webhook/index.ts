@@ -1,17 +1,16 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/calendly";
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+// API do Calendly com Personal Access Token (antes passava pelo gateway do Lovable).
+const CALENDLY_URL = "https://api.calendly.com";
 const CALENDLY_API_KEY = Deno.env.get("CALENDLY_API_KEY");
 const WEBHOOK_TOKEN = Deno.env.get("CALENDLY_WEBHOOK_TOKEN");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 
 const gw = (path: string, init: RequestInit = {}) =>
-  fetch(`${GATEWAY_URL}${path}`, {
+  fetch(`${CALENDLY_URL}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "X-Connection-Api-Key": CALENDLY_API_KEY!,
+      Authorization: `Bearer ${CALENDLY_API_KEY}`,
       "Content-Type": "application/json",
       ...(init.headers || {}),
     },
@@ -26,7 +25,7 @@ const json = (body: unknown, status = 200) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  if (!LOVABLE_API_KEY || !CALENDLY_API_KEY || !WEBHOOK_TOKEN) {
+  if (!CALENDLY_API_KEY || !WEBHOOK_TOKEN) {
     return json({ error: "Calendly não está configurado" }, 500);
   }
 

@@ -7,10 +7,10 @@ import path from "path";
 // Public (publishable) backend values. Safe to ship in the browser bundle —
 // row level security protects the data. Used as a fallback so a build without
 // a .env never produces a blank published app.
-const FALLBACK_SUPABASE_URL = "https://bdilsjrlwevkgjivqpgg.supabase.co";
+const FALLBACK_SUPABASE_URL = "https://unwzlmdwvpxhigmsqvam.supabase.co";
 const FALLBACK_SUPABASE_PUBLISHABLE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkaWxzanJsd2V2a2dqaXZxcGdnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzM4MjksImV4cCI6MjA5MDgwOTgyOX0.3yy_fp7-OfqKPaM5CFnNGPRbH7B1jxgrPBTdCP3WmFw";
-const FALLBACK_SUPABASE_PROJECT_ID = "bdilsjrlwevkgjivqpgg";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVud3psbWR3dnB4aGlnbXNxdmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NDIwOTYsImV4cCI6MjEwNjExODA5Nn0.lpWoSY8Zy2kQgdBcKzbH2Y2CWWF9WMUFBuxV9wTRM-I";
+const FALLBACK_SUPABASE_PROJECT_ID = "unwzlmdwvpxhigmsqvam";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {

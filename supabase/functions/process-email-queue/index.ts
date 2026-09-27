@@ -1,5 +1,52 @@
-import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+
+const RESEND_URL = 'https://api.resend.com/emails'
+const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://gestao.contabilistaexplica.pt'
+
+// Erro de envio com o estado HTTP do Resend (usado para 429/403 abaixo).
+class EmailAPIError extends Error {
+  constructor(message: string, public status: number, public retryAfterSeconds: number | null) {
+    super(message)
+  }
+}
+
+// Envia um email pelo Resend (substitui o serviço de email do Lovable).
+async function sendEmail(
+  apiKey: string,
+  payload: Record<string, any>
+): Promise<void> {
+  const headers: Record<string, string> = {}
+  if (payload.unsubscribe_token) {
+    const url = `${SITE_URL}/unsubscribe?token=${payload.unsubscribe_token}`
+    headers['List-Unsubscribe'] = `<${url}>`
+    headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click'
+  }
+  const res = await fetch(RESEND_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      ...(payload.idempotency_key ? { 'Idempotency-Key': String(payload.idempotency_key).slice(0, 256) } : {}),
+    },
+    body: JSON.stringify({
+      from: payload.from,
+      to: [payload.to],
+      subject: payload.subject,
+      html: payload.html,
+      text: payload.text,
+      headers,
+      tags: payload.label ? [{ name: 'label', value: String(payload.label).replace(/[^A-Za-z0-9_-]/g, '_') }] : undefined,
+    }),
+  })
+  if (!res.ok) {
+    const retryAfter = Number(res.headers.get('retry-after'))
+    throw new EmailAPIError(
+      `Resend ${res.status}: ${(await res.text()).slice(0, 500)}`,
+      res.status,
+      Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null
+    )
+  }
+}
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
@@ -79,7 +126,7 @@ async function moveToDlq(
 }
 
 Deno.serve(async (req) => {
-  const apiKey = Deno.env.get('LOVABLE_API_KEY')
+  const apiKey = Deno.env.get('RESEND_API_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -246,26 +293,7 @@ Deno.serve(async (req) => {
       }
 
       try {
-        await sendLovableEmail(
-          {
-            run_id: payload.run_id,
-            to: payload.to,
-            from: payload.from,
-            sender_domain: payload.sender_domain,
-            subject: payload.subject,
-            html: payload.html,
-            text: payload.text,
-            purpose: payload.purpose,
-            label: payload.label,
-            idempotency_key: payload.idempotency_key,
-            unsubscribe_token: payload.unsubscribe_token,
-            message_id: payload.message_id,
-          },
-          // sendUrl is optional — when LOVABLE_SEND_URL is not set, the library
-          // falls back to the default Lovable API endpoint (https://api.lovable.dev).
-          // Set LOVABLE_SEND_URL as a Supabase secret to override (e.g. for local dev).
-          { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
-        )
+        await sendEmail(apiKey, payload)
 
         // Log success
         await supabase.from('email_send_log').insert({
