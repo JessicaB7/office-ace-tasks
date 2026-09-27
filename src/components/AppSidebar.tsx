@@ -16,7 +16,6 @@ import {
   LineChart,
   Gauge,
   TrendingUp,
-  Filter,
   UserPlus,
   CalendarClock,
   MessageSquareQuote,
@@ -58,7 +57,6 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
     title: "Comercial",
     icon: Handshake,
     entries: [
-      { kind: "item", item: { id: "pipeline", label: "Pipeline", icon: Filter } },
       { kind: "item", item: { id: "leads", label: "Leads", icon: UserPlus } },
       { kind: "item", item: { id: "followups", label: "Follow ups", icon: CalendarClock } },
       { kind: "item", item: { id: "novos_clientes", label: "Novos clientes", icon: UserCheck } },

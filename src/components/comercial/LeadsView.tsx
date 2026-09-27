@@ -8,6 +8,7 @@ import { Plus, Search, Trash2, Pencil, ChevronLeft, ChevronRight } from "lucide-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   stagesFor,
+  closedStagesFor,
   BUSINESS_TYPES,
   businessTypeLabel,
   ivaFrameworkLabel,
@@ -27,7 +28,8 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
   const del = useDeleteLead();
   const { isAdmin } = useAuth();
   const [search, setSearch] = useState("");
-  const [stage, setStage] = useState("all");
+  // Comercial abre nas leads pendentes (ainda sem ganho/perda)
+  const [stage, setStage] = useState(segment === "consultoria" ? "all" : "pendentes");
   const [bizType, setBizType] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);
@@ -48,7 +50,10 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
             (l.email || "").toLowerCase().includes(q) ||
             (l.business_area || "").toLowerCase().includes(q) ||
             (l.nif || "").includes(q);
-          return matchQ && (stage === "all" || l.stage === stage) && (bizType === "all" || l.business_type === bizType);
+          const matchStage =
+            stage === "all" ||
+            (stage === "pendentes" ? !closedStagesFor(segment).includes(l.stage) : l.stage === stage);
+          return matchQ && matchStage && (bizType === "all" || l.business_type === bizType);
         })
         .sort((a, b) => {
           const da = (a.meeting_date || a.created_at || "").slice(0, 10);
@@ -172,6 +177,7 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
         <Select value={stage} onValueChange={setStage}>
           <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
           <SelectContent>
+            {segment !== "consultoria" && <SelectItem value="pendentes">Pendentes</SelectItem>}
             <SelectItem value="all">Todos os estados</SelectItem>
             {stagesFor(segment).map((s) => <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>)}
           </SelectContent>
@@ -228,7 +234,7 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
                 <>
                   {filtered.map((l) => renderRow(l))}
                   {!isLoading && filtered.length === 0 && (
-                    <tr><td colSpan={colCount} className="p-6 text-center text-muted-foreground">Sem leads.</td></tr>
+                    <tr><td colSpan={colCount} className="p-6 text-center text-muted-foreground">{stage === "pendentes" ? "Sem leads pendentes." : "Sem leads."}</td></tr>
                   )}
                 </>
               )}

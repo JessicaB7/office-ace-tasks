@@ -17,7 +17,6 @@ import NotificationBell from "@/components/NotificationBell";
 import BusinessOverviewView from "@/components/BusinessOverviewView";
 import ComercialView from "@/components/ComercialView";
 import ConsultoriasPanelView from "@/components/ConsultoriasPanelView";
-import PipelineView from "@/components/comercial/PipelineView";
 import LeadsView from "@/components/comercial/LeadsView";
 import PropostasView from "@/components/comercial/PropostasView";
 import FollowUpsView from "@/components/comercial/FollowUpsView";
@@ -55,7 +54,6 @@ const Index = () => {
         {activeView === "business" && isAdmin && <BusinessOverviewView onNavigate={setActiveView} />}
         {activeView === "dashboard" && <DashboardView />}
         {activeView === "comercial" && isAdmin && <ComercialView />}
-        {activeView === "pipeline" && <PipelineView />}
         {activeView === "leads" && <LeadsView />}
         {activeView === "propostas" && <PropostasView />}
         {activeView === "followups" && <FollowUpsView />}
