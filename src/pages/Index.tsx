@@ -22,6 +22,7 @@ import LeadsView from "@/components/comercial/LeadsView";
 import PropostasView from "@/components/comercial/PropostasView";
 import FollowUpsView from "@/components/comercial/FollowUpsView";
 import ScriptsView from "@/components/comercial/ScriptsView";
+import NovosClientesView from "@/components/comercial/NovosClientesView";
 import WeeklyTasksReminderDialog from "@/components/WeeklyTasksReminderDialog";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -59,6 +60,7 @@ const Index = () => {
         {activeView === "propostas" && <PropostasView />}
         {activeView === "followups" && <FollowUpsView />}
         {activeView === "scripts" && <ScriptsView />}
+        {activeView === "novos_clientes" && <NovosClientesView />}
         {activeView === "consultorias_painel" && isAdmin && <ConsultoriasPanelView />}
         {activeView === "consultoria_leads" && <LeadsView segment="consultoria" />}
         {activeView === "consultoria_followups" && <FollowUpsView segment="consultoria" />}

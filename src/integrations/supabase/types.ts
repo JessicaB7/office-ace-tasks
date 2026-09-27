@@ -246,6 +246,135 @@ export type Database = {
         }
         Relationships: []
       }
+      client_onboarding_secrets: {
+        Row: {
+          onboarding_id: string
+          senha_at: string | null
+          senha_faturacao: string | null
+          senha_ss: string | null
+          updated_at: string
+          utilizador_faturacao: string | null
+        }
+        Insert: {
+          onboarding_id?: string
+          senha_at?: string | null
+          senha_faturacao?: string | null
+          senha_ss?: string | null
+          updated_at?: string
+          utilizador_faturacao?: string | null
+        }
+        Update: {
+          onboarding_id?: string
+          senha_at?: string | null
+          senha_faturacao?: string | null
+          senha_ss?: string | null
+          updated_at?: string
+          utilizador_faturacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_onboarding_secrets_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "client_onboardings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_onboardings: {
+        Row: {
+          answers: Json
+          avenca: boolean
+          client_id: string | null
+          completed_at: string | null
+          contrato: boolean
+          created_at: string
+          data_inicio: string | null
+          email_anterior_contabilista: boolean
+          fatura: boolean
+          form_sent_at: string | null
+          form_type: string
+          grupo: boolean
+          id: string
+          lead_id: string | null
+          notes: string | null
+          onboarding: boolean
+          pagamento: boolean
+          responsavel_id: string | null
+          submitted_at: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          avenca?: boolean
+          client_id?: string | null
+          completed_at?: string | null
+          contrato?: boolean
+          created_at?: string
+          data_inicio?: string | null
+          email_anterior_contabilista?: boolean
+          fatura?: boolean
+          form_sent_at?: string | null
+          form_type?: string
+          grupo?: boolean
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          onboarding?: boolean
+          pagamento?: boolean
+          responsavel_id?: string | null
+          submitted_at?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          avenca?: boolean
+          client_id?: string | null
+          completed_at?: string | null
+          contrato?: boolean
+          created_at?: string
+          data_inicio?: string | null
+          email_anterior_contabilista?: boolean
+          fatura?: boolean
+          form_sent_at?: string | null
+          form_type?: string
+          grupo?: boolean
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          onboarding?: boolean
+          pagamento?: boolean
+          responsavel_id?: string | null
+          submitted_at?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_onboardings_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_onboardings_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "collaborators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_onboardings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           active: boolean
@@ -978,6 +1107,14 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_onboarding_form: {
+        Args: { _token: string }
+        Returns: Json
+      }
+      submit_onboarding_form: {
+        Args: { _answers: Json; _secrets: Json; _token: string }
+        Returns: boolean
       }
       has_role: {
         Args: {

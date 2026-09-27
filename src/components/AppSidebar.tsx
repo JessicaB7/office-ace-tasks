@@ -20,13 +20,19 @@ import {
   UserPlus,
   CalendarClock,
   MessageSquareQuote,
-
-
+  House,
+  Handshake,
+  Lightbulb,
+  UsersRound,
+  Briefcase,
+  UserCheck,
+  type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useContabilidadesPending } from "@/hooks/useContabilidadesPending";
+import { useOnboardings } from "@/hooks/useOnboardings";
 
 interface AppSidebarProps {
   activeView: string;
@@ -34,13 +40,14 @@ interface AppSidebarProps {
   onNewTask: () => void;
 }
 
-type Item = { id: string; label: string; icon?: any; adminOnly?: boolean };
-type Group = { id: string; label: string; icon: any; adminOnly?: boolean; items: Item[] };
+type Item = { id: string; label: string; icon?: LucideIcon; adminOnly?: boolean };
+type Group = { id: string; label: string; icon: LucideIcon; adminOnly?: boolean; items: Item[] };
 type Entry = { kind: "item"; item: Item } | { kind: "group"; group: Group };
 
-const SECTIONS: { title: string; entries: Entry[] }[] = [
+const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
   {
     title: "Visão geral",
+    icon: House,
     entries: [
       { kind: "item", item: { id: "dashboard", label: "O meu dia a dia", icon: LayoutDashboard } },
       { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
@@ -49,15 +56,18 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
   },
   {
     title: "Comercial",
+    icon: Handshake,
     entries: [
       { kind: "item", item: { id: "pipeline", label: "Pipeline", icon: Filter } },
       { kind: "item", item: { id: "leads", label: "Leads", icon: UserPlus } },
       { kind: "item", item: { id: "followups", label: "Follow ups", icon: CalendarClock } },
+      { kind: "item", item: { id: "novos_clientes", label: "Novos clientes", icon: UserCheck } },
       { kind: "item", item: { id: "scripts", label: "Scripts", icon: MessageSquareQuote } },
     ],
   },
   {
     title: "Consultorias",
+    icon: Lightbulb,
     entries: [
       { kind: "item", item: { id: "consultoria_leads", label: "Leads", icon: UserPlus } },
       { kind: "item", item: { id: "consultoria_followups", label: "Follow ups", icon: CalendarClock } },
@@ -65,6 +75,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
   },
   {
     title: "Clientes",
+    icon: UsersRound,
     entries: [
       { kind: "item", item: { id: "clients", label: "Dados de clientes", icon: Building2 } },
       {
@@ -118,6 +129,7 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
   },
   {
     title: "Gestão de negócio",
+    icon: Briefcase,
     entries: [
       { kind: "item", item: { id: "business", label: "Painel do negócio", icon: Gauge, adminOnly: true } },
       { kind: "item", item: { id: "comercial", label: "Painel comercial", icon: TrendingUp, adminOnly: true } },
@@ -140,6 +152,11 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
 
   const { user, isAdmin, signOut } = useAuth();
   const { perTab: contabPending, totalPending: contabTotalPending } = useContabilidadesPending();
+  const { data: onboardings = [] } = useOnboardings();
+  // Formulários de novos clientes já respondidos e ainda por concluir
+  const itemBadges: Record<string, number> = {
+    novos_clientes: onboardings.filter((o) => o.submitted_at && !o.completed_at).length,
+  };
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     contabilidades: activeView.startsWith("contabilidades"),
     analise: activeView.startsWith("analise"),
@@ -202,8 +219,8 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
 
   const itemClass = (active: boolean) =>
     cn(
-      "w-full flex items-center gap-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors",
-      collapsed ? "justify-center px-0" : "px-4",
+      "w-full flex items-center gap-3 rounded-lg text-sm font-medium transition-colors",
+      collapsed ? "justify-center px-0 py-2.5 mb-1" : "px-3 py-2 mb-0.5",
       active
         ? "bg-sidebar-accent text-sidebar-accent-foreground"
         : "text-primary-foreground/70 hover:text-primary-foreground hover:bg-sidebar-accent/50"
@@ -223,7 +240,7 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
 
   return (
     <aside className={cn("bg-primary text-primary-foreground min-h-screen flex flex-col transition-[width] duration-200",
-      collapsed ? "w-[68px]" : "w-64")}>
+      collapsed ? "w-[68px]" : "w-[264px]")}>
       <div className={cn("flex items-center", collapsed ? "flex-col gap-2 p-3" : "justify-between p-4")}>
         {collapsed ? (
           <div className="w-9 h-9 rounded-lg bg-primary-foreground/15 flex items-center justify-center font-bold text-xs shrink-0" title="Contabilista Explica">
@@ -248,28 +265,68 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
           );
           if (entries.length === 0) return null;
           const sectionOpen = collapsed || !!openSections[section.title];
+          const sectionActive = sectionHasView(section, activeView);
+          const sectionBadge = entries.reduce(
+            (n, e) => n + (e.kind === "item" ? itemBadges[e.item.id] || 0 : 0), 0
+          );
           return (
-            <div key={section.title} className={collapsed ? "mb-4" : "mb-2"}>
+            <div key={section.title} className={collapsed ? "mb-4" : "mb-1.5"}>
               {collapsed ? (
                 <div className="mx-2 mb-1.5 border-t border-primary-foreground/15" />
               ) : (
                 <button
                   onClick={() => toggleSection(section.title)}
                   aria-expanded={sectionOpen}
-                  className="w-full flex items-center justify-between px-4 py-1.5 mb-1 rounded-lg text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/50 hover:text-primary-foreground hover:bg-sidebar-accent/30 transition-colors"
+                  className={cn(
+                    "group w-full flex items-center gap-3 px-2 py-2 rounded-xl text-sm font-semibold transition-colors",
+                    sectionActive ? "text-primary-foreground" : "text-primary-foreground/75 hover:text-primary-foreground",
+                    sectionOpen ? "bg-sidebar-accent/40" : "hover:bg-sidebar-accent/30"
+                  )}
                 >
-                  <span>{section.title}</span>
-                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", sectionOpen && "rotate-180")} />
+                  <span
+                    className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                      sectionActive
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                        : "bg-primary-foreground/10 group-hover:bg-primary-foreground/15"
+                    )}
+                  >
+                    <section.icon className="w-4 h-4" />
+                  </span>
+                  <span className="flex-1 text-left">{section.title}</span>
+                  {!sectionOpen && sectionBadge > 0 && (
+                    <span className="text-[10px] font-semibold bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full">
+                      {sectionBadge}
+                    </span>
+                  )}
+                  <ChevronDown
+                    className={cn(
+                      "w-4 h-4 text-primary-foreground/60 transition-transform duration-200",
+                      sectionOpen && "rotate-180"
+                    )}
+                  />
                 </button>
               )}
-              {sectionOpen && entries.map((entry) => {
+              {sectionOpen && (
+              <div className={cn(!collapsed && "mt-1 mb-2 ml-[23px] pl-2 border-l border-primary-foreground/20 animate-in fade-in slide-in-from-top-1 duration-200")}>
+              {entries.map((entry) => {
                 if (entry.kind === "item") {
                   const item = entry.item;
+                  const badge = itemBadges[item.id] || 0;
                   return (
-                    <button key={item.id} onClick={() => onViewChange(item.id)} className={itemClass(activeView === item.id)}
+                    <button key={item.id} onClick={() => onViewChange(item.id)} className={cn(itemClass(activeView === item.id), "relative")}
                       title={collapsed ? item.label : undefined}>
                       {item.icon && <item.icon className="w-4 h-4 shrink-0" />}
-                      {!collapsed && item.label}
+                      {!collapsed && <span className="flex-1 text-left truncate">{item.label}</span>}
+                      {badge > 0 && (
+                        collapsed ? (
+                          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-warning" />
+                        ) : (
+                          <span className="text-[10px] font-semibold bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full">
+                            {badge}
+                          </span>
+                        )
+                      )}
                     </button>
                   );
                 }
@@ -295,7 +352,7 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
                       {!collapsed && <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")} />}
                     </button>
                     {open && (
-                      <div className="ml-4 pl-3 border-l border-primary-foreground/20 mb-1">
+                      <div className="ml-4 pl-2 border-l border-primary-foreground/20 mb-1">
                         {group.items.map((sub) => {
                           const subPending = isContabilidades
                             ? contabPending[sub.id.replace("contabilidades_", "")]?.pending
@@ -325,6 +382,8 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
                   </div>
                 );
               })}
+              </div>
+              )}
             </div>
           );
         })}

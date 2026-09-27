@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { Client, ClientInsert, Collaborator, CollaboratorInsert, DbTask, DbTaskInsert, FiscalDeadline } from "@/types/database";
 
 // ---- CLIENTS ----
@@ -366,7 +367,22 @@ export function useUpsertLead() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["leads"] }),
+    onMutate: (lead) => {
+      const previous = qc
+        .getQueriesData<Lead[]>({ queryKey: ["leads"] })
+        .flatMap(([, rows]) => rows || [])
+        .find((l) => l.id === lead.id);
+      return { previousStage: previous?.stage };
+    },
+    onSuccess: (_data, lead, ctx) => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      // Passar a "ganho" / "mensal_sim" cria o processo de novo cliente (trigger na BD)
+      const won = lead.stage === "ganho" || lead.stage === "mensal_sim";
+      if (won && ctx?.previousStage !== lead.stage) {
+        qc.invalidateQueries({ queryKey: ["client_onboardings"] });
+        toast.success("Novo cliente! O processo de entrada está em Comercial › Novos clientes.");
+      }
+    },
   });
 }
 
