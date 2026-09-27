@@ -1,13 +1,12 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Clock, FileCheck2, CheckCircle2, Copy, UserCheck } from "lucide-react";
+import { Search, Clock, FileCheck2, CheckCircle2, Copy, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useLeads, useCollaborators } from "@/hooks/useSupabaseQuery";
-import { useCreateOnboarding, useOnboardings, useUpdateOnboarding, type Onboarding } from "@/hooks/useOnboardings";
+import { useCollaborators } from "@/hooks/useSupabaseQuery";
+import { useOnboardings, useUpdateOnboarding, type Onboarding } from "@/hooks/useOnboardings";
 import { checklistFor, formMessage, formTypeClass, formTypeLabel } from "./onboardingConstants";
 import { eur, fmtDate } from "./leadConstants";
 import OnboardingDetailDialog from "./OnboardingDetailDialog";
@@ -26,9 +25,7 @@ const STATE_META = {
 
 const NovosClientesView = () => {
   const { data: onboardings = [], isLoading } = useOnboardings();
-  const { data: leads = [] } = useLeads();
   const { data: collaborators = [] } = useCollaborators();
-  const create = useCreateOnboarding();
   const update = useUpdateOnboarding();
   const [tab, setTab] = useState<Tab>("a_tratar");
   const [search, setSearch] = useState("");
@@ -37,17 +34,6 @@ const NovosClientesView = () => {
   const selected = onboardings.find((o) => o.id === selectedId) || null;
   const nameOf = (o: Onboarding) => (o.answers as Record<string, string>)?.nome || o.lead?.name || "Novo cliente";
   const collabName = (id: string | null) => collaborators.find((c) => c.id === id)?.name;
-
-  // Leads ganhas / consultorias com serviço mensal antes desta funcionalidade
-  // (ou cujo processo foi apagado)
-  const wonWithout = useMemo(() => {
-    const withOnb = new Set(onboardings.map((o) => o.lead_id));
-    return leads.filter(
-      (l) =>
-        ((l.segment === "consultoria" && l.stage === "mensal_sim") || (l.segment !== "consultoria" && l.stage === "ganho")) &&
-        !withOnb.has(l.id)
-    );
-  }, [leads, onboardings]);
 
   const q = search.trim().toLowerCase();
   const filtered = onboardings.filter((o) => (tab === "concluidos" ? !!o.completed_at : !o.completed_at) &&
@@ -74,30 +60,6 @@ const NovosClientesView = () => {
             Leads ganhas e consultorias com serviço mensal: formulário para o contrato e checklist de entrada
           </p>
         </div>
-        {wonWithout.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline"><Plus className="w-4 h-4 mr-2" /> Iniciar processo</Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
-              <DropdownMenuLabel className="text-xs">Clientes ganhos sem processo</DropdownMenuLabel>
-              {wonWithout.map((l) => (
-                <DropdownMenuItem
-                  key={l.id}
-                  onClick={() =>
-                    create.mutate(
-                      { lead_id: l.id, form_type: ["ti_rs", "ti_co", "empresa"].includes(l.business_type || "") ? l.business_type! : "ti_rs" },
-                      { onSuccess: () => toast.success(`Processo iniciado para ${l.name}.`), onError: (e) => toast.error(e.message) }
-                    )
-                  }
-                >
-                  {l.name}
-                  {l.segment === "consultoria" && <span className="ml-auto pl-3 text-[10px] text-muted-foreground">Consultoria</span>}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">

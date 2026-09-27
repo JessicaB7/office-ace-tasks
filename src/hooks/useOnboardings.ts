@@ -33,17 +33,6 @@ export function useUpdateOnboarding() {
   });
 }
 
-export function useCreateOnboarding() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: { lead_id: string; form_type: string }) => {
-      const { error } = await supabase.from("client_onboardings").insert(input);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["client_onboardings"] }),
-  });
-}
-
 export function useDeleteOnboarding() {
   const qc = useQueryClient();
   return useMutation({
