@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   ListTodo,
@@ -18,7 +18,6 @@ import {
   TrendingUp,
   Filter,
   UserPlus,
-  FileText,
   CalendarClock,
   MessageSquareQuote,
 
@@ -53,7 +52,6 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
     entries: [
       { kind: "item", item: { id: "pipeline", label: "Pipeline", icon: Filter } },
       { kind: "item", item: { id: "leads", label: "Leads", icon: UserPlus } },
-      { kind: "item", item: { id: "propostas", label: "Propostas enviadas", icon: FileText } },
       { kind: "item", item: { id: "followups", label: "Follow ups", icon: CalendarClock } },
       { kind: "item", item: { id: "scripts", label: "Scripts", icon: MessageSquareQuote } },
     ],
@@ -131,6 +129,12 @@ const SECTIONS: { title: string; entries: Entry[] }[] = [
 ];
 
 const SIDEBAR_COLLAPSED_KEY = "appSidebarCollapsed";
+const SIDEBAR_SECTIONS_KEY = "appSidebarOpenSections";
+
+const sectionHasView = (section: { entries: Entry[] }, view: string) =>
+  section.entries.some((e) =>
+    e.kind === "item" ? e.item.id === view : view.startsWith(e.group.id)
+  );
 
 const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
 
@@ -141,6 +145,41 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
     analise: activeView.startsWith("analise"),
     obrigacoes: activeView.startsWith("obrigacoes"),
   });
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    try {
+      Object.assign(initial, JSON.parse(localStorage.getItem(SIDEBAR_SECTIONS_KEY) || "{}"));
+    } catch {
+      // sem preferência guardada
+    }
+    for (const section of SECTIONS) {
+      if (sectionHasView(section, activeView)) initial[section.title] = true;
+    }
+    return initial;
+  });
+
+  const persistSections = (next: Record<string, boolean>) => {
+    try {
+      localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(next));
+    } catch {
+      // localStorage indisponível — a preferência só dura esta sessão
+    }
+    return next;
+  };
+
+  const toggleSection = (title: string) =>
+    setOpenSections((prev) => persistSections({ ...prev, [title]: !prev[title] }));
+
+  // Garante que a secção da vista ativa fica aberta quando se navega para ela
+  useEffect(() => {
+    const section = SECTIONS.find((s) => sectionHasView(s, activeView));
+    if (section) {
+      setOpenSections((prev) =>
+        prev[section.title] ? prev : persistSections({ ...prev, [section.title]: true })
+      );
+    }
+  }, [activeView]);
+
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
@@ -208,16 +247,22 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
             e.kind === "item" ? !e.item.adminOnly || isAdmin : !e.group.adminOnly || isAdmin
           );
           if (entries.length === 0) return null;
+          const sectionOpen = collapsed || !!openSections[section.title];
           return (
-            <div key={section.title} className="mb-4">
+            <div key={section.title} className={collapsed ? "mb-4" : "mb-2"}>
               {collapsed ? (
                 <div className="mx-2 mb-1.5 border-t border-primary-foreground/15" />
               ) : (
-                <p className="px-4 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/40">
-                  {section.title}
-                </p>
+                <button
+                  onClick={() => toggleSection(section.title)}
+                  aria-expanded={sectionOpen}
+                  className="w-full flex items-center justify-between px-4 py-1.5 mb-1 rounded-lg text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/50 hover:text-primary-foreground hover:bg-sidebar-accent/30 transition-colors"
+                >
+                  <span>{section.title}</span>
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", sectionOpen && "rotate-180")} />
+                </button>
               )}
-              {entries.map((entry) => {
+              {sectionOpen && entries.map((entry) => {
                 if (entry.kind === "item") {
                   const item = entry.item;
                   return (
