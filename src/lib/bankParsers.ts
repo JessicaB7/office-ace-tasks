@@ -67,6 +67,28 @@ function makeDateOnly(year: number, month: number, day: number): Date {
   return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
+// Repara texto UTF-8 que foi lido como Windows-1252 ("COMISSÃƒO" → "COMISSÃO").
+// Alguns PDFs (ex.: Abanca) trazem descrições com esta dupla codificação.
+const CP1252_EXTRA: Record<string, number> = {
+  "€": 0x80, "‚": 0x82, "ƒ": 0x83, "„": 0x84, "…": 0x85, "†": 0x86, "‡": 0x87, "ˆ": 0x88,
+  "‰": 0x89, "Š": 0x8a, "‹": 0x8b, "Œ": 0x8c, "Ž": 0x8e, "‘": 0x91, "’": 0x92, "“": 0x93,
+  "”": 0x94, "•": 0x95, "–": 0x96, "—": 0x97, "˜": 0x98, "™": 0x99, "š": 0x9a, "›": 0x9b,
+  "œ": 0x9c, "ž": 0x9e, "Ÿ": 0x9f,
+};
+export function fixMojibake(s: string): string {
+  if (!/[ÃÂ][\u0080-¿ŒœŠšŸŽžƒˆ˜–-™]/.test(s)) return s;
+  // Corrige apenas as sequências "Ã?" / "Â?" (resto do texto já está correto)
+  return s.replace(/[Â-Ã][\u0080-¿ŒœŠšŸŽžƒˆ˜–-™]/g, (pair) => {
+    const bytes = [...pair].map((c) => CP1252_EXTRA[c] ?? c.charCodeAt(0));
+    if (bytes.some((b) => b > 0xff)) return pair;
+    try {
+      return new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array(bytes));
+    } catch {
+      return pair;
+    }
+  });
+}
+
 function parseAmountPT(s: string): number | null {
   if (!s) return null;
   let str = s.replace(/\s|€|EUR/gi, "").trim();
@@ -695,22 +717,24 @@ function parseAbanca(text: string): ParsedStatement {
     if (!m) return null;
     return makeDateOnly(Number(m[3]), Number(m[2]), Number(m[1]));
   };
-  // Row may be on one line: "DD-MM-YYYY  desc  montante  saldo"
-  const rowRe = /(\d{2}-\d{2}-\d{4})\s+(.+?)\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
-  const rows: { d: Date; desc: string; mov: number; saldo: number }[] = [];
+  // Row may be on one line: "DD-MM-YYYY  [DD-MM-YYYY]  desc  montante  saldo"
+  // (o layout mais recente traz também a coluna "Data Valor")
+  const rowRe = /(\d{2}-\d{2}-\d{4})\s+(?:(\d{2}-\d{2}-\d{4})\s+)?(.+?)\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
+  const rows: { d: Date; dv: Date; desc: string; mov: number; saldo: number }[] = [];
   for (const raw of lines) {
     const m = raw.match(rowRe);
     if (!m) continue;
     const d = parseD(m[1]);
     if (!d) continue;
-    const mov = parsePT(m[3]);
-    const saldo = parsePT(m[4]);
+    const dv = (m[2] && parseD(m[2])) || d;
+    const mov = parsePT(m[4]);
+    const saldo = parsePT(m[5]);
     if (isNaN(mov) || isNaN(saldo)) continue;
-    rows.push({ d, desc: m[2].replace(/\s+/g, " ").trim(), mov, saldo });
+    rows.push({ d, dv, desc: fixMojibake(m[3].replace(/\s+/g, " ").trim()), mov, saldo });
   }
   const transactions: BankTransaction[] = rows.map((r) => ({
     dataMov: r.d,
-    dataValor: r.d,
+    dataValor: r.dv,
     descricao: r.desc,
     movimento: r.mov,
   }));
