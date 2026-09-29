@@ -92,6 +92,10 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
       toast.error("Indica o nome da lead.");
       return;
     }
+    if (isConsultoria && !form.given_by) {
+      toast.error("Indica por quem é dada a consultoria.");
+      return;
+    }
     if (!isConsultoria && form.stage === "perda" && !form.loss_reason.trim()) {
       toast.error("Indica o motivo da perda.");
       return;
@@ -163,11 +167,10 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
                 <Input type="date" value={form.meeting_date} onChange={(e) => setMeetingDate(e.target.value)} />
               </div>
               <div>
-                <Label>Dada por</Label>
-                <Select value={form.given_by || "none"} onValueChange={(v) => set("given_by", v === "none" ? "" : v)}>
+                <Label>Dada por *</Label>
+                <Select value={form.given_by || undefined} onValueChange={(v) => set("given_by", v)}>
                   <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Não definido</SelectItem>
                     <SelectItem value="Diogo">Diogo</SelectItem>
                     <SelectItem value="Jéssica">Jéssica</SelectItem>
                   </SelectContent>

@@ -191,6 +191,22 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeClients, config, collabFilter, search, colMaps, oblMap, hasMultiColumns]);
 
+  // TI Isento: distribuição dos clientes do regime por responsável (ignora a
+  // pesquisa e o filtro de responsável, para mostrar sempre o total).
+  const byResponsavel = useMemo(() => {
+    if (!noTasksTab || !config) return [];
+    const counts = new Map<string, number>();
+    activeClients.filter(config.filter).forEach((c) => {
+      const key = c.responsavel_id || "none";
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+    return [...counts.entries()]
+      .map(([id, count]) => ({ id, count, name: id === "none" ? "Sem responsável" : getCollabName(id) }))
+      .sort((a, b) => (a.id === "none" ? 1 : b.id === "none" ? -1 : b.count - a.count));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noTasksTab, config, activeClients, collaborators]);
+  const byResponsavelTotal = byResponsavel.reduce((s, r) => s + r.count, 0);
+
   const toggleObl = (clientId: string, type: string, map: Record<string, any>) => {
     const obl = map[clientId];
     const done = obl?.status === "concluida";
@@ -271,6 +287,48 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
           <button onClick={nextMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
+
+      {noTasksTab && byResponsavelTotal > 0 && (
+        <div className="bg-card rounded-xl border p-4 space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-semibold">Clientes por responsável</span>
+            <span className="text-muted-foreground">{byResponsavelTotal} no total</span>
+          </div>
+          <div className="flex h-9 w-full overflow-hidden rounded-lg">
+            {byResponsavel.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                title={`${r.name}: ${r.count}`}
+                onClick={() => setCollabFilter((f) => (f === r.id ? "all" : r.id))}
+                style={{ flexGrow: r.count, flexBasis: 0 }}
+                className={cn(
+                  "min-w-[2.25rem] flex items-center justify-center text-xs font-semibold border-r border-card last:border-r-0 transition-opacity",
+                  r.id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(r.id),
+                  collabFilter !== "all" && collabFilter !== r.id && "opacity-40"
+                )}
+              >
+                {r.count}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {byResponsavel.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setCollabFilter((f) => (f === r.id ? "all" : r.id))}
+                className={cn("flex items-center gap-1.5 text-xs transition-opacity",
+                  collabFilter !== "all" && collabFilter !== r.id && "opacity-40")}
+              >
+                <span className={cn("w-2.5 h-2.5 rounded-sm", r.id === "none" ? "bg-muted-foreground/40" : getAvatarPalette(r.id))} />
+                <span className="text-foreground">{r.name}</span>
+                <span className="font-semibold">{r.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-3 items-center">
         <div className="relative max-w-sm flex-1">
