@@ -159,6 +159,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   }, [obligations]);
 
   const isClientDone = (c: any) => {
+    if (noTasksTab) return false;
     if (hasMultiColumns) {
       return colMaps.every((map, i) => isObligationSatisfied(c, columns![i], map[c.id]?.status));
     }
@@ -213,11 +214,12 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
 
   // Notas mensais só fazem sentido nos separadores em galeria (têm ficha do cliente).
   const showNotes = isGallery;
-  const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length + 1 : 1);
+  const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length + 1 : noTasksTab ? 0 : 1);
 
-  // Empresas e TI Contabilidade Organizada: selecionar um cliente abre uma aba
-  // completa (não um diálogo) com os dados e a tabela de meses sempre visível.
-  if ((activeTab === "empresas" || activeTab === "organizada") && selectedClient) {
+  // Empresas, TI Contabilidade Organizada e TI Simplificado - Reg. IVA: selecionar
+  // um cliente abre uma aba completa (não um diálogo) com os dados e a tabela de
+  // meses sempre visível.
+  if ((activeTab === "empresas" || activeTab === "organizada" || activeTab === "TI_iva") && selectedClient) {
     return (
       <ClientMonthlyHistoryDialog
         variant="page"
@@ -340,7 +342,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                         <th key={col} className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">{col}</th>
                       ))}
                     </>
-                  ) : (
+                  ) : !noTasksTab && (
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-28">Estado</th>
                   )}
                 </tr>
@@ -349,7 +351,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                 {displayedClients.map((client: any) => {
                   const singleDone = oblMap[client.id]?.status === "concluida";
                   const doneColsCount = hasMultiColumns ? colMaps.filter((map) => map[client.id]?.status === "concluida").length : 0;
-                  const allDone = hasMultiColumns ? doneColsCount === columns!.length : singleDone;
+                  const allDone = hasMultiColumns ? doneColsCount === columns!.length : !noTasksTab && singleDone;
 
                   return (
                     <tr key={client.id} className={cn("border-b last:border-0 transition-colors border-l-2",
@@ -383,7 +385,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                             );
                           })}
                         </>
-                      ) : (
+                      ) : !noTasksTab && (
                         <td className="text-center px-3 py-3">
                           <button type="button" onClick={() => toggleObl(client.id, oblType, oblMap)}>
                             <Badge variant="outline" className={cn("cursor-pointer transition-colors",
@@ -415,20 +417,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         </div>
       )}
 
-      {activeTab === "TI_iva" ? (
-        <ClientMonthlyHistoryDialog
-          client={selectedClient}
-          open={!!selectedClient}
-          onClose={() => setSelectedClient(null)}
-          activeTab={activeTab}
-          columns={columns}
-          referenceMonth={referenceMonth}
-          showNotes={showNotes}
-          notesObligation={selectedClient ? notesMap[selectedClient.id] : undefined}
-        />
-      ) : (
-        <ClientDetailDialog client={selectedClient} open={!!selectedClient} onClose={() => setSelectedClient(null)} allowDelete={false} />
-      )}
+      <ClientDetailDialog client={selectedClient} open={!!selectedClient} onClose={() => setSelectedClient(null)} allowDelete={false} />
     </div>
   );
 };
