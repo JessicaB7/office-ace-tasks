@@ -11,6 +11,8 @@ import { formatDurationClock } from "@/lib/formatDuration";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { isColumnApplicable, isObligationSatisfied } from "@/lib/contabilidadesConfig";
+import { useClientFinancialSettings } from "@/hooks/useClientFinancials";
+import { format, parseISO } from "date-fns";
 
 const MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -46,6 +48,35 @@ const Field = ({ label, value }: { label: string; value?: string | null }) => (
     <div className="text-sm truncate">{value || "—"}</div>
   </div>
 );
+
+/** Relatórios da análise financeira entregues por trimestre (Empresas) — só
+ * leitura; o registo faz-se na Análise financeira do cliente
+ * ("Relatórios entregues e com visto", `client_financial_settings`). */
+const ReportDeliverySection = ({ clientId, year }: { clientId: string; year: number }) => {
+  const { data: settings, isLoading } = useClientFinancialSettings(clientId, year);
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {[1, 2, 3, 4].map((n) => {
+        const entregue = Boolean(settings?.[`relatorio_q${n}_entregue` as keyof typeof settings]);
+        const data = settings?.[`relatorio_q${n}_data` as keyof typeof settings] as string | null | undefined;
+        return (
+          <div key={n} className={cn("rounded-lg border p-3", entregue ? "bg-success/5 border-success/30" : "bg-background")}>
+            <div className="text-xs font-medium">{n}º trimestre</div>
+            <div className={cn("text-sm mt-1 flex items-center gap-1", entregue ? "text-success" : "text-muted-foreground")}>
+              {isLoading ? "…" : entregue ? (
+                <><Check className="w-3.5 h-3.5" /> {data ? format(parseISO(data), "dd/MM/yyyy") : "Entregue"}</>
+              ) : data ? (
+                format(parseISO(data), "dd/MM/yyyy")
+              ) : (
+                "Por entregar"
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 /** Notas gerais do cliente (campo `clients.notas_internas`) — ao contrário das
  * notas do mês, não estão presas a um mês: aparecem sempre, em qualquer mês. */
@@ -374,6 +405,14 @@ const ClientMonthlyHistoryDialog = ({
               </div>
               <GeneralNotesField clientId={client.id} name={client.name} initialNotes={client.notas_internas || ""} />
             </div>
+            {activeTab === "empresas" && (
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                  Análise financeira — relatórios entregues {historyYear}
+                </div>
+                <ReportDeliverySection clientId={client.id} year={historyYear} />
+              </div>
+            )}
           </div>
         </div>
 
