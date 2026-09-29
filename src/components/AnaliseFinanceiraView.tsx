@@ -33,7 +33,8 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
   const [fichaClient, setFichaClient] = useState<any | null>(null);
   const [ivaFilter, setIvaFilter] = useState("");
   const [respFilter, setRespFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  // Por omissão só os clientes ativos; "Todos os estados" continua disponível.
+  const [statusFilter, setStatusFilter] = useState("ativo");
   const year = new Date().getFullYear();
   const { data: reportStatus = [] } = useReportDeliveryStatusByYear(year);
   const statusByClient = useMemo(
@@ -63,7 +64,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [clients, cfg.tipo, search, ivaFilter, respFilter, statusFilter]);
 
-  const activeFilters = (ivaFilter ? 1 : 0) + (respFilter ? 1 : 0) + (statusFilter ? 1 : 0);
+  const activeFilters = (ivaFilter ? 1 : 0) + (respFilter ? 1 : 0) + (statusFilter !== "ativo" ? 1 : 0);
 
 
   if (selectedId) {
@@ -132,7 +133,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
 
           {activeFilters > 0 && (
             <button
-              onClick={() => { setIvaFilter(""); setRespFilter(""); setStatusFilter(""); }}
+              onClick={() => { setIvaFilter(""); setRespFilter(""); setStatusFilter("ativo"); }}
               className="flex items-center gap-1 px-3 py-2 rounded-lg border bg-card text-sm hover:bg-muted transition-colors"
               title="Limpar filtros"
             >
