@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { Search, Plus, Building2, BarChart3, AlertTriangle } from "lucide-react";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
@@ -69,7 +69,14 @@ const statusColor = (status: string) => {
 
 const clientStatus = (c: any): string => c.status || (c.active === false ? "inativo" : "ativo");
 
-const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => void }) => {
+interface ClientListViewProps {
+  onOpenAnalysis?: (id: string) => void;
+  /** Cliente cuja ficha deve abrir automaticamente (ex.: ao concluir um novo cliente). */
+  openClientId?: string | null;
+  onClientOpened?: () => void;
+}
+
+const ClientListView = ({ onOpenAnalysis, openClientId, onClientOpened }: ClientListViewProps) => {
   const { data: clients = [], isLoading } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const [search, setSearch] = useState("");
@@ -97,6 +104,14 @@ const ClientListView = ({ onOpenAnalysis }: { onOpenAnalysis?: (id: string) => v
 
   const openNew = () => { setSelectedClient(null); setDialogOpen(true); };
   const openEdit = (c: any) => { setSelectedClient(c); setDialogOpen(true); };
+
+  useEffect(() => {
+    if (!openClientId) return;
+    const c = clients.find((cl: any) => cl.id === openClientId);
+    if (!c) return; // espera que a lista (re)carregue com o cliente novo
+    openEdit(c);
+    onClientOpened?.();
+  }, [openClientId, clients, onClientOpened]);
 
   const activeClients = clients.filter((c: any) => clientStatus(c) === "ativo");
 

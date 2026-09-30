@@ -23,7 +23,7 @@ const STATE_META = {
   concluido: { label: "Concluído", icon: CheckCircle2, className: "bg-success/15 text-success" },
 } as const;
 
-const NovosClientesView = () => {
+const NovosClientesView = ({ onOpenClient }: { onOpenClient?: (clientId: string) => void }) => {
   const { data: onboardings = [], isLoading } = useOnboardings();
   const { data: collaborators = [] } = useCollaborators();
   const update = useUpdateOnboarding();
@@ -148,7 +148,7 @@ const NovosClientesView = () => {
         })}
       </div>
 
-      <OnboardingDetailDialog onboarding={selected} onClose={() => setSelectedId(null)} />
+      <OnboardingDetailDialog onboarding={selected} onClose={() => setSelectedId(null)} onOpenClient={onOpenClient} />
     </div>
   );
 };

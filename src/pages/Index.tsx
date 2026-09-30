@@ -33,6 +33,13 @@ const Index = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [analysisClientId, setAnalysisClientId] = useState<string | null>(null);
+  const [openClientId, setOpenClientId] = useState<string | null>(null);
+
+  const handleOpenClient = (clientId: string) => {
+    setAnalysisClientId(null);
+    setOpenClientId(clientId);
+    setActiveView("clients");
+  };
 
   const handleNewTask = () => {
     setEditingTask(null);
@@ -58,7 +65,7 @@ const Index = () => {
         {activeView === "propostas" && <PropostasView />}
         {activeView === "followups" && <FollowUpsView />}
         {activeView === "scripts" && <ScriptsView />}
-        {activeView === "novos_clientes" && <NovosClientesView />}
+        {activeView === "novos_clientes" && <NovosClientesView onOpenClient={handleOpenClient} />}
         {activeView === "consultorias_painel" && isAdmin && <ConsultoriasPanelView />}
         {activeView === "consultoria_leads" && <LeadsView segment="consultoria" />}
         {activeView === "consultoria_followups" && <FollowUpsView segment="consultoria" />}
@@ -70,7 +77,13 @@ const Index = () => {
         {activeView === "contabilidades_painel" && <ContabilidadesPainelView />}
         {activeView.startsWith("contabilidades") && activeView !== "contabilidades_painel" && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} />}
         {activeView.startsWith("analise_") && <AnaliseFinanceiraView subPage={activeView.replace("analise_", "")} />}
-        {activeView === "clients" && !analysisClientId && <ClientListView onOpenAnalysis={(id) => setAnalysisClientId(id)} />}
+        {activeView === "clients" && !analysisClientId && (
+          <ClientListView
+            onOpenAnalysis={(id) => setAnalysisClientId(id)}
+            openClientId={openClientId}
+            onClientOpened={() => setOpenClientId(null)}
+          />
+        )}
         {activeView === "clients" && analysisClientId && <ClientAnalysisView clientId={analysisClientId} onBack={() => setAnalysisClientId(null)} />}
         {activeView === "extratos" && <ExtratosBancariosView />}
         {activeView === "resumo" && <AdminWeeklySummary />}

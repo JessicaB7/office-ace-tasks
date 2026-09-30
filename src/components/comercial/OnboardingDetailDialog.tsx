@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, ExternalLink, Lock, MessageCircle, UserCheck, CheckCircle2, RotateCcw, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, Lock, MessageCircle, UserCheck, CheckCircle2, RotateCcw, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,8 @@ import { eur, fmtDate } from "./leadConstants";
 interface Props {
   onboarding: Onboarding | null;
   onClose: () => void;
+  /** Abre a ficha do cliente em "Dados de clientes" (chamado ao concluir). */
+  onOpenClient?: (clientId: string) => void;
 }
 
 const IVA_FROM_LEAD: Record<string, string> = {
@@ -42,7 +44,7 @@ const IVA_FROM_LEAD: Record<string, string> = {
   iva_trimestral: "Trimestral",
 };
 
-const OnboardingDetailDialog = ({ onboarding: o, onClose }: Props) => {
+const OnboardingDetailDialog = ({ onboarding: o, onClose, onOpenClient }: Props) => {
   const { isAdmin } = useAuth();
   const { data: collaborators = [] } = useCollaborators();
   const update = useUpdateOnboarding();
@@ -83,10 +85,10 @@ const OnboardingDetailDialog = ({ onboarding: o, onClose }: Props) => {
     if (!o.form_sent_at) patch({ form_sent_at: new Date().toISOString() });
   };
 
-  const createClient = async () => {
+  const createClient = async (): Promise<string | null> => {
     if (!o.data_inicio) {
       toast.error("Indica a data de início do contrato antes de criar o cliente.");
-      return;
+      return null;
     }
     const tipo = FORM_TYPES.find((t) => t.id === o.form_type)?.tipoContabilidade || "TI RS";
     try {
@@ -108,8 +110,38 @@ const OnboardingDetailDialog = ({ onboarding: o, onClose }: Props) => {
         status: "ativo",
       });
       patch({ client_id: client.id }, "Cliente criado em Dados de clientes.");
+      return client.id as string;
     } catch (e) {
       toast.error((e as Error).message || "Não foi possível criar o cliente.");
+      return null;
+    }
+  };
+
+  const save = async () => {
+    try {
+      if (notes !== (o.notes || "")) await update.mutateAsync({ id: o.id, notes: notes || null });
+      toast.success("Alterações guardadas.");
+      onClose();
+    } catch (e) {
+      toast.error((e as Error).message || "Não foi possível guardar.");
+    }
+  };
+
+  // Conclui o processo e abre a ficha do cliente para completar os dados em falta
+  const complete = async () => {
+    const clientId = o.client_id ?? (await createClient());
+    if (!clientId) return;
+    try {
+      await update.mutateAsync({
+        id: o.id,
+        completed_at: new Date().toISOString(),
+        ...(notes !== (o.notes || "") ? { notes: notes || null } : {}),
+      });
+      toast.success("Processo concluído. Completa os dados do cliente.");
+      onClose();
+      onOpenClient?.(clientId);
+    } catch (e) {
+      toast.error((e as Error).message || "Não foi possível concluir.");
     }
   };
 
@@ -268,7 +300,7 @@ const OnboardingDetailDialog = ({ onboarding: o, onClose }: Props) => {
           </div>
           <div className="flex gap-2 flex-wrap">
             {!o.client_id && (
-              <Button variant="outline" onClick={createClient} disabled={upsertClient.isPending || !o.submitted_at}
+              <Button variant="outline" onClick={() => createClient()} disabled={upsertClient.isPending || !o.submitted_at}
                 title={!o.submitted_at ? "Disponível depois de o cliente responder ao formulário" : undefined}>
                 <UserCheck className="w-4 h-4 mr-1.5" /> Criar cliente
               </Button>
@@ -283,10 +315,13 @@ const OnboardingDetailDialog = ({ onboarding: o, onClose }: Props) => {
                 <RotateCcw className="w-4 h-4 mr-1.5" /> Reabrir
               </Button>
             ) : (
-              <Button onClick={() => { patch({ completed_at: new Date().toISOString() }, "Processo concluído."); onClose(); }}>
+              <Button onClick={complete} disabled={update.isPending || upsertClient.isPending}>
                 <CheckCircle2 className="w-4 h-4 mr-1.5" /> Concluir
               </Button>
             )}
+            <Button variant="outline" onClick={save} disabled={update.isPending}>
+              <Save className="w-4 h-4 mr-1.5" /> Guardar
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>
