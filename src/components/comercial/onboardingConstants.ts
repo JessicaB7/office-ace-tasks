@@ -84,6 +84,7 @@ export const answerLabel = (field: FieldDef, value: string | undefined) => {
 };
 
 export const CHECKLIST: { key: ChecklistKey; label: string; hint: string; types?: OnboardingFormType[] }[] = [
+  { key: "pasta_drive", label: "Pasta Drive", hint: "Pasta do cliente criada no Google Drive", types: ["ti_rs"] },
   { key: "contrato", label: "Contrato", hint: "Elaborado, assinado com Autenticação Gov e devolvido pelo cliente" },
   { key: "fatura", label: "Fatura", hint: "Fatura da 1ª mensalidade emitida no TOConline" },
   { key: "pagamento", label: "Pagamento", hint: "Comprovativo da 1ª mensalidade recebido" },
@@ -92,15 +93,25 @@ export const CHECKLIST: { key: ChecklistKey; label: string; hint: string; types?
     types: ["ti_co", "empresa"],
   },
   { key: "grupo", label: "Grupo WhatsApp", hint: "Contabilidade + primeiro e último nome, com a Jéssica" },
-  { key: "avenca", label: "Avença", hint: "Criada no TOConline (envio de fatura dia 5)" },
+  { key: "avenca", label: "Avença TOConline", hint: "Criada no TOConline (envio de fatura dia 5)" },
   { key: "onboarding", label: "Sessão de onboarding", hint: "Agendada com o cliente" },
+  { key: "resumo_sessao", label: "Resumo da sessão", hint: "Resumo da sessão de onboarding enviado ao cliente", types: ["ti_rs"] },
 ];
 
 export type ChecklistKey =
-  | "contrato" | "pagamento" | "fatura" | "grupo" | "avenca" | "onboarding" | "email_anterior_contabilista";
+  | "pasta_drive" | "contrato" | "pagamento" | "fatura" | "grupo" | "avenca" | "onboarding" | "resumo_sessao"
+  | "email_anterior_contabilista";
 
-export const checklistFor = (type: string) =>
-  CHECKLIST.filter((c) => !c.types || c.types.includes(type as OnboardingFormType));
+// Ordem própria da checklist por tipo (os restantes seguem a ordem de CHECKLIST)
+const CHECKLIST_ORDER: Partial<Record<OnboardingFormType, ChecklistKey[]>> = {
+  ti_rs: ["pasta_drive", "contrato", "fatura", "avenca", "pagamento", "grupo", "onboarding", "resumo_sessao"],
+};
+
+export const checklistFor = (type: string) => {
+  const items = CHECKLIST.filter((c) => !c.types || c.types.includes(type as OnboardingFormType));
+  const order = CHECKLIST_ORDER[type as OnboardingFormType];
+  return order ? order.map((k) => items.find((c) => c.key === k)!).filter(Boolean) : items;
+};
 
 export const formLink = (token: string) => `${window.location.origin}/formulario/${token}`;
 

@@ -300,7 +300,9 @@ export type Database = {
           notes: string | null
           onboarding: boolean
           pagamento: boolean
+          pasta_drive: boolean
           responsavel_id: string | null
+          resumo_sessao: boolean
           submitted_at: string | null
           token: string
           updated_at: string
@@ -323,7 +325,9 @@ export type Database = {
           notes?: string | null
           onboarding?: boolean
           pagamento?: boolean
+          pasta_drive?: boolean
           responsavel_id?: string | null
+          resumo_sessao?: boolean
           submitted_at?: string | null
           token?: string
           updated_at?: string
@@ -346,7 +350,9 @@ export type Database = {
           notes?: string | null
           onboarding?: boolean
           pagamento?: boolean
+          pasta_drive?: boolean
           responsavel_id?: string | null
+          resumo_sessao?: boolean
           submitted_at?: string | null
           token?: string
           updated_at?: string
