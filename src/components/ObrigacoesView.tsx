@@ -64,6 +64,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const [ssTiTab, setSsTiTab] = useState<"SS_TI" | "SS_TI_DT">("SS_TI");
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [onlyPending, setOnlyPending] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
 
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -328,6 +329,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const subFilterOptions = getSubFilterOptions();
   const deadlineText = getDeadlineText();
   const doneCount = filteredClients.filter(c => oblMap[c.id]?.status === "concluida").length;
+  // Salários: "pendente" = guia ou pagamento ainda por marcar
+  const isSalarioPending = (c: any) => !(oblMap[c.id]?.status === "concluida" && oblMap[c.id]?.extra_done === true);
+  const visibleClients = isSalarios && onlyPending ? filteredClients.filter(isSalarioPending) : filteredClients;
 
   const pageLabels: Record<string, string> = {
     SAFT: "SAFT", salarios: "Salários", DMR: "DMR", SS_TI: "Segurança Social TI",
@@ -467,6 +471,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
             <option value="none">Sem responsável</option>
           </select>
         )}
+        {isSalarios && (
+          <button onClick={() => setOnlyPending((v) => !v)}
+            className={cn("px-3 py-2 text-sm font-medium rounded-lg border whitespace-nowrap transition-colors",
+              onlyPending ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted")}>
+            Só pendentes ({filteredClients.filter(isSalarioPending).length})
+          </button>
+        )}
       </div>
 
       {!showDTContent ? (
@@ -514,7 +525,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
               </tr>
             </thead>
             <tbody>
-              {filteredClients.map((client: any) => {
+              {visibleClients.map((client: any) => {
                 const obl = oblMap[client.id];
                 const guiaDone = obl?.status === "concluida";
                 const pagamentoDone = obl?.extra_done === true;
@@ -648,8 +659,10 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                   </tr>
                 );
               })}
-              {filteredClients.length === 0 && (
-                <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
+              {visibleClients.length === 0 && (
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
+                  {filteredClients.length > 0 ? "Sem salários pendentes" : "Nenhum cliente encontrado"}
+                </td></tr>
               )}
             </tbody>
           </table>
