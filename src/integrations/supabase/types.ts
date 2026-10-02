@@ -418,6 +418,8 @@ export type Database = {
           updated_at: string
           utilizador_faturacao: string | null
           via_ctt: string | null
+          via_ctt_resposta: string | null
+          via_ctt_senha: string | null
         }
         Insert: {
           active?: boolean
@@ -455,6 +457,8 @@ export type Database = {
           updated_at?: string
           utilizador_faturacao?: string | null
           via_ctt?: string | null
+          via_ctt_resposta?: string | null
+          via_ctt_senha?: string | null
         }
         Update: {
           active?: boolean
@@ -492,6 +496,8 @@ export type Database = {
           updated_at?: string
           utilizador_faturacao?: string | null
           via_ctt?: string | null
+          via_ctt_resposta?: string | null
+          via_ctt_senha?: string | null
         }
         Relationships: [
           {

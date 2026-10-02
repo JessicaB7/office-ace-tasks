@@ -89,6 +89,8 @@ interface ClientForm {
   senha_faturacao: string;
   saft: string;
   via_ctt: string;
+  via_ctt_senha: string;
+  via_ctt_resposta: string;
   mensalidade: string;
   inicio_contrato: string;
   tipo_contabilidade: string;
@@ -108,7 +110,7 @@ interface ClientForm {
 const emptyForm: ClientForm = {
   name: "", nif: "", senha_at: "", niss: "", senha_ss: "",
   programa_faturacao: "", utilizador_faturacao: "", senha_faturacao: "",
-  saft: "", via_ctt: "", mensalidade: "", inicio_contrato: "",
+  saft: "", via_ctt: "", via_ctt_senha: "", via_ctt_resposta: "", mensalidade: "", inicio_contrato: "",
   tipo_contabilidade: "SQ", seguranca_social: "", seguranca_social_isencao_fim: "", pag_seguranca_social: "",
   iva: "", iva_oss: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "",
   salarios: "", responsavel_id: "", status: "ativo",
@@ -151,6 +153,8 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         senha_faturacao: client.senha_faturacao || "",
         saft: client.saft || "",
         via_ctt: client.via_ctt || "",
+        via_ctt_senha: client.via_ctt_senha || "",
+        via_ctt_resposta: client.via_ctt_resposta || "",
         mensalidade: client.mensalidade ? String(client.mensalidade) : "",
         inicio_contrato: client.inicio_contrato || "",
         tipo_contabilidade: client.tipo_contabilidade || "SQ",
@@ -198,6 +202,8 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         senha_faturacao: form.senha_faturacao || null,
         saft: form.saft || null,
         via_ctt: form.via_ctt || null,
+        via_ctt_senha: form.via_ctt_senha || null,
+        via_ctt_resposta: form.via_ctt_resposta || null,
         mensalidade: form.mensalidade ? parseFloat(form.mensalidade) : null,
         inicio_contrato: form.inicio_contrato || null,
         tipo_contabilidade: form.tipo_contabilidade,
@@ -295,15 +301,23 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                   <label className="text-sm font-medium mb-1 block">Senha</label>
                   <input value={form.senha_faturacao} onChange={(e) => set("senha_faturacao", e.target.value)} className={inputClass} />
                 </div>
-                <div>
+                <div className="col-span-2">
                   <label className="text-sm font-medium mb-1 block">SAFT</label>
                   <select value={form.saft} onChange={(e) => set("saft", e.target.value)} className={inputClass}>
                     {SAFT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1 block">Via CTT</label>
+                  <label className="text-sm font-medium mb-1 block">Via CTT – Utilizador</label>
                   <input value={form.via_ctt} onChange={(e) => set("via_ctt", e.target.value)} className={inputClass} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Via CTT – Senha</label>
+                  <input value={form.via_ctt_senha} onChange={(e) => set("via_ctt_senha", e.target.value)} className={inputClass} />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium mb-1 block">Via CTT – Resposta</label>
+                  <input value={form.via_ctt_resposta} onChange={(e) => set("via_ctt_resposta", e.target.value)} className={inputClass} />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-1 block">Mensalidade (€) <span className="text-destructive">*</span></label>
