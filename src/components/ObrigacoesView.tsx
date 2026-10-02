@@ -35,6 +35,7 @@ const fmtDeadline = (day: number, m0: number, y: number) =>
 // Pages where checkboxes go on the RIGHT side
 const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "IVA_recapitulativa", "SS_TI", "SAFT", "salarios", "emissao_faturas"]);
 // Pages where NIF is hidden
+const WEEKS = [1, 2, 3, 4];
 const hideNif = new Set(["DMR", "SS_TI", "IVA", "IVA_recapitulativa", "retencao_fonte", "SAFT", "salarios", "emissao_faturas"]);
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
@@ -163,6 +164,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showNotasColumn = isSSTI && subFilter === "Isento";
   const showFimIsencaoColumn = isSSTI && subFilter === "Isento";
   const isEmissaoFaturas = activeTab === "emissao_faturas";
+  const isFaturasSemanal = isEmissaoFaturas && subFilter === "Semanal";
   const showIvaPeriodicaCols = isIVAPeriodica;
   const isTrimestralMode = isIVA && subFilter === "Trimestral";
 
@@ -261,6 +263,41 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     obligations.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
     return map;
   }, [obligations, activeTab, isDMR, dmrTab, isSSTI, ssTiTab, subFilter]);
+
+  // Emissão de faturas semanal: uma marcação por semana (emissao_faturas_S1..S4)
+  const weekMap = useMemo(() => {
+    const map: Record<string, Record<number, any>> = {};
+    obligations.forEach((o: any) => {
+      const m = /^emissao_faturas_S([1-4])$/.exec(o.obligation_type);
+      if (m) (map[o.client_id] ||= {})[Number(m[1])] = o;
+    });
+    return map;
+  }, [obligations]);
+  const weekDone = (clientId: string, w: number) => weekMap[clientId]?.[w]?.status === "concluida";
+
+  const toggleWeek = async (clientId: string, week: number) => {
+    const existing = weekMap[clientId]?.[week];
+    const nowDone = existing?.status !== "concluida";
+    await upsert.mutateAsync({
+      ...(existing ? { id: existing.id } : {}),
+      client_id: clientId, obligation_type: `emissao_faturas_S${week}`, reference_month: referenceMonth,
+      status: nowDone ? "concluida" : "pendente",
+      completed_at: nowDone ? new Date().toISOString() : null,
+      completed_by: nowDone ? user?.id || null : null,
+    });
+    // A obrigação do mês fica concluída quando as 4 semanas estão marcadas
+    const allDone = WEEKS.every((w) => (w === week ? nowDone : weekDone(clientId, w)));
+    const main = oblMap[clientId];
+    if ((main?.status === "concluida") !== allDone) {
+      await upsert.mutateAsync({
+        ...(main ? { id: main.id } : {}),
+        client_id: clientId, obligation_type: "emissao_faturas", reference_month: referenceMonth,
+        status: allDone ? "concluida" : "pendente",
+        completed_at: allDone ? new Date().toISOString() : null,
+        completed_by: allDone ? user?.id || null : null,
+      });
+    }
+  };
 
   const toggleObligation = async (clientId: string, oblType: string, currentMap: Record<string, any>) => {
     const existing = currentMap[clientId];
@@ -521,7 +558,10 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Método de Pagamento</th>
                   </>
                 )}
-                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
+                {isFaturasSemanal && WEEKS.map((w) => (
+                  <th key={w} className="text-center px-3 py-3 font-semibold text-muted-foreground w-20">Semana {w}</th>
+                ))}
+                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
               </tr>
             </thead>
             <tbody>
@@ -651,7 +691,12 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                         </td>
                       </>
                     )}
-                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && (
+                    {isFaturasSemanal && WEEKS.map((w) => (
+                      <td key={w} className="text-center px-3 py-3">
+                        <CheckboxCell done={weekDone(client.id, w)} onClick={() => toggleWeek(client.id, w)} />
+                      </td>
+                    ))}
+                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
