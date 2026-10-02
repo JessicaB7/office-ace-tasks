@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { formatDurationClock } from "@/lib/formatDuration";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
+import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { isColumnApplicable, isObligationSatisfied } from "@/lib/contabilidadesConfig";
 import { useClientFinancialSettings } from "@/hooks/useClientFinancials";
@@ -290,6 +291,12 @@ const ClientMonthlyHistoryDialog = ({
   // Secção ativa — navegação lateral em vez de tudo empilhado.
   const [section, setSection] = useState<"dados" | "historico">("dados");
 
+  // Clicar no nome do cliente abre a ficha com os dados do cliente.
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const detailsDialog = (
+    <ClientDetailDialog client={client} open={detailsOpen} onClose={() => setDetailsOpen(false)} allowDelete={false} />
+  );
+
   // Group obligations by month
   const [historyYear, setHistoryYear] = useState(new Date().getFullYear());
   const now = new Date();
@@ -363,6 +370,7 @@ const ClientMonthlyHistoryDialog = ({
   if (variant === "page") {
     return (
       <div className="space-y-5">
+        {detailsDialog}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Voltar">
@@ -372,7 +380,11 @@ const ClientMonthlyHistoryDialog = ({
               <Building2 className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">{client.name}</h2>
+              <h2 className="text-2xl font-bold">
+                <button type="button" onClick={() => setDetailsOpen(true)} className="hover:underline text-left" title="Abrir dados do cliente">
+                  {client.name}
+                </button>
+              </h2>
               <p className="text-sm text-muted-foreground">Ficha do cliente</p>
             </div>
           </div>
@@ -514,7 +526,11 @@ const ClientMonthlyHistoryDialog = ({
       <div className="relative bg-card rounded-2xl border shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
         <div className="flex items-center justify-between p-5 border-b">
           <div>
-            <h3 className="text-lg font-bold">{client.name}</h3>
+            <h3 className="text-lg font-bold">
+              <button type="button" onClick={() => setDetailsOpen(true)} className="hover:underline text-left" title="Abrir dados do cliente">
+                {client.name}
+              </button>
+            </h3>
             <p className="text-sm text-muted-foreground">Ficha do cliente</p>
           </div>
           <div className="flex items-center gap-2">
@@ -644,6 +660,7 @@ const ClientMonthlyHistoryDialog = ({
           </div>
         </div>
       </div>
+      {detailsDialog}
     </div>
   );
 };

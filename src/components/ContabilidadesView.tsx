@@ -239,7 +239,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     return (
       <ClientMonthlyHistoryDialog
         variant="page"
-        client={selectedClient}
+        client={clients.find((c) => c.id === selectedClient.id) || selectedClient}
         open={true}
         onClose={() => setSelectedClient(null)}
         activeTab={activeTab}
