@@ -535,6 +535,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 {isSSTI && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Enquadramento SS</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
                 {isEmissaoFaturas && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Programa Faturação</th>}
+                {isEmissaoFaturas && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {showFimIsencaoColumn && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Fim da Isenção</th>}
                 {showNotasColumn && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Entregue</th>}
@@ -601,6 +602,24 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     )}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
                     {isEmissaoFaturas && <td className="px-4 py-3 text-muted-foreground text-xs">{client.programa_faturacao || "—"}</td>}
+                    {isEmissaoFaturas && (
+                      // Nota guardada no cliente: mantém-se de mês para mês
+                      <td className="px-4 py-3 min-w-[200px]">
+                        <input
+                          type="text"
+                          defaultValue={client.notas_faturas || ""}
+                          placeholder="Adicionar nota..."
+                          className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                          onBlur={(e) => {
+                            const val = e.target.value;
+                            if (val !== (client.notas_faturas || "")) {
+                              upsertClient.mutate({ id: client.id, name: client.name, notas_faturas: val || null });
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                        />
+                      </td>
+                    )}
                     {showFimIsencaoColumn && (
                       <td className="px-4 py-3">
                         <input

@@ -399,6 +399,7 @@ export type Database = {
           name: string
           nif: string | null
           niss: string | null
+          notas_faturas: string | null
           notas_internas: string | null
           notes: string | null
           pag_seguranca_social: string | null
@@ -438,6 +439,7 @@ export type Database = {
           name: string
           nif?: string | null
           niss?: string | null
+          notas_faturas?: string | null
           notas_internas?: string | null
           notes?: string | null
           pag_seguranca_social?: string | null
@@ -477,6 +479,7 @@ export type Database = {
           name?: string
           nif?: string | null
           niss?: string | null
+          notas_faturas?: string | null
           notas_internas?: string | null
           notes?: string | null
           pag_seguranca_social?: string | null
