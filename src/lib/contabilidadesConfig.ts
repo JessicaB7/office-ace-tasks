@@ -22,7 +22,7 @@ export const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     filter: (c) => c.tipo_contabilidade === "TI RS" && c.iva !== "Art.53º" && c.iva !== "Art. 9º" && c.iva !== "" && c.iva != null,
     hideNif: true,
     gallery: true,
-    columns: ["Vendas", "Compras", "E-Fatura", "Salários"],
+    columns: ["Vendas", "Compras", "Salários", "E-Fatura"],
   },
   organizada: {
     label: "TI Contabilidade Organizada",

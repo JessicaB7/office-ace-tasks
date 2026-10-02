@@ -537,6 +537,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 {isEmissaoFaturas && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Programa Faturação</th>}
                 {isEmissaoFaturas && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {showFimIsencaoColumn && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Fim da Isenção</th>}
+                {isDT && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Variação</th>}
                 {showNotasColumn && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Entregue</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
@@ -632,6 +633,28 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                               upsertClient.mutate({ id: client.id, name: client.name, seguranca_social_isencao_fim: val || null });
                             }
                           }}
+                        />
+                      </td>
+                    )}
+                    {isDT && (
+                      // Variação do trimestre: guardada na obrigação SS_TI_DT do mês (notes)
+                      <td className="px-4 py-3 min-w-[180px]">
+                        <input
+                          key={`${client.id}-${referenceMonth}`}
+                          type="text"
+                          defaultValue={obl?.notes || ""}
+                          placeholder="Indicar variação..."
+                          className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                          onBlur={async (e) => {
+                            const val = e.target.value;
+                            if (val === (obl?.notes || "")) return;
+                            await upsert.mutateAsync({
+                              ...(obl?.id ? { id: obl.id } : {}),
+                              client_id: client.id, obligation_type: "SS_TI_DT", reference_month: referenceMonth,
+                              status: obl?.status || "pendente", notes: val || null,
+                            });
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                         />
                       </td>
                     )}
