@@ -164,6 +164,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showNotasColumn = isSSTI && subFilter === "Isento";
   const showFimIsencaoColumn = isSSTI && subFilter === "Isento";
   const isEmissaoFaturas = activeTab === "emissao_faturas";
+  const showProgramaFaturacao = isEmissaoFaturas || activeTab === "SAFT";
   const isFaturasSemanal = isEmissaoFaturas && subFilter === "Semanal";
   const showIvaPeriodicaCols = isIVAPeriodica;
   const isTrimestralMode = isIVA && subFilter === "Trimestral";
@@ -534,7 +535,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tipo</th>
                 {isSSTI && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Enquadramento SS</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
-                {isEmissaoFaturas && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Programa Faturação</th>}
+                {showProgramaFaturacao && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Programa Faturação</th>}
                 {isEmissaoFaturas && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {showFimIsencaoColumn && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Fim da Isenção</th>}
                 {isDT && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Variação</th>}
@@ -602,7 +603,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                       </td>
                     )}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
-                    {isEmissaoFaturas && <td className="px-4 py-3 text-muted-foreground text-xs">{client.programa_faturacao || "—"}</td>}
+                    {showProgramaFaturacao && <td className="px-4 py-3 text-muted-foreground text-xs">{client.programa_faturacao || "—"}</td>}
                     {isEmissaoFaturas && (
                       // Nota guardada no cliente: mantém-se de mês para mês
                       <td className="px-4 py-3 min-w-[200px]">
