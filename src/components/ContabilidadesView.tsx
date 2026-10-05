@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
-import { Search, ChevronLeft, ChevronRight, Check, PartyPopper, Clock, CheckCircle2, AlertTriangle, UserCircle2 } from "lucide-react";
+import { useClients, useCollaborators, useMonthlyObligations, useMonthlyObligationsRange, useUpsertObligation } from "@/hooks/useSupabaseQuery";
+import { Search, ChevronLeft, ChevronRight, Check, PartyPopper, Clock, CheckCircle2, AlertTriangle, UserCircle2, ChevronDown, CircleDashed, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
-import { SUB_PAGE_CONFIG, isObligationSatisfied } from "@/lib/contabilidadesConfig";
+import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable } from "@/lib/contabilidadesConfig";
 
 const PENDING_FILTER_STORAGE_KEY = "contabilidadesShowOnlyPending";
 
@@ -19,6 +19,17 @@ const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
 
 /** Últimos N dias do mês em que se considera "fim de mês próximo" (inclui o último dia). */
 const END_OF_MONTH_URGENCY_DAYS = 3;
+
+/** Quantos meses para trás (antes do mês corrente) se verificam clientes por fechar. */
+const PAST_MONTHS_TO_CHECK = 3;
+
+type ClientTier = "none" | "started" | "done";
+
+const GALLERY_SECTIONS: { tier: ClientTier; label: string; icon: typeof Check; className: string }[] = [
+  { tier: "none", label: "Por começar", icon: CircleDashed, className: "text-muted-foreground" },
+  { tier: "started", label: "Em curso", icon: Loader, className: "text-warning" },
+  { tier: "done", label: "Concluídos", icon: CheckCircle2, className: "text-success" },
+];
 
 interface ContabilidadesViewProps {
   subPage?: string;
@@ -158,13 +169,93 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
     return map;
   }, [obligations]);
 
-  const isClientDone = (c: any) => {
+  const isClientDoneWith = (c: any, maps: Record<string, any>[], single: Record<string, any>) => {
     if (noTasksTab) return false;
     if (hasMultiColumns) {
-      return colMaps.every((map, i) => isObligationSatisfied(c, columns![i], map[c.id]?.status));
+      return maps.every((map, i) => isObligationSatisfied(c, columns![i], map[c.id]?.status));
     }
-    return oblMap[c.id]?.status === "concluida";
+    return single[c.id]?.status === "concluida";
   };
+  const isClientDone = (c: any) => isClientDoneWith(c, colMaps, oblMap);
+
+  // Estado do cliente na galeria: concluído, em curso (algum passo concluído
+  // ou em andamento) ou por começar — mesma regra das cores do cartão.
+  const getClientTier = (c: any): ClientTier => {
+    if (isClientDone(c)) return "done";
+    const started = (columns || []).some((col, i) => {
+      if (!isColumnApplicable(c, col)) return false;
+      const st = colMaps[i]?.[c.id]?.status;
+      return st === "concluida" || st === "em_andamento";
+    });
+    return started ? "started" : "none";
+  };
+  const [showDoneSection, setShowDoneSection] = useState(false);
+
+  // Clientes do regime filtrados pelo responsável (sem pesquisa) — base do
+  // aviso de meses anteriores.
+  const regimeClientsByCollab = useMemo(() => {
+    if (!config) return [];
+    const list = activeClients.filter(config.filter);
+    if (collabFilter === "all") return list;
+    if (collabFilter === "none") return list.filter((c: any) => !c.responsavel_id);
+    return list.filter((c: any) => c.responsavel_id === collabFilter);
+  }, [activeClients, config, collabFilter]);
+
+  // Meses anteriores ao corrente que ficaram com clientes por fechar.
+  const pastMonths = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: PAST_MONTHS_TO_CHECK }, (_, i) => {
+      const d = new Date(today.getFullYear(), today.getMonth() - (i + 1), 1);
+      return { year: d.getFullYear(), month: d.getMonth(), key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01` };
+    });
+  }, []);
+  const { data: pastObligations = [] } = useMonthlyObligationsRange(noTasksTab ? [] : pastMonths.map((m) => m.key));
+
+  const pendingPastMonths = useMemo(() => {
+    if (noTasksTab) return [];
+    const types = hasMultiColumns ? colOblTypes : [oblType];
+    return pastMonths
+      .filter((m) => !(m.year === year && m.month === month))
+      .map((m) => {
+        const rows = pastObligations.filter((o: any) => o.reference_month === m.key && types.includes(o.obligation_type));
+        // Sem nenhum registo do regime nesse mês → a app ainda não era usada; não avisar.
+        if (rows.length === 0) return { ...m, count: 0 };
+        const maps = colOblTypes.map((type) => {
+          const map: Record<string, any> = {};
+          rows.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
+          return map;
+        });
+        const single: Record<string, any> = {};
+        rows.forEach((o: any) => { if (o.obligation_type === oblType) single[o.client_id] = o; });
+        const monthEnd = new Date(m.year, m.month + 1, 0);
+        const count = regimeClientsByCollab.filter((c: any) => {
+          // Clientes que só começaram depois desse mês não contam.
+          if (c.inicio_contrato && new Date(c.inicio_contrato) > monthEnd) return false;
+          return !isClientDoneWith(c, maps, single);
+        }).length;
+        return { ...m, count };
+      })
+      .filter((m) => m.count > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noTasksTab, hasMultiColumns, colOblTypes, oblType, pastMonths, pastObligations, regimeClientsByCollab, year, month]);
+
+  // Progresso do mês por responsável (todos os clientes do regime, ignora
+  // filtros) — clicar numa linha filtra por esse responsável.
+  const progressByResponsavel = useMemo(() => {
+    if (noTasksTab || !config) return [];
+    const groups = new Map<string, { done: number; total: number }>();
+    activeClients.filter(config.filter).forEach((c: any) => {
+      const key = c.responsavel_id || "none";
+      const g = groups.get(key) || { done: 0, total: 0 };
+      g.total += 1;
+      if (isClientDone(c)) g.done += 1;
+      groups.set(key, g);
+    });
+    return [...groups.entries()]
+      .map(([id, g]) => ({ id, ...g, pct: Math.round((g.done / g.total) * 100), name: id === "none" ? "Sem responsável" : getCollabName(id) }))
+      .sort((a, b) => (a.id === "none" ? 1 : b.id === "none" ? -1 : a.pct - b.pct || a.name.localeCompare(b.name)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noTasksTab, config, activeClients, colMaps, oblMap, collaborators]);
 
   const filteredClients = useMemo(() => {
     if (!config) return [];
@@ -288,6 +379,56 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
         </div>
       </div>
 
+      {pendingPastMonths.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
+          <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
+          <span className="font-semibold">Meses anteriores por fechar:</span>
+          {pendingPastMonths.map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              onClick={() => { setYear(m.year); setMonth(m.month); }}
+              className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-card px-2.5 py-0.5 text-xs font-medium hover:bg-warning/15 transition-colors"
+            >
+              {MONTH_NAMES[m.month]} {m.year}
+              <span className="font-semibold text-warning">· {m.count} {m.count === 1 ? "cliente" : "clientes"}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {progressByResponsavel.length > 0 && (
+        <div className="bg-card rounded-xl border p-4 space-y-2.5">
+          <span className="text-sm font-semibold">Progresso por responsável</span>
+          <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
+            {progressByResponsavel.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => setCollabFilter((f) => (f === r.id ? "all" : r.id))}
+                className={cn("flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left hover:bg-muted transition-all",
+                  collabFilter === r.id && "bg-muted",
+                  collabFilter !== "all" && collabFilter !== r.id && "opacity-40")}
+              >
+                <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0",
+                  r.id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(r.id))}>
+                  {r.id === "none" ? "—" : getInitials(r.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="truncate font-medium">{r.name}</span>
+                    <span className={cn("whitespace-nowrap", r.pct === 100 ? "text-success font-semibold" : "text-muted-foreground")}>
+                      {r.done}/{r.total} · {r.pct}%
+                    </span>
+                  </div>
+                  <Progress value={r.pct} className={cn("h-1.5 mt-1", r.pct === 100 && "[&>div]:bg-success")} />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {noTasksTab && byResponsavelTotal > 0 && (
         <div className="bg-card rounded-xl border p-4 space-y-3">
           <div className="flex items-center justify-between text-sm">
@@ -370,17 +511,42 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-            {displayedClients.map((client: any) => (
-              <ClientObligationCard
-                key={client.id}
-                client={client}
-                columns={columns!}
-                colOblTypes={colOblTypes}
-                colMaps={colMaps}
-                onOpen={() => setSelectedClient(client)}
-              />
-            ))}
+          <div className="space-y-6">
+            {GALLERY_SECTIONS.map(({ tier, label, icon: Icon, className }) => {
+              const sectionClients = displayedClients.filter((c: any) => getClientTier(c) === tier);
+              if (sectionClients.length === 0) return null;
+              const collapsible = tier === "done";
+              const expanded = !collapsible || showDoneSection;
+              return (
+                <section key={tier} className="space-y-3">
+                  <button
+                    type="button"
+                    disabled={!collapsible}
+                    onClick={() => setShowDoneSection((v) => !v)}
+                    className={cn("flex items-center gap-2 text-sm font-semibold", collapsible && "hover:opacity-80")}
+                  >
+                    <Icon className={cn("w-4 h-4", className)} />
+                    {label}
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{sectionClients.length}</span>
+                    {collapsible && <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />}
+                  </button>
+                  {expanded && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+                      {sectionClients.map((client: any) => (
+                        <ClientObligationCard
+                          key={client.id}
+                          client={client}
+                          columns={columns!}
+                          colOblTypes={colOblTypes}
+                          colMaps={colMaps}
+                          onOpen={() => setSelectedClient(client)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
           </div>
         )
       ) : (

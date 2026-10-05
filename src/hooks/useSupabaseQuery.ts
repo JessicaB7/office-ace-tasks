@@ -290,7 +290,10 @@ export function useUpsertObligation() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["monthly_obligations"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["monthly_obligations"] });
+      qc.invalidateQueries({ queryKey: ["monthly_obligations_range"] });
+    },
   });
 }
 
