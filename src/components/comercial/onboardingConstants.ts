@@ -84,7 +84,7 @@ export const answerLabel = (field: FieldDef, value: string | undefined) => {
 };
 
 export const CHECKLIST: { key: ChecklistKey; label: string; hint: string; types?: OnboardingFormType[] }[] = [
-  { key: "pasta_drive", label: "Pasta Drive", hint: "Pasta do cliente criada no Google Drive", types: ["ti_rs"] },
+  { key: "pasta_drive", label: "Pasta Drive", hint: "Pasta do cliente criada no Google Drive" },
   { key: "contrato", label: "Contrato", hint: "Elaborado, assinado com Autenticação Gov e devolvido pelo cliente" },
   { key: "fatura", label: "Fatura", hint: "Fatura da 1ª mensalidade emitida no TOConline" },
   { key: "pagamento", label: "Pagamento", hint: "Comprovativo da 1ª mensalidade recebido" },
@@ -105,6 +105,8 @@ export type ChecklistKey =
 // Ordem própria da checklist por tipo (os restantes seguem a ordem de CHECKLIST)
 const CHECKLIST_ORDER: Partial<Record<OnboardingFormType, ChecklistKey[]>> = {
   ti_rs: ["pasta_drive", "contrato", "fatura", "avenca", "pagamento", "grupo", "onboarding", "resumo_sessao"],
+  ti_co: ["email_anterior_contabilista", "pasta_drive", "contrato", "fatura", "avenca", "pagamento", "grupo", "onboarding"],
+  empresa: ["email_anterior_contabilista", "pasta_drive", "contrato", "fatura", "avenca", "pagamento", "grupo", "onboarding"],
 };
 
 export const checklistFor = (type: string) => {
