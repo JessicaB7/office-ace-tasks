@@ -49,6 +49,9 @@ export const FORM_FIELDS: FieldDef[] = [
   { key: "senha_ss", label: "Senha da Segurança Social", kind: "text", required: true, secret: true, types: TI },
   { key: "nif", label: "NIPC", hint: "NIF da empresa", kind: "text", required: true, types: ["empresa"] },
   { key: "capital_social", label: "Capital social", kind: "text", required: true, types: ["empresa"] },
+  { key: "senha_at", label: "Senha das Finanças da empresa", kind: "text", required: true, secret: true, types: ["empresa"] },
+  { key: "niss", label: "NISS da empresa", hint: "Número de Identificação da Segurança Social", kind: "text", required: true, types: ["empresa"] },
+  { key: "senha_ss", label: "Senha da Segurança Social da empresa", kind: "text", required: true, secret: true, types: ["empresa"] },
   {
     key: "ja_tinha_contabilista", label: "Já tinha contabilista?",
     hint: "No caso de estar enquadrado na contabilidade organizada antes",
