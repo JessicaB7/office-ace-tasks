@@ -400,6 +400,7 @@ export type Database = {
           nif: string | null
           niss: string | null
           notas_faturas: string | null
+          notas_saft: string | null
           notas_internas: string | null
           notes: string | null
           pag_seguranca_social: string | null
@@ -440,6 +441,7 @@ export type Database = {
           nif?: string | null
           niss?: string | null
           notas_faturas?: string | null
+          notas_saft?: string | null
           notas_internas?: string | null
           notes?: string | null
           pag_seguranca_social?: string | null
@@ -480,6 +482,7 @@ export type Database = {
           nif?: string | null
           niss?: string | null
           notas_faturas?: string | null
+          notas_saft?: string | null
           notas_internas?: string | null
           notes?: string | null
           pag_seguranca_social?: string | null
@@ -942,6 +945,27 @@ export type Database = {
           title?: string
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      obligation_messages: {
+        Row: {
+          message: string | null
+          obligation_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          message?: string | null
+          obligation_type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          message?: string | null
+          obligation_type?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }

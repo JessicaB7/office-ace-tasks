@@ -258,6 +258,36 @@ export function useMonthlyObligationsRange(referenceMonths: string[]) {
   });
 }
 
+// ---- MENSAGENS DAS OBRIGAÇÕES ("Mensagem a enviar", uma por tipo de obrigação) ----
+export function useObligationMessage(obligationType: string) {
+  return useQuery({
+    queryKey: ["obligation_messages", obligationType],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("obligation_messages")
+        .select("*")
+        .eq("obligation_type", obligationType)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useSaveObligationMessage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ obligationType, message, userId }: { obligationType: string; message: string | null; userId?: string | null }) => {
+      const { error } = await supabase
+        .from("obligation_messages")
+        .upsert({ obligation_type: obligationType, message, updated_at: new Date().toISOString(), updated_by: userId ?? null });
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ["obligation_messages", v.obligationType] }),
+    onError: (e: any) => toast.error("Erro ao guardar mensagem: " + e.message),
+  });
+}
+
 export function useUpsertObligation() {
   const qc = useQueryClient();
   return useMutation({

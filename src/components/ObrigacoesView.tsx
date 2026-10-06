@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useClients, useUpsertClient, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
+import { useClients, useUpsertClient, useCollaborators, useMonthlyObligations, useUpsertObligation, useObligationMessage, useSaveObligationMessage } from "@/hooks/useSupabaseQuery";
 import { Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -72,6 +72,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
   const upsert = useUpsertObligation();
   const upsertClient = useUpsertClient();
+  const { data: saftMessage, isLoading: loadingSaftMessage } = useObligationMessage("SAFT");
+  const saveMessage = useSaveObligationMessage();
 
   useEffect(() => {
     if (subPage) {
@@ -518,6 +520,28 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         )}
       </div>
 
+      {activeTab === "SAFT" && (
+        <div className="bg-card rounded-xl border p-4 space-y-2">
+          <label htmlFor="saft-mensagem" className="text-sm font-semibold">Mensagem a enviar</label>
+          {!loadingSaftMessage && (
+            <textarea
+              id="saft-mensagem"
+              key={saftMessage?.updated_at || "vazio"}
+              defaultValue={saftMessage?.message || ""}
+              placeholder="Escrever a mensagem a enviar aos clientes..."
+              rows={4}
+              className="w-full text-sm px-3 py-2 rounded-lg border bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (saftMessage?.message || "")) {
+                  saveMessage.mutate({ obligationType: "SAFT", message: val || null, userId: user?.id });
+                }
+              }}
+            />
+          )}
+        </div>
+      )}
+
       {!showDTContent ? (
         <div className="bg-card rounded-xl border p-12 text-center">
           <p className="text-muted-foreground">A Declaração Trimestral não se aplica ao mês de <strong>{MONTH_NAMES[month]}</strong>.</p>
@@ -565,6 +589,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                   <th key={w} className="text-center px-3 py-3 font-semibold text-muted-foreground w-20">Semana {w}</th>
                 ))}
                 {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
+                {showSaftExtra && <th className="sticky right-0 z-10 bg-muted text-left px-4 py-3 font-semibold text-muted-foreground border-l min-w-[220px]">Notas</th>}
               </tr>
             </thead>
             <tbody>
@@ -742,6 +767,24 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
+                      </td>
+                    )}
+                    {showSaftExtra && (
+                      // Nota guardada no cliente: mantém-se de mês para mês; coluna fixa à direita
+                      <td className={cn("sticky right-0 z-10 px-4 py-3 border-l min-w-[220px]", rowDone ? "bg-green-50 dark:bg-green-950" : "bg-card")}>
+                        <input
+                          type="text"
+                          defaultValue={client.notas_saft || ""}
+                          placeholder="Adicionar nota..."
+                          className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                          onBlur={(e) => {
+                            const val = e.target.value;
+                            if (val !== (client.notas_saft || "")) {
+                              upsertClient.mutate({ id: client.id, name: client.name, notas_saft: val || null });
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                        />
                       </td>
                     )}
                   </tr>
