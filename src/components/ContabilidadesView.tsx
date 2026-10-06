@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useClients, useCollaborators, useMonthlyObligations, useMonthlyObligationsRange, useUpsertObligation } from "@/hooks/useSupabaseQuery";
+import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
 import { Search, ChevronLeft, ChevronRight, Check, PartyPopper, Clock, CheckCircle2, AlertTriangle, UserCircle2, ChevronDown, CircleDashed, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -191,54 +191,6 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   };
   const [showDoneSection, setShowDoneSection] = useState(false);
 
-  // Clientes do regime filtrados pelo responsável (sem pesquisa) — base do
-  // aviso de meses anteriores.
-  const regimeClientsByCollab = useMemo(() => {
-    if (!config) return [];
-    const list = activeClients.filter(config.filter);
-    if (collabFilter === "all") return list;
-    if (collabFilter === "none") return list.filter((c: any) => !c.responsavel_id);
-    return list.filter((c: any) => c.responsavel_id === collabFilter);
-  }, [activeClients, config, collabFilter]);
-
-  // Meses anteriores ao corrente que ficaram com clientes por fechar.
-  const pastMonths = useMemo(() => {
-    const today = new Date();
-    return Array.from({ length: PAST_MONTHS_TO_CHECK }, (_, i) => {
-      const d = new Date(today.getFullYear(), today.getMonth() - (i + 1), 1);
-      return { year: d.getFullYear(), month: d.getMonth(), key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01` };
-    });
-  }, []);
-  const { data: pastObligations = [] } = useMonthlyObligationsRange(noTasksTab ? [] : pastMonths.map((m) => m.key));
-
-  const pendingPastMonths = useMemo(() => {
-    if (noTasksTab) return [];
-    const types = hasMultiColumns ? colOblTypes : [oblType];
-    return pastMonths
-      .filter((m) => !(m.year === year && m.month === month))
-      .map((m) => {
-        const rows = pastObligations.filter((o: any) => o.reference_month === m.key && types.includes(o.obligation_type));
-        // Sem nenhum registo do regime nesse mês → a app ainda não era usada; não avisar.
-        if (rows.length === 0) return { ...m, count: 0 };
-        const maps = colOblTypes.map((type) => {
-          const map: Record<string, any> = {};
-          rows.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
-          return map;
-        });
-        const single: Record<string, any> = {};
-        rows.forEach((o: any) => { if (o.obligation_type === oblType) single[o.client_id] = o; });
-        const monthEnd = new Date(m.year, m.month + 1, 0);
-        const count = regimeClientsByCollab.filter((c: any) => {
-          // Clientes que só começaram depois desse mês não contam.
-          if (c.inicio_contrato && new Date(c.inicio_contrato) > monthEnd) return false;
-          return !isClientDoneWith(c, maps, single);
-        }).length;
-        return { ...m, count };
-      })
-      .filter((m) => m.count > 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noTasksTab, hasMultiColumns, colOblTypes, oblType, pastMonths, pastObligations, regimeClientsByCollab, year, month]);
-
   // Progresso do mês por responsável (todos os clientes do regime, ignora
   // filtros) — clicar numa linha filtra por esse responsável.
   const progressByResponsavel = useMemo(() => {
@@ -378,24 +330,6 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
           <button onClick={nextMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
-
-      {pendingPastMonths.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
-          <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
-          <span className="font-semibold">Meses anteriores por fechar:</span>
-          {pendingPastMonths.map((m) => (
-            <button
-              key={m.key}
-              type="button"
-              onClick={() => { setYear(m.year); setMonth(m.month); }}
-              className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-card px-2.5 py-0.5 text-xs font-medium hover:bg-warning/15 transition-colors"
-            >
-              {MONTH_NAMES[m.month]} {m.year}
-              <span className="font-semibold text-warning">· {m.count} {m.count === 1 ? "cliente" : "clientes"}</span>
-            </button>
-          ))}
-        </div>
-      )}
 
       {progressByResponsavel.length > 0 && (
         <div className="bg-card rounded-xl border p-4 space-y-2.5">
