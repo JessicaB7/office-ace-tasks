@@ -296,6 +296,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   }, [obligations]);
   const weekDone = (clientId: string, w: number) => weekMap[clientId]?.[w]?.status === "concluida";
 
+  // SAFT: visto "Mensagem" enviada ao cliente — registo próprio do mês (SAFT_mensagem)
+  const saftMensagemMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    obligations.forEach((o: any) => { if (o.obligation_type === "SAFT_mensagem") map[o.client_id] = o; });
+    return map;
+  }, [obligations]);
+
   const toggleWeek = async (clientId: string, week: number) => {
     const existing = weekMap[clientId]?.[week];
     const nowDone = existing?.status !== "concluida";
@@ -593,6 +600,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 {showNotasColumn && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Entregue</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
+                {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Mensagem</th>}
                 {showGuiaPagamento && (
                   <>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Guia</th>
@@ -742,6 +750,16 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                             {isExtraDone && <Check className="w-4 h-4" />}
                           </button>
                         ) : <span className="text-muted-foreground/30">—</span>}
+                      </td>
+                    )}
+                    {showSaftExtra && (
+                      <td className="text-center px-3 py-3">
+                        <div className="flex justify-center">
+                          <CheckboxCell
+                            done={saftMensagemMap[client.id]?.status === "concluida"}
+                            onClick={() => toggleObligation(client.id, "SAFT_mensagem", saftMensagemMap)}
+                          />
+                        </div>
                       </td>
                     )}
                     {showGuiaPagamento && (
