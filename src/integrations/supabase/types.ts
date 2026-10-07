@@ -1112,6 +1112,56 @@ export type Database = {
           },
         ]
       }
+      toconline_jobs: {
+        Row: {
+          client_id: string
+          finished_at: string | null
+          id: string
+          procedure_id: string
+          reference_month: string
+          requested_at: string
+          requested_by: string | null
+          result_notes: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          finished_at?: string | null
+          id?: string
+          procedure_id: string
+          reference_month: string
+          requested_at?: string
+          requested_by?: string | null
+          result_notes?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          finished_at?: string | null
+          id?: string
+          procedure_id?: string
+          reference_month?: string
+          requested_at?: string
+          requested_by?: string | null
+          result_notes?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toconline_jobs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

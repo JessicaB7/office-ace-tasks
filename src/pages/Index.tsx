@@ -22,6 +22,8 @@ import PropostasView from "@/components/comercial/PropostasView";
 import FollowUpsView from "@/components/comercial/FollowUpsView";
 import ScriptsView from "@/components/comercial/ScriptsView";
 import NovosClientesView from "@/components/comercial/NovosClientesView";
+import ToconlineFilaView from "@/components/toconline/ToconlineFilaView";
+import ToconlineProcedimentosView from "@/components/toconline/ToconlineProcedimentosView";
 import WeeklyTasksReminderDialog from "@/components/WeeklyTasksReminderDialog";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -86,6 +88,8 @@ const Index = () => {
         )}
         {activeView === "clients" && analysisClientId && <ClientAnalysisView clientId={analysisClientId} onBack={() => setAnalysisClientId(null)} />}
         {activeView === "extratos" && <ExtratosBancariosView />}
+        {activeView === "toconline_fila" && <ToconlineFilaView />}
+        {activeView === "toconline_procedimentos" && <ToconlineProcedimentosView />}
         {activeView === "resumo" && <AdminWeeklySummary />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}

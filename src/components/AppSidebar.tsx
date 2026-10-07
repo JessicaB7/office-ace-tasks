@@ -25,6 +25,8 @@ import {
   UsersRound,
   Briefcase,
   UserCheck,
+  Bot,
+  FileText,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -32,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useContabilidadesPending } from "@/hooks/useContabilidadesPending";
 import { useOnboardings } from "@/hooks/useOnboardings";
+import { useToconlineJobs } from "@/hooks/useToconlineJobs";
 
 interface AppSidebarProps {
   activeView: string;
@@ -126,6 +129,14 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
     ],
   },
   {
+    title: "TOConline",
+    icon: Bot,
+    entries: [
+      { kind: "item", item: { id: "toconline_fila", label: "Fila de tarefas", icon: ListTodo } },
+      { kind: "item", item: { id: "toconline_procedimentos", label: "Procedimentos", icon: FileText } },
+    ],
+  },
+  {
     title: "Gestão de negócio",
     icon: Briefcase,
     entries: [
@@ -151,9 +162,12 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
   const { user, isAdmin, signOut } = useAuth();
   const { perTab: contabPending, totalPending: contabTotalPending } = useContabilidadesPending();
   const { data: onboardings = [] } = useOnboardings();
+  const { data: toconlineJobs = [] } = useToconlineJobs();
   // Formulários de novos clientes já respondidos e ainda por concluir
   const itemBadges: Record<string, number> = {
     novos_clientes: onboardings.filter((o) => o.submitted_at && !o.completed_at).length,
+    // Tarefas TOConline que precisam de atenção (bloqueadas ou com erro)
+    toconline_fila: toconlineJobs.filter((j) => j.status === "bloqueada" || j.status === "erro").length,
   };
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     contabilidades: activeView.startsWith("contabilidades"),
