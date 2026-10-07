@@ -62,7 +62,7 @@ const ToconlineFilaView = () => {
 
   const eligibleClients = useMemo(() => {
     if (!procedure) return [];
-    let list = clients.filter((c: any) => c.active && c.tipo_contabilidade === procedure.tipoContabilidade);
+    let list = clients.filter((c: any) => c.active && c.tipo_contabilidade === procedure.tipoContabilidade && (!procedure.filter || procedure.filter(c)));
     if (collabFilter === "none") list = list.filter((c: any) => !c.responsavel_id);
     else if (collabFilter !== "all") list = list.filter((c: any) => c.responsavel_id === collabFilter);
     if (clientSearch.trim()) {

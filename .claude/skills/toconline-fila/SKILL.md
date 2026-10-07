@@ -26,6 +26,7 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
 3. No TOConline, muda para a empresa do cliente e confirma o **exercício** do ano certo.
 4. Executa o procedimento conforme o manual (o `procedure_id` → secção do manual):
    - `empresas_importar_vendas` → `docs/toconline/empresas.md`, secção 1 "Importar as vendas".
+   - `ti_rs_iva_lancar_compras` → `docs/toconline/ti-rs.md`, secção 1 "Lançar as compras".
 5. Regista o resultado na Fila:
    - **Resultado** (caixa de texto): o que foi feito — mês, tipos/n.º de documentos
      finalizados, avisos. Curto e factual, em pt-PT.
