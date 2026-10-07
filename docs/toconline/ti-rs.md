@@ -20,15 +20,16 @@ ou seja, IVA que não seja Art. 53º nem Art. 9º).
      1. Abrir e **ler o anexo** (fatura do fornecedor).
      2. **Selecionar o fornecedor**.
      3. **Colocar os dados da compra** a partir do anexo (data, n.º do documento, valores e IVA).
-     4. Gravar.
+     4. **Gravar — mas nunca finalizar.** A compra fica gravada por finalizar; quem finaliza é a utilizadora.
 
 **Parar e avisar** (deixar a tarefa como **Bloqueada**, com o motivo no Resultado) quando:
 - o anexo não se consegue ler, ou não é uma fatura de compra;
-- o fornecedor não existe no TOConline;
+- o fornecedor não existe no TOConline — **não o criar**: a utilizadora cria-o. Indicar no Resultado
+  o nome e o NIF do fornecedor em falta e seguir para o documento seguinte;
 - os valores do anexo não batem certo (ex.: total ≠ base + IVA).
 
-**Confirmação:** *por definir* — até indicação em contrário, pedir confirmação à utilizadora antes de
-gravar cada compra do passo 2. O passo 1 (atualizar o e-Fatura) pode ser feito sem perguntar.
+**Confirmação:** não é preciso pedir confirmação — pode gravar as compras sem perguntar (passos 1 e 2),
+desde que **não finalize**. Nunca criar fornecedores.
 
 **Na app (Gestão Mensal → TI Simplificado - Reg. IVA):** não marcar diretamente. No fim, deixar no
 Resultado da Fila o que foi feito (mês, n.º de compras lançadas, o que ficou por associar) e a utilizadora

@@ -38,7 +38,7 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
     tipoContabilidade: "TI RS",
     regimeLabel: "TI Simplificado - Reg. IVA",
     filter: SUB_PAGE_CONFIG.TI_iva.filter,
-    description: "Atualiza o e-Fatura do mês e lança as compras recebidas por e-mail ainda não associadas (lê o anexo, escolhe o fornecedor e preenche os dados).",
+    description: "Atualiza o e-Fatura do mês e grava (sem finalizar) as compras recebidas por e-mail ainda não associadas. Fornecedores em falta ficam no Resultado para a equipa criar.",
     docPath: "docs/toconline/ti-rs.md",
     gestaoMensal: { obligationType: "contabilidade_TI_iva_compras", label: "Gestão Mensal → TI Simplificado - Reg. IVA → Compras" },
   },
