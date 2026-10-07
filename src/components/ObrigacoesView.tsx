@@ -64,6 +64,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const [dmrTab, setDmrTab] = useState<"DMR_AT" | "DMR_SS">("DMR_AT");
   const [ssTiTab, setSsTiTab] = useState<"SS_TI" | "SS_TI_DT">("SS_TI");
   const [collabFilter, setCollabFilter] = useState<string>("all");
+  const [programaFilter, setProgramaFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [onlyPending, setOnlyPending] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
@@ -80,6 +81,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       setActiveTab(subPage);
       setSubFilter(subPage === "IVA_recapitulativa" || subPage === "IVA" ? "Mensal" : "all");
       setCollabFilter("all");
+      setProgramaFilter("all");
       setSearch("");
       if (subPage === "DMR") setDmrTab("DMR_AT");
       if (subPage === "SS_TI") setSsTiTab("SS_TI");
@@ -253,12 +255,28 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       if (collabFilter === "none") list = list.filter((c: any) => !c.responsavel_id);
       else list = list.filter((c: any) => c.responsavel_id === collabFilter);
     }
+    // Filtro por programa de faturação (SAFT e Emissão de Faturas)
+    if (showProgramaFaturacao && programaFilter !== "all") {
+      if (programaFilter === "none") list = list.filter((c: any) => !(c.programa_faturacao || "").trim());
+      else list = list.filter((c: any) => (c.programa_faturacao || "").trim().toLowerCase() === programaFilter);
+    }
     if (search) {
       const s = search.toLowerCase();
-      list = list.filter((c: any) => c.name.toLowerCase().includes(s) || (c.nif || "").includes(s));
+      list = list.filter((c: any) => c.name.toLowerCase().includes(s) || (c.nif || "").includes(s)
+        || (showProgramaFaturacao && (c.programa_faturacao || "").toLowerCase().includes(s)));
     }
     return list;
-  }, [activeClients, activeTab, subFilter, search, collabFilter, ssTiTab]);
+  }, [activeClients, activeTab, subFilter, search, collabFilter, ssTiTab, showProgramaFaturacao, programaFilter]);
+
+  // Programas de faturação existentes (sem duplicados por maiúsculas/espaços)
+  const programaOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    activeClients.forEach((c: any) => {
+      const p = (c.programa_faturacao || "").trim();
+      if (p && !map.has(p.toLowerCase())) map.set(p.toLowerCase(), p);
+    });
+    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1], "pt"));
+  }, [activeClients]);
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
@@ -500,7 +518,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       <div className="flex gap-3 items-center">
         <div className="relative max-w-sm flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input type="text" placeholder="Pesquisar por nome..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
+          <input type="text" placeholder={showProgramaFaturacao ? "Pesquisar por nome ou programa..." : "Pesquisar por nome..."} value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
         {!isIVA && !isIVARecap && (
           <select value={collabFilter} onChange={(e) => setCollabFilter(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
@@ -509,6 +527,15 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
               <option key={col.id} value={col.id}>{col.name}</option>
             ))}
             <option value="none">Sem responsável</option>
+          </select>
+        )}
+        {showProgramaFaturacao && (
+          <select value={programaFilter} onChange={(e) => setProgramaFilter(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="all">Todos os programas</option>
+            {programaOptions.map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+            <option value="none">Sem programa</option>
           </select>
         )}
         {isSalarios && (
