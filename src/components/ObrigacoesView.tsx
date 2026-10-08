@@ -159,6 +159,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const isRight = checkboxRight.has(activeTab);
   const showNif = !hideNif.has(activeTab);
   const showSaftExtra = activeTab === "SAFT";
+  // Coluna Notas fixa à direita (nota do cliente que se mantém de mês para mês)
+  const notesField = isDMR ? "notas_dmr" : "notas_saft";
   const showGuiaPagamento = isDMR;
   const isSalarios = activeTab === "salarios";
   const showSalariosColumns = isSalarios;
@@ -610,7 +612,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                   <th key={w} className="text-center px-3 py-3 font-semibold text-muted-foreground w-20">Semana {w}</th>
                 ))}
                 {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
-                {showSaftExtra && <th className="sticky right-0 z-10 bg-muted text-left px-4 py-3 font-semibold text-muted-foreground border-l min-w-[220px]">Notas</th>}
+                {(showSaftExtra || isDMR) && <th className="sticky right-0 z-10 bg-muted text-left px-4 py-3 font-semibold text-muted-foreground border-l min-w-[220px]">Notas</th>}
               </tr>
             </thead>
             <tbody>
@@ -800,18 +802,19 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
                     )}
-                    {showSaftExtra && (
+                    {(showSaftExtra || isDMR) && (
                       // Nota guardada no cliente: mantém-se de mês para mês; coluna fixa à direita
                       <td className={cn("sticky right-0 z-10 px-4 py-3 border-l min-w-[220px]", rowDone ? "bg-green-50 dark:bg-green-950" : "bg-card")}>
                         <input
                           type="text"
-                          defaultValue={client.notas_saft || ""}
+                          key={`${client.id}-${notesField}`}
+                          defaultValue={client[notesField] || ""}
                           placeholder="Adicionar nota..."
                           className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                           onBlur={(e) => {
                             const val = e.target.value;
-                            if (val !== (client.notas_saft || "")) {
-                              upsertClient.mutate({ id: client.id, name: client.name, notas_saft: val || null });
+                            if (val !== (client[notesField] || "")) {
+                              upsertClient.mutate({ id: client.id, name: client.name, [notesField]: val || null });
                             }
                           }}
                           onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
