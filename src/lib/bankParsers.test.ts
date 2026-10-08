@@ -57,3 +57,43 @@ describe("Millennium", () => {
     expect(parseBankText("EXTRATO DE 2026/09/01\nSALDO INICIAL 10.00\nSALDO FINAL 57.67 -", "Millennium").saldoFinal).toBe(-57.67);
   });
 });
+
+describe("Millennium Cartão de Crédito", () => {
+  test("pagamento centralizado: uma conta, saldos batem", () => {
+    const text = [
+      "Extrato de: 2026/09/01 a 2026/09/30 Conta a Debitar: 45582688238 MILLENNIUM BCP",
+      "Tipo de Operação: Cartão de Crédito Data do Débito: 2026/10/20",
+      "Saldo em Dívida à Data do Créditos Débitos Saldo em Dívida à Data",
+      "Extrato Anterior do Extrato Atual",
+      "1 485.49 1 423.44 1 437.95 1 500.00",
+      "Capital Juros Comissões/Despesas Impostos Total Pago",
+      "1 401.41 19.80 1.38 0.85 1 423.44",
+      "09/30 09/30 DEBITO JUROS 19.80",
+      "09/30 09/30 IMPOSTO DO SELO - JUROS 0.79",
+      "PAGAMENTO CENTRALIZADO",
+      "Extrato Anterior do Extrato Atual",
+      "0.00 1 519.33 1 519.33 0.00",
+      "09/01 09/02 COMPRA 8820 SP TRACK FIELD VIS 1 511.83",
+      "STORE LISBOA",
+      "Banco Comercial Português, S.A., Sede: Praça D. João I, 28, 4000-295 Porto",
+      "09/11 09/14 CRED. 8820 SP TRACK FIELD VIS 94.50",
+      "09/07 09/07 IMPOSTO DO SELO 0.03",
+      "09/30 09/30 TRANSF P/CONTA EMPR 1 417.36",
+    ].join("\n");
+    const p = parseBankText(text, "Millennium");
+    expect(p.bank).toBe("Millennium Cartão");
+    expect(p.saldoInicial).toBe(-1485.49);
+    expect(p.saldoFinal).toBe(-1500);
+    expect(p.transactions.map((t) => [t.descricao, t.movimento])).toEqual([
+      ["PAGAMENTO CARTÃO DE CRÉDITO", 1423.44],
+      ["COMPRA 8820 SP TRACK FIELD STORE LISBOA", -1511.83],
+      ["IMPOSTO DO SELO", -0.03],
+      ["CRED. 8820 SP TRACK FIELD", 94.5],
+      ["DEBITO JUROS", -19.8],
+      ["IMPOSTO DO SELO - JUROS", -0.79],
+    ]);
+    expect(p.transactions[1].dataValor.getDate()).toBe(2);
+    const soma = p.transactions.reduce((s, t) => s + t.movimento, 0);
+    expect(+(p.saldoInicial! + soma).toFixed(2)).toBe(p.saldoFinal);
+  });
+});

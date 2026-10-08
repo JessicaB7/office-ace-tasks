@@ -982,6 +982,89 @@ function parseSantanderCartaoCredito(text: string): ParsedStatement {
   return { bank: "Santander Cartão", transactions: txs, saldoInicial, saldoFinal };
 }
 
+// ---------- Millennium BCP Cartão de Crédito ----------
+// Linhas: "MM/DD MM/DD DESCRITIVO [REDE] VALOR" (ponto decimal, espaço como separador de
+// milhares); débito e crédito ficam na mesma posição do texto, por isso o sinal vem do
+// descritivo (CRED., TRANSF…). Descritivos continuam na linha seguinte.
+// Com pagamento centralizado o extrato junta a conta-cartão principal (juros/selo) e os
+// cartões associados, que transferem a dívida para a principal ("TRANSF P/CONTA EMPR").
+// Exporta-se como uma só conta: a transferência interna sai e o pagamento do período
+// (só aparece no resumo, sem data) entra na data de início do extrato — assim
+// saldo anterior + movimentos = saldo atual da conta principal.
+function parseMillenniumCartaoCredito(text: string): ParsedStatement {
+  const lines = text.split(/\n/).map((l) => l.trim());
+  const reAmt = /(?:\d{1,3}(?:\s\d{3})+|\d+)\.\d{2}/g;
+  const amt = (s: string) => parseFloat(s.replace(/\s/g, ""));
+
+  const period = text.match(/Extrato\s+de:\s*(\d{4})\/(\d{2})\/(\d{2})\s+a\s+(\d{4})\/(\d{2})\/\d{2}/i);
+  const endYear = period ? Number(period[4]) : new Date().getFullYear();
+  const endMonth = period ? Number(period[5]) : 12;
+  const start = period
+    ? makeDateOnly(Number(period[1]), Number(period[2]), Number(period[3]))
+    : makeDateOnly(endYear, endMonth, 1);
+  const dateFor = (mo: number, d: number) => makeDateOnly(mo > endMonth ? endYear - 1 : endYear, mo, d);
+
+  // Resumo da conta principal (primeiro do extrato): anterior, créditos, débitos, atual
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  let totalPago = 0;
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (saldoInicial === undefined && /Extrato\s+Anterior\s+do\s+Extrato\s+Atual/i.test(lines[i])) {
+      const nums = lines[i + 1].match(reAmt);
+      if (nums && nums.length === 4) {
+        saldoInicial = -amt(nums[0]);
+        saldoFinal = -amt(nums[3]);
+      }
+    }
+    if (!totalPago && /Total\s+Pago\s*$/i.test(lines[i])) {
+      const nums = lines[i + 1].match(reAmt);
+      if (nums) totalPago = amt(nums[nums.length - 1]);
+    }
+  }
+
+  const reRow = /^(\d{2})\/(\d{2})\s+(\d{2})\/(\d{2})\s+(.+)$/;
+  const isStop = (l: string) =>
+    !l || /^(Banco\s+Comercial|P[áa]g\.|Capital\s+Social|\(\+351\)|Atendimento|www\.|DETALHE|Data\s+Data|Mov\.\s+Valor|=====|PAGAMENTO\s+CENTRALIZADO|Conta\s+Cart|RESPONSABILIDADES|EXTRATO|RESUMO|Saldo|IMPUTA|MOVIMENTOS|Titular|TAN\b|Limite|Tipo\s+de|Moeda|Para\s+solicitar)/i.test(l);
+
+  const txs: BankTransaction[] = [];
+  let last: BankTransaction | null = null;
+  let hasPaymentRow = false;
+  for (const line of lines) {
+    const m = line.match(reRow);
+    if (!m) {
+      if (last && !isStop(line) && !/^[\d\s.]+$/.test(line)) last.descricao += " " + line;
+      else last = null;
+      continue;
+    }
+    const [, moMov, dMov, moVal, dVal, rest] = m;
+    const nums = [...rest.matchAll(reAmt)];
+    const lastNum = nums[nums.length - 1];
+    if (!lastNum || lastNum.index! + lastNum[0].length !== rest.length) { last = null; continue; }
+    const valor = amt(lastNum[0]);
+    const descricao = rest.slice(0, lastNum.index).replace(/\s+(VIS|MC|MCI|MAE|AMX)\s*$/i, "").replace(/\s+/g, " ").trim();
+    if (/^TRANSF\s+P\/CONTA\s+EMPR/i.test(descricao)) { last = null; continue; }
+    const credito = /^(CRED\.?|CR[EÉ]DITO|PAGAMENTO|ESTORNO|DEVOL)/i.test(descricao);
+    if (/^PAGAMENTO/i.test(descricao)) hasPaymentRow = true;
+    last = {
+      dataMov: dateFor(Number(moMov), Number(dMov)),
+      dataValor: dateFor(Number(moVal), Number(dVal)),
+      descricao,
+      movimento: credito ? valor : -valor,
+    };
+    txs.push(last);
+  }
+
+  if (totalPago > 0 && !hasPaymentRow) {
+    txs.unshift({ dataMov: start, dataValor: start, descricao: "PAGAMENTO CARTÃO DE CRÉDITO", movimento: totalPago });
+  }
+  txs.sort((a, b) => a.dataMov.getTime() - b.dataMov.getTime());
+
+  return { bank: "Millennium Cartão", transactions: txs, saldoInicial, saldoFinal };
+}
+
+const isMillenniumCartaoCredito = (text: string): boolean =>
+  /Tipo\s+de\s+Opera[çc][ãa]o:\s*Cart[ãa]o\s+de\s+Cr[ée]dito/i.test(text);
+
 // ---------- ActivoBank (Extrato Combinado) ----------
 // Linhas: "4.01 4.01 DESCRITIVO   622.20   3 000.00"
 // O montante pode ser débito ou crédito; o sinal é deduzido pela variação do saldo.
@@ -1087,7 +1170,10 @@ const isSantanderCartaoCredito = (text: string): boolean =>
 
 export function parseBankText(text: string, bankHint?: string | null): ParsedStatement {
   const bank = bankHint || detectBank(text) || "Genérico";
-  if (bank === "Millennium") return parseMillennium(text);
+  if (bank === "Millennium") {
+    if (isMillenniumCartaoCredito(text)) return parseMillenniumCartaoCredito(text);
+    return parseMillennium(text);
+  }
   if (bank === "Revolut") return parseRevolut(text);
   if (bank === "Santander") {
     if (isSantanderCartaoCredito(text)) return parseSantanderCartaoCredito(text);
