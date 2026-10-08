@@ -38,3 +38,22 @@ describe("Abanca", () => {
     expect(p.transactions[0].movimento).toBe(1200);
   });
 });
+
+describe("Millennium", () => {
+  test("saldo devedor com o sinal no fim (\"1 859.34 -\")", () => {
+    const text = [
+      "EXTRATO DE 2026/09/01 A 2026/09/30",
+      "SALDO INICIAL 594.81",
+      "9.25 9.25 DD AT - AUTORIDAD AT202600000002 PT96113924 2 454.15 1 859.34 -",
+      "9.25 9.25 COM.INTERVENCAO S/COBRANCA 2.50 1 861.84 -",
+      "9.28 9.28 TRF. P/O UNICRE S.A. 695.63 1 166.21 -",
+      "9.30 9.30 CREDITO TPA BCP 1364234 MOV N 43 1 400.00 233.79",
+      "SALDO FINAL 233.79",
+    ].join("\n");
+    const p = parseBankText(text, "Millennium");
+    expect(p.transactions.map((t) => t.movimento)).toEqual([-2454.15, -2.5, 695.63, 1400]);
+    expect(p.transactions[0].descricao).toBe("DD AT - AUTORIDAD AT202600000002 PT96113924");
+    expect(p.saldoFinal).toBe(233.79);
+    expect(parseBankText("EXTRATO DE 2026/09/01\nSALDO INICIAL 10.00\nSALDO FINAL 57.67 -", "Millennium").saldoFinal).toBe(-57.67);
+  });
+});

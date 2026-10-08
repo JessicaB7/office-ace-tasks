@@ -212,9 +212,11 @@ function parseMillennium(text: string): ParsedStatement {
     else if (s.includes(",")) s = s.replace(",", ".");
     return parseFloat(s);
   };
+  // Saldos devedores vêm com o sinal no fim, por vezes separado: "57.67 -"
+  const trailingMinus = (m: RegExpMatchArray) => (m[2] ? -Math.abs(parseAmt(m[1])) : parseAmt(m[1]));
   const sIniPatterns = [
-    /SALDO\s+INICIAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
-    /SALDO\s+ANTERIOR[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
+    /SALDO\s+INICIAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})([ \t]*-)?/i,
+    /SALDO\s+ANTERIOR[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})([ \t]*-)?/i,
     // Number BEFORE the label (some PDFs render saldo column first)
     /(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})\s*\n?\s*SALDO\s+INICIAL/i,
     /(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})\s*\n?\s*SALDO\s+ANTERIOR/i,
@@ -222,7 +224,7 @@ function parseMillennium(text: string): ParsedStatement {
   for (const re of sIniPatterns) {
     const m = text.match(re);
     if (m) {
-      saldoInicial = parseAmt(m[1]);
+      saldoInicial = trailingMinus(m);
       break;
     }
   }
@@ -276,8 +278,9 @@ function parseMillennium(text: string): ParsedStatement {
     reNum.lastIndex = 0;
     if (nums.length < 1) continue;
 
-    // Last decimal number is the running balance
-    const balance = nums[nums.length - 1].value;
+    // Last decimal number is the running balance ("1 859.34 -" = saldo devedor)
+    const lastNum = nums[nums.length - 1];
+    const balance = /^\s*-/.test(rest.slice(lastNum.index + lastNum.raw.length)) ? -lastNum.value : lastNum.value;
 
     let signed: number;
     let descricaoEnd: number;
@@ -323,14 +326,14 @@ function parseMillennium(text: string): ParsedStatement {
 
   let saldoFinal: number | undefined;
   const sFinPatterns = [
-    /SALDO\s+FINAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
-    /SALDO\s+(?:ATUAL|ACTUAL|CONTABIL[IÍ]STICO|DISPON[IÍ]VEL)[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})/i,
+    /SALDO\s+FINAL[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})([ \t]*-)?/i,
+    /SALDO\s+(?:ATUAL|ACTUAL|CONTABIL[IÍ]STICO|DISPON[IÍ]VEL)[^\d\-]*(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})([ \t]*-)?/i,
     /(-?\d{1,3}(?:[\s.]\d{3})*[.,]\d{2})\s*\n?\s*SALDO\s+FINAL/i,
   ];
   for (const re of sFinPatterns) {
     const m = text.match(re);
     if (m) {
-      saldoFinal = parseAmt(m[1]);
+      saldoFinal = trailingMinus(m);
       break;
     }
   }
