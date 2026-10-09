@@ -4,6 +4,7 @@ import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } fr
 import { CheckCircle2, Clock, AlertTriangle, CalendarDays, ClipboardList, Users, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
+import PersonalNotesCard from "@/components/PersonalNotesCard";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
 
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -443,6 +444,8 @@ const DashboardView = () => {
           )}
         </div>
       </div>
+
+      <PersonalNotesCard />
 
       {/* As Minhas Tarefas */}
       <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: "60ms" }}>
