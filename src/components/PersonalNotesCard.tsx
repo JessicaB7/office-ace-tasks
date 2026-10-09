@@ -7,8 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
-/** Bloco de notas pessoal da Visão geral — cada utilizador só vê as suas notas (RLS). */
-const PersonalNotesCard = () => {
+/** Bloco de notas pessoal (Visão geral → Notas) — cada utilizador só vê as suas notas (RLS). */
+const PersonalNotesCard = ({ tall = false }: { tall?: boolean }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
@@ -92,7 +92,7 @@ const PersonalNotesCard = () => {
         onBlur={handleBlur}
         disabled={!user || isLoading}
         placeholder={isLoading ? "A carregar…" : "Escreva aqui as suas notas, lembretes ou pendentes…"}
-        className="min-h-[120px] resize-y"
+        className={tall ? "min-h-[65vh] resize-y" : "min-h-[120px] resize-y"}
       />
     </div>
   );
