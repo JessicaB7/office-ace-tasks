@@ -173,7 +173,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const showProgramaFaturacao = isEmissaoFaturas || activeTab === "SAFT";
   const isFaturasSemanal = isEmissaoFaturas && subFilter === "Semanal";
   const showIvaPeriodicaCols = isIVAPeriodica;
-  const isTrimestralMode = isIVA && subFilter === "Trimestral";
+  // IVA Periódica e Recapitulativa trimestrais: navegação por trimestre, registos no mês de fim de trimestre
+  const isTrimestralMode = (isIVA || isIVARecap) && subFilter === "Trimestral";
 
   // Quarter label for DT: Apr=Q1(Jan-Mar), Jul=Q2(Apr-Jun), Oct=Q3(Jul-Sep), Jan=Q4(Oct-Dec)
   const dtQuarterLabel = (() => {
@@ -238,8 +239,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
         break;
       case "IVA_recapitulativa":
         list = activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "");
-        if (subFilter === "Mensal") list = list.filter((c: any) => c.iva === "Mensal");
-        else if (subFilter === "Trimestral") list = list.filter((c: any) => c.iva !== "Mensal" && c.recapitulativa !== "Não Aplicável");
+        if (subFilter === "Mensal") list = list.filter((c: any) => c.recapitulativa === "Mensal");
+        else if (subFilter === "Trimestral") list = list.filter((c: any) => c.recapitulativa === "Trimestral");
         else if (subFilter === "Não Aplicável") list = list.filter((c: any) => c.recapitulativa === "Não Aplicável");
         break;
       case "retencao_fonte":
@@ -398,7 +399,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const ivaCollabData = useMemo(() => {
     if (!isIVA && !isIVARecap) return [];
     const ivaClients = isIVARecap
-      ? activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "")
+      ? activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && (subFilter === "all" || c.recapitulativa === subFilter))
       : activeClients.filter((c: any) => c.iva && c.iva !== "" && (subFilter === "all" || c.iva === subFilter));
     const counts: Record<string, number> = {};
     let noneCount = 0;
@@ -479,7 +480,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 case "SAFT": return activeClients.filter((c: any) => c.saft === opt.value).length;
                 case "salarios": return activeClients.filter((c: any) => c.salarios === opt.value).length;
                 case "IVA": return opt.value === "OSS" ? activeClients.filter((c: any) => c.iva_oss === "Sim").length : activeClients.filter((c: any) => c.iva === opt.value).length;
-                case "IVA_recapitulativa": return activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && (opt.value === "Mensal" ? c.iva === "Mensal" : opt.value === "Trimestral" ? (c.iva !== "Mensal" && c.recapitulativa !== "Não Aplicável") : c.recapitulativa === "Não Aplicável")).length;
+                case "IVA_recapitulativa": return activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && (opt.value === "Mensal" || opt.value === "Trimestral" ? c.recapitulativa === opt.value : c.recapitulativa === "Não Aplicável")).length;
                 case "SS_TI": return ssTiTab === "SS_TI_DT"
                   ? activeClients.filter((c: any) => isTI(c) && c.seguranca_social === opt.value).length
                   : opt.value === "Isento"
