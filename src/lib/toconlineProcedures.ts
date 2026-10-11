@@ -3,6 +3,7 @@
 // segue no TOConline pelo Claude in Chrome).
 import empresasDoc from "../../docs/toconline/empresas.md?raw";
 import tiRsDoc from "../../docs/toconline/ti-rs.md?raw";
+import tiCoDoc from "../../docs/toconline/ti-co.md?raw";
 import { SUB_PAGE_CONFIG } from "@/lib/contabilidadesConfig";
 
 export type ToconlineJobStatus = "pendente" | "em_curso" | "concluida" | "bloqueada" | "erro" | "cancelada";
@@ -42,6 +43,24 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
     docPath: "docs/toconline/ti-rs.md",
     gestaoMensal: { obligationType: "contabilidade_TI_iva_compras", label: "Gestão Mensal → TI Simplificado - Reg. IVA → Compras" },
   },
+  {
+    id: "empresas_lancar_compras",
+    label: "Lançar as compras",
+    tipoContabilidade: "SQ",
+    regimeLabel: "Empresas",
+    description: "Atualiza o e-Fatura do mês e grava (sem finalizar) as compras recebidas por e-mail ainda não associadas. Fornecedores em falta ficam no Resultado para a equipa criar.",
+    docPath: "docs/toconline/empresas.md",
+    gestaoMensal: { obligationType: "contabilidade_empresas_compras", label: "Gestão Mensal → Empresas → Compras" },
+  },
+  {
+    id: "ti_co_lancar_compras",
+    label: "Lançar as compras",
+    tipoContabilidade: "TI CO",
+    regimeLabel: "TI Contabilidade Organizada",
+    description: "Atualiza o e-Fatura do mês e grava (sem finalizar) as compras recebidas por e-mail ainda não associadas. Fornecedores em falta ficam no Resultado para a equipa criar.",
+    docPath: "docs/toconline/ti-co.md",
+    gestaoMensal: { obligationType: "contabilidade_organizada_compras", label: "Gestão Mensal → TI Contabilidade Organizada → Compras" },
+  },
 ];
 
 export const procedureById = (id: string) => TOCONLINE_PROCEDURES.find((p) => p.id === id);
@@ -50,6 +69,7 @@ export const procedureById = (id: string) => TOCONLINE_PROCEDURES.find((p) => p.
 export const TOCONLINE_DOCS: { regimeLabel: string; path: string; content: string }[] = [
   { regimeLabel: "Empresas (SQ)", path: "docs/toconline/empresas.md", content: empresasDoc },
   { regimeLabel: "TI Simplificado (TI RS)", path: "docs/toconline/ti-rs.md", content: tiRsDoc },
+  { regimeLabel: "TI Contabilidade Organizada (TI CO)", path: "docs/toconline/ti-co.md", content: tiCoDoc },
 ];
 
 export const STATUS_LABELS: Record<ToconlineJobStatus, string> = {
