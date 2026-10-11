@@ -72,3 +72,22 @@ desde que **não finalize**. Nunca criar fornecedores.
 **Na app (Gestão Mensal → Empresas):** não marcar diretamente. No fim, deixar no
 Resultado da Fila o que foi feito (mês, n.º de compras lançadas, o que ficou por associar) e a utilizadora
 marca a coluna **Compras**.
+
+## 3. Lançar os salários
+
+**Aplica-se a:** clientes com o campo **Salários** da ficha preenchido ("Sim até dia 25" / "Sim até ao fim do mês").
+Clientes com "Não tem" ou vazio não aparecem na Fila.
+
+**Passos**
+1. **Contabilidade → Sugestões de salários**. Confirmar o **exercício** do ano certo.
+2. **Gerar sugestões** → Mês inicial = Mês final = mês da tarefa.
+3. Marcar **Salários** (só Salários) → avançar → **Gerar**.
+4. Registar no Resultado o quadro final (total de documentos, sugeridos, com erros, não sugeridos).
+   Se houver **"Não sugeridos"**, confirmar em **Em preparação e finalizados** (filtro Mês) se já estão lançados.
+
+**Não finalizar** as sugestões de salários — a utilizadora revê e finaliza.
+
+**Parar e avisar** (tarefa **Bloqueada**): 0 documentos no mês (processamento de salários ainda não feito no
+TOConline) ou documentos com erros.
+
+**Na app:** não marcar diretamente — a utilizadora marca a coluna **Salários** na Gestão Mensal.

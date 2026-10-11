@@ -44,8 +44,9 @@ export interface ToconlineProcedure {
 
 const COMPRAS_DESC = "Atualiza o e-Fatura do mês e grava (sem finalizar) as compras recebidas por e-mail ainda não associadas. Fornecedores em falta ficam no Resultado para a equipa criar.";
 const VENDAS_TI_DESC = "Programa de faturação: SAF-T + sugestões de vendas (como nas Empresas). Recibos verdes: Vendas → Recibos Verdes → Atualizar recibos verdes do mês → + (criar e associar) → Gravar → Finalizar e pagar.";
-const SEM_MANUAL_DESC = "Ainda sem procedimento escrito — ensina o Claude primeiro (passo a passo) para ele o poder fazer. Se for ativada, fica Bloqueada com \"Sem manual\".";
-const temSalarios = (c: any) => c.salarios !== "Não tem";
+const SALARIOS_DESC = "Contabilidade → Sugestões de salários → Gerar sugestões do mês (só Salários). Não finaliza — fica para revisão.";
+/** Salários só para quem tem o campo preenchido na ficha ("Sim até dia 25" / "Sim até ao fim do mês"). */
+const temSalarios = (c: any) => /^sim/i.test((c.salarios || "").trim());
 
 export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
   // ---- TI Simplificado (TI RS com regime de IVA) ----
@@ -63,8 +64,8 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
   },
   {
     id: "ti_rs_salarios", regime: "ti_rs", tarefa: "salarios", label: "Salários",
-    tipoContabilidade: "TI RS", regimeLabel: "TI Simplificado", filter: (c) => SUB_PAGE_CONFIG.TI_iva.filter(c) && temSalarios(c),
-    description: SEM_MANUAL_DESC,
+    tipoContabilidade: "TI RS", regimeLabel: "TI Simplificado", filter: temSalarios,
+    description: SALARIOS_DESC, docPath: "docs/toconline/ti-rs.md",
     gestaoMensal: { obligationType: "contabilidade_TI_iva_salários", label: "Gestão Mensal → TI Simplificado - Reg. IVA → Salários" },
   },
   // ---- TI Organizado (TI CO) ----
@@ -83,7 +84,7 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
   {
     id: "ti_co_salarios", regime: "ti_co", tarefa: "salarios", label: "Salários",
     tipoContabilidade: "TI CO", regimeLabel: "TI Organizado", filter: temSalarios,
-    description: SEM_MANUAL_DESC,
+    description: SALARIOS_DESC, docPath: "docs/toconline/ti-co.md",
     gestaoMensal: { obligationType: "contabilidade_organizada_salários", label: "Gestão Mensal → TI Contabilidade Organizada → Salários" },
   },
   // ---- Empresas (SQ) ----
@@ -103,7 +104,7 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
   {
     id: "empresas_salarios", regime: "empresas", tarefa: "salarios", label: "Salários",
     tipoContabilidade: "SQ", regimeLabel: "Empresas", filter: temSalarios,
-    description: SEM_MANUAL_DESC,
+    description: SALARIOS_DESC, docPath: "docs/toconline/empresas.md",
     gestaoMensal: { obligationType: "contabilidade_empresas_salários", label: "Gestão Mensal → Empresas → Salários" },
   },
 ];

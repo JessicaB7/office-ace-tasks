@@ -31,7 +31,8 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
    - `ti_co_lancar_compras` → `docs/toconline/ti-co.md`, secção 1 "Lançar as compras".
    - `ti_rs_vendas` → `docs/toconline/ti-rs.md`, secção 2 "Lançar as vendas" (A programa / B recibos verdes).
    - `ti_co_vendas` → `docs/toconline/ti-co.md`, secção 2 "Lançar as vendas" (A programa / B recibos verdes).
-   - Ainda sem manual (→ **Bloqueada** com "Sem manual"): `ti_rs_salarios`, `ti_co_salarios`, `empresas_salarios`.
+   - `ti_rs_salarios` / `ti_co_salarios` / `empresas_salarios` → secção 3 "Lançar os salários" do manual do
+     regime (`ti-rs.md`, `ti-co.md`, `empresas.md`). Só gerar sugestões — **não finalizar**.
    - **TI Simplificado / TI Organizado:** o procedimento depende de o cliente passar **recibos verdes**
      (Portal das Finanças / AT) ou usar **programa de faturação** — a Fila mostra-o numa etiqueta junto ao
      cliente (calculada a partir do "Programa de Faturação"; "ambos" = as duas coisas). Seguir a secção do
