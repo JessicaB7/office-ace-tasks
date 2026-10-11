@@ -57,6 +57,22 @@ const ClientObligationCard = ({ client, columns, colOblTypes, colMaps, onOpen }:
       <span className={cn("font-semibold text-sm leading-snug line-clamp-2 transition-colors", style.name)}>
         {client.name}
       </span>
+      {/* O que falta este mês, sem abrir a ficha */}
+      <div className="flex flex-wrap justify-center gap-1">
+        {columns.map((col, i) => {
+          if (!isColumnApplicable(client, col)) return null;
+          const st = colMaps[i]?.[client.id]?.status;
+          return (
+            <span key={col} title={`${col}: ${st === "concluida" ? "concluído" : st === "em_andamento" ? "em andamento" : "por fazer"}`}
+              className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded",
+                st === "concluida" ? "bg-success/15 text-success line-through"
+                  : st === "em_andamento" ? "bg-warning/15 text-warning"
+                  : "bg-muted text-muted-foreground")}>
+              {col}
+            </span>
+          );
+        })}
+      </div>
     </button>
   );
 };

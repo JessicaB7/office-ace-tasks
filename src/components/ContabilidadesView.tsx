@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
-import { Search, ChevronLeft, ChevronRight, Check, PartyPopper, Clock, CheckCircle2, AlertTriangle, UserCircle2, ChevronDown, CircleDashed, Loader } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Check, PartyPopper, Clock, CheckCircle2, AlertTriangle, UserCircle2, ChevronDown, CircleDashed, Loader, Table2, LayoutGrid, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
@@ -14,6 +14,7 @@ import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable } from "@/lib/contabilidadesConfig";
 
 const PENDING_FILTER_STORAGE_KEY = "contabilidadesShowOnlyPending";
+const VIEW_MODE_STORAGE_KEY = "contabilidadesViewMode";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -35,12 +36,22 @@ interface ContabilidadesViewProps {
   subPage?: string;
 }
 
-const CheckboxCell = ({ done, onClick }: { done: boolean; onClick: () => void }) => (
-  <button onClick={onClick}
+const CheckboxCell = ({ done, started, onClick, label }: { done: boolean; started?: boolean; onClick: () => void; label?: string }) => (
+  <button onClick={onClick} title={label ? `${label}: ${done ? "concluído" : started ? "em andamento" : "por fazer"}` : undefined}
+    aria-label={label}
     className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-all mx-auto hover:scale-110",
-      done ? "bg-success border-success text-success-foreground" : "border-muted-foreground/30 hover:border-primary")}>
+      done ? "bg-success border-success text-success-foreground"
+        : started ? "border-warning bg-warning/15 hover:border-primary"
+        : "border-muted-foreground/30 hover:border-primary")}>
     {done && <Check className="w-4 h-4" />}
   </button>
+);
+
+/** Coluna que não se aplica ao cliente (ex.: Salários quando "Não tem"). */
+const NotApplicableCell = () => (
+  <span title="Não aplicável" className="inline-flex w-6 h-6 items-center justify-center text-muted-foreground/40 mx-auto">
+    <Minus className="w-4 h-4" />
+  </span>
 );
 
 const ProgressCell = ({ done, total }: { done: number; total: number }) => {
@@ -79,6 +90,23 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  // Tabela (cliente × tarefas, marcável) é a vista por defeito: mostra logo o que
+  // falta a cada cliente; os cartões ficam como alternativa.
+  const [viewMode, setViewMode] = useState<"tabela" | "cartoes">(() => {
+    try {
+      return localStorage.getItem(VIEW_MODE_STORAGE_KEY) === "cartoes" ? "cartoes" : "tabela";
+    } catch {
+      return "tabela";
+    }
+  });
+  const changeViewMode = (v: "tabela" | "cartoes") => {
+    setViewMode(v);
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, v);
+    } catch {
+      // localStorage indisponível — a preferência só dura esta sessão
+    }
+  };
   const [showOnlyPending, setShowOnlyPending] = useState(() => {
     try {
       return localStorage.getItem(PENDING_FILTER_STORAGE_KEY) === "1";
@@ -104,7 +132,8 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const hideNif = config?.hideNif ?? false;
   const columns = config?.columns;
   const hasMultiColumns = !!columns && columns.length > 0;
-  const isGallery = config?.gallery ?? false;
+  const hasGallery = config?.gallery ?? false;
+  const isGallery = hasGallery && viewMode === "cartoes";
   // TI Simplificado - Isento de IVA não tem tarefas mensais a cumprir
   // (não há IVA a entregar) — não faz sentido mostrar pendentes/progresso.
   const noTasksTab = activeTab === "TI_isento";
@@ -272,7 +301,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const displayedClients = showOnlyPending ? filteredClients.filter((c: any) => !isClientDone(c)) : filteredClients;
 
   // Notas mensais só fazem sentido nos separadores em galeria (têm ficha do cliente).
-  const showNotes = isGallery;
+  const showNotes = hasGallery;
   const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length + 1 : noTasksTab ? 0 : 1);
 
   // Empresas, TI Contabilidade Organizada e TI Simplificado - Reg. IVA: selecionar
@@ -431,6 +460,17 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
           <Switch checked={showOnlyPending} onCheckedChange={toggleShowOnlyPending} />
           Só pendentes
         </label>
+        {hasGallery && (
+          <div className="flex rounded-lg border bg-card p-0.5" role="group" aria-label="Vista">
+            {([["tabela", Table2, "Tabela"], ["cartoes", LayoutGrid, "Cartões"]] as const).map(([v, Icon, label]) => (
+              <button key={v} type="button" onClick={() => changeViewMode(v)} aria-pressed={viewMode === v}
+                className={cn("flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-md transition-colors",
+                  viewMode === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
+                <Icon className="w-4 h-4" /> {label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {isGallery ? (
@@ -508,8 +548,9 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
               <tbody>
                 {displayedClients.map((client: any) => {
                   const singleDone = oblMap[client.id]?.status === "concluida";
-                  const doneColsCount = hasMultiColumns ? colMaps.filter((map) => map[client.id]?.status === "concluida").length : 0;
-                  const allDone = hasMultiColumns ? doneColsCount === columns!.length : !noTasksTab && singleDone;
+                  const applicableIdx = hasMultiColumns ? columns!.map((col, i) => (isColumnApplicable(client, col) ? i : -1)).filter((i) => i >= 0) : [];
+                  const doneColsCount = applicableIdx.filter((i) => colMaps[i][client.id]?.status === "concluida").length;
+                  const allDone = hasMultiColumns ? isClientDone(client) : !noTasksTab && singleDone;
 
                   return (
                     <tr key={client.id} className={cn("border-b last:border-0 transition-colors border-l-2",
@@ -533,12 +574,15 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                       )}
                       {hasMultiColumns ? (
                         <>
-                          <td className="px-3 py-3"><ProgressCell done={doneColsCount} total={columns!.length} /></td>
+                          <td className="px-3 py-3"><ProgressCell done={doneColsCount} total={applicableIdx.length} /></td>
                           {colMaps.map((map, i) => {
-                            const done = map[client.id]?.status === "concluida";
+                            const st = map[client.id]?.status;
                             return (
                               <td key={colOblTypes[i]} className="text-center px-3 py-3">
-                                <CheckboxCell done={done} onClick={() => toggleObl(client.id, colOblTypes[i], map)} />
+                                {isColumnApplicable(client, columns![i]) ? (
+                                  <CheckboxCell done={st === "concluida"} started={st === "em_andamento"} label={columns![i]}
+                                    onClick={() => toggleObl(client.id, colOblTypes[i], map)} />
+                                ) : <NotApplicableCell />}
                               </td>
                             );
                           })}
