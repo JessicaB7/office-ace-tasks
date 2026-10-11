@@ -34,6 +34,8 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
    - `ti_co_lancar_compras` → `docs/toconline/ti-co.md`, secção 1 "Lançar as compras".
    - `ti_rs_vendas` → `docs/toconline/ti-rs.md`, secção 2 "Lançar as vendas" (A programa / B recibos verdes).
    - `ti_co_vendas` → `docs/toconline/ti-co.md`, secção 2 "Lançar as vendas" (A programa / B recibos verdes).
+   - `ti_rs_nao_considerar` / `ti_co_nao_considerar` → secção 4 "Não considerar da atividade" de `ti-rs.md` /
+     `ti-co.md`: todas as linhas do e-Fatura do mês; dúvidas ficam por marcar e vão para o Resultado.
    - `ti_rs_salarios` / `ti_co_salarios` / `empresas_salarios` → secção 3 "Lançar os salários" do manual do
      regime (`ti-rs.md`, `ti-co.md`, `empresas.md`). Só gerar sugestões — **não finalizar**.
    - **TI Simplificado / TI Organizado:** o procedimento depende de o cliente passar **recibos verdes**

@@ -9,7 +9,7 @@ import { SUB_PAGE_CONFIG } from "@/lib/contabilidadesConfig";
 export type ToconlineJobStatus = "pendente" | "em_curso" | "concluida" | "bloqueada" | "erro" | "cancelada";
 
 export type ToconlineRegime = "ti_rs" | "ti_co" | "empresas";
-export type ToconlineTarefa = "vendas" | "compras" | "salarios";
+export type ToconlineTarefa = "vendas" | "compras" | "nao_considerar" | "salarios";
 
 /** Separadores da Fila: um por regime. */
 export const TOCONLINE_REGIMES: { id: ToconlineRegime; label: string }[] = [
@@ -22,6 +22,7 @@ export const TOCONLINE_REGIMES: { id: ToconlineRegime; label: string }[] = [
 export const TOCONLINE_TAREFAS: { id: ToconlineTarefa; label: string }[] = [
   { id: "vendas", label: "Vendas" },
   { id: "compras", label: "Compras" },
+  { id: "nao_considerar", label: "Compras — Não considerar da atividade" },
   { id: "salarios", label: "Salários" },
 ];
 
@@ -44,6 +45,7 @@ export interface ToconlineProcedure {
 
 const COMPRAS_DESC = "Atualiza o e-Fatura do mês e grava (sem finalizar) as compras recebidas por e-mail ainda não associadas. Fornecedores em falta ficam no Resultado para a equipa criar.";
 const VENDAS_TI_DESC = "Programa de faturação: SAF-T + sugestões de vendas (como nas Empresas). Recibos verdes: Vendas → Recibos Verdes → Atualizar recibos verdes do mês → + (criar e associar) → Gravar → Finalizar e pagar.";
+const NAO_CONSIDERAR_DESC = "Compras → e-Fatura do mês → em cada linha, na seta → \"Não considerar este documento na atividade\". Todas as linhas do mês; em caso de dúvida fica por marcar e vai para o Resultado.";
 const SALARIOS_DESC = "Contabilidade → Sugestões de salários → Gerar sugestões do mês (só Salários). Não finaliza — fica para revisão.";
 /** Salários só para quem tem o campo preenchido na ficha ("Sim até dia 25" / "Sim até ao fim do mês"). */
 const temSalarios = (c: any) => /^sim/i.test((c.salarios || "").trim());
@@ -63,6 +65,11 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
     gestaoMensal: { obligationType: "contabilidade_TI_iva_compras", label: "Gestão Mensal → TI Simplificado - Reg. IVA → Compras" },
   },
   {
+    id: "ti_rs_nao_considerar", regime: "ti_rs", tarefa: "nao_considerar", label: "Não considerar da atividade",
+    tipoContabilidade: "TI RS", regimeLabel: "TI Simplificado",
+    description: NAO_CONSIDERAR_DESC, docPath: "docs/toconline/ti-rs.md",
+  },
+  {
     id: "ti_rs_salarios", regime: "ti_rs", tarefa: "salarios", label: "Salários",
     tipoContabilidade: "TI RS", regimeLabel: "TI Simplificado", filter: temSalarios,
     description: SALARIOS_DESC, docPath: "docs/toconline/ti-rs.md",
@@ -80,6 +87,11 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
     tipoContabilidade: "TI CO", regimeLabel: "TI Organizado",
     description: COMPRAS_DESC, docPath: "docs/toconline/ti-co.md",
     gestaoMensal: { obligationType: "contabilidade_organizada_compras", label: "Gestão Mensal → TI Contabilidade Organizada → Compras" },
+  },
+  {
+    id: "ti_co_nao_considerar", regime: "ti_co", tarefa: "nao_considerar", label: "Não considerar da atividade",
+    tipoContabilidade: "TI CO", regimeLabel: "TI Organizado",
+    description: NAO_CONSIDERAR_DESC, docPath: "docs/toconline/ti-co.md",
   },
   {
     id: "ti_co_salarios", regime: "ti_co", tarefa: "salarios", label: "Salários",

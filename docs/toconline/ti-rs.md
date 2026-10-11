@@ -86,3 +86,20 @@ Clientes com "Não tem" ou vazio não aparecem na Fila.
 TOConline) ou documentos com erros.
 
 **Na app:** não marcar diretamente — a utilizadora marca a coluna **Salários** na Gestão Mensal.
+
+## 4. Não considerar da atividade (compras)
+
+**Aplica-se a:** só quando a tarefa "Compras — Não considerar da atividade" é ativada na Fila para o cliente.
+
+**Passos**
+1. **Compras → e-Fatura**. Confirmar a empresa (canto superior esquerdo) e o **exercício**.
+2. Filtrar pelo **mês da tarefa** (filtros: Mês / Ano do documento).
+3. Em **todas as linhas** do mês: na **seta** da coluna "FT Compra" → **Não considerar este documento na atividade**.
+4. Voltar a filtrar para confirmar que não ficou nenhuma linha do mês por marcar.
+
+**Dúvidas** (deixar a linha **sem marcar** e indicar no Resultado data, fornecedor, n.º e valor):
+- a linha já tem compra associada (coluna "FT Compra" preenchida);
+- a opção não aparece na seta ou o TOConline dá erro.
+
+**Confirmação:** não é preciso pedir — fazer todas as linhas do mês quando a tarefa é ativada.
+No Resultado: n.º de documentos marcados e os que ficaram por marcar (com o motivo).

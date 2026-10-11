@@ -191,13 +191,13 @@ const ToconlineFilaView = () => {
 
         <div className="flex gap-1 flex-wrap border-b pb-3" role="tablist" aria-label="Regime">
           {TOCONLINE_REGIMES.map((r) => (
-            <button key={r.id} role="tab" aria-selected={regime === r.id} onClick={() => { setRegime(r.id); setSelected(new Set()); }} className={tabClass(regime === r.id)}>
+            <button key={r.id} role="tab" aria-selected={regime === r.id} onClick={() => { setRegime(r.id); if (!procedureFor(r.id, tarefa)) setTarefa("vendas"); setSelected(new Set()); }} className={tabClass(regime === r.id)}>
               {r.label}
             </button>
           ))}
         </div>
         <div className="flex gap-1 flex-wrap" role="tablist" aria-label="Tarefa">
-          {TOCONLINE_TAREFAS.map((t) => (
+          {TOCONLINE_TAREFAS.filter((t) => procedureFor(regime, t.id)).map((t) => (
             <button key={t.id} role="tab" aria-selected={tarefa === t.id} onClick={() => { setTarefa(t.id); setSelected(new Set()); }}
               className={cn("px-3 py-1 text-sm rounded-full border transition-colors", tarefa === t.id ? "border-primary bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted")}>
               {t.label}
