@@ -43,6 +43,7 @@ export interface ToconlineProcedure {
 }
 
 const COMPRAS_DESC = "Atualiza o e-Fatura do mês e grava (sem finalizar) as compras recebidas por e-mail ainda não associadas. Fornecedores em falta ficam no Resultado para a equipa criar.";
+const VENDAS_TI_DESC = "Programa de faturação: SAF-T + sugestões de vendas (como nas Empresas). Recibos verdes: Vendas → Recibos Verdes → Atualizar recibos verdes do mês → + (criar e associar) → Gravar → Finalizar e pagar.";
 const SEM_MANUAL_DESC = "Ainda sem procedimento escrito — ensina o Claude primeiro (passo a passo) para ele o poder fazer. Se for ativada, fica Bloqueada com \"Sem manual\".";
 const temSalarios = (c: any) => c.salarios !== "Não tem";
 
@@ -51,7 +52,7 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
   {
     id: "ti_rs_vendas", regime: "ti_rs", tarefa: "vendas", label: "Vendas",
     tipoContabilidade: "TI RS", regimeLabel: "TI Simplificado", filter: SUB_PAGE_CONFIG.TI_iva.filter,
-    description: SEM_MANUAL_DESC,
+    description: VENDAS_TI_DESC, docPath: "docs/toconline/ti-rs.md",
     gestaoMensal: { obligationType: "contabilidade_TI_iva_vendas", label: "Gestão Mensal → TI Simplificado - Reg. IVA → Vendas" },
   },
   {
@@ -70,7 +71,7 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
   {
     id: "ti_co_vendas", regime: "ti_co", tarefa: "vendas", label: "Vendas",
     tipoContabilidade: "TI CO", regimeLabel: "TI Organizado",
-    description: SEM_MANUAL_DESC,
+    description: VENDAS_TI_DESC, docPath: "docs/toconline/ti-co.md",
     gestaoMensal: { obligationType: "contabilidade_organizada_vendas", label: "Gestão Mensal → TI Contabilidade Organizada → Vendas" },
   },
   {

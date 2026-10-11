@@ -36,3 +36,33 @@ desde que **não finalize**. Nunca criar fornecedores.
 **Na app (Gestão Mensal → TI Contabilidade Organizada):** não marcar diretamente. No fim, deixar no
 Resultado da Fila o que foi feito (mês, n.º de compras lançadas, o que ficou por associar) e a utilizadora
 marca a coluna **Compras**.
+
+## 2. Lançar as vendas
+
+**Aplica-se a:** todos os clientes TI CO (TI Organizado). O procedimento depende de como o cliente fatura
+(etiqueta na Fila, calculada a partir do "Programa de Faturação" da ficha):
+
+### A) Programa de faturação (Moloni, Vendus, FIZ, TOConline…)
+Igual às Empresas (`empresas.md`, secção 1): verificar o SAF-T do mês (se o programa for externo) →
+**Contabilidade → Sugestões de vendas → Gerar sugestões** (mês a mês, só Vendas) → finalizar os
+lançamentos do diário **VND** (nunca recibos RC).
+
+### B) Recibos verdes (Portal das Finanças / AT)
+1. **Vendas → Recibos Verdes**.
+2. Menu dos **3 traços** → **Atualizar Recibos Verdes** → escolher **ano e mês** da tarefa
+   (vem o mês corrente por omissão) → confirmar que o NIF é o do cliente → **Atualizar Recibos Verdes**.
+3. Para cada recibo verde importado (filtro "Importado"), carregar no **+** da coluna **FT Venda**
+   (ou na seta → **Criar e associar**): abre a fatura / fatura-recibo já preenchida a partir do recibo verde.
+4. Verificar o documento (cliente, NIF, base + IVA = total) e **Gravar** → fica "Em preparação".
+5. Na seta da coluna FT Venda → **Finalizar e pagar** → indicar a data de recebimento e o método de
+   pagamento → **Finalizar e pagar**.
+
+**Parar e avisar** (tarefa **Bloqueada**, motivo no Resultado):
+- IVA 0% com **"Razão de isenção" vazia** (ex.: cliente estrangeiro) — não escolher o motivo;
+- cliente como "Consumidor Final" quando o recibo verde é para uma empresa;
+- dúvida na **data de recebimento** / método de pagamento (por omissão vem a data de hoje e "Numerário").
+
+### Clientes com os dois (recibos verdes + programa)
+Fazer A e B.
+
+**Na app:** não marcar diretamente — a utilizadora marca a coluna **Vendas** na Gestão Mensal.
