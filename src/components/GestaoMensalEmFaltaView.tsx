@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, PartyPopper, Search, ArrowRight } from "lucide-react";
+import { AlertTriangle, PartyPopper, Search, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
 import { useClients, useCollaborators, useMonthlyObligationsRange } from "@/hooks/useSupabaseQuery";
 import { SUB_PAGE_CONFIG, obligationTypesFor, isColumnApplicable } from "@/lib/contabilidadesConfig";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
@@ -41,25 +40,23 @@ interface Props {
 /** Painel da Gestão Mensal: só os clientes com tarefas em falta, do mês de trabalho
  * (mês anterior) para trás — os meses mais antigos são atrasos. */
 const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
-  const { user } = useAuth();
   const { data: clients = [], isLoading } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const [collabFilter, setCollabFilter] = useState("all");
   const [regimeFilter, setRegimeFilter] = useState("all");
   const [search, setSearch] = useState("");
 
+  // Meses disponíveis: do início da contagem até ao mês corrente (o de trabalho é o anterior).
   const months = useMemo(() => {
     const now = new Date();
-    return Array.from({ length: MONTHS_BACK }, (_, i) => monthKey(new Date(now.getFullYear(), now.getMonth() - 1 - i, 1)))
+    return Array.from({ length: MONTHS_BACK + 1 }, (_, i) => monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1)))
       .filter((m) => m >= START_MONTH);
   }, []);
-  const workMonth = months[0];
+  const workMonth = months.find((m) => m < monthKey(new Date())) || months[months.length - 1];
+  const [selMonth, setSelMonth] = useState(workMonth);
+  const selIdx = months.indexOf(selMonth);
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligationsRange(months);
 
-  const currentCollaborator = useMemo(
-    () => collaborators.find((c: any) => user?.email && c.email?.toLowerCase() === user.email.toLowerCase()) || null,
-    [collaborators, user],
-  );
   const collabName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "Sem responsável";
 
   const rows = useMemo<Missing[]>(() => {
@@ -98,15 +95,21 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
     return [...list].sort((a, b) => a.month.localeCompare(b.month) || a.client.name.localeCompare(b.client.name, "pt"));
   }, [rows, regimeFilter, collabFilter, search]);
 
-  const late = filtered.filter((r) => r.month !== workMonth);
-  const current = filtered.filter((r) => r.month === workMonth);
-  const lateClients = new Set(late.map((r) => r.client.id)).size;
-  const currentClients = new Set(current.map((r) => r.client.id)).size;
+  const inMonth = filtered.filter((r) => r.month === selMonth);
+  const lateBefore = filtered.filter((r) => r.month < selMonth);
+  const lateClients = new Set(lateBefore.map((r) => r.client.id)).size;
+  // Colaboradores com clientes em falta no mês escolhido (ignora o filtro de colaborador, para os botões).
+  const collabCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    rows.filter((r) => r.month === selMonth && (regimeFilter === "all" || r.regime.id === regimeFilter))
+      .forEach((r) => { const k = r.client.responsavel_id || "none"; m.set(k, (m.get(k) || 0) + 1); });
+    return m;
+  }, [rows, selMonth, regimeFilter]);
 
   if (isLoading || loadingObl) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
   // Mês → colaborador → regime. O mês de trabalho primeiro, depois os atrasos (mais recentes primeiro).
-  const byMonth = months
+  const byMonth = [selMonth]
     .map((month) => {
       const items = filtered.filter((r) => r.month === month);
       const collabIds = [...new Set(items.map((r) => r.client.responsavel_id || "none"))]
@@ -124,28 +127,47 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
     })
     .filter((m) => m.items.length > 0);
 
+  const collabIdsSorted = [...collabCounts.keys()].sort((a, b) =>
+    a === "none" ? 1 : b === "none" ? -1 : collabName(a).localeCompare(collabName(b), "pt"));
+  const pill = (active: boolean) => cn("flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border whitespace-nowrap transition-colors",
+    active ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted");
+
   return (
     <div className="space-y-5">
-      <div>
-        <h2 className="text-2xl font-bold">Em falta</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Clientes com tarefas por fazer — mês de trabalho ({monthLabel(workMonth)}) e meses anteriores por fechar
-          (conta a partir de {monthLabel(START_MONTH)}).
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="text-2xl font-bold">Em falta</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {inMonth.length} clientes com tarefas por fazer em {monthLabel(selMonth)}
+            {selMonth === workMonth && " (mês de trabalho)"}.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 bg-card rounded-lg border px-2 py-1">
+          <button type="button" onClick={() => selIdx < months.length - 1 && setSelMonth(months[selIdx + 1])} disabled={selIdx >= months.length - 1}
+            className="p-1 hover:bg-muted rounded transition-colors disabled:opacity-30" aria-label="Mês anterior"><ChevronLeft className="w-4 h-4" /></button>
+          <span className="text-sm font-medium min-w-[140px] text-center">{monthLabel(selMonth)}</span>
+          <button type="button" onClick={() => selIdx > 0 && setSelMonth(months[selIdx - 1])} disabled={selIdx <= 0}
+            className="p-1 hover:bg-muted rounded transition-colors disabled:opacity-30" aria-label="Mês seguinte"><ChevronRight className="w-4 h-4" /></button>
+        </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="bg-card rounded-xl border p-4">
-          <div className="text-sm text-muted-foreground">Atrasados (meses anteriores)</div>
-          <div className={cn("text-3xl font-bold mt-1", lateClients > 0 ? "text-destructive" : "text-success")}>{lateClients}</div>
-          <div className="text-xs text-muted-foreground">clientes · {late.length} meses por fechar</div>
-        </div>
-        <div className="bg-card rounded-xl border p-4">
-          <div className="text-sm text-muted-foreground">{monthLabel(workMonth)}</div>
-          <div className={cn("text-3xl font-bold mt-1", currentClients > 0 ? "text-warning" : "text-success")}>{currentClients}</div>
-          <div className="text-xs text-muted-foreground">clientes com tarefas por fazer</div>
-        </div>
+      <div className="flex gap-2 flex-wrap" role="group" aria-label="Colaborador">
+        <button type="button" onClick={() => setCollabFilter("all")} className={pill(collabFilter === "all")}>
+          Todos <span className="text-xs opacity-70">{[...collabCounts.values()].reduce((a, b) => a + b, 0)}</span>
+        </button>
+        {collabIdsSorted.map((id) => (
+          <button key={id} type="button" onClick={() => setCollabFilter((f) => (f === id ? "all" : id))} className={pill(collabFilter === id)}>
+            {id === "none" ? "Sem responsável" : collabName(id)} <span className="text-xs opacity-70">{collabCounts.get(id)}</span>
+          </button>
+        ))}
       </div>
+
+      {lateClients > 0 && (
+        <div className="flex items-center gap-2 text-sm rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          {lateClients} clientes têm ainda meses anteriores a {monthLabel(selMonth)} por fechar — usa as setas do mês para os ver.
+        </div>
+      )}
 
       <div className="flex gap-3 flex-wrap items-center">
         <div className="relative max-w-sm flex-1 min-w-[200px]">
@@ -158,24 +180,11 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
           <option value="all">Todos os regimes</option>
           {REGIMES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
         </select>
-        <select value={collabFilter} onChange={(e) => setCollabFilter(e.target.value)} aria-label="Responsável"
-          className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
-          <option value="all">Todos os responsáveis</option>
-          {collaborators.filter((c: any) => c.active).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          <option value="none">Sem responsável</option>
-        </select>
-        {currentCollaborator && (
-          <button type="button" onClick={() => setCollabFilter((f) => (f === currentCollaborator.id ? "all" : currentCollaborator.id))}
-            className={cn("px-3 py-2 text-sm font-medium rounded-lg border whitespace-nowrap transition-colors",
-              collabFilter === currentCollaborator.id ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted")}>
-            Só os meus clientes
-          </button>
-        )}
       </div>
 
-      {filtered.length === 0 ? (
+      {inMonth.length === 0 ? (
         <div className="bg-card rounded-xl border px-4 py-12 text-center text-muted-foreground flex items-center justify-center gap-2">
-          <PartyPopper className="w-4 h-4" /> Nada em falta.
+          <PartyPopper className="w-4 h-4" /> Nada em falta em {monthLabel(selMonth)}.
         </div>
       ) : (
         <div className="space-y-8">

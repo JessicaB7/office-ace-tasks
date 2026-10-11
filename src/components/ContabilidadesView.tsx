@@ -12,7 +12,6 @@ import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable } from "@/li
 import { toast } from "sonner";
 
 const STATUS_FILTER_STORAGE_KEY = "contabilidadesStatusFilter";
-const VIEW_MODE_STORAGE_KEY = "contabilidadesViewMode";
 
 const TIER_BADGE: Record<string, { label: string; className: string }> = {
   none: { label: "Não iniciado", className: "bg-muted text-muted-foreground" },
@@ -97,22 +96,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
       return "all";
     }
   });
-  // Vista: tabela (uma coluna por tarefa) ou lista (só o que falta, em etiquetas).
-  const [viewMode, setViewMode] = useState<"tabela" | "lista">(() => {
-    try {
-      return localStorage.getItem(VIEW_MODE_STORAGE_KEY) === "lista" ? "lista" : "tabela";
-    } catch {
-      return "tabela";
-    }
-  });
-  const changeViewMode = (v: "tabela" | "lista") => {
-    setViewMode(v);
-    try {
-      localStorage.setItem(VIEW_MODE_STORAGE_KEY, v);
-    } catch {
-      // localStorage indisponível — a preferência só dura esta sessão
-    }
-  };
   const changeStatusFilter = (v: StatusFilter) => {
     setStatusFilter(v);
     try {
@@ -443,20 +426,27 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
             })}
           </div>
         )}
-        {hasMultiColumns && (
-          <div className="flex rounded-lg border bg-card p-0.5" role="group" aria-label="Vista">
-            {([["tabela", "Tabela"], ["lista", "Lista"]] as const).map(([v, label]) => (
-              <button key={v} type="button" onClick={() => changeViewMode(v)} aria-pressed={viewMode === v}
-                className={cn("px-2.5 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors",
-                  viewMode === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
-      {hasMultiColumns && viewMode === "lista" ? (
+      {hasMultiColumns && (
+        <div className="flex items-center gap-2 flex-wrap text-sm">
+          <span className="text-muted-foreground">Em falta:</span>
+          {columns!.map((col, i) => {
+            const n = pendingByColumn[i] ?? 0;
+            const active = columnFilter === i;
+            return (
+              <button key={col} type="button" onClick={() => setColumnFilter((f) => (f === i ? null : i))}
+                title={active ? "Mostrar todos" : `Mostrar só quem tem ${col} por fazer`}
+                className={cn("px-2.5 py-1 rounded-full border text-xs font-medium transition-colors",
+                  active ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted")}>
+                {col} <span className={cn(!active && (n > 0 ? "text-warning" : "text-success"))}>{n}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {hasMultiColumns ? (
         <div className="bg-card rounded-xl border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
