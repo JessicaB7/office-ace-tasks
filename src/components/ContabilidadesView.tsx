@@ -1,26 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
-import { Search, ChevronLeft, ChevronRight, Check, PartyPopper, Clock, CheckCircle2, AlertTriangle, UserCircle2, ChevronDown, CircleDashed, Loader, Table2, LayoutGrid, Minus } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Check, PartyPopper, UserCircle2, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import ClientMonthlyHistoryDialog from "@/components/ClientMonthlyHistoryDialog";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
-import ClientObligationCard from "@/components/ClientObligationCard";
-import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable } from "@/lib/contabilidadesConfig";
 import { toast } from "sonner";
 
-const PENDING_FILTER_STORAGE_KEY = "contabilidadesShowOnlyPending";
-const VIEW_MODE_STORAGE_KEY = "contabilidadesViewMode";
+const STATUS_FILTER_STORAGE_KEY = "contabilidadesStatusFilter";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
-/** Últimos N dias do mês em que se considera "fim de mês próximo" (inclui o último dia). */
-const END_OF_MONTH_URGENCY_DAYS = 3;
 
 /** Quantos meses para trás (antes do mês corrente) se verificam clientes por fechar. */
 const PAST_MONTHS_TO_CHECK = 3;
@@ -38,11 +31,6 @@ const REGIME_TABS: { id: string; label: string }[] = [
 const fmtWhen = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 
-const GALLERY_SECTIONS: { tier: ClientTier; label: string; icon: typeof Check; className: string }[] = [
-  { tier: "none", label: "Por começar", icon: CircleDashed, className: "text-muted-foreground" },
-  { tier: "started", label: "Em curso", icon: Loader, className: "text-warning" },
-  { tier: "done", label: "Concluídos", icon: CheckCircle2, className: "text-success" },
-];
 
 interface ContabilidadesViewProps {
   subPage?: string;
@@ -68,18 +56,6 @@ const NotApplicableCell = () => (
   </span>
 );
 
-const ProgressCell = ({ done, total }: { done: number; total: number }) => {
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-  return (
-    <div className="flex items-center gap-2 min-w-[96px]">
-      <Progress value={pct} className={cn("h-1.5 w-14", pct === 100 && "[&>div]:bg-success")} />
-      <span className={cn("text-xs font-medium whitespace-nowrap", pct === 100 ? "text-success" : "text-muted-foreground")}>
-        {done}/{total}
-      </span>
-    </div>
-  );
-};
-
 const CollabCell = ({ id, name }: { id: string | null; name: string }) => {
   if (!id || name === "—") return <span className="text-muted-foreground">—</span>;
   return (
@@ -104,35 +80,20 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
   const [collabFilter, setCollabFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
-  // Tabela (cliente × tarefas, marcável) é a vista por defeito: mostra logo o que
-  // falta a cada cliente; os cartões ficam como alternativa.
-  const [viewMode, setViewMode] = useState<"tabela" | "cartoes">(() => {
+  // Filtro por estado do cliente no mês (todos os separadores com tarefas).
+  type StatusFilter = "all" | ClientTier;
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
     try {
-      return localStorage.getItem(VIEW_MODE_STORAGE_KEY) === "cartoes" ? "cartoes" : "tabela";
+      const v = localStorage.getItem(STATUS_FILTER_STORAGE_KEY);
+      return v === "none" || v === "started" || v === "done" ? v : "all";
     } catch {
-      return "tabela";
+      return "all";
     }
   });
-  const changeViewMode = (v: "tabela" | "cartoes") => {
-    setViewMode(v);
+  const changeStatusFilter = (v: StatusFilter) => {
+    setStatusFilter(v);
     try {
-      localStorage.setItem(VIEW_MODE_STORAGE_KEY, v);
-    } catch {
-      // localStorage indisponível — a preferência só dura esta sessão
-    }
-  };
-  const [showOnlyPending, setShowOnlyPending] = useState(() => {
-    try {
-      return localStorage.getItem(PENDING_FILTER_STORAGE_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
-
-  const toggleShowOnlyPending = (v: boolean) => {
-    setShowOnlyPending(v);
-    try {
-      localStorage.setItem(PENDING_FILTER_STORAGE_KEY, v ? "1" : "0");
+      localStorage.setItem(STATUS_FILTER_STORAGE_KEY, v);
     } catch {
       // localStorage indisponível — a preferência só dura esta sessão
     }
@@ -149,7 +110,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
   const columns = config?.columns;
   const hasMultiColumns = !!columns && columns.length > 0;
   const hasGallery = config?.gallery ?? false;
-  const isGallery = hasGallery && viewMode === "cartoes";
   // TI Simplificado - Isento de IVA não tem tarefas mensais a cumprir
   // (não há IVA a entregar) — não faz sentido mostrar pendentes/progresso.
   const noTasksTab = activeTab === "TI_isento";
@@ -172,11 +132,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
     if (!user?.email) return null;
     return collaborators.find((c: any) => c.email?.toLowerCase() === user.email!.toLowerCase()) || null;
   }, [user, collaborators]);
-
-  // Alerta de fim de mês: só faz sentido quando se está a ver o mês corrente.
-  const isViewingCurrentMonth = year === now.getFullYear() && month === now.getMonth();
-  const daysLeftInMonth = new Date(year, month + 1, 0).getDate() - now.getDate();
-  const isEndOfMonth = isViewingCurrentMonth && daysLeftInMonth <= END_OF_MONTH_URGENCY_DAYS;
 
   const getCollabName = (id: string | null) => {
     if (!id) return "—";
@@ -235,7 +190,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
     });
     return started ? "started" : "none";
   };
-  const [showDoneSection, setShowDoneSection] = useState(false);
 
   const filteredClients = useMemo(() => {
     if (!config) return [];
@@ -325,12 +279,8 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredClients, colMaps, hasMultiColumns, columns]);
 
-  const doneCount = filteredClients.filter(isClientDone).length;
-  const totalCount = filteredClients.length;
-  const pendingCount = totalCount - doneCount;
-  const progressPct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
-  let displayedClients = showOnlyPending ? filteredClients.filter((c: any) => !isClientDone(c)) : filteredClients;
+  let displayedClients = statusFilter === "all" || noTasksTab ? filteredClients : filteredClients.filter((c: any) => getClientTier(c) === statusFilter);
   if (columnFilter !== null && hasMultiColumns && columns![columnFilter]) {
     const col = columns![columnFilter];
     displayedClients = displayedClients.filter((c: any) => isColumnApplicable(c, col) && colMaps[columnFilter][c.id]?.status !== "concluida");
@@ -338,7 +288,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
 
   // Notas mensais só fazem sentido nos separadores em galeria (têm ficha do cliente).
   const showNotes = hasGallery;
-  const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length + 1 : noTasksTab ? 0 : 1);
+  const totalCols = 2 + (hideNif ? 0 : 1) + (showNotes ? 1 : 0) + (hasMultiColumns ? columns!.length : noTasksTab ? 0 : 1);
 
   // Empresas, TI Contabilidade Organizada e TI Simplificado - Reg. IVA: selecionar
   // um cliente abre uma aba completa (não um diálogo) com os dados e a tabela de
@@ -456,74 +406,23 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
             <UserCircle2 className="w-4 h-4" /> Só os meus clientes
           </button>
         )}
-        <label className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border bg-card cursor-pointer whitespace-nowrap">
-          <Switch checked={showOnlyPending} onCheckedChange={toggleShowOnlyPending} />
-          Só pendentes
-        </label>
-        {hasGallery && (
-          <div className="flex rounded-lg border bg-card p-0.5" role="group" aria-label="Vista">
-            {([["tabela", Table2, "Tabela"], ["cartoes", LayoutGrid, "Cartões"]] as const).map(([v, Icon, label]) => (
-              <button key={v} type="button" onClick={() => changeViewMode(v)} aria-pressed={viewMode === v}
-                className={cn("flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-md transition-colors",
-                  viewMode === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
-                <Icon className="w-4 h-4" /> {label}
-              </button>
-            ))}
+        {!noTasksTab && (
+          <div className="flex rounded-lg border bg-card p-0.5" role="group" aria-label="Estado">
+            {([["all", "Todos"], ["none", "Não iniciado"], ["started", "Em andamento"], ["done", "Concluído"]] as const).map(([v, label]) => {
+              const n = v === "all" ? filteredClients.length : filteredClients.filter((c: any) => getClientTier(c) === v).length;
+              return (
+                <button key={v} type="button" onClick={() => changeStatusFilter(v)} aria-pressed={statusFilter === v}
+                  className={cn("flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors",
+                    statusFilter === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
+                  {label} <span className="text-xs opacity-70">{n}</span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {isGallery ? (
-        displayedClients.length === 0 ? (
-          <div className="bg-card rounded-xl border px-4 py-12 text-center text-muted-foreground">
-            {showOnlyPending && filteredClients.length > 0 ? (
-              <span className="flex items-center justify-center gap-2">
-                <PartyPopper className="w-4 h-4" /> Tudo concluído este mês!
-              </span>
-            ) : (
-              "Nenhum cliente encontrado"
-            )}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {GALLERY_SECTIONS.map(({ tier, label, icon: Icon, className }) => {
-              const sectionClients = displayedClients.filter((c: any) => getClientTier(c) === tier);
-              if (sectionClients.length === 0) return null;
-              const collapsible = tier === "done";
-              const expanded = !collapsible || showDoneSection;
-              return (
-                <section key={tier} className="space-y-3">
-                  <button
-                    type="button"
-                    disabled={!collapsible}
-                    onClick={() => setShowDoneSection((v) => !v)}
-                    className={cn("flex items-center gap-2 text-sm font-semibold", collapsible && "hover:opacity-80")}
-                  >
-                    <Icon className={cn("w-4 h-4", className)} />
-                    {label}
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{sectionClients.length}</span>
-                    {collapsible && <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", expanded && "rotate-180")} />}
-                  </button>
-                  {expanded && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                      {sectionClients.map((client: any) => (
-                        <ClientObligationCard
-                          key={client.id}
-                          client={client}
-                          columns={columns!}
-                          colOblTypes={colOblTypes}
-                          colMaps={colMaps}
-                          onOpen={() => setSelectedClient(client)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
-              );
-            })}
-          </div>
-        )
-      ) : (
+      {(
         <div className="bg-card rounded-xl border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -535,7 +434,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
                   {showNotes && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
                   {hasMultiColumns ? (
                     <>
-                      <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Progresso</th>
                       {columns!.map((col, i) => {
                         const n = pendingByColumn[i] ?? 0;
                         const active = columnFilter === i;
@@ -563,8 +461,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
               <tbody>
                 {displayedClients.map((client: any) => {
                   const singleDone = oblMap[client.id]?.status === "concluida";
-                  const applicableIdx = hasMultiColumns ? columns!.map((col, i) => (isColumnApplicable(client, col) ? i : -1)).filter((i) => i >= 0) : [];
-                  const doneColsCount = applicableIdx.filter((i) => colMaps[i][client.id]?.status === "concluida").length;
                   const allDone = hasMultiColumns ? isClientDone(client) : !noTasksTab && singleDone;
 
                   return (
@@ -589,7 +485,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
                       )}
                       {hasMultiColumns ? (
                         <>
-                          <td className="px-3 py-3"><ProgressCell done={doneColsCount} total={applicableIdx.length} /></td>
                           {colMaps.map((map, i) => {
                             const st = map[client.id]?.status;
                             return (
@@ -619,10 +514,12 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
                 {displayedClients.length === 0 && (
                   <tr>
                     <td colSpan={totalCols} className="px-4 py-12 text-center text-muted-foreground">
-                      {showOnlyPending && filteredClients.length > 0 ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <PartyPopper className="w-4 h-4" /> Tudo concluído este mês!
-                        </span>
+                      {statusFilter !== "all" && filteredClients.length > 0 ? (
+                        statusFilter === "done" ? "Nenhum cliente concluído" : (
+                          <span className="flex items-center justify-center gap-2">
+                            <PartyPopper className="w-4 h-4" /> Nenhum cliente neste estado
+                          </span>
+                        )
                       ) : (
                         "Nenhum cliente encontrado"
                       )}
