@@ -9,6 +9,9 @@ import { getInitials, getAvatarPalette } from "@/lib/avatar";
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 /** Quantos meses para trás se procuram tarefas em falta (o mês de trabalho é o anterior ao corrente). */
 const MONTHS_BACK = 6;
+/** Primeiro mês contado: antes disto o histórico na app está incompleto (meses
+ * feitos mas não marcados), por isso não entra nos atrasos. */
+const START_MONTH = "2026-09-01";
 /** Regimes com tarefas mensais (o TI Isento não tem). */
 const REGIMES = [
   { id: "TI_iva", label: "TI Simplificado" },
@@ -47,7 +50,8 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
 
   const months = useMemo(() => {
     const now = new Date();
-    return Array.from({ length: MONTHS_BACK }, (_, i) => monthKey(new Date(now.getFullYear(), now.getMonth() - 1 - i, 1)));
+    return Array.from({ length: MONTHS_BACK }, (_, i) => monthKey(new Date(now.getFullYear(), now.getMonth() - 1 - i, 1)))
+      .filter((m) => m >= START_MONTH);
   }, []);
   const workMonth = months[0];
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligationsRange(months);
@@ -161,7 +165,8 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
       <div>
         <h2 className="text-2xl font-bold">Em falta</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Clientes com tarefas por fazer — mês de trabalho ({monthLabel(workMonth)}) e atrasos dos {MONTHS_BACK - 1} meses anteriores.
+          Clientes com tarefas por fazer — mês de trabalho ({monthLabel(workMonth)}) e meses anteriores por fechar
+          (conta a partir de {monthLabel(START_MONTH)}).
         </p>
       </div>
 
