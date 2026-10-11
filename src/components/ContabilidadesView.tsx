@@ -220,24 +220,6 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   };
   const [showDoneSection, setShowDoneSection] = useState(false);
 
-  // Progresso do mês por responsável (todos os clientes do regime, ignora
-  // filtros) — clicar numa linha filtra por esse responsável.
-  const progressByResponsavel = useMemo(() => {
-    if (noTasksTab || !config) return [];
-    const groups = new Map<string, { done: number; total: number }>();
-    activeClients.filter(config.filter).forEach((c: any) => {
-      const key = c.responsavel_id || "none";
-      const g = groups.get(key) || { done: 0, total: 0 };
-      g.total += 1;
-      if (isClientDone(c)) g.done += 1;
-      groups.set(key, g);
-    });
-    return [...groups.entries()]
-      .map(([id, g]) => ({ id, ...g, pct: Math.round((g.done / g.total) * 100), name: id === "none" ? "Sem responsável" : getCollabName(id) }))
-      .sort((a, b) => (a.id === "none" ? 1 : b.id === "none" ? -1 : a.pct - b.pct || a.name.localeCompare(b.name)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noTasksTab, config, activeClients, colMaps, oblMap, collaborators]);
-
   const filteredClients = useMemo(() => {
     if (!config) return [];
     let list = activeClients.filter(config.filter);
@@ -359,38 +341,6 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
           <button onClick={nextMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
-
-      {progressByResponsavel.length > 0 && (
-        <div className="bg-card rounded-xl border p-4 space-y-2.5">
-          <span className="text-sm font-semibold">Progresso por responsável</span>
-          <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2 xl:grid-cols-3">
-            {progressByResponsavel.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setCollabFilter((f) => (f === r.id ? "all" : r.id))}
-                className={cn("flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left hover:bg-muted transition-all",
-                  collabFilter === r.id && "bg-muted",
-                  collabFilter !== "all" && collabFilter !== r.id && "opacity-40")}
-              >
-                <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0",
-                  r.id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(r.id))}>
-                  {r.id === "none" ? "—" : getInitials(r.name)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="truncate font-medium">{r.name}</span>
-                    <span className={cn("whitespace-nowrap", r.pct === 100 ? "text-success font-semibold" : "text-muted-foreground")}>
-                      {r.done}/{r.total} · {r.pct}%
-                    </span>
-                  </div>
-                  <Progress value={r.pct} className={cn("h-1.5 mt-1", r.pct === 100 && "[&>div]:bg-success")} />
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {noTasksTab && byResponsavelTotal > 0 && (
         <div className="bg-card rounded-xl border p-4 space-y-3">
