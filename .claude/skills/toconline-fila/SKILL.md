@@ -29,6 +29,10 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
    - `ti_rs_iva_lancar_compras` → `docs/toconline/ti-rs.md`, secção 1 "Lançar as compras".
    - `empresas_lancar_compras` → `docs/toconline/empresas.md`, secção 2 "Lançar as compras".
    - `ti_co_lancar_compras` → `docs/toconline/ti-co.md`, secção 1 "Lançar as compras".
+   - Ainda sem manual (→ **Bloqueada** com "Sem manual"): `ti_rs_vendas`, `ti_rs_salarios`,
+     `ti_co_vendas`, `ti_co_salarios`, `empresas_salarios`.
+   - Na Fila, as tarefas aparecem separadas por regime (TI Simplificado / TI Organizado / Empresas)
+     e por tarefa (Vendas / Compras / Salários).
 5. Regista o resultado na Fila:
    - **Resultado** (caixa de texto): o que foi feito — mês, tipos/n.º de documentos
      finalizados, avisos. Curto e factual, em pt-PT.

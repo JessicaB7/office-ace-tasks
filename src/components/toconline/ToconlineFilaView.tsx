@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Search, Play, Check, Trash2, Bot } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Play, Check, Trash2, Bot, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useClients, useCollaborators, useMonthlyObligationsRange, useUpsertObligation } from "@/hooks/useSupabaseQuery";
 import { useToconlineJobs, useActivateToconlineJobs, useUpdateToconlineJob, useDeleteToconlineJob, type ToconlineJob } from "@/hooks/useToconlineJobs";
-import { TOCONLINE_PROCEDURES, procedureById, STATUS_LABELS, STATUS_CLASSES, type ToconlineJobStatus } from "@/lib/toconlineProcedures";
+import {
+  TOCONLINE_REGIMES, TOCONLINE_TAREFAS, procedureById, procedureFor, STATUS_LABELS, STATUS_CLASSES,
+  type ToconlineJobStatus, type ToconlineRegime, type ToconlineTarefa,
+} from "@/lib/toconlineProcedures";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const STATUS_ORDER: ToconlineJobStatus[] = ["pendente", "em_curso", "bloqueada", "erro", "concluida", "cancelada"];
@@ -25,6 +28,8 @@ const fmtDateTime = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 
 const inputClass = "px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring";
+const tabClass = (active: boolean) => cn("px-3 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-colors",
+  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted");
 
 const ToconlineFilaView = () => {
   const { user, isAdmin } = useAuth();
@@ -40,12 +45,14 @@ const ToconlineFilaView = () => {
   const now = new Date();
   const [year, setYear] = useState(now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() === 0 ? 11 : now.getMonth() - 1);
-  const [procedureId, setProcedureId] = useState(TOCONLINE_PROCEDURES[0]?.id || "");
+  const [regime, setRegime] = useState<ToconlineRegime>("ti_rs");
+  const [tarefa, setTarefa] = useState<ToconlineTarefa>("vendas");
   const [collabFilter, setCollabFilter] = useState("all");
   const [clientSearch, setClientSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const procedure = procedureById(procedureId);
+  const procedure = procedureFor(regime, tarefa);
+  const procedureId = procedure?.id || "";
   const refMonth = monthKey(year, month);
   const prevMonth = () => { setSelected(new Set()); if (month === 0) { setMonth(11); setYear((y) => y - 1); } else setMonth((m) => m - 1); };
   const nextMonth = () => { setSelected(new Set()); if (month === 11) { setMonth(0); setYear((y) => y + 1); } else setMonth((m) => m + 1); };
@@ -94,14 +101,20 @@ const ToconlineFilaView = () => {
   // ---- Fila ----
   const [statusTab, setStatusTab] = useState<(typeof STATUS_TABS)[number]["id"]>("ativas");
   const [queueSearch, setQueueSearch] = useState("");
+  const [queueRegime, setQueueRegime] = useState<ToconlineRegime | "todos">("todos");
+  const regimeJobs = useMemo(
+    () => queueRegime === "todos" ? jobs : jobs.filter((j) => procedureById(j.procedure_id)?.regime === queueRegime),
+    [jobs, queueRegime],
+  );
+  const activeCount = (list: ToconlineJob[]) => list.filter((j) => j.status === "pendente" || j.status === "em_curso").length;
 
   const countFor = (tab: (typeof STATUS_TABS)[number]["id"]) =>
-    tab === "todas" ? jobs.length
-      : tab === "ativas" ? jobs.filter((j) => j.status === "pendente" || j.status === "em_curso").length
-      : jobs.filter((j) => j.status === tab).length;
+    tab === "todas" ? regimeJobs.length
+      : tab === "ativas" ? activeCount(regimeJobs)
+      : regimeJobs.filter((j) => j.status === tab).length;
 
   const queue = useMemo(() => {
-    let list = jobs;
+    let list = regimeJobs;
     if (statusTab === "ativas") list = list.filter((j) => j.status === "pendente" || j.status === "em_curso");
     else if (statusTab !== "todas") list = list.filter((j) => j.status === statusTab);
     if (queueSearch.trim()) {
@@ -113,7 +126,7 @@ const ToconlineFilaView = () => {
       STATUS_ORDER.indexOf(a.status as ToconlineJobStatus) - STATUS_ORDER.indexOf(b.status as ToconlineJobStatus)
       || a.reference_month.localeCompare(b.reference_month)
       || (clientById.get(a.client_id)?.name || "").localeCompare(clientById.get(b.client_id)?.name || "", "pt"));
-  }, [jobs, statusTab, queueSearch, clientById]);
+  }, [regimeJobs, statusTab, queueSearch, clientById]);
 
   // Estado da obrigação da Gestão Mensal ligada às tarefas concluídas
   const concludedMonths = useMemo(
@@ -161,12 +174,23 @@ const ToconlineFilaView = () => {
           </div>
         </div>
 
+        <div className="flex gap-1 flex-wrap border-b pb-3" role="tablist" aria-label="Regime">
+          {TOCONLINE_REGIMES.map((r) => (
+            <button key={r.id} role="tab" aria-selected={regime === r.id} onClick={() => { setRegime(r.id); setSelected(new Set()); }} className={tabClass(regime === r.id)}>
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 flex-wrap" role="tablist" aria-label="Tarefa">
+          {TOCONLINE_TAREFAS.map((t) => (
+            <button key={t.id} role="tab" aria-selected={tarefa === t.id} onClick={() => { setTarefa(t.id); setSelected(new Set()); }}
+              className={cn("px-3 py-1 text-sm rounded-full border transition-colors", tarefa === t.id ? "border-primary bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted")}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex gap-3 flex-wrap items-center">
-          <select value={procedureId} onChange={(e) => { setProcedureId(e.target.value); setSelected(new Set()); }} className={inputClass} aria-label="Procedimento">
-            {TOCONLINE_PROCEDURES.map((p) => (
-              <option key={p.id} value={p.id}>{p.regimeLabel} — {p.label}</option>
-            ))}
-          </select>
           <select value={collabFilter} onChange={(e) => setCollabFilter(e.target.value)} className={inputClass} aria-label="Responsável">
             <option value="all">Todos os responsáveis</option>
             {collaborators.filter((c: any) => c.active).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -177,7 +201,11 @@ const ToconlineFilaView = () => {
             <input type="text" placeholder="Pesquisar cliente..." value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} className={cn(inputClass, "w-full pl-9")} />
           </div>
         </div>
-        {procedure && <p className="text-xs text-muted-foreground">{procedure.description}</p>}
+        {procedure && (
+          procedure.docPath
+            ? <p className="text-xs text-muted-foreground">{procedure.description}</p>
+            : <p className="text-xs text-warning flex items-start gap-1.5"><AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />{procedure.description}</p>
+        )}
 
         <div className="border rounded-lg overflow-hidden">
           <div className="max-h-[320px] overflow-y-auto">
@@ -240,6 +268,16 @@ const ToconlineFilaView = () => {
             <input type="text" placeholder="Pesquisar cliente..." value={queueSearch} onChange={(e) => setQueueSearch(e.target.value)} className={cn(inputClass, "w-full pl-9")} />
           </div>
         </div>
+        <div className="flex gap-1 overflow-x-auto px-4 pb-3" role="tablist" aria-label="Regime da fila">
+          {([{ id: "todos", label: "Todos" }, ...TOCONLINE_REGIMES] as { id: ToconlineRegime | "todos"; label: string }[]).map((r) => {
+            const n = activeCount(r.id === "todos" ? jobs : jobs.filter((j) => procedureById(j.procedure_id)?.regime === r.id));
+            return (
+              <button key={r.id} role="tab" aria-selected={queueRegime === r.id} onClick={() => setQueueRegime(r.id)} className={tabClass(queueRegime === r.id)}>
+                {r.label}{n > 0 ? ` (${n})` : ""}
+              </button>
+            );
+          })}
+        </div>
         <div className="flex gap-1 overflow-x-auto px-4 border-b">
           {STATUS_TABS.map((t) => (
             <button key={t.id} onClick={() => setStatusTab(t.id)}
@@ -254,7 +292,7 @@ const ToconlineFilaView = () => {
             <thead>
               <tr className="border-b bg-muted/40">
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
-                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Procedimento</th>
+                <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tarefa</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Mês</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Estado</th>
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground min-w-[260px]">Resultado</th>
@@ -276,7 +314,10 @@ const ToconlineFilaView = () => {
                         {userName(job.requested_by) ? `Ativada por ${userName(job.requested_by)} · ` : ""}{fmtDateTime(job.requested_at)}
                       </div>
                     </td>
-                    <td className="px-4 py-3">{proc ? `${proc.regimeLabel} — ${proc.label}` : job.procedure_id}</td>
+                    <td className="px-4 py-3">
+                      {proc ? proc.label : job.procedure_id}
+                      {proc && queueRegime === "todos" && <div className="text-xs text-muted-foreground">{proc.regimeLabel}</div>}
+                    </td>
                     <td className="px-4 py-3 whitespace-nowrap">{monthLabel(job.reference_month)}</td>
                     <td className="px-4 py-3">
                       <select value={status} aria-label={`Estado de ${client?.name || "tarefa"}`}
