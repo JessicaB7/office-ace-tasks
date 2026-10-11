@@ -22,6 +22,13 @@ Procedimentos administrativos feitos no TOConline (pelo browser) para clientes c
      3. **Colocar os dados da compra** a partir do anexo (data, n.º do documento, valores e IVA).
      4. **Gravar — mas nunca finalizar.** A compra fica gravada por finalizar; quem finaliza é a utilizadora.
 
+**Fornecedores estrangeiros (IVA em autoliquidação)** — fazer **igual às compras anteriores do mesmo fornecedor**
+(Compras → Faturas de compra → pesquisar o fornecedor → abrir a última → ver linha, IVA e "Razão de isenção").
+Exemplo (Ana Galvão: Canva, Meta): linha tipo **Categoria de despesa 6221** (Trabalhos especializados / Serviços),
+IVA **0.0% ISE**, razão **M40 – Art. 6.º n.º 6 a) CIVA, a contrário (IVA - autoliquidação)**; Vossa Ref. = n.º/referência
+da fatura. No formulário (botão **+** da coluna FT Compra) gravar com **"Gravar finalizada"** e a caixa
+**"Finalizar a sugestão na contabilidade" desmarcada** — fica "Finalizar CTB" para a utilizadora.
+
 **Parar e avisar** (deixar a tarefa como **Bloqueada**, com o motivo no Resultado) quando:
 - o anexo não se consegue ler, ou não é uma fatura de compra;
 - o fornecedor não existe no TOConline — **não o criar**: a utilizadora cria-o. Indicar no Resultado
