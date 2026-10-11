@@ -12,6 +12,13 @@ import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable } from "@/li
 import { toast } from "sonner";
 
 const STATUS_FILTER_STORAGE_KEY = "contabilidadesStatusFilter";
+const VIEW_MODE_STORAGE_KEY = "contabilidadesViewMode";
+
+const TIER_BADGE: Record<string, { label: string; className: string }> = {
+  none: { label: "Não iniciado", className: "bg-muted text-muted-foreground" },
+  started: { label: "Em andamento", className: "bg-warning/15 text-warning" },
+  done: { label: "Concluído", className: "bg-success/15 text-success" },
+};
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -90,6 +97,22 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
       return "all";
     }
   });
+  // Vista: tabela (uma coluna por tarefa) ou lista (só o que falta, em etiquetas).
+  const [viewMode, setViewMode] = useState<"tabela" | "lista">(() => {
+    try {
+      return localStorage.getItem(VIEW_MODE_STORAGE_KEY) === "lista" ? "lista" : "tabela";
+    } catch {
+      return "tabela";
+    }
+  });
+  const changeViewMode = (v: "tabela" | "lista") => {
+    setViewMode(v);
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, v);
+    } catch {
+      // localStorage indisponível — a preferência só dura esta sessão
+    }
+  };
   const changeStatusFilter = (v: StatusFilter) => {
     setStatusFilter(v);
     try {
@@ -420,9 +443,73 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
             })}
           </div>
         )}
+        {hasMultiColumns && (
+          <div className="flex rounded-lg border bg-card p-0.5" role="group" aria-label="Vista">
+            {([["tabela", "Tabela"], ["lista", "Lista"]] as const).map(([v, label]) => (
+              <button key={v} type="button" onClick={() => changeViewMode(v)} aria-pressed={viewMode === v}
+                className={cn("px-2.5 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors",
+                  viewMode === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {(
+      {hasMultiColumns && viewMode === "lista" ? (
+        <div className="bg-card rounded-xl border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Cliente</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Estado</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Em falta <span className="font-normal text-xs">(clicar para marcar como feito)</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedClients.map((client: any) => {
+                  const tier = getClientTier(client);
+                  const missing = columns!.map((col, i) => ({ col, i }))
+                    .filter(({ col, i }) => isColumnApplicable(client, col) && colMaps[i][client.id]?.status !== "concluida");
+                  return (
+                    <tr key={client.id} className="border-b last:border-0 hover:bg-muted/30">
+                      <td className={cn("px-4 py-3 font-medium", tier === "done" && "text-muted-foreground")}>
+                        <button type="button" onClick={() => setSelectedClient(client)} className="hover:underline text-left">{client.name}</button>
+                      </td>
+                      <td className="px-4 py-3"><CollabCell id={client.responsavel_id} name={getCollabName(client.responsavel_id)} /></td>
+                      <td className="px-4 py-3">
+                        <span className={cn("text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap", TIER_BADGE[tier].className)}>{TIER_BADGE[tier].label}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {missing.length === 0 ? <span className="text-muted-foreground">—</span> : (
+                          <div className="flex flex-wrap gap-1.5">
+                            {missing.map(({ col, i }) => {
+                              const started = colMaps[i][client.id]?.status === "em_andamento";
+                              return (
+                                <button key={col} type="button" title={`Marcar ${col} como feito`}
+                                  onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], col)}
+                                  className={cn("text-xs font-medium px-2 py-1 rounded-md border transition-colors hover:border-success hover:bg-success/10 hover:text-success",
+                                    started ? "bg-warning/15 text-warning border-warning/30" : "bg-card text-foreground")}>
+                                  {col}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {displayedClients.length === 0 && (
+                  <tr><td colSpan={4} className="px-4 py-12 text-center text-muted-foreground">Nenhum cliente encontrado</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
         <div className="bg-card rounded-xl border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
