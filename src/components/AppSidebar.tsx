@@ -89,10 +89,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
           icon: BookOpen,
           items: [
             { id: "contabilidades_painel", label: "Painel" },
-            { id: "contabilidades_TI_isento", label: "TI Simplificado - Isento IVA" },
-            { id: "contabilidades_TI_iva", label: "TI Simplificado - Reg. IVA" },
-            { id: "contabilidades_organizada", label: "TI Contabilidade Organizada" },
-            { id: "contabilidades_empresas", label: "Empresas" },
+            { id: "contabilidades_TI_iva", label: "Clientes do mês" },
           ],
         },
       },
@@ -368,16 +365,19 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
                     {open && (
                       <div className="ml-4 pl-2 border-l border-primary-foreground/20 mb-1">
                         {group.items.map((sub) => {
-                          const subPending = isContabilidades
-                            ? contabPending[sub.id.replace("contabilidades_", "")]?.pending
-                            : undefined;
+                          // "Clientes do mês" junta os regimes (separadores na própria página)
+                          const isRegimes = isContabilidades && sub.id !== "contabilidades_painel";
+                          const subPending = isRegimes ? contabTotalPending : undefined;
+                          const subActive = isRegimes
+                            ? activeView.startsWith("contabilidades_") && activeView !== "contabilidades_painel"
+                            : activeView === sub.id;
                           return (
                             <button
                               key={sub.id}
                               onClick={() => onViewChange(sub.id)}
                               className={cn(
                                 "w-full flex items-center gap-2 text-left px-3 py-1.5 rounded-lg text-xs font-medium mb-0.5 transition-colors",
-                                activeView === sub.id
+                                subActive
                                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                                   : "text-primary-foreground/60 hover:text-primary-foreground hover:bg-sidebar-accent/50"
                               )}

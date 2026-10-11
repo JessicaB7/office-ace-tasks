@@ -12,6 +12,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable } from "@/lib/contabilidadesConfig";
+import { useContabilidadesPending } from "@/hooks/useContabilidadesPending";
+import { toast } from "sonner";
 
 const PENDING_FILTER_STORAGE_KEY = "contabilidadesShowOnlyPending";
 const VIEW_MODE_STORAGE_KEY = "contabilidadesViewMode";
@@ -26,6 +28,17 @@ const PAST_MONTHS_TO_CHECK = 3;
 
 type ClientTier = "none" | "started" | "done";
 
+/** Separadores da Gestão Mensal (uma só página, um separador por regime). */
+const REGIME_TABS: { id: string; label: string }[] = [
+  { id: "TI_iva", label: "TI Simplificado - Reg. IVA" },
+  { id: "TI_isento", label: "TI Simplificado - Isento IVA" },
+  { id: "organizada", label: "TI Organizado" },
+  { id: "empresas", label: "Empresas" },
+];
+
+const fmtWhen = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+
 const GALLERY_SECTIONS: { tier: ClientTier; label: string; icon: typeof Check; className: string }[] = [
   { tier: "none", label: "Por começar", icon: CircleDashed, className: "text-muted-foreground" },
   { tier: "started", label: "Em curso", icon: Loader, className: "text-warning" },
@@ -34,10 +47,12 @@ const GALLERY_SECTIONS: { tier: ClientTier; label: string; icon: typeof Check; c
 
 interface ContabilidadesViewProps {
   subPage?: string;
+  /** Mudar de separador (regime) — atualiza a vista ativa da app. */
+  onSubPageChange?: (subPage: string) => void;
 }
 
-const CheckboxCell = ({ done, started, onClick, label }: { done: boolean; started?: boolean; onClick: () => void; label?: string }) => (
-  <button onClick={onClick} title={label ? `${label}: ${done ? "concluído" : started ? "em andamento" : "por fazer"}` : undefined}
+const CheckboxCell = ({ done, started, onClick, label, detail }: { done: boolean; started?: boolean; onClick: () => void; label?: string; detail?: string }) => (
+  <button onClick={onClick} title={label ? `${label}: ${done ? `concluído${detail ? ` — ${detail}` : ""}` : started ? "em andamento" : "por fazer"}` : undefined}
     aria-label={label}
     className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-all mx-auto hover:scale-110",
       done ? "bg-success border-success text-success-foreground"
@@ -78,7 +93,7 @@ const CollabCell = ({ id, name }: { id: string | null; name: string }) => {
   );
 };
 
-const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
+const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const { user } = useAuth();
@@ -127,6 +142,9 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
   const upsert = useUpsertObligation();
+  const { perTab: pendingPerTab } = useContabilidadesPending(referenceMonth);
+  // Filtro por tarefa (coluna): mostra só quem tem essa tarefa por fazer.
+  const [columnFilter, setColumnFilter] = useState<number | null>(null);
 
   const config = SUB_PAGE_CONFIG[activeTab];
   const hideNif = config?.hideNif ?? false;
@@ -143,6 +161,7 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
       setActiveTab(subPage);
       setCollabFilter("all");
       setSearch("");
+      setColumnFilter(null);
     }
   }, [subPage]);
 
@@ -261,9 +280,10 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
   }, [noTasksTab, config, activeClients, collaborators]);
   const byResponsavelTotal = byResponsavel.reduce((s, r) => s + r.count, 0);
 
-  const toggleObl = (clientId: string, type: string, map: Record<string, any>) => {
+  const toggleObl = (clientId: string, type: string, map: Record<string, any>, label?: string) => {
     const obl = map[clientId];
     const done = obl?.status === "concluida";
+    const prev = obl ? { status: obl.status, completed_at: obl.completed_at ?? null, completed_by: obl.completed_by ?? null } : null;
     upsert.mutate({
       client_id: clientId,
       obligation_type: type,
@@ -272,15 +292,51 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
       completed_at: done ? null : new Date().toISOString(),
       completed_by: done ? null : user?.id || null,
       ...(obl?.id ? { id: obl.id } : {}),
+    }, {
+      onSuccess: (saved: any) => {
+        const clientName = clients.find((c: any) => c.id === clientId)?.name || "";
+        toast(`${label || "Tarefa"} ${done ? "desmarcada" : "marcada"} — ${clientName}`, {
+          action: {
+            label: "Desfazer",
+            onClick: () => upsert.mutate({
+              id: saved?.id ?? obl?.id,
+              client_id: clientId,
+              obligation_type: type,
+              reference_month: referenceMonth,
+              status: prev?.status ?? "pendente",
+              completed_at: prev?.completed_at ?? null,
+              completed_by: prev?.completed_by ?? null,
+            }),
+          },
+        });
+      },
     });
   };
+
+  const whoDid = (obl: any) => {
+    if (!obl?.completed_at) return "";
+    const name = collaborators.find((c: any) => c.user_id && c.user_id === obl.completed_by)?.name;
+    return `${name ? `${name}, ` : ""}${fmtWhen(obl.completed_at)}`;
+  };
+
+  // Por coluna: quantos clientes (da lista filtrada) ainda têm essa tarefa por fazer.
+  const pendingByColumn = useMemo(() => {
+    if (!hasMultiColumns) return [];
+    return columns!.map((col, i) => filteredClients.filter((c: any) =>
+      isColumnApplicable(c, col) && colMaps[i][c.id]?.status !== "concluida").length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredClients, colMaps, hasMultiColumns, columns]);
 
   const doneCount = filteredClients.filter(isClientDone).length;
   const totalCount = filteredClients.length;
   const pendingCount = totalCount - doneCount;
   const progressPct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
-  const displayedClients = showOnlyPending ? filteredClients.filter((c: any) => !isClientDone(c)) : filteredClients;
+  let displayedClients = showOnlyPending ? filteredClients.filter((c: any) => !isClientDone(c)) : filteredClients;
+  if (columnFilter !== null && hasMultiColumns && columns![columnFilter]) {
+    const col = columns![columnFilter];
+    displayedClients = displayedClients.filter((c: any) => isColumnApplicable(c, col) && colMaps[columnFilter][c.id]?.status !== "concluida");
+  }
 
   // Notas mensais só fazem sentido nos separadores em galeria (têm ficha do cliente).
   const showNotes = hasGallery;
@@ -307,6 +363,27 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
 
   return (
     <div className="space-y-5">
+      <div className="flex gap-1 overflow-x-auto border-b" role="tablist" aria-label="Regime">
+        {REGIME_TABS.map((t) => {
+          const pending = pendingPerTab[t.id]?.pending;
+          const active = activeTab === t.id;
+          return (
+            <button key={t.id} role="tab" aria-selected={active} type="button"
+              onClick={() => {
+                setActiveTab(t.id); setCollabFilter("all"); setSearch(""); setColumnFilter(null); setSelectedClient(null);
+                onSubPageChange?.(t.id);
+              }}
+              className={cn("flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
+                active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
+              {t.label}
+              {!!pending && (
+                <span className={cn("text-[11px] font-semibold px-1.5 py-0.5 rounded-full",
+                  active ? "bg-primary/15 text-primary" : "bg-warning/15 text-warning")}>{pending}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="min-w-[260px]">
           <h2 className="text-2xl font-bold">{config?.label || "Gestão Mensal"}</h2>
@@ -486,9 +563,24 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                   {hasMultiColumns ? (
                     <>
                       <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Progresso</th>
-                      {columns!.map((col) => (
-                        <th key={col} className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">{col}</th>
-                      ))}
+                      {columns!.map((col, i) => {
+                        const n = pendingByColumn[i] ?? 0;
+                        const active = columnFilter === i;
+                        return (
+                          <th key={col} className="text-center px-2 py-2 font-semibold text-muted-foreground w-20">
+                            <button type="button" onClick={() => setColumnFilter((f) => (f === i ? null : i))}
+                              title={active ? "Mostrar todos" : `Mostrar só quem tem ${col} por fazer`}
+                              className={cn("flex flex-col items-center gap-0.5 mx-auto rounded-md px-2 py-1 transition-colors",
+                                active ? "bg-primary text-primary-foreground" : "hover:bg-muted")}>
+                              <span>{col}</span>
+                              <span className={cn("text-[10px] font-medium",
+                                active ? "text-primary-foreground" : n > 0 ? "text-warning" : "text-success")}>
+                                {n > 0 ? `${n} por fazer` : "tudo feito"}
+                              </span>
+                            </button>
+                          </th>
+                        );
+                      })}
                     </>
                   ) : !noTasksTab && (
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-28">Estado</th>
@@ -531,7 +623,8 @@ const ContabilidadesView = ({ subPage }: ContabilidadesViewProps) => {
                               <td key={colOblTypes[i]} className="text-center px-3 py-3">
                                 {isColumnApplicable(client, columns![i]) ? (
                                   <CheckboxCell done={st === "concluida"} started={st === "em_andamento"} label={columns![i]}
-                                    onClick={() => toggleObl(client.id, colOblTypes[i], map)} />
+                                    detail={whoDid(map[client.id])}
+                                    onClick={() => toggleObl(client.id, colOblTypes[i], map, columns![i])} />
                                 ) : <NotApplicableCell />}
                               </td>
                             );
