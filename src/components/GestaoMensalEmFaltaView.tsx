@@ -105,60 +105,24 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
 
   if (isLoading || loadingObl) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
-  const Table = ({ items }: { items: Missing[] }) => (
-    <div className="bg-card rounded-xl border overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/40">
-              <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">Cliente</th>
-              <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">Mês</th>
-              <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">Em falta</th>
-              <th className="text-left px-4 py-2.5 font-semibold text-muted-foreground">Responsável</th>
-              <th className="w-10" />
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((r) => (
-              <tr key={`${r.client.id}-${r.month}-${r.regime.id}`} className="border-b last:border-0 hover:bg-muted/30">
-                <td className="px-4 py-2.5">
-                  <div className="font-medium">{r.client.name}</div>
-                  <div className="text-xs text-muted-foreground">{r.regime.label}</div>
-                </td>
-                <td className="px-4 py-2.5 whitespace-nowrap">{monthLabel(r.month)}</td>
-                <td className="px-4 py-2.5">
-                  <div className="flex flex-wrap gap-1">
-                    {r.missing.map((m) => (
-                      <span key={m} className="text-xs font-medium px-2 py-0.5 rounded bg-warning/15 text-warning">{m}</span>
-                    ))}
-                    {r.missing.length === r.total && <span className="text-xs text-muted-foreground self-center">· nada feito</span>}
-                  </div>
-                </td>
-                <td className="px-4 py-2.5">
-                  {r.client.responsavel_id ? (
-                    <div className="flex items-center gap-2">
-                      <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0", getAvatarPalette(r.client.responsavel_id))}>
-                        {getInitials(collabName(r.client.responsavel_id))}
-                      </div>
-                      <span className="text-muted-foreground truncate">{collabName(r.client.responsavel_id)}</span>
-                    </div>
-                  ) : <span className="text-muted-foreground">—</span>}
-                </td>
-                <td className="px-2 py-2.5">
-                  {onOpenRegime && (
-                    <button type="button" onClick={() => onOpenRegime(r.regime.id)} title={`Abrir ${r.regime.label}`}
-                      className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-primary">
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  // Mês → colaborador → regime. O mês de trabalho primeiro, depois os atrasos (mais recentes primeiro).
+  const byMonth = months
+    .map((month) => {
+      const items = filtered.filter((r) => r.month === month);
+      const collabIds = [...new Set(items.map((r) => r.client.responsavel_id || "none"))]
+        .sort((a, b) => (a === "none" ? 1 : b === "none" ? -1 : collabName(a).localeCompare(collabName(b), "pt")));
+      const collabs = collabIds.map((id) => {
+        const mine = items.filter((r) => (r.client.responsavel_id || "none") === id);
+        return {
+          id,
+          name: id === "none" ? "Sem responsável" : collabName(id),
+          count: mine.length,
+          regimes: REGIMES.map((reg) => ({ ...reg, items: mine.filter((r) => r.regime.id === reg.id) })).filter((g) => g.items.length > 0),
+        };
+      });
+      return { month, items, collabs };
+    })
+    .filter((m) => m.items.length > 0);
 
   return (
     <div className="space-y-5">
@@ -214,24 +178,66 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
           <PartyPopper className="w-4 h-4" /> Nada em falta.
         </div>
       ) : (
-        <>
-          {late.length > 0 && (
-            <section className="space-y-2">
-              <h3 className="font-semibold flex items-center gap-2 text-destructive">
-                <AlertTriangle className="w-4 h-4" /> Atrasados <span className="text-xs font-medium text-muted-foreground">({late.length})</span>
-              </h3>
-              <Table items={late} />
-            </section>
-          )}
-          {current.length > 0 && (
-            <section className="space-y-2">
-              <h3 className="font-semibold">
-                {monthLabel(workMonth)} <span className="text-xs font-medium text-muted-foreground">({current.length})</span>
-              </h3>
-              <Table items={current} />
-            </section>
-          )}
-        </>
+        <div className="space-y-8">
+          {byMonth.map(({ month, items, collabs }) => {
+            const isLate = month !== workMonth;
+            return (
+              <section key={month} className="space-y-3">
+                <h3 className={cn("text-lg font-semibold flex items-center gap-2", isLate && "text-destructive")}>
+                  {isLate && <AlertTriangle className="w-4 h-4" />}
+                  {monthLabel(month)}
+                  {isLate && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-destructive/15">atrasado</span>}
+                  <span className="text-sm font-medium text-muted-foreground">· {items.length} clientes em falta</span>
+                </h3>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {collabs.map((col) => (
+                    <div key={col.id} className="bg-card rounded-xl border overflow-hidden">
+                      <div className="flex items-center gap-2.5 px-4 py-3 border-b bg-muted/30">
+                        <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0",
+                          col.id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(col.id))}>
+                          {col.id === "none" ? "—" : getInitials(col.name)}
+                        </div>
+                        <span className="font-semibold flex-1">{col.name}</span>
+                        <span className="text-sm font-semibold text-warning">{col.count}</span>
+                      </div>
+                      <div className="divide-y">
+                        {col.regimes.map((reg) => (
+                          <div key={reg.id} className="px-4 py-2.5">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                {reg.label} · {reg.items.length}
+                              </span>
+                              {onOpenRegime && (
+                                <button type="button" onClick={() => onOpenRegime(reg.id)} title={`Abrir ${reg.label}`}
+                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary">
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                            <ul className="space-y-1">
+                              {reg.items.map((r) => (
+                                <li key={r.client.id} className="flex items-center gap-2 flex-wrap text-sm">
+                                  <span className="font-medium">{r.client.name}</span>
+                                  <span className="flex flex-wrap gap-1">
+                                    {r.missing.length === r.total ? (
+                                      <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">nada feito</span>
+                                    ) : r.missing.map((m) => (
+                                      <span key={m} className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-warning/15 text-warning">{m}</span>
+                                    ))}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
       )}
     </div>
   );

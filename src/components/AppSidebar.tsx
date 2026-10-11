@@ -88,7 +88,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
           label: "Gestão Mensal",
           icon: BookOpen,
           items: [
-            { id: "contabilidades_painel", label: "Em falta" },
+            { id: "contabilidades_painel", label: "Em falta", adminOnly: true },
             { id: "contabilidades_TI_iva", label: "Clientes do mês" },
           ],
         },
@@ -159,7 +159,7 @@ const sectionHasView = (section: { entries: Entry[] }, view: string) =>
 const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
 
   const { user, isAdmin, signOut } = useAuth();
-  const { perTab: contabPending, totalPending: contabTotalPending } = useContabilidadesPending();
+  const { totalPending: contabTotalPending } = useContabilidadesPending();
   const { data: onboardings = [] } = useOnboardings();
   const { data: toconlineJobs = [] } = useToconlineJobs();
   // Formulários de novos clientes já respondidos e ainda por concluir
@@ -246,7 +246,7 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
     }
     const isActive = activeView.startsWith(group.id);
     setOpenGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }));
-    if (!isActive) onViewChange(group.items[0].id);
+    if (!isActive) onViewChange((group.items.find((i) => !i.adminOnly || isAdmin) || group.items[0]).id);
   };
 
   return (
@@ -364,7 +364,7 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
                     </button>
                     {open && (
                       <div className="ml-4 pl-2 border-l border-primary-foreground/20 mb-1">
-                        {group.items.map((sub) => {
+                        {group.items.filter((sub) => !sub.adminOnly || isAdmin).map((sub) => {
                           // "Clientes do mês" junta os regimes (separadores na própria página)
                           const isRegimes = isContabilidades && sub.id !== "contabilidades_painel";
                           const subPending = isRegimes ? contabTotalPending : undefined;
