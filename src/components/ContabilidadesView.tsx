@@ -12,7 +12,6 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable } from "@/lib/contabilidadesConfig";
-import { useContabilidadesPending } from "@/hooks/useContabilidadesPending";
 import { toast } from "sonner";
 
 const PENDING_FILTER_STORAGE_KEY = "contabilidadesShowOnlyPending";
@@ -142,7 +141,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
   const upsert = useUpsertObligation();
-  const { perTab: pendingPerTab } = useContabilidadesPending(referenceMonth);
   // Filtro por tarefa (coluna): mostra só quem tem essa tarefa por fazer.
   const [columnFilter, setColumnFilter] = useState<number | null>(null);
 
@@ -365,7 +363,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
     <div className="space-y-5">
       <div className="flex gap-1 overflow-x-auto border-b" role="tablist" aria-label="Regime">
         {REGIME_TABS.map((t) => {
-          const pending = pendingPerTab[t.id]?.pending;
+          const total = activeClients.filter(SUB_PAGE_CONFIG[t.id].filter).length;
           const active = activeTab === t.id;
           return (
             <button key={t.id} role="tab" aria-selected={active} type="button"
@@ -376,10 +374,9 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
               className={cn("flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
                 active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}>
               {t.label}
-              {!!pending && (
-                <span className={cn("text-[11px] font-semibold px-1.5 py-0.5 rounded-full",
-                  active ? "bg-primary/15 text-primary" : "bg-warning/15 text-warning")}>{pending}</span>
-              )}
+              <span className={cn("text-[11px] font-semibold px-1.5 py-0.5 rounded-full",
+                active ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}
+                title="Clientes neste regime">{total}</span>
             </button>
           );
         })}
@@ -387,30 +384,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange }: ContabilidadesViewProp
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="min-w-[260px]">
           <h2 className="text-2xl font-bold">{config?.label || "Gestão Mensal"}</h2>
-          {!noTasksTab && (
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              {pendingCount > 0 && isEndOfMonth ? (
-                <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-destructive/15 text-destructive animate-pulse">
-                  <AlertTriangle className="w-3.5 h-3.5" /> {pendingCount} por concluir — fim do mês!
-                </span>
-              ) : pendingCount > 0 ? (
-                <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-warning/15 text-warning">
-                  <Clock className="w-3.5 h-3.5" /> {pendingCount} por concluir
-                </span>
-              ) : totalCount > 0 ? (
-                <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-1 rounded-full bg-success/15 text-success">
-                  <PartyPopper className="w-3.5 h-3.5" /> Tudo concluído
-                </span>
-              ) : null}
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                <CheckCircle2 className="w-3.5 h-3.5 text-success" /> {doneCount} concluídos
-              </span>
-              <div className="flex items-center gap-1.5">
-                <Progress value={progressPct} className={cn("h-1.5 w-20", progressPct === 100 && "[&>div]:bg-success")} />
-                <span className="text-xs text-muted-foreground whitespace-nowrap">{progressPct}%</span>
-              </div>
-            </div>
-          )}
         </div>
         <div className="flex items-center gap-2 bg-card rounded-lg border px-2 py-1">
           <button onClick={prevMonth} className="p-1 hover:bg-muted rounded transition-colors"><ChevronLeft className="w-4 h-4" /></button>
