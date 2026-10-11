@@ -24,6 +24,9 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
 2. Dados do cliente que precisares (ex.: programa de faturação, NIF): coluna da própria
    Fila na área "Ativar tarefas", ou **Clientes → Dados de clientes**.
 3. No TOConline, muda para a empresa do cliente e confirma o **exercício** do ano certo.
+   A empresa escolhida vale para toda a conta: antes de cada gravar/gerar/finalizar confirma que o nome no
+   canto superior esquerdo é o do cliente. Se mudar sozinho (alguém a usar o TOConline ao mesmo tempo), **pára**,
+   repõe a tarefa em Pendente e avisa.
 4. Executa o procedimento conforme o manual (o `procedure_id` → secção do manual):
    - `empresas_importar_vendas` → `docs/toconline/empresas.md`, secção 1 "Importar as vendas".
    - `ti_rs_iva_lancar_compras` → `docs/toconline/ti-rs.md`, secção 1 "Lançar as compras".

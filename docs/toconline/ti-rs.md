@@ -55,13 +55,13 @@ lançamentos do diário **VND** (nunca recibos RC).
 3. Para cada recibo verde importado (filtro "Importado"), carregar no **+** da coluna **FT Venda**
    (ou na seta → **Criar e associar**): abre a fatura / fatura-recibo já preenchida a partir do recibo verde.
 4. Verificar o documento (cliente, NIF, base + IVA = total) e **Gravar** → fica "Em preparação".
-5. Na seta da coluna FT Venda → **Finalizar e pagar** → indicar a data de recebimento e o método de
-   pagamento → **Finalizar e pagar**.
+5. Na seta da coluna FT Venda → **Finalizar e pagar** → método de pagamento **Numerário** (data de
+   recebimento: a proposta pelo TOConline) → **Finalizar e pagar**.
 
 **Parar e avisar** (tarefa **Bloqueada**, motivo no Resultado):
-- IVA 0% com **"Razão de isenção" vazia** (ex.: cliente estrangeiro) — não escolher o motivo;
-- cliente como "Consumidor Final" quando o recibo verde é para uma empresa;
-- dúvida na **data de recebimento** / método de pagamento (por omissão vem a data de hoje e "Numerário").
+- IVA 0% com **"Razão de isenção" vazia** (ex.: cliente estrangeiro) — **nunca escolher** o motivo: cancelar
+  esse documento sem gravar, indicar no Resultado o n.º do recibo verde, cliente e valor, e seguir para o próximo;
+- cliente como "Consumidor Final" quando o recibo verde é para uma empresa.
 
 ### Clientes com os dois (recibos verdes + programa)
 Fazer A e B.
