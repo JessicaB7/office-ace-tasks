@@ -31,6 +31,11 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
    - `ti_co_lancar_compras` → `docs/toconline/ti-co.md`, secção 1 "Lançar as compras".
    - Ainda sem manual (→ **Bloqueada** com "Sem manual"): `ti_rs_vendas`, `ti_rs_salarios`,
      `ti_co_vendas`, `ti_co_salarios`, `empresas_salarios`.
+   - **TI Simplificado / TI Organizado:** o procedimento depende de o cliente passar **recibos verdes**
+     (Portal das Finanças / AT) ou usar **programa de faturação** — a Fila mostra-o numa etiqueta junto ao
+     cliente (calculada a partir do "Programa de Faturação"; "ambos" = as duas coisas). Seguir a secção do
+     manual para esse tipo; se o manual não tiver secção para esse tipo → **Bloqueada** com
+     "Sem manual para <tipo>".
    - Na Fila, as tarefas aparecem separadas por regime (TI Simplificado / TI Organizado / Empresas)
      e por tarefa (Vendas / Compras / Salários).
 5. Regista o resultado na Fila:

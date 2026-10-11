@@ -6,7 +6,8 @@ import { useClients, useCollaborators, useMonthlyObligationsRange, useUpsertObli
 import { useToconlineJobs, useActivateToconlineJobs, useUpdateToconlineJob, useDeleteToconlineJob, type ToconlineJob } from "@/hooks/useToconlineJobs";
 import {
   TOCONLINE_REGIMES, TOCONLINE_TAREFAS, procedureById, procedureFor, STATUS_LABELS, STATUS_CLASSES,
-  type ToconlineJobStatus, type ToconlineRegime, type ToconlineTarefa,
+  tipoFaturacao, TIPO_FATURACAO_LABELS,
+  type ToconlineJobStatus, type ToconlineRegime, type ToconlineTarefa, type TipoFaturacao,
 } from "@/lib/toconlineProcedures";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -28,6 +29,16 @@ const fmtDateTime = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
 
 const inputClass = "px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring";
+const FATURACAO_CLASSES: Record<TipoFaturacao, string> = {
+  recibos_verdes: "bg-success/15 text-success",
+  programa: "bg-primary/15 text-primary",
+  ambos: "bg-warning/15 text-warning",
+  sem_info: "bg-muted text-muted-foreground",
+};
+const FaturacaoBadge = ({ tipo }: { tipo: TipoFaturacao }) => (
+  <span className={cn("text-[11px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap", FATURACAO_CLASSES[tipo])}>{TIPO_FATURACAO_LABELS[tipo]}</span>
+);
+
 const tabClass = (active: boolean) => cn("px-3 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-colors",
   active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted");
 
@@ -49,6 +60,9 @@ const ToconlineFilaView = () => {
   const [tarefa, setTarefa] = useState<ToconlineTarefa>("vendas");
   const [collabFilter, setCollabFilter] = useState("all");
   const [clientSearch, setClientSearch] = useState("");
+  // Nos regimes TI, a tarefa depende de o cliente passar recibos verdes ou usar programa de faturação
+  const [faturacaoFilter, setFaturacaoFilter] = useState<TipoFaturacao | "all">("all");
+  const isTI = regime === "ti_rs" || regime === "ti_co";
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const procedure = procedureFor(regime, tarefa);
@@ -72,12 +86,13 @@ const ToconlineFilaView = () => {
     let list = clients.filter((c: any) => c.active && c.tipo_contabilidade === procedure.tipoContabilidade && (!procedure.filter || procedure.filter(c)));
     if (collabFilter === "none") list = list.filter((c: any) => !c.responsavel_id);
     else if (collabFilter !== "all") list = list.filter((c: any) => c.responsavel_id === collabFilter);
+    if (isTI && faturacaoFilter !== "all") list = list.filter((c: any) => tipoFaturacao(c.programa_faturacao) === faturacaoFilter);
     if (clientSearch.trim()) {
       const s = clientSearch.trim().toLowerCase();
       list = list.filter((c: any) => c.name.toLowerCase().includes(s));
     }
     return list;
-  }, [clients, procedure, collabFilter, clientSearch]);
+  }, [clients, procedure, collabFilter, clientSearch, isTI, faturacaoFilter]);
 
   // Por omissão só se podem selecionar clientes sem tarefa ativa neste mês
   const selectable = eligibleClients.filter((c: any) => {
@@ -196,6 +211,12 @@ const ToconlineFilaView = () => {
             {collaborators.filter((c: any) => c.active).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
             <option value="none">Sem responsável</option>
           </select>
+          {isTI && (
+            <select value={faturacaoFilter} onChange={(e) => { setFaturacaoFilter(e.target.value as TipoFaturacao | "all"); setSelected(new Set()); }} className={inputClass} aria-label="Faturação">
+              <option value="all">Recibos verdes e programa</option>
+              {(Object.keys(TIPO_FATURACAO_LABELS) as TipoFaturacao[]).map((t) => <option key={t} value={t}>{TIPO_FATURACAO_LABELS[t]}</option>)}
+            </select>
+          )}
           <div className="relative w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input type="text" placeholder="Pesquisar cliente..." value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} className={cn(inputClass, "w-full pl-9")} />
@@ -232,7 +253,12 @@ const ToconlineFilaView = () => {
                       </td>
                       <td className="px-3 py-2 font-medium">{c.name}</td>
                       <td className="px-3 py-2 text-muted-foreground">{collabName(c.responsavel_id)}</td>
-                      <td className="px-3 py-2 text-muted-foreground text-xs">{c.programa_faturacao || "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground text-xs">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isTI && <FaturacaoBadge tipo={tipoFaturacao(c.programa_faturacao)} />}
+                          <span>{c.programa_faturacao || "—"}</span>
+                        </div>
+                      </td>
                       <td className="px-3 py-2">
                         {job ? (
                           <span className={cn("text-xs font-medium px-2 py-0.5 rounded", STATUS_CLASSES[job.status as ToconlineJobStatus])}>
@@ -310,6 +336,7 @@ const ToconlineFilaView = () => {
                   <tr key={job.id} className="border-b last:border-0 hover:bg-muted/30 align-top" data-job-id={job.id}>
                     <td className="px-4 py-3 font-medium">
                       {client?.name || "—"}
+                      {proc && proc.regime !== "empresas" && client && <div className="mt-0.5"><FaturacaoBadge tipo={tipoFaturacao(client.programa_faturacao)} /></div>}
                       <div className="text-xs text-muted-foreground font-normal">
                         {userName(job.requested_by) ? `Ativada por ${userName(job.requested_by)} · ` : ""}{fmtDateTime(job.requested_at)}
                       </div>

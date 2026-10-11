@@ -107,6 +107,31 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
   },
 ];
 
+/** Como o cliente TI emite as vendas, a partir de clients.programa_faturacao:
+ * "Portal das Finanças" / "AT" / "Finanças" = recibos verdes; qualquer outro nome = programa de faturação. */
+export type TipoFaturacao = "recibos_verdes" | "programa" | "ambos" | "sem_info";
+
+export const TIPO_FATURACAO_LABELS: Record<TipoFaturacao, string> = {
+  recibos_verdes: "Recibos verdes",
+  programa: "Programa de faturação",
+  ambos: "Recibos verdes + programa",
+  sem_info: "Sem informação",
+};
+
+const PORTAL_RE = /portal|finan[cç]as|\bat\b/gi;
+
+export function tipoFaturacao(programa: string | null | undefined): TipoFaturacao {
+  const raw = (programa || "").trim();
+  if (!raw) return "sem_info";
+  const temPortal = PORTAL_RE.test(raw);
+  PORTAL_RE.lastIndex = 0;
+  // O que sobra depois de tirar as referências ao Portal/AT e ligações ("+", "e", "/", PIN, notas)
+  const resto = raw.replace(PORTAL_RE, " ").replace(/\b(das?|e|pin|pede|pelo|wpp|pedir)\b|[+/;:|()\-\d]/gi, " ").trim();
+  if (temPortal && !resto) return "recibos_verdes";
+  if (temPortal) return "ambos";
+  return "programa";
+}
+
 export const procedureFor = (regime: ToconlineRegime, tarefa: ToconlineTarefa) =>
   TOCONLINE_PROCEDURES.find((p) => p.regime === regime && p.tarefa === tarefa);
 
