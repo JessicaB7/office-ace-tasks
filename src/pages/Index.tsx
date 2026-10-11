@@ -9,7 +9,7 @@ import FiscalCalendarView from "@/components/FiscalCalendarView";
 import NotasView from "@/components/NotasView";
 import ObrigacoesView from "@/components/ObrigacoesView";
 import ContabilidadesView from "@/components/ContabilidadesView";
-import ContabilidadesPainelView from "@/components/ContabilidadesPainelView";
+import GestaoMensalEmFaltaView from "@/components/GestaoMensalEmFaltaView";
 import ExtratosBancariosView from "@/components/ExtratosBancariosView";
 import AdminWeeklySummary from "@/components/AdminWeeklySummary";
 import ClientAnalysisView from "@/components/ClientAnalysisView";
@@ -77,7 +77,7 @@ const Index = () => {
 
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
-        {activeView === "contabilidades_painel" && <ContabilidadesPainelView />}
+        {activeView === "contabilidades_painel" && <GestaoMensalEmFaltaView onOpenRegime={(t) => setActiveView(`contabilidades_${t}`)} />}
         {activeView.startsWith("contabilidades") && activeView !== "contabilidades_painel" && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} onSubPageChange={(t) => setActiveView(`contabilidades_${t}`)} />}
         {activeView.startsWith("analise_") && <AnaliseFinanceiraView subPage={activeView.replace("analise_", "")} />}
         {activeView === "clients" && !analysisClientId && (
