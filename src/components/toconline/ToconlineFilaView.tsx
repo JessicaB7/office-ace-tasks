@@ -296,7 +296,7 @@ const ToconlineFilaView = () => {
                         className="w-full text-xs px-2 py-1 rounded border bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring"
                         onBlur={(e) => {
                           const val = e.target.value;
-                          if (val !== (job.result_notes || "")) updateJob.mutate({ id: job.id, status, result_notes: val || null });
+                          if (val !== (job.result_notes || "")) updateJob.mutate({ id: job.id, result_notes: val || null });
                         }}
                       />
                     </td>

@@ -51,13 +51,17 @@ export function useActivateToconlineJobs() {
 export function useUpdateToconlineJob() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, status, result_notes }: { id: string; status: ToconlineJobStatus; result_notes?: string | null }) => {
+    // Sem `status`, só atualiza o Resultado — não repõe um estado entretanto alterado.
+    mutationFn: async ({ id, status, result_notes }: { id: string; status?: ToconlineJobStatus; result_notes?: string | null }) => {
       const now = new Date().toISOString();
-      const patch: Database["public"]["Tables"]["toconline_jobs"]["Update"] = { status };
+      const patch: Database["public"]["Tables"]["toconline_jobs"]["Update"] = {};
       if (result_notes !== undefined) patch.result_notes = result_notes;
-      if (status === "em_curso") { patch.started_at = now; patch.finished_at = null; }
-      else if (status === "pendente") { patch.started_at = null; patch.finished_at = null; }
-      else patch.finished_at = now;
+      if (status) {
+        patch.status = status;
+        if (status === "em_curso") { patch.started_at = now; patch.finished_at = null; }
+        else if (status === "pendente") { patch.started_at = null; patch.finished_at = null; }
+        else patch.finished_at = now;
+      }
       const { error } = await supabase.from("toconline_jobs").update(patch).eq("id", id);
       if (error) throw error;
     },
