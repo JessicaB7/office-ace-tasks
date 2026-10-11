@@ -20,13 +20,16 @@ Procedimentos administrativos feitos no TOConline (pelo browser) para clientes c
    Confirmar antes que o **exercício** aberto (canto superior direito) é o do ano certo.
 4. Marcar **Vendas** e carregar em **OK**.
 5. **Finalizar** — sem verificações adicionais às sugestões, **mas nunca recibos (RC)**:
-   - Na lista de sugestões, filtrar pelos meses tratados (filtro **Mês**) e pelo tipo de documento
-     (pesquisa "FS", "FT", "FR", "NC"…) e usar **Finalizar filtrados**.
+   - Na lista de sugestões, filtrar pelos meses tratados (filtro **Mês**) e pelo **Diário = VND (Vendas)**
+     — os recibos (RC) ficam no diário BNC, por isso ficam de fora — e usar **Finalizar filtrados**.
    - Não usar "Finalizar todos" se a lista tiver recibos (RC) ou meses fora do período.
    - Depois de finalizar, a lista pode não atualizar sozinha — voltar a filtrar para confirmar.
 
 **Notas práticas**
 - O menu **Contabilidade** abre ao passar o rato por cima do separador (clicar leva a "Exercícios").
+- Depois de gerar, a lista pode aparecer vazia: recarregar a página ou aplicar o filtro **Mês**.
+- Nos filtros, escolher as opções com clique (não carregar Enter nem escrever com o foco no lançamento):
+  escrever num lançamento finalizado abre o pedido de **senha do contabilista** — fechar sem preencher.
 - Se o resultado indicar documentos **"Não sugeridos"**, normalmente já estão na contabilidade.
   Confirmar em **Contabilidade → Lançamentos finalizados** (e "Lançamentos em preparação") antes de concluir.
 
