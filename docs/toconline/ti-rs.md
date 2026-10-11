@@ -15,7 +15,8 @@ ou seja, IVA que não seja Art. 53º nem Art. 9º).
    - Selecionar o **mês** da tarefa e confirmar.
 2. **Lançar as compras recebidas por e-mail**
    - **Compras → Recebido por email**.
-   - Filtrar por **Não associado**.
+   - Filtrar por **Doc. Compra → Não associado** (anexos sem compra). Não usar o filtro
+     "Estado do anexo" (não associado a fornecedor / ao e-fatura) — esse não mostra o que falta lançar.
    - Para cada documento da lista:
      1. Abrir e **ler o anexo** (fatura do fornecedor).
      2. **Selecionar o fornecedor**.
@@ -27,6 +28,8 @@ ou seja, IVA que não seja Art. 53º nem Art. 9º).
 - o fornecedor não existe no TOConline — **não o criar**: a utilizadora cria-o. Indicar no Resultado
   o nome e o NIF do fornecedor em falta e seguir para o documento seguinte;
 - os valores do anexo não batem certo (ex.: total ≠ base + IVA).
+- o anexo é um comprovativo de pagamento ou um "detalhe da fatura" sem a fatura em si (sem data de emissão) —
+  não lançar; indicar no Resultado o n.º do documento e os valores.
 
 **Confirmação:** não é preciso pedir confirmação — pode gravar as compras sem perguntar (passos 1 e 2),
 desde que **não finalize**. Nunca criar fornecedores.
