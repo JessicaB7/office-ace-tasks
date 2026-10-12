@@ -22,21 +22,21 @@ export const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     filter: (c) => c.tipo_contabilidade === "TI RS" && c.iva !== "Art.53º" && c.iva !== "Art. 9º" && c.iva !== "" && c.iva != null,
     hideNif: true,
     gallery: true,
-    columns: ["Vendas", "Compras", "Salários", "E-Fatura"],
+    columns: ["Vendas", "Compras", "Salários", "E-Fatura", "IVA"],
   },
   organizada: {
     label: "TI Contabilidade Organizada",
     filter: (c) => c.tipo_contabilidade === "TI CO",
     hideNif: true,
     gallery: true,
-    columns: ["Vendas", "Compras", "Bancos", "Salários", "E-Fatura"],
+    columns: ["Vendas", "Compras", "Bancos", "Salários", "E-Fatura", "IVA"],
   },
   empresas: {
     label: "Empresas",
     filter: (c) => c.tipo_contabilidade === "SQ",
     hideNif: true,
     gallery: true,
-    columns: ["Vendas", "Compras", "Bancos", "Salários"],
+    columns: ["Vendas", "Compras", "Bancos", "Salários", "IVA"],
   },
 };
 
@@ -49,19 +49,38 @@ export const obligationTypesFor = (key: string, config: TabConfig): string[] => 
   return [`contabilidade_${key}`];
 };
 
+/** Último mês de um trimestre (Mar/Jun/Set/Dez), com o mês em "YYYY-MM-01". */
+export const isQuarterEndMonth = (month: string): boolean => Number(month.slice(5, 7)) % 3 === 0;
+
 /** Uma coluna pode não se aplicar a um cliente específico, apesar de existir
- * no regime — ex.: "Salários" quando o próprio cliente tem `salarios ===
- * "Não tem"` na ficha (não há folha de vencimentos a processar, não faz
- * sentido pedir para marcar/desmarcar). Nesse caso a coluna conta sempre
- * como satisfeita e mostra "Não aplicável" em vez de um estado editável. */
-export const isColumnApplicable = (client: any, column: string): boolean => {
+ * no regime:
+ * - "Salários" quando a ficha tem `salarios === "Não tem"`;
+ * - "IVA" quando o cliente é isento; no IVA trimestral só existe no último mês
+ *   do trimestre (apuramento), no mensal existe todos os meses.
+ * Nesse caso a coluna conta sempre como satisfeita. `month` ("YYYY-MM-01") é
+ * preciso para o IVA trimestral; sem ele assume-se que se aplica. */
+export const isColumnApplicable = (client: any, column: string, month?: string): boolean => {
   if (column === "Salários" && client?.salarios === "Não tem") return false;
+  if (column === "IVA") {
+    if (client?.iva === "Mensal") return true;
+    if (client?.iva === "Trimestral") return month ? isQuarterEndMonth(month) : true;
+    return false;
+  }
   return true;
 };
 
+/** A coluna existe para o cliente mas não neste mês (IVA trimestral fora do fim
+ * do trimestre) — mostra-se vazia em vez de "Não aplicável". */
+export const isColumnOffMonth = (client: any, column: string, month: string): boolean =>
+  column === "IVA" && client?.iva === "Trimestral" && !isQuarterEndMonth(month);
+
+/** Nome da tarefa para o cliente: no IVA trimestral é o apuramento do trimestre. */
+export const columnLabel = (client: any, column: string): string =>
+  column === "IVA" && client?.iva === "Trimestral" ? "Apuramento IVA" : column;
+
 /** Uma obrigação está satisfeita se estiver concluída, OU se a coluna nem
  * se aplicar a este cliente (ver isColumnApplicable). */
-export const isObligationSatisfied = (client: any, column: string, status: string | null | undefined): boolean => {
-  if (!isColumnApplicable(client, column)) return true;
+export const isObligationSatisfied = (client: any, column: string, status: string | null | undefined, month?: string): boolean => {
+  if (!isColumnApplicable(client, column, month)) return true;
   return status === "concluida";
 };

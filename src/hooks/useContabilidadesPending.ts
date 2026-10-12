@@ -38,7 +38,7 @@ export function useContabilidadesPending(referenceMonth?: string) {
       tabClients.forEach((c: any) => {
         const done = doneSets.get(c.id);
         const isDone = obTypes.every((t, i) =>
-          (done?.has(t)) || (config.columns && !isColumnApplicable(c, config.columns[i])));
+          (done?.has(t)) || (config.columns && !isColumnApplicable(c, config.columns[i], ref)));
         if (!isDone) pending++;
       });
 
@@ -47,5 +47,5 @@ export function useContabilidadesPending(referenceMonth?: string) {
     }
 
     return { perTab, totalPending };
-  }, [clients, obligations]);
+  }, [clients, obligations, ref]);
 }

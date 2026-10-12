@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useClients, useCollaborators, useMonthlyObligationsRange, useUpsertObligation } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
-import { SUB_PAGE_CONFIG, obligationTypesFor, isColumnApplicable } from "@/lib/contabilidadesConfig";
+import { SUB_PAGE_CONFIG, obligationTypesFor, isColumnApplicable, columnLabel } from "@/lib/contabilidadesConfig";
 import { getInitials, getAvatarPalette, shortName } from "@/lib/avatar";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -87,8 +87,9 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
           // Antes do início do contrato não há nada a fazer.
           if (client.inicio_contrato && client.inicio_contrato.slice(0, 7) > month.slice(0, 7)) continue;
           const cols = (config.columns || []).map((col, i) => ({ col, type: types[i] }))
-            .filter(({ col }) => isColumnApplicable(client, col));
-          const missing = cols.filter(({ type }) => !done.has(`${client.id}|${month}|${type}`));
+            .filter(({ col }) => isColumnApplicable(client, col, month));
+          const missing = cols.filter(({ type }) => !done.has(`${client.id}|${month}|${type}`))
+            .map((m) => ({ ...m, col: columnLabel(client, m.col) }));
           if (missing.length > 0) out.push({ client, regime, month, missing, total: cols.length });
         }
       }
@@ -195,7 +196,7 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
         {r.missing.map((m) => (
           <button key={m.type} type="button" onClick={() => markDone(r, m)} disabled={upsert.isPending}
             title={`Marcar ${m.col} como feito`}
-            className="w-28 shrink-0 inline-flex items-center justify-center gap-1 text-xs font-medium px-2 py-1 rounded-full border bg-card text-muted-foreground transition-colors hover:border-success hover:bg-success/10 hover:text-success disabled:opacity-60">
+            className="w-32 shrink-0 inline-flex items-center justify-center gap-1 text-xs font-medium px-2 py-1 rounded-full border bg-card text-muted-foreground transition-colors hover:border-success hover:bg-success/10 hover:text-success disabled:opacity-60">
             {m.col}
           </button>
         ))}

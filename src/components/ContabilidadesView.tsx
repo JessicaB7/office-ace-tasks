@@ -8,7 +8,7 @@ import ClientDetailDialog from "@/components/ClientDetailDialog";
 import ClientMonthlyHistoryDialog from "@/components/ClientMonthlyHistoryDialog";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
 import { getInitials, getAvatarPalette, shortName } from "@/lib/avatar";
-import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable } from "@/lib/contabilidadesConfig";
+import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable, isColumnOffMonth, columnLabel } from "@/lib/contabilidadesConfig";
 import { toast } from "sonner";
 
 const STATUS_FILTER_STORAGE_KEY = "contabilidadesStatusFilter";
@@ -162,7 +162,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   const isClientDoneWith = (c: any, maps: Record<string, any>[], single: Record<string, any>) => {
     if (noTasksTab) return false;
     if (hasMultiColumns) {
-      return maps.every((map, i) => isObligationSatisfied(c, columns![i], map[c.id]?.status));
+      return maps.every((map, i) => isObligationSatisfied(c, columns![i], map[c.id]?.status, referenceMonth));
     }
     return single[c.id]?.status === "concluida";
   };
@@ -173,7 +173,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   const getClientTier = (c: any): ClientTier => {
     if (isClientDone(c)) return "done";
     const started = (columns || []).some((col, i) => {
-      if (!isColumnApplicable(c, col)) return false;
+      if (!isColumnApplicable(c, col, referenceMonth)) return false;
       const st = colMaps[i]?.[c.id]?.status;
       return st === "concluida" || st === "em_andamento";
     });
@@ -270,7 +270,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
     let tasksDone = 0;
     filteredClients.forEach((c: any) => {
       columns!.forEach((col, i) => {
-        if (!isColumnApplicable(c, col)) return;
+        if (!isColumnApplicable(c, col, referenceMonth)) return;
         tasks++;
         if (colMaps[i][c.id]?.status === "concluida") tasksDone++;
       });
@@ -317,7 +317,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   // Fechar o cliente de uma vez: marca todas as tarefas aplicáveis ainda por fazer (um só Desfazer).
   const markAll = async (client: any) => {
     const todo = columns!.map((col, i) => ({ col, i })).filter(({ col, i }) =>
-      isColumnApplicable(client, col) && colMaps[i][client.id]?.status !== "concluida");
+      isColumnApplicable(client, col, referenceMonth) && colMaps[i][client.id]?.status !== "concluida");
     if (todo.length === 0) return;
     const now = new Date().toISOString();
     try {
@@ -355,7 +355,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   // Admin: dia em que o cliente ficou fechado = a última tarefa concluída do mês.
   const closedAt = (client: any): string | null => {
     if (!isClientDone(client)) return null;
-    const dates = columns!.map((col, i) => isColumnApplicable(client, col) ? colMaps[i][client.id]?.completed_at : null)
+    const dates = columns!.map((col, i) => isColumnApplicable(client, col, referenceMonth) ? colMaps[i][client.id]?.completed_at : null)
       .filter(Boolean) as string[];
     if (dates.length === 0) return null;
     return new Date(dates.reduce((a, b) => (a > b ? a : b))).toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -368,8 +368,8 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
       {collabFilter === "all" && <div className="w-6 shrink-0" />}
       {hasMultiColumns && !noTasksTab && (
         <>
-          <div className="flex shrink-0 w-[55%] max-w-4xl">
-            <div className="flex-1">Tarefas</div>
+          <div className="flex gap-1.5 shrink-0 w-[55%] max-w-4xl">
+            {columns!.map((col) => <div key={col} className="flex-1 min-w-0 truncate text-center">{col}</div>)}
           </div>
           {isAdmin && <div className="w-24 shrink-0 text-center">Fechado em</div>}
           <div className="w-7 shrink-0" />
@@ -422,20 +422,27 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
           <>
             <div className="flex gap-1.5 shrink-0 w-[55%] max-w-4xl">
               {columns!.map((col, i) => {
-                if (!isColumnApplicable(client, col)) {
-                  return <span key={col} aria-hidden className="flex-1" />;
+                if (!isColumnApplicable(client, col, referenceMonth)) {
+                  // IVA trimestral fora do fim do trimestre: não há tarefa neste mês (vazio).
+                  if (isColumnOffMonth(client, col, referenceMonth)) return <span key={col} aria-hidden className="flex-1 min-w-0" />;
+                  return (
+                    <span key={col} className="flex-1 min-w-0 truncate text-center text-xs italic text-muted-foreground/60 px-2 py-1">
+                      Não aplicável
+                    </span>
+                  );
                 }
                 const obl = colMaps[i][client.id];
                 const isDone = obl?.status === "concluida";
                 const started = obl?.status === "em_andamento";
+                const label = columnLabel(client, col);
                 return (
-                  <button key={col} type="button" onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], col)}
-                    title={isDone ? `${col}: feito${whoDid(obl) ? ` — ${whoDid(obl)}` : ""} (clicar para desmarcar)` : started ? `${col}: em andamento (clicar para marcar como feito)` : `Marcar ${col} como feito`}
+                  <button key={col} type="button" onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], label)}
+                    title={isDone ? `${label}: feito${whoDid(obl) ? ` — ${whoDid(obl)}` : ""} (clicar para desmarcar)` : started ? `${label}: em andamento (clicar para marcar como feito)` : `Marcar ${label} como feito`}
                     className={cn("flex-1 min-w-0 truncate text-xs font-medium px-2 py-1 rounded-full border transition-colors",
                       isDone ? "bg-success/15 text-success border-success/30 hover:bg-success/25"
                         : started ? "bg-warning/15 text-warning border-warning/30 hover:bg-warning/25"
                         : "bg-muted text-muted-foreground border-transparent hover:border-success hover:text-success")}>
-                    {col}
+                    {label}
                   </button>
                 );
               })}
