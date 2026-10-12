@@ -109,3 +109,30 @@ TOConline) ou documentos com erros.
 
 **Confirmação:** não é preciso pedir — fazer todas as linhas do mês quando a tarefa é ativada.
 No Resultado: n.º de documentos marcados e os que ficaram por marcar (com o motivo).
+
+## 5. Mapa de análise (exportar mapas e importar na app)
+
+**Aplica-se a:** todos os clientes do regime. Tarefa **trimestral**: o mês da tarefa na Fila é o **último mês do
+trimestre** (Mar / Jun / Set / Dez). Se a tarefa estiver noutro mês, usar o trimestre a que esse mês pertence.
+
+**Passos no TOConline** (confirmar a empresa no canto superior esquerdo e o **exercício** do ano certo)
+1. **Mapa de Exploração** — **Contabilidade → Outros mapas → Mapa de exploração**.
+   Período: de **Janeiro até ao último mês do trimestre** (na app só existe um Mapa de Exploração por ano, e a
+   nova importação substitui a anterior — exportar só o trimestre apagava os trimestres anteriores).
+   Exportar em **PDF**.
+2. **Balancete** — **Contabilidade → Balancetes** → selecionar **só os 3 meses do trimestre**
+   (ex.: 2º trimestre = Abril a Junho). Exportar em **PDF**.
+
+**Passos na app**
+1. **Clientes → Análise financeira** → abrir o cliente → separador **Dados** → escolher o **ano** do trimestre.
+2. Em "Ficheiros importados": botão de importar do **Mapa de Exploração** → escolher o PDF do mapa.
+3. Botão de importar do **Balancete Nº trimestre** certo → escolher o PDF do balancete.
+4. Confirmar as mensagens da app: "Importação concluída" e, no balancete, o período lido (ex.: 04–06/2026).
+
+**Parar e avisar** (tarefa **Bloqueada**, com o motivo no Resultado):
+- a app diz que o **NIF do documento não corresponde** ao do cliente;
+- "Não foram encontradas linhas com códigos de conta reconhecidos" ou "valores não pertencem ao período";
+- o mapa ou o balancete vem vazio no TOConline (trimestre ainda por lançar).
+
+**Confirmação:** não é preciso pedir — exportar, importar e concluir.
+No Resultado: trimestre, ficheiros importados e n.º de valores carregados de cada um (mensagem da app).

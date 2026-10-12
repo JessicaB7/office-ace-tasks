@@ -38,13 +38,18 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      `ti-co.md`: todas as linhas do e-Fatura do mês; dúvidas ficam por marcar e vão para o Resultado.
    - `ti_rs_salarios` / `ti_co_salarios` / `empresas_salarios` → secção 3 "Lançar os salários" do manual do
      regime (`ti-rs.md`, `ti-co.md`, `empresas.md`). Só gerar sugestões — **não finalizar**.
+   - `ti_rs_mapa_analise` / `ti_co_mapa_analise` / `empresas_mapa_analise` → secção "Mapa de análise" do manual
+     do regime (secção 5 em `ti-rs.md` / `ti-co.md`, secção 4 em `empresas.md`). Trimestral: mês da tarefa = fim do
+     trimestre. Exportar Mapa de Exploração + Balancete em PDF do TOConline e importar na app
+     (Clientes → Análise financeira → cliente → Dados). Os PDFs ficam nas Transferências — o upload na app faz-se
+     com a ferramenta de upload de ficheiros do Chrome.
    - **TI Simplificado / TI Organizado:** o procedimento depende de o cliente passar **recibos verdes**
      (Portal das Finanças / AT) ou usar **programa de faturação** — a Fila mostra-o numa etiqueta junto ao
      cliente (calculada a partir do "Programa de Faturação"; "ambos" = as duas coisas). Seguir a secção do
      manual para esse tipo; se o manual não tiver secção para esse tipo → **Bloqueada** com
      "Sem manual para <tipo>".
    - Na Fila, as tarefas aparecem separadas por regime (TI Simplificado / TI Organizado / Empresas)
-     e por tarefa (Vendas / Compras / Salários).
+     e por tarefa (Vendas / Compras / Salários / Mapa de análise).
 5. Regista o resultado na Fila:
    - **Resultado** (caixa de texto): o que foi feito — mês, tipos/n.º de documentos
      finalizados, avisos. Curto e factual, em pt-PT.
