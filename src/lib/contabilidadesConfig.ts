@@ -84,3 +84,15 @@ export const isObligationSatisfied = (client: any, column: string, status: strin
   if (!isColumnApplicable(client, column, month)) return true;
   return status === "concluida";
 };
+
+/** Tipo de obrigação da tarefa IVA da Gestão Mensal para este cliente (conforme o
+ * regime), ou null se o regime do cliente não tiver IVA. Partilhado com a coluna
+ * "Apuramento" do IVA Periódica, para as duas ficarem ligadas ao mesmo registo. */
+export const ivaObligationTypeFor = (client: any): string | null => {
+  for (const key of ["TI_iva", "organizada", "empresas"]) {
+    const cfg = SUB_PAGE_CONFIG[key];
+    const idx = cfg.columns?.indexOf("IVA") ?? -1;
+    if (idx >= 0 && cfg.filter(client)) return obligationTypesFor(key, cfg)[idx];
+  }
+  return null;
+};

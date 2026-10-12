@@ -4,6 +4,7 @@ import { Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
+import { ivaObligationTypeFor, isColumnApplicable } from "@/lib/contabilidadesConfig";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const SAFT_GROUPS = ["Automático", "A entregar"];
@@ -289,6 +290,20 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     obligations.forEach((o: any) => { if (o.obligation_type === type) map[o.client_id] = o; });
     return map;
   }, [obligations, activeTab, isDMR, dmrTab, isSSTI, ssTiTab, subFilter]);
+
+  // IVA Periódica — "Apuramento": é o mesmo registo da tarefa IVA da Gestão Mensal
+  // (contabilidade_<regime>_iva no mesmo mês), por isso marcar aqui marca lá e vice-versa.
+  const apuramentoMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    if (!isIVAPeriodica) return map;
+    const byKey = new Map<string, any>();
+    obligations.forEach((o: any) => byKey.set(`${o.client_id}|${o.obligation_type}`, o));
+    activeClients.forEach((c: any) => {
+      const type = ivaObligationTypeFor(c);
+      if (type) map[c.id] = byKey.get(`${c.id}|${type}`);
+    });
+    return map;
+  }, [obligations, activeClients, isIVAPeriodica]);
 
   // Emissão de faturas semanal: uma marcação por semana (emissao_faturas_S1..S4)
   const weekMap = useMemo(() => {
@@ -641,6 +656,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                 )}
                 {isIVAPeriodica && (
                   <>
+                    <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-24" title="Ligado à tarefa IVA da Gestão Mensal">Apuramento</th>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-20">Entregue</th>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-24">Flexibilização</th>
                     <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Método de Pagamento</th>
@@ -802,6 +818,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
                     )}
                     {isIVAPeriodica && (
                       <>
+                        <td className="text-center px-3 py-3">
+                          {(() => {
+                            const type = ivaObligationTypeFor(client);
+                            if (!type || !isColumnApplicable(client, "IVA", referenceMonth)) return <span className="text-muted-foreground/30">—</span>;
+                            return <CheckboxCell done={apuramentoMap[client.id]?.status === "concluida"} onClick={() => toggleObligation(client.id, type, apuramentoMap)} />;
+                          })()}
+                        </td>
                         <td className="text-center px-3 py-3"><CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} /></td>
                         <td className="text-center px-3 py-3">
                           <button onClick={() => toggleExtra(client.id)} disabled={upsert.isPending}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isColumnApplicable, isColumnOffMonth, columnLabel, isObligationSatisfied } from "@/lib/contabilidadesConfig";
+import { isColumnApplicable, isColumnOffMonth, columnLabel, isObligationSatisfied, ivaObligationTypeFor } from "@/lib/contabilidadesConfig";
 
 describe("isColumnApplicable — IVA", () => {
   it("IVA mensal aplica-se todos os meses", () => {
@@ -25,5 +25,16 @@ describe("isColumnApplicable — IVA", () => {
   });
   it("Salários continua não aplicável quando não tem", () => {
     expect(isColumnApplicable({ salarios: "Não tem" }, "Salários", "2026-09-01")).toBe(false);
+  });
+});
+
+describe("ivaObligationTypeFor — ligação ao IVA Periódica", () => {
+  it("usa a tarefa IVA do regime do cliente", () => {
+    expect(ivaObligationTypeFor({ tipo_contabilidade: "TI RS", iva: "Mensal" })).toBe("contabilidade_TI_iva_iva");
+    expect(ivaObligationTypeFor({ tipo_contabilidade: "TI CO", iva: "Trimestral" })).toBe("contabilidade_organizada_iva");
+    expect(ivaObligationTypeFor({ tipo_contabilidade: "SQ", iva: "Mensal" })).toBe("contabilidade_empresas_iva");
+  });
+  it("TI Simplificado isento não tem tarefa IVA", () => {
+    expect(ivaObligationTypeFor({ tipo_contabilidade: "TI RS", iva: "Art.53º" })).toBeNull();
   });
 });
