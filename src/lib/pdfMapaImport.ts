@@ -39,6 +39,12 @@ const findNif = (text: string): string | null => {
 // Uma linha com esse código que apareça POSITIVA no PDF é uma exceção (ex.: devolução/
 // correção) e deve reduzir o total, não somar — por isso invertemos o sinal em vez de
 // converter para valor absoluto. Rendimentos (vendas) já vêm positivos no PDF.
+const MONTH_NAMES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+const monthFromLabel = (s: string): number | null => {
+  const i = MONTH_NAMES.indexOf(s.trim().toLowerCase());
+  return i >= 0 ? i + 1 : null;
+};
+
 const SIGN_FLIPPED_SECTIONS = new Set(["despesas", "compras", "pessoal", "pessoal_socios", "pessoal_colab"]);
 
 export async function parseMapaPdf(file: File, accountsInfo: MapaAccountInfo[]): Promise<MapaParseResult> {
@@ -74,6 +80,17 @@ export async function parseMapaPdf(file: File, accountsInfo: MapaAccountInfo[]):
       rows.set(key, arr);
     }
 
+    // Cabeçalho "Conta | Descrição | Janeiro | … | Total": o mapa pode ter só parte do ano
+    // (ex.: Janeiro a Setembro), por isso as colunas mapeiam-se pelos nomes dos meses.
+    let columns: (number | null)[] | null = null;
+    for (const arr of rows.values()) {
+      const labels = [...arr].sort((a, b) => a.x - b.x).map((it) => it.str.trim());
+      if (labels.filter((l) => monthFromLabel(l)).length >= 1 && labels.some((l) => /^total$/i.test(l))) {
+        columns = labels.filter((l) => monthFromLabel(l) || /^total$/i.test(l)).map(monthFromLabel);
+        break;
+      }
+    }
+
     for (const arr of rows.values()) {
       arr.sort((a, b) => a.x - b.x);
       if (arr.length < 3) continue;
@@ -86,14 +103,18 @@ export async function parseMapaPdf(file: File, accountsInfo: MapaAccountInfo[]):
         const n = ptNumber(arr[i].str);
         if (n !== null) nums.push({ v: n, x: arr[i].x });
       }
-      if (nums.length < 12) continue;
-      // Take first 12 numbers (last one would be Total which we drop)
-      // Some rows have exactly 13 (12 months + total). Drop the last only if length >= 13.
-      const monthly = nums.length >= 13 ? nums.slice(0, 12) : nums.slice(0, 12);
+      let monthly: { v: number; month: number }[];
+      if (columns && nums.length === columns.length) {
+        monthly = nums.flatMap((n, i) => (columns![i] ? [{ v: n.v, month: columns![i]! }] : []));
+      } else {
+        if (nums.length < 12) continue;
+        // Sem cabeçalho: 12 meses (+ Total, que se ignora)
+        monthly = nums.slice(0, 12).map((n, i) => ({ v: n.v, month: i + 1 }));
+      }
 
       const flipSign = SIGN_FLIPPED_SECTIONS.has(sectionByCode.get(code) ?? "");
-      monthly.forEach((n, idx) => {
-        const month = idx + 1;
+      monthly.forEach((n) => {
+        const month = n.month;
         const k = `${code}-${month}`;
         if (seen.has(k)) return;
         seen.add(k);
