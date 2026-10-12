@@ -389,6 +389,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
 
   return (
     <div className="space-y-5">
+      <h2 className="text-2xl font-bold">Gestão Mensal de Clientes</h2>
       <div className="flex items-end justify-between gap-4 flex-wrap border-b">
         <div className="flex gap-1 overflow-x-auto" role="tablist" aria-label="Regime">
           {REGIME_TABS.map((t) => {
