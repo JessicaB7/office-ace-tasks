@@ -55,7 +55,7 @@ const Index = () => {
     setDialogOpen(true);
   };
 
-  const isContabRegimes = activeView.startsWith("contabilidades_") && activeView !== "contabilidades_painel";
+  const isContabRegimes = activeView.startsWith("contabilidades_");
 
   return (
     <div className="flex min-h-screen">

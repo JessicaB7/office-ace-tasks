@@ -88,8 +88,8 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
           label: "Gestão Mensal",
           icon: BookOpen,
           items: [
-            { id: "contabilidades_painel", label: "Em falta", adminOnly: true },
-            { id: "contabilidades_TI_iva", label: "Clientes do mês" },
+            { id: "contabilidades_painel", label: "Tarefas em falta", adminOnly: true },
+            { id: "contabilidades_TI_iva", label: "Por regime" },
           ],
         },
       },
