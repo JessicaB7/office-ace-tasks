@@ -97,3 +97,31 @@ describe("Millennium Cartão de Crédito", () => {
     expect(+(p.saldoInicial! + soma).toFixed(2)).toBe(p.saldoFinal);
   });
 });
+
+describe("Crédito Agrícola", () => {
+  test("datas ISO, descritivo em duas linhas, rodapés e sinal pelo saldo", () => {
+    const text = [
+      "Internet: www.creditoagricola.pt",
+      "Data Mov. Data Valor Descritivo",
+      "Débito Crédito Valor",
+      "Saldo em 30-06-2026 404,12",
+      "2026-07-01 2026-07-01 IPS/R3168510523-ANA PAULA TESTA 30,00 434,12",
+      "A Transportar 434,12",
+      "Agradecemos que qualquer reclamação sobre a informação constante deste documento",
+      "Transporte 434,12",
+      "2026-07-01 2026-07-01 Trf crédito intrab benef diferentes ANABELA",
+      "CRISTINA SIMÕES PAULINO 33,00 467,12",
+      "2026-07-07 2026-07-07 Trf imediata JESSICA BRANDAO LDA 184,50 282,62",
+      "2026-07-07 2026-07-07 Transferência imediata SEPA + 1,04 281,58",
+      "2026-07-11 2026-07-10 Manutenção de conta 20,80 260,78",
+      "Saldo em 31-07-2026 260,78",
+    ].join("\n");
+    const p = parseBankText(text);
+    expect(p.bank).toBe("Crédito Agrícola");
+    expect(p.transactions.map((t) => t.movimento)).toEqual([30, 33, -184.5, -1.04, -20.8]);
+    expect(p.transactions[1].descricao).toBe("Trf crédito intrab benef diferentes ANABELA CRISTINA SIMÕES PAULINO");
+    expect(p.transactions[4].dataValor.getDate()).toBe(10);
+    expect(p.saldoInicial).toBe(404.12);
+    expect(p.saldoFinal).toBe(260.78);
+  });
+});

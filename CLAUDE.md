@@ -87,7 +87,7 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
   3 meses; os registos vivem nos meses canónicos de fim de trimestre (Mar/Jun/Set/Dez).
 
 ### Extratos bancários (`src/lib/bankParsers.ts`, `ExtratosBancariosView.tsx`)
-- Parsers de PDF/XLSX: **Revolut, Santander Business, Novo Banco, Abanca, BPI** (incl. cartão de crédito), BCP.
+- Parsers de PDF/XLSX: **Revolut, Santander Business, Novo Banco, Abanca, BPI** (incl. cartão de crédito), BCP, **Crédito Agrícola**.
 - Datas interpretadas ao **meio-dia local** (evita drift de fuso). Descrições multi-linha;
   sinal do movimento derivado do **delta de saldo**; rodapés ignorados por coordenadas no PDF.js.
 - "Hint" de banco persistido em localStorage. Exportação XLSX para **TOConline**

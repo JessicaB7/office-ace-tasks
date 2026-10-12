@@ -24,6 +24,7 @@ const BANK_KEYWORDS: Record<string, string[]> = {
   "Novo Banco": ["novo banco", "novobanco"],
   Abanca: ["abanca", "pt5001703"],
   ActivoBank: ["activobank", "activo bank"],
+  "Crédito Agrícola": ["crédito agrícola", "creditoagricola", "cccmptpl"],
 };
 
 export function detectBank(text: string): string | null {
@@ -1163,6 +1164,64 @@ function parseActivoBank(text: string): ParsedStatement {
 }
 
 
+// ---------- Crédito Agrícola parser ----------
+// Linha: "AAAA-MM-DD AAAA-MM-DD DESCRITIVO [DÉBITO|CRÉDITO] SALDO" (colunas Débito/Crédito/Valor).
+// O descritivo pode continuar na(s) linha(s) seguinte(s); o par "valor saldo" fica na última.
+// O sinal do movimento vem do delta de saldo. "Saldo em DD-MM-AAAA" = saldos inicial/final;
+// "Transporte" / "A Transportar" são rodapés de página.
+function parseCreditoAgricola(text: string): ParsedStatement {
+  const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const num = (s: string) => Number(s.replace(/\./g, "").replace(",", "."));
+  const reAmt = "\\d{1,3}(?:\\.\\d{3})*,\\d{2}";
+  const reStart = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{4})-(\d{2})-(\d{2})\s*(.*)$/;
+  const reTail = new RegExp(`^(.*?)\\s*(${reAmt})\\s+(-?${reAmt})$`);
+  const reSaldo = new RegExp(`^Saldo em \\d{2}-\\d{2}-\\d{4}\\s+(-?${reAmt})$`, "i");
+
+  const txs: BankTransaction[] = [];
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  let saldo: number | null = null;
+  let pending: { d: Date; dv: Date; desc: string[] } | null = null;
+
+  const close = (descTail: string, valor: number, novoSaldo: number) => {
+    if (!pending) return;
+    if (descTail) pending.desc.push(descTail);
+    const movimento = saldo !== null ? Math.round((novoSaldo - saldo) * 100) / 100 : valor;
+    txs.push({ dataMov: pending.d, dataValor: pending.dv, descricao: pending.desc.join(" ").trim(), movimento });
+    saldo = novoSaldo;
+    pending = null;
+  };
+
+  for (const line of lines) {
+    const ms = line.match(reSaldo);
+    if (ms) {
+      const v = num(ms[1]);
+      if (saldoInicial === undefined) { saldoInicial = v; saldo = v; } else saldoFinal = v;
+      pending = null;
+      continue;
+    }
+    if (/^(A\s+)?Transport(e|ar)\b/i.test(line)) { pending = null; continue; }
+    const m = line.match(reStart);
+    if (m) {
+      pending = {
+        d: makeDateOnly(Number(m[1]), Number(m[2]), Number(m[3])),
+        dv: makeDateOnly(Number(m[4]), Number(m[5]), Number(m[6])),
+        desc: [],
+      };
+      const t = m[7].match(reTail);
+      if (t) close(t[1], num(t[2]), num(t[3]));
+      else if (m[7]) pending.desc.push(m[7]);
+      continue;
+    }
+    if (!pending) continue;
+    const t = line.match(reTail);
+    if (t) close(t[1], num(t[2]), num(t[3]));
+    else pending.desc.push(line);
+  }
+  if (saldoFinal === undefined && saldo !== null && txs.length) saldoFinal = saldo;
+  return { bank: "Crédito Agrícola", transactions: txs, saldoInicial, saldoFinal };
+}
+
 const isSantanderCartaoCredito = (text: string): boolean =>
   /SANTANDER\s+BUSINESS/i.test(text) &&
   /DETALHE\s+DE\s+MOVIMENTOS/i.test(text) &&
@@ -1185,6 +1244,7 @@ export function parseBankText(text: string, bankHint?: string | null): ParsedSta
   }
   if (bank === "Abanca") return parseAbanca(text);
   if (bank === "ActivoBank") return parseActivoBank(text);
+  if (bank === "Crédito Agrícola") return parseCreditoAgricola(text);
 
   if (bank === "Novo Banco") {
     if (/Consulta\s+de\s+movimentos/i.test(text) || /\b\d{2}-\d{2}-\d{4}\b/.test(text)) {

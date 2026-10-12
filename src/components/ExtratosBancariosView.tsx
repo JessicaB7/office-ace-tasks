@@ -17,7 +17,7 @@ import {
 } from "@/lib/bankParsers";
 import { isStaleChunkError, recoverFromStaleChunk } from "@/lib/staleChunk";
 
-const BANCOS = ["Auto", "Abanca", "ActivoBank", "BPI", "CGD", "Genérico", "Millennium", "Novo Banco", "Revolut", "Santander"];
+const BANCOS = ["Auto", "Abanca", "ActivoBank", "BPI", "CGD", "Crédito Agrícola", "Genérico", "Millennium", "Novo Banco", "Revolut", "Santander"];
 
 const parseInputDate = (value: string) => {
   const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
