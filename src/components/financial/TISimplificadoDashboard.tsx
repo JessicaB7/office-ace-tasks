@@ -556,10 +556,12 @@ export default function TISimplificadoDashboard({
               className="group relative overflow-hidden rounded-xl border bg-background p-3 min-h-[124px] h-full flex flex-col justify-between transition-colors hover:border-primary/40"
             >
               <span className="absolute inset-x-0 top-0 h-0.5 bg-primary/60" />
-              <div className="flex items-center gap-1.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{i + 1}</span>
-                <span className="text-[11px] font-semibold text-muted-foreground">trimestre</span>
-              </div>
+              <div className="text-[11px] text-muted-foreground">{i + 1}º trimestre</div>
+              {exporting ? (
+                <div className="text-lg font-bold tabular-nums text-foreground">
+                  {fmtEur(val / 3)}<span className="ml-1 text-[11px] font-normal text-muted-foreground">/mês</span>
+                </div>
+              ) : (
               <div className="relative">
                 <input
                   type="number"
@@ -581,6 +583,7 @@ export default function TISimplificadoDashboard({
                 />
                 <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">€/mês</span>
               </div>
+              )}
               <div className="flex items-baseline justify-between border-t pt-2 text-[11px]">
                 <span className="text-muted-foreground">Trimestre</span>
                 <span className="font-semibold tabular-nums text-foreground">{fmtEur(val)}</span>
