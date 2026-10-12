@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useClients, useCollaborators, useMonthlyObligationsRange, useUpsertObligation } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
-import { OBRIGACAO_GROUPS, obrigacoesForClient, isObrigacaoDone, type ObrigacaoTask } from "@/lib/obrigacoesControlo";
+import { OBRIGACAO_GROUPS, OBRIGACAO_SUBFILTERS, obrigacoesForClient, isObrigacaoDone, saftModo, ssPagamento, type ObrigacaoTask } from "@/lib/obrigacoesControlo";
 import { getInitials, getAvatarPalette, shortName } from "@/lib/avatar";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -36,7 +36,10 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
   const { data: clients = [], isLoading } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const [collabFilter, setCollabFilter] = useState("all");
-  const [groupFilter, setGroupFilter] = useState("all");
+  const [groupFilter, setGroupFilterState] = useState("all");
+  // Filtros dentro da obrigação escolhida (ex.: DMR → AT/SS, Guia/Pagamento); "" = todos.
+  const [subFilters, setSubFilters] = useState<Record<string, string>>({});
+  const setGroupFilter = (id: string) => { setGroupFilterState(id); setSubFilters({}); };
   const [search, setSearch] = useState("");
   const [showLate, setShowLate] = useState(true);
   const { user } = useAuth();
@@ -91,8 +94,13 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
   }, [rows, collabFilter, search]);
   // Com uma obrigação escolhida, cada linha mostra só o que falta dessa obrigação.
   const filtered = groupFilter === "all" ? baseFiltered : baseFiltered
-    .map((r) => ({ ...r, missing: r.missing.filter((t) => t.group === groupFilter) }))
+    .map((r) => ({
+      ...r,
+      missing: r.missing.filter((t) => t.group === groupFilter &&
+        Object.entries(subFilters).every(([k, v]) => !v || t.meta[k] === v)),
+    }))
     .filter((r) => r.missing.length > 0);
+  const subFilterDefs = OBRIGACAO_SUBFILTERS[groupFilter] || [];
 
   const inMonth = filtered.filter((r) => r.month === selMonth);
   // Atrasos: meses anteriores ao escolhido, mais recentes primeiro.
@@ -154,6 +162,14 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
           className="font-medium text-left truncate hover:text-primary">
           {r.client.name}
         </button>
+        {groupFilter === "SAFT" && (
+          <span className="ml-auto text-xs text-muted-foreground shrink-0 truncate">
+            {saftModo(r.client)} · {r.client.programa_faturacao || "sem programa"}
+          </span>
+        )}
+        {groupFilter === "SS_TI" && (
+          <span className="ml-auto text-xs text-muted-foreground shrink-0">{ssPagamento(r.client)}</span>
+        )}
         {showMonth && (
           <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-destructive/10 text-destructive shrink-0">{MONTH_NAMES[Number(r.month.slice(5, 7)) - 1]}</span>
         )}
@@ -200,6 +216,26 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
         <StatCard id="all" label="Clientes em falta" />
         {OBRIGACAO_GROUPS.map((g) => <StatCard key={g.id} id={g.id} label={g.label} />)}
       </div>
+
+      {subFilterDefs.length > 0 && (
+        <div className="flex gap-4 flex-wrap items-center">
+          {subFilterDefs.map((def) => (
+            <div key={def.key} className="flex rounded-lg border bg-card p-0.5" role="group" aria-label={def.label}>
+              {["", ...def.options].map((opt) => {
+                const active = (subFilters[def.key] || "") === opt;
+                return (
+                  <button key={opt || "all"} type="button" aria-pressed={active}
+                    onClick={() => setSubFilters((f) => ({ ...f, [def.key]: opt }))}
+                    className={cn("px-3 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors",
+                      active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted")}>
+                    {opt || "Todos"}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex gap-3 items-center flex-wrap">
         <div className="relative w-64">

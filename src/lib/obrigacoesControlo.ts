@@ -11,7 +11,27 @@ export interface ObrigacaoTask {
   type: string;
   /** "status" = coluna principal (status concluida); "extra" = segunda coluna (extra_done). */
   field: "status" | "extra";
+  /** Valores para os filtros dentro da obrigação (ver OBRIGACAO_SUBFILTERS). */
+  meta: Record<string, string>;
 }
+
+/** Filtros que aparecem ao escolher uma obrigação: dimensão → valores possíveis. */
+export const OBRIGACAO_SUBFILTERS: Record<string, { key: string; label: string; options: string[] }[]> = {
+  SAFT: [{ key: "modo", label: "Modo", options: ["Automático", "Manual"] }],
+  DMR: [
+    { key: "dmr", label: "DMR", options: ["AT", "SS"] },
+    { key: "fase", label: "Fase", options: ["Guia", "Pagamento"] },
+  ],
+  SS_TI: [{ key: "pagamento", label: "Forma de pagamento", options: ["Referência", "Débito Direto", "Sem forma de pagamento"] }],
+  IVA: [{ key: "periodicidade", label: "Periodicidade", options: ["Mensal", "Trimestral"] }],
+  IVA_recapitulativa: [{ key: "periodicidade", label: "Periodicidade", options: ["Mensal", "Trimestral"] }],
+};
+
+/** SAFT "A entregar" é o envio manual; "Automático" é automático. */
+export const saftModo = (c: any) => (c.saft === "Automático" ? "Automático" : "Manual");
+/** Forma de pagamento da SS TI, ou "Sem forma de pagamento". */
+export const ssPagamento = (c: any) =>
+  c.pag_seguranca_social === "Referência" || c.pag_seguranca_social === "Débito Direto" ? c.pag_seguranca_social : "Sem forma de pagamento";
 
 export const OBRIGACAO_GROUPS: { id: string; label: string }[] = [
   { id: "SAFT", label: "SAFT" },
@@ -21,7 +41,6 @@ export const OBRIGACAO_GROUPS: { id: string; label: string }[] = [
   { id: "IVA", label: "IVA - Periódica" },
   { id: "IVA_recapitulativa", label: "IVA - Recapitulativa" },
   { id: "retencao_fonte", label: "Retenção na Fonte" },
-  { id: "emissao_faturas", label: "Emissão de Faturas" },
 ];
 
 const hasSalarios = (c: any) => !!c.salarios && c.salarios !== "Não tem";
@@ -36,29 +55,28 @@ export const obrigacoesForClient = (c: any, month: string): ObrigacaoTask[] => {
   if (c.inicio_contrato && c.inicio_contrato.slice(0, 7) > month.slice(0, 7)) return [];
   const m = monthIndex(month);
   const out: ObrigacaoTask[] = [];
-  const add = (group: string, label: string, type: string, field: "status" | "extra" = "status") =>
-    out.push({ group, label, type, field });
+  const add = (group: string, label: string, type: string, field: "status" | "extra" = "status", meta: Record<string, string> = {}) =>
+    out.push({ group, label, type, field, meta });
 
-  if (c.saft && c.saft !== "Não Aplicável") add("SAFT", "SAFT", "SAFT");
+  if (c.saft && c.saft !== "Não Aplicável") add("SAFT", "SAFT", "SAFT", "status", { modo: saftModo(c) });
   if (hasSalarios(c)) {
     add("salarios", "Salários", "salarios");
     add("salarios", "Envio salários", "salarios", "extra");
-    add("DMR", "DMR AT guia", "DMR_AT");
-    add("DMR", "DMR AT pagam.", "DMR_AT", "extra");
-    add("DMR", "DMR SS guia", "DMR_SS");
-    add("DMR", "DMR SS pagam.", "DMR_SS", "extra");
+    add("DMR", "DMR AT guia", "DMR_AT", "status", { dmr: "AT", fase: "Guia" });
+    add("DMR", "DMR AT pagam.", "DMR_AT", "extra", { dmr: "AT", fase: "Pagamento" });
+    add("DMR", "DMR SS guia", "DMR_SS", "status", { dmr: "SS", fase: "Guia" });
+    add("DMR", "DMR SS pagam.", "DMR_SS", "extra", { dmr: "SS", fase: "Pagamento" });
   }
-  if (isTI(c) && !hasSalarios(c) && c.seguranca_social !== "Isento") add("SS_TI", "SS TI", "SS_TI");
+  if (isTI(c) && !hasSalarios(c) && c.seguranca_social !== "Isento") add("SS_TI", "SS TI", "SS_TI", "status", { pagamento: ssPagamento(c) });
   // Declaração trimestral da SS: só em Janeiro, Abril, Julho e Outubro.
-  if (isTI(c) && [0, 3, 6, 9].includes(m)) add("SS_TI", "SS declaração", "SS_TI_DT");
-  if (c.iva === "Mensal" || (c.iva === "Trimestral" && isQuarterEnd(month))) add("IVA", "IVA entregue", "IVA");
+  if (isTI(c) && [0, 3, 6, 9].includes(m)) add("SS_TI", "SS declaração", "SS_TI_DT", "status", { pagamento: ssPagamento(c) });
+  if (c.iva === "Mensal" || (c.iva === "Trimestral" && isQuarterEnd(month))) {
+    add("IVA", c.iva === "Mensal" ? "IVA mensal" : "IVA trimestral", "IVA", "status", { periodicidade: c.iva });
+  }
   if (c.recapitulativa === "Mensal" || (c.recapitulativa === "Trimestral" && isQuarterEnd(month))) {
-    add("IVA_recapitulativa", "Recapitulativa", "IVA_recapitulativa");
+    add("IVA_recapitulativa", c.recapitulativa === "Mensal" ? "Recap. mensal" : "Recap. trimestral", "IVA_recapitulativa", "status", { periodicidade: c.recapitulativa });
   }
   if (c.tipo_contabilidade === "SQ" || c.tipo_contabilidade === "TI CO") add("retencao_fonte", "Retenção fonte", "retencao_fonte");
-  if (c.faturacao === "Emitir" && (c.faturacao_frequencia === "Mensal" || c.faturacao_frequencia === "Semanal")) {
-    add("emissao_faturas", "Emissão faturas", "emissao_faturas");
-  }
   return out;
 };
 

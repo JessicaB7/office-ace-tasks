@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { obrigacoesForClient, isObrigacaoDone } from "@/lib/obrigacoesControlo";
+import { obrigacoesForClient, isObrigacaoDone, saftModo, ssPagamento } from "@/lib/obrigacoesControlo";
 
 const labels = (c: any, m: string) => obrigacoesForClient(c, m).map((t) => t.label);
 
@@ -7,7 +7,7 @@ describe("obrigacoesForClient", () => {
   it("empresa com salários e IVA trimestral", () => {
     const c = { tipo_contabilidade: "SQ", saft: "A entregar", salarios: "Sim até dia 25", iva: "Trimestral", recapitulativa: "Não Aplicável" };
     expect(labels(c, "2026-08-01")).toEqual(["SAFT", "Salários", "Envio salários", "DMR AT guia", "DMR AT pagam.", "DMR SS guia", "DMR SS pagam.", "Retenção fonte"]);
-    expect(labels(c, "2026-09-01")).toContain("IVA entregue");
+    expect(labels(c, "2026-09-01")).toContain("IVA trimestral");
   });
   it("TI sem salários: SS mensal e declaração trimestral só em Jan/Abr/Jul/Out", () => {
     const c = { tipo_contabilidade: "TI RS", seguranca_social: "Trimestral", iva: "Art.53º" };
@@ -25,5 +25,20 @@ describe("obrigacoesForClient", () => {
     expect(isObrigacaoDone(proc, { status: "concluida" })).toBe(true);
     expect(isObrigacaoDone(envio, { status: "concluida", extra_done: false })).toBe(false);
     expect(isObrigacaoDone(envio, { extra_done: true })).toBe(true);
+  });
+});
+
+describe("filtros dentro das obrigações", () => {
+  it("SAFT automático vs manual", () => {
+    expect(saftModo({ saft: "Automático" })).toBe("Automático");
+    expect(saftModo({ saft: "A entregar" })).toBe("Manual");
+  });
+  it("forma de pagamento SS", () => {
+    expect(ssPagamento({ pag_seguranca_social: "Débito Direto" })).toBe("Débito Direto");
+    expect(ssPagamento({ pag_seguranca_social: "" })).toBe("Sem forma de pagamento");
+  });
+  it("DMR tem AT/SS e guia/pagamento", () => {
+    const dmr = obrigacoesForClient({ salarios: "Sim até dia 25" }, "2026-09-01").filter((t) => t.group === "DMR");
+    expect(dmr.map((t) => `${t.meta.dmr}-${t.meta.fase}`)).toEqual(["AT-Guia", "AT-Pagamento", "SS-Guia", "SS-Pagamento"]);
   });
 });
