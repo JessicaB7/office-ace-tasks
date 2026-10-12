@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, PartyPopper, Search, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useClients, useCollaborators, useMonthlyObligationsRange, useUpsertObligation } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
-import { OBRIGACAO_GROUPS, OBRIGACAO_SUBFILTERS, obrigacoesForClient, isObrigacaoDone, saftModo, ssPagamento, type ObrigacaoTask } from "@/lib/obrigacoesControlo";
+import { OBRIGACAO_GROUPS, OBRIGACAO_SUBFILTERS, obrigacoesForClient, isObrigacaoDone, saftModo, ssPagamento, todayYmd, fmtPrazo, type ObrigacaoTask } from "@/lib/obrigacoesControlo";
 import { getInitials, getAvatarPalette, shortName } from "@/lib/avatar";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -25,14 +25,21 @@ interface Missing {
   missing: ObrigacaoTask[];
 }
 
+/** Pedido de navegação (ex.: vindo do aviso de prazos): mês e obrigação a mostrar. Um objeto novo por pedido. */
+export interface ObrigacoesControloNav {
+  month: string;
+  group?: string;
+}
+
 interface Props {
   /** Abrir o separador da obrigação no mês indicado (e opcionalmente já pesquisado pelo cliente). */
   onOpenObrigacao?: (groupId: string, month: string, clientName?: string) => void;
+  nav?: ObrigacoesControloNav | null;
 }
 
 /** Controlo interno das Obrigações Mensais: clientes com obrigações por cumprir no
  * mês (por omissão o anterior, cujos prazos caem no mês corrente) e atrasos. */
-const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
+const ObrigacoesControloView = ({ onOpenObrigacao, nav }: Props) => {
   const { data: clients = [], isLoading } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const [collabFilter, setCollabFilter] = useState("all");
@@ -57,6 +64,13 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
   const workMonth = months[1] || months[0];
   const [selMonth, setSelMonth] = useState(workMonth);
   const selIdx = months.indexOf(selMonth);
+  useEffect(() => {
+    if (!nav) return;
+    if (months.includes(nav.month)) setSelMonth(nav.month);
+    setGroupFilter(nav.group || "all");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nav]);
+  const today = todayYmd();
   // Carrega o mês escolhido e os meses anteriores que contam como atrasos.
   const loadMonths = useMemo(() => months.filter((m) => m === selMonth || (m >= START_MONTH && m < selMonth)), [months, selMonth]);
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligationsRange(loadMonths);
@@ -141,15 +155,32 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
 
   const groupCount = (id: string) => baseFiltered.filter((r) => r.month === selMonth && (id === "all" || r.missing.some((t) => t.group === id))).length;
 
+  // Prazos de cada obrigação no mês escolhido (podem ser vários: ex. DMR guia dia 10, pagamento dia 20).
+  const groupDeadlines: Record<string, string[]> = {};
+  clients.filter((c: any) => c.active).forEach((c: any) => obrigacoesForClient(c, selMonth).forEach((t) => {
+    const list = (groupDeadlines[t.group] ||= []);
+    if (!list.includes(t.deadline)) list.push(t.deadline);
+  }));
+  Object.values(groupDeadlines).forEach((l) => l.sort());
+
   const StatCard = ({ id, label }: { id: string; label: string }) => {
     const active = groupFilter === id;
     const n = groupCount(id);
+    const prazos = groupDeadlines[id] || [];
+    // Em atraso se algum prazo já passou e ainda há falta nessa obrigação.
+    const late = n > 0 && baseFiltered.some((r) => r.month === selMonth && r.missing.some((t) => t.group === id && t.deadline < today));
+    const isToday = n > 0 && prazos.includes(today);
     return (
       <button type="button" onClick={() => setGroupFilter(active && id !== "all" ? "all" : id)} aria-pressed={active}
         className={cn("flex-1 min-w-[120px] text-left rounded-xl border px-4 py-3 transition-colors",
           active ? "border-primary bg-primary/5 ring-1 ring-primary" : "bg-card hover:bg-muted/40")}>
-        <div className={cn("text-2xl font-bold leading-none", n > 0 ? "text-warning" : "text-success")}>{n}</div>
+        <div className={cn("text-2xl font-bold leading-none", n === 0 ? "text-success" : late ? "text-destructive" : "text-warning")}>{n}</div>
         <div className="text-xs text-muted-foreground mt-1.5">{label}</div>
+        {prazos.length > 0 && (
+          <div className={cn("text-[11px] mt-1 font-medium", late ? "text-destructive" : isToday ? "text-warning" : "text-muted-foreground")}>
+            {late ? "Prazo ultrapassado · " : isToday ? "Hoje · " : "Prazo "}{prazos.map(fmtPrazo).join(" · ")}
+          </div>
+        )}
       </button>
     );
   };
@@ -181,8 +212,11 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
       <div className="flex flex-wrap gap-1.5 shrink-0 w-[55%] max-w-4xl">
         {r.missing.map((m) => (
           <button key={`${m.type}|${m.field}`} type="button" onClick={() => markDone(r, m)} disabled={upsert.isPending}
-            title={`Marcar ${m.label} como feito`}
-            className="w-32 shrink-0 inline-flex items-center justify-center gap-1 text-xs font-medium px-2 py-1 rounded-full border bg-card text-muted-foreground transition-colors hover:border-success hover:bg-success/10 hover:text-success disabled:opacity-60">
+            title={`Marcar ${m.label} como feito — prazo ${fmtPrazo(m.deadline)}${m.deadline < today ? " (ultrapassado)" : ""}`}
+            className={cn("w-32 shrink-0 inline-flex items-center justify-center gap-1 text-xs font-medium px-2 py-1 rounded-full border transition-colors hover:border-success hover:bg-success/10 hover:text-success disabled:opacity-60",
+              m.deadline < today ? "bg-destructive/10 text-destructive border-destructive/30"
+                : m.deadline === today ? "bg-warning/15 text-warning border-warning/30"
+                : "bg-card text-muted-foreground")}>
             {m.label}
           </button>
         ))}

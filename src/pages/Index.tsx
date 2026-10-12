@@ -9,7 +9,8 @@ import FiscalCalendarView from "@/components/FiscalCalendarView";
 import NotasView from "@/components/NotasView";
 import ObrigacoesView, { type ObrigacoesNav } from "@/components/ObrigacoesView";
 import ContabilidadesView, { type ContabilidadesNav } from "@/components/ContabilidadesView";
-import ObrigacoesControloView from "@/components/ObrigacoesControloView";
+import ObrigacoesControloView, { type ObrigacoesControloNav } from "@/components/ObrigacoesControloView";
+import ObrigacoesPrazoReminder from "@/components/ObrigacoesPrazoReminder";
 import GestaoMensalEmFaltaView from "@/components/GestaoMensalEmFaltaView";
 import ExtratosBancariosView from "@/components/ExtratosBancariosView";
 import AdminWeeklySummary from "@/components/AdminWeeklySummary";
@@ -40,6 +41,7 @@ const Index = () => {
   const [openClientId, setOpenClientId] = useState<string | null>(null);
   const [contabNav, setContabNav] = useState<ContabilidadesNav | null>(null);
   const [obrigNav, setObrigNav] = useState<ObrigacoesNav | null>(null);
+  const [obrigCtlNav, setObrigCtlNav] = useState<ObrigacoesControloNav | null>(null);
 
   const handleOpenClient = (clientId: string) => {
     setAnalysisClientId(null);
@@ -51,6 +53,7 @@ const Index = () => {
   const handleSidebarNav = (view: string) => {
     setContabNav(null);
     setObrigNav(null);
+    setObrigCtlNav(null);
     setActiveView(view);
   };
 
@@ -89,7 +92,7 @@ const Index = () => {
 
 
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
-        {activeView === "obrigacoes_controlo" && isAdmin && <ObrigacoesControloView onOpenObrigacao={(g, month, search) => { setObrigNav({ month, search }); setActiveView(`obrigacoes_${g}`); }} />}
+        {activeView === "obrigacoes_controlo" && isAdmin && <ObrigacoesControloView nav={obrigCtlNav} onOpenObrigacao={(g, month, search) => { setObrigNav({ month, search }); setActiveView(`obrigacoes_${g}`); }} />}
         {activeView.startsWith("obrigacoes") && activeView !== "obrigacoes_controlo" && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} nav={obrigNav} />}
         {activeView === "contabilidades_painel" && isAdmin && <GestaoMensalEmFaltaView onOpenRegime={(t, month, search) => { setContabNav({ month, search }); setActiveView(`contabilidades_${t}`); }} />}
         {activeView.startsWith("contabilidades") && activeView !== "contabilidades_painel" && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} onSubPageChange={(t) => setActiveView(`contabilidades_${t}`)} nav={contabNav} />}
@@ -112,6 +115,9 @@ const Index = () => {
       </main>
       <TaskFormDialog open={dialogOpen} task={editingTask} onClose={() => setDialogOpen(false)} />
       <WeeklyTasksReminderDialog onViewTasks={() => setActiveView("tasks")} />
+      {isAdmin && (
+        <ObrigacoesPrazoReminder onOpen={(group, month) => { setObrigCtlNav({ month, group }); setActiveView("obrigacoes_controlo"); }} />
+      )}
     </div>
   );
 };
