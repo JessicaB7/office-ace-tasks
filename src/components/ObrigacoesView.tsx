@@ -37,6 +37,8 @@ const checkboxRight = new Set(["DMR", "retencao_fonte", "IVA", "IVA_recapitulati
 // Pages where NIF is hidden
 const WEEKS = [1, 2, 3, 4];
 const hideNif = new Set(["DMR", "SS_TI", "IVA", "IVA_recapitulativa", "retencao_fonte", "SAFT", "salarios", "emissao_faturas"]);
+// Sub-separador do IVA Periódica: lê a coluna "Flexibilização" do trimestral (extra_done)
+const IVA_FLEX = "Flexibilizacao";
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
@@ -120,7 +122,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
           const d = addMonths(qEnd, year, 1);
           return fmtDeadline(15, d.m, d.y);
         }
-        if (subFilter === "Trimestral") {
+        if (subFilter === "Trimestral" || subFilter === IVA_FLEX) {
           const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
           const d = addMonths(qEnd, year, 2);
           return fmtDeadline(20, d.m, d.y);
@@ -174,7 +176,13 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const isFaturasSemanal = isEmissaoFaturas && subFilter === "Semanal";
   const showIvaPeriodicaCols = isIVAPeriodica;
   // IVA Periódica e Recapitulativa trimestrais: navegação por trimestre, registos no mês de fim de trimestre
-  const isTrimestralMode = (isIVA || isIVARecap) && subFilter === "Trimestral";
+  const isTrimestralMode = (isIVA || isIVARecap) && (subFilter === "Trimestral" || (isIVA && subFilter === IVA_FLEX));
+
+  // Flexibilização: clientes de IVA trimestral com a coluna "Flexibilização" marcada no trimestre
+  const ivaFlexIds = useMemo(() => new Set(
+    obligations.filter((o: any) => o.obligation_type === "IVA" && o.extra_done === true).map((o: any) => o.client_id),
+  ), [obligations]);
+  const isIvaFlexClient = (c: any) => c.iva === "Trimestral" && ivaFlexIds.has(c.id);
 
   // Quarter label for DT: Apr=Q1(Jan-Mar), Jul=Q2(Apr-Jun), Oct=Q3(Jul-Sep), Jan=Q4(Oct-Dec)
   const dtQuarterLabel = (() => {
@@ -232,6 +240,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       case "IVA":
         if (subFilter === "OSS") {
           list = activeClients.filter((c: any) => c.iva_oss === "Sim");
+        } else if (subFilter === IVA_FLEX) {
+          list = activeClients.filter(isIvaFlexClient);
         } else {
           list = activeClients.filter((c: any) => c.iva && c.iva !== "");
           if (subFilter !== "all") list = list.filter((c: any) => c.iva === subFilter);
@@ -268,7 +278,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       list = list.filter((c: any) => c.name.toLowerCase().includes(s) || (c.nif || "").includes(s));
     }
     return list;
-  }, [activeClients, activeTab, subFilter, search, collabFilter, ssTiTab, showProgramaFaturacao, programaSearch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClients, activeTab, subFilter, search, collabFilter, ssTiTab, showProgramaFaturacao, programaSearch, ivaFlexIds]);
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
@@ -375,7 +386,7 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     switch (activeTab) {
       case "SAFT": return SAFT_GROUPS.map(g => ({ value: g, label: g }));
       case "salarios": return SALARIOS_FILTERS;
-      case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }, { value: "OSS", label: "OSS" }];
+      case "IVA": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }, { value: IVA_FLEX, label: "Flexibilização" }, { value: "OSS", label: "OSS" }];
       case "IVA_recapitulativa": return [{ value: "Mensal", label: "Mensal" }, { value: "Trimestral", label: "Trimestral" }, { value: "Não Aplicável", label: "Não Aplicável" }];
       case "SS_TI": return ssTiTab === "SS_TI_DT" ? SS_TI_DT_FILTERS : SS_TI_FILTERS;
       case "emissao_faturas": return [{ value: "Semanal", label: "Semanal" }, { value: "Mensal", label: "Mensal" }, { value: "Pontual", label: "Pontual" }];
@@ -400,7 +411,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     if (!isIVA && !isIVARecap) return [];
     const ivaClients = isIVARecap
       ? activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && (subFilter === "all" || c.recapitulativa === subFilter))
-      : activeClients.filter((c: any) => c.iva && c.iva !== "" && (subFilter === "all" || c.iva === subFilter));
+      : subFilter === IVA_FLEX
+        ? activeClients.filter(isIvaFlexClient)
+        : activeClients.filter((c: any) => c.iva && c.iva !== "" && (subFilter === "all" || c.iva === subFilter));
     const counts: Record<string, number> = {};
     let noneCount = 0;
     ivaClients.forEach((c: any) => {
@@ -410,7 +423,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
     const tabs = collaborators.filter((col: any) => counts[col.id]).map((col: any) => ({ id: col.id, name: col.name, count: counts[col.id] }));
     if (noneCount > 0) tabs.push({ id: "none", name: "Sem responsável", count: noneCount });
     return tabs;
-  }, [isIVA, isIVARecap, activeClients, collaborators, subFilter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isIVA, isIVARecap, activeClients, collaborators, subFilter, ivaFlexIds]);
 
   if (loadingClients || loadingObl) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
@@ -479,7 +493,9 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
               switch (activeTab) {
                 case "SAFT": return activeClients.filter((c: any) => c.saft === opt.value).length;
                 case "salarios": return activeClients.filter((c: any) => c.salarios === opt.value).length;
-                case "IVA": return opt.value === "OSS" ? activeClients.filter((c: any) => c.iva_oss === "Sim").length : activeClients.filter((c: any) => c.iva === opt.value).length;
+                case "IVA": return opt.value === "OSS" ? activeClients.filter((c: any) => c.iva_oss === "Sim").length
+                  : opt.value === IVA_FLEX ? activeClients.filter(isIvaFlexClient).length
+                  : activeClients.filter((c: any) => c.iva === opt.value).length;
                 case "IVA_recapitulativa": return activeClients.filter((c: any) => c.recapitulativa && c.recapitulativa !== "" && (opt.value === "Mensal" || opt.value === "Trimestral" ? c.recapitulativa === opt.value : c.recapitulativa === "Não Aplicável")).length;
                 case "SS_TI": return ssTiTab === "SS_TI_DT"
                   ? activeClients.filter((c: any) => isTI(c) && c.seguranca_social === opt.value).length
