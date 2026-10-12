@@ -129,6 +129,14 @@ trimestre** (Mar / Jun / Set / Dez). Se a tarefa estiver noutro mês, usar o tri
 2. Em "Ficheiros importados": botão de importar do **Mapa de Exploração** → escolher o PDF do mapa.
 3. Botão de importar do **Balancete Nº trimestre** certo → escolher o PDF do balancete.
 4. Confirmar as mensagens da app: "Importação concluída" e, no balancete, o período lido (ex.: 04–06/2026).
+5. **IVA por trimestre (preencher à mão)** — o valor vem da declaração periódica entregue, não do balancete:
+   - No TOConline: **Contabilidade → Declarações → Declaração periódica** → aparece a lista das declarações
+     entregues. Abrir a do **trimestre** e, no **Rosto**, procurar o **campo 93** (imposto a entregar) — é esse o valor.
+   - Se o campo 93 não tiver valor, usar o **campo 94** (imposto a recuperar) com **sinal negativo**.
+   - Na app: separador **Dashboard anual** → quadro **IVA por trimestre** → escrever o valor no trimestre e sair do
+     campo (grava sozinho). Fazer o trimestre da tarefa e os trimestres anteriores do ano que ainda não tenham valor
+     manual (os que mostram o valor automático).
+   - Trimestre sem declaração entregue → deixar o automático e indicar no Resultado "IVA <trimestre> por entregar".
 
 **Parar e avisar** (tarefa **Bloqueada**, com o motivo no Resultado):
 - a app diz que o **NIF do documento não corresponde** ao do cliente;
@@ -136,4 +144,5 @@ trimestre** (Mar / Jun / Set / Dez). Se a tarefa estiver noutro mês, usar o tri
 - o mapa ou o balancete vem vazio no TOConline (trimestre ainda por lançar).
 
 **Confirmação:** não é preciso pedir — exportar, importar e concluir.
-No Resultado: trimestre, ficheiros importados e n.º de valores carregados de cada um (mensagem da app).
+No Resultado: trimestre, ficheiros importados, n.º de valores carregados de cada um (mensagem da app) e o IVA
+preenchido por trimestre (campo 93 ou 94).

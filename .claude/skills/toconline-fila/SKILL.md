@@ -42,7 +42,8 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      do regime (secção 5 em `ti-rs.md` / `ti-co.md`, secção 4 em `empresas.md`). Trimestral: mês da tarefa = fim do
      trimestre. Exportar Mapa de Exploração + Balancete em PDF do TOConline e importar na app
      (Clientes → Análise financeira → cliente → Dados). Os PDFs ficam nas Transferências — o upload na app faz-se
-     com a ferramenta de upload de ficheiros do Chrome.
+     com a ferramenta de upload de ficheiros do Chrome. Depois, preencher à mão o **IVA por trimestre** no Dashboard
+     anual (Contabilidade → Declarações → Declaração periódica → Rosto → campo 93; sem valor → campo 94 negativo).
    - **TI Simplificado / TI Organizado:** o procedimento depende de o cliente passar **recibos verdes**
      (Portal das Finanças / AT) ou usar **programa de faturação** — a Fila mostra-o numa etiqueta junto ao
      cliente (calculada a partir do "Programa de Faturação"; "ambos" = as duas coisas). Seguir a secção do

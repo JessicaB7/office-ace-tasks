@@ -48,7 +48,7 @@ const COMPRAS_DESC = "Atualiza o e-Fatura do mês e grava (sem finalizar) as com
 const VENDAS_TI_DESC = "Programa de faturação: SAF-T + sugestões de vendas (como nas Empresas). Recibos verdes: Vendas → Recibos Verdes → Atualizar recibos verdes do mês → + (criar e associar) → Gravar → Finalizar e pagar.";
 const NAO_CONSIDERAR_DESC = "Compras → e-Fatura do mês → em cada linha, na seta → \"Não considerar este documento na atividade\". Todas as linhas do mês; em caso de dúvida fica por marcar e vai para o Resultado.";
 const SALARIOS_DESC = "Contabilidade → Sugestões de salários → Gerar sugestões do mês (só Salários). Não finaliza — fica para revisão.";
-const MAPA_ANALISE_DESC = "Trimestral (mês da tarefa = fim do trimestre). Exporta do TOConline o Mapa de Exploração (Contabilidade → Outros mapas, Jan até ao fim do trimestre) e o Balancete dos 3 meses (Contabilidade → Balancetes), em PDF, e importa-os na Análise financeira do cliente.";
+const MAPA_ANALISE_DESC = "Trimestral (mês da tarefa = fim do trimestre). Exporta do TOConline o Mapa de Exploração (Contabilidade → Outros mapas, Jan até ao fim do trimestre) e o Balancete dos 3 meses (Contabilidade → Balancetes), em PDF, e importa-os na Análise financeira do cliente. IVA por trimestre à mão: Declaração periódica → Rosto → campo 93 (ou 94 com sinal negativo).";
 /** Salários só para quem tem o campo preenchido na ficha ("Sim até dia 25" / "Sim até ao fim do mês"). */
 const temSalarios = (c: any) => /^sim/i.test((c.salarios || "").trim());
 
