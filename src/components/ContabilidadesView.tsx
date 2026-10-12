@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import ClientMonthlyHistoryDialog from "@/components/ClientMonthlyHistoryDialog";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
-import { getInitials, getAvatarPalette } from "@/lib/avatar";
+import { getInitials, getAvatarPalette, shortName } from "@/lib/avatar";
 import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable } from "@/lib/contabilidadesConfig";
 import { toast } from "sonner";
 
@@ -50,7 +50,7 @@ interface ContabilidadesViewProps {
 const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: collaborators = [] } = useCollaborators();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   // Mês de trabalho = mês anterior ao corrente (em outubro fecha-se setembro).
   const now = new Date();
@@ -352,6 +352,15 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
     }
   };
 
+  // Admin: dia em que o cliente ficou fechado = a última tarefa concluída do mês.
+  const closedAt = (client: any): string | null => {
+    if (!isClientDone(client)) return null;
+    const dates = columns!.map((col, i) => isColumnApplicable(client, col) ? colMaps[i][client.id]?.completed_at : null)
+      .filter(Boolean) as string[];
+    if (dates.length === 0) return null;
+    return new Date(dates.reduce((a, b) => (a > b ? a : b))).toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+
   // Cabeçalho da lista: os nomes das tarefas aparecem só aqui (nas linhas ficam círculos).
   const renderHeader = () => (
     <div className="sticky top-0 z-10 flex items-center gap-4 px-4 py-2 border-b bg-muted/60 backdrop-blur rounded-t-xl text-xs font-semibold text-muted-foreground">
@@ -362,6 +371,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
           <div className="flex shrink-0 w-[55%] max-w-4xl">
             {columns!.map((col) => <div key={col} className="flex-1 text-center">{col}</div>)}
           </div>
+          {isAdmin && <div className="w-24 shrink-0 text-center">Fechado em</div>}
           <div className="w-7 shrink-0" />
         </>
       )}
@@ -434,6 +444,9 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
                 );
               })}
             </div>
+            {isAdmin && (
+              <div className="w-24 shrink-0 text-center text-xs text-muted-foreground tabular-nums">{closedAt(client) || ""}</div>
+            )}
             <div className="w-7 shrink-0 flex justify-center">
               {!done && (
                 <button type="button" onClick={() => markAll(client)} disabled={upsert.isPending}
@@ -541,7 +554,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
                   r.id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(r.id))}>
                   {r.id === "none" ? "—" : getInitials(r.name)}
                 </span>
-                {r.id === currentCollaborator?.id ? "Eu" : r.id === "none" ? "Sem responsável" : r.name.split(" ")[0]}
+                {r.id === currentCollaborator?.id ? "Eu" : r.id === "none" ? "Sem responsável" : shortName(r.name)}
               </button>
             );
           })}

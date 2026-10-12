@@ -19,3 +19,9 @@ export const getAvatarPalette = (key: string) => {
   for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
   return AVATAR_PALETTES[hash % AVATAR_PALETTES.length];
 };
+
+/** Primeiro e último nome ("Ana Sofia Fardilha" → "Ana Fardilha"). */
+export const shortName = (name: string) => {
+  const parts = name.trim().split(/\s+/);
+  return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1]}` : name;
+};

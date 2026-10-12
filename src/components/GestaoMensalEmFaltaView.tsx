@@ -5,13 +5,13 @@ import { cn } from "@/lib/utils";
 import { useClients, useCollaborators, useMonthlyObligationsRange, useUpsertObligation } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
 import { SUB_PAGE_CONFIG, obligationTypesFor, isColumnApplicable } from "@/lib/contabilidadesConfig";
-import { getInitials, getAvatarPalette } from "@/lib/avatar";
+import { getInitials, getAvatarPalette, shortName } from "@/lib/avatar";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-/** Quantos meses para trás se procuram tarefas em falta (o mês de trabalho é o anterior ao corrente). */
-const MONTHS_BACK = 6;
-/** Primeiro mês contado: antes disto o histórico na app está incompleto (meses
- * feitos mas não marcados), por isso não entra nos atrasos. */
+/** Primeiro mês a que se pode navegar. */
+const FIRST_MONTH = "2025-01-01";
+/** Primeiro mês contado nos atrasos: antes disto o histórico na app está incompleto
+ * (meses feitos mas não marcados), por isso só se veem navegando até eles. */
 const START_MONTH = "2026-09-01";
 /** Regimes com tarefas mensais (o TI Isento não tem). */
 const REGIMES = [
@@ -51,16 +51,21 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
   const { user } = useAuth();
   const upsert = useUpsertObligation();
 
-  // Meses disponíveis: do início da contagem até ao mês corrente (o de trabalho é o anterior).
+  // Meses navegáveis: todos, de FIRST_MONTH até ao mês corrente (o de trabalho é o anterior). Índice 0 = mais recente.
   const months = useMemo(() => {
     const now = new Date();
-    return Array.from({ length: MONTHS_BACK + 1 }, (_, i) => monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1)))
-      .filter((m) => m >= START_MONTH);
+    const out: string[] = [];
+    for (let d = new Date(now.getFullYear(), now.getMonth(), 1); monthKey(d) >= FIRST_MONTH; d = new Date(d.getFullYear(), d.getMonth() - 1, 1)) {
+      out.push(monthKey(d));
+    }
+    return out;
   }, []);
-  const workMonth = months.find((m) => m < monthKey(new Date())) || months[months.length - 1];
+  const workMonth = months[1] || months[0];
   const [selMonth, setSelMonth] = useState(workMonth);
   const selIdx = months.indexOf(selMonth);
-  const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligationsRange(months);
+  // Carrega o mês escolhido e os meses anteriores que contam como atrasos.
+  const loadMonths = useMemo(() => months.filter((m) => m === selMonth || (m >= START_MONTH && m < selMonth)), [months, selMonth]);
+  const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligationsRange(loadMonths);
 
   const collabName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "Sem responsável";
   const currentCollaborator = useMemo(() => {
@@ -78,7 +83,7 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
       const config = SUB_PAGE_CONFIG[regime.id];
       const types = obligationTypesFor(regime.id, config);
       for (const client of active.filter(config.filter)) {
-        for (const month of months) {
+        for (const month of loadMonths) {
           // Antes do início do contrato não há nada a fazer.
           if (client.inicio_contrato && client.inicio_contrato.slice(0, 7) > month.slice(0, 7)) continue;
           const cols = (config.columns || []).map((col, i) => ({ col, type: types[i] }))
@@ -89,7 +94,7 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
       }
     }
     return out;
-  }, [clients, obligations, months]);
+  }, [clients, obligations, loadMonths]);
 
   // Pesquisa e responsável aplicam-se a tudo; o regime só à lista (os cartões mostram cada regime).
   const baseFiltered = useMemo(() => {
@@ -247,7 +252,7 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
                   id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(id))}>
                   {id === "none" ? "—" : getInitials(name)}
                 </span>
-                {id === currentCollaborator?.id ? "Eu" : id === "none" ? "Sem responsável" : name.split(" ")[0]}
+                {id === currentCollaborator?.id ? "Eu" : id === "none" ? "Sem responsável" : shortName(name)}
               </button>
             );
           })}

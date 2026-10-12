@@ -255,6 +255,8 @@ export function useMonthlyObligationsRange(referenceMonths: string[]) {
       return data;
     },
     enabled: referenceMonths.length > 0,
+    // Ao mudar de mês mantém os dados anteriores até chegarem os novos (sem piscar "A carregar").
+    placeholderData: (prev) => prev,
   });
 }
 
