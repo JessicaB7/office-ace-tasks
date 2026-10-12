@@ -205,10 +205,11 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeClients, config, collabFilter, search, colMaps, oblMap, hasMultiColumns]);
 
-  // TI Isento: distribuição dos clientes do regime por responsável (ignora a
-  // pesquisa e o filtro de responsável, para mostrar sempre o total).
+  // Botões de responsável: clientes do regime por pessoa (ignora a pesquisa e o
+  // filtro de responsável, para mostrar sempre o total). O próprio utilizador
+  // primeiro, "Sem responsável" no fim.
   const byResponsavel = useMemo(() => {
-    if (!noTasksTab || !config) return [];
+    if (!config) return [];
     const counts = new Map<string, number>();
     activeClients.filter(config.filter).forEach((c) => {
       const key = c.responsavel_id || "none";
@@ -216,9 +217,12 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
     });
     return [...counts.entries()]
       .map(([id, count]) => ({ id, count, name: id === "none" ? "Sem responsável" : getCollabName(id) }))
-      .sort((a, b) => (a.id === "none" ? 1 : b.id === "none" ? -1 : b.count - a.count));
+      .sort((a, b) => {
+        const rank = (id: string) => (id === currentCollaborator?.id ? 0 : id === "none" ? 2 : 1);
+        return rank(a.id) - rank(b.id) || a.name.localeCompare(b.name, "pt");
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noTasksTab, config, activeClients, collaborators]);
+  }, [config, activeClients, collaborators, currentCollaborator]);
   const byResponsavelTotal = byResponsavel.reduce((s, r) => s + r.count, 0);
 
   const toggleObl = (clientId: string, type: string, map: Record<string, any>, label?: string) => {
@@ -311,36 +315,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   // Em "Todos", os fechados ficam numa secção recolhida no fim; no filtro "Fechados" aparecem logo.
   const doneInline = statusFilter === "done";
 
-  // Agrupa por responsável (o próprio utilizador primeiro, "Sem responsável" no fim).
-  const groupByResp = (list: any[]) => {
-    const ids = [...new Set(list.map((c: any) => c.responsavel_id || "none"))];
-    const rank = (id: string) => (id === currentCollaborator?.id ? 0 : id === "none" ? 2 : 1);
-    ids.sort((a, b) => rank(a) - rank(b) || getCollabName(a).localeCompare(getCollabName(b), "pt"));
-    return ids.map((id) => ({
-      id,
-      name: id === "none" ? "Sem responsável" : getCollabName(id),
-      clients: list.filter((c: any) => (c.responsavel_id || "none") === id),
-    }));
-  };
-
-  const renderGroups = (list: any[]) => (
-    <div className="space-y-3">
-      {groupByResp(list).map((g) => (
-        <div key={g.id} className="bg-card rounded-xl border overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/30">
-            <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0",
-              g.id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(g.id))}>
-              {g.id === "none" ? "—" : getInitials(g.name)}
-            </div>
-            <span className="text-sm font-semibold">{g.name}</span>
-            <span className="text-xs text-muted-foreground">{g.clients.length}</span>
-          </div>
-          {g.clients.map(renderRow)}
-        </div>
-      ))}
-    </div>
-  );
-
   const renderRow = (client: any) => {
     const done = !noTasksTab && isClientDone(client);
     const note = notesMap[client.id]?.notes || "";
@@ -369,6 +343,11 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
             </Popover>
           )}
         </div>
+        {client.responsavel_id ? (
+          <div title={getCollabName(client.responsavel_id)} className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0", getAvatarPalette(client.responsavel_id))}>
+            {getInitials(getCollabName(client.responsavel_id))}
+          </div>
+        ) : <div title="Sem responsável" className="w-6 h-6 rounded-full border border-dashed shrink-0" />}
         {hasMultiColumns && !noTasksTab && (
           <div className="flex gap-1.5 shrink-0">
             {columns!.map((col, i) => {
@@ -467,61 +446,33 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
         </div>
       )}
 
-      {noTasksTab && byResponsavelTotal > 0 && (
-        <div className="bg-card rounded-xl border p-4 space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-semibold">Clientes por responsável</span>
-            <span className="text-muted-foreground">{byResponsavelTotal} no total</span>
-          </div>
-          <div className="flex h-9 w-full overflow-hidden rounded-lg">
-            {byResponsavel.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                title={`${r.name}: ${r.count}`}
-                onClick={() => setCollabFilter((f) => (f === r.id ? "all" : r.id))}
-                style={{ flexGrow: r.count, flexBasis: 0 }}
-                className={cn(
-                  "min-w-[2.25rem] flex items-center justify-center text-xs font-semibold border-r border-card last:border-r-0 transition-opacity",
-                  r.id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(r.id),
-                  collabFilter !== "all" && collabFilter !== r.id && "opacity-40"
-                )}
-              >
-                {r.count}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-            {byResponsavel.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setCollabFilter((f) => (f === r.id ? "all" : r.id))}
-                className={cn("flex items-center gap-1.5 text-xs transition-opacity",
-                  collabFilter !== "all" && collabFilter !== r.id && "opacity-40")}
-              >
-                <span className={cn("w-2.5 h-2.5 rounded-sm", r.id === "none" ? "bg-muted-foreground/40" : getAvatarPalette(r.id))} />
-                <span className="text-foreground">{r.name}</span>
-                <span className="font-semibold">{r.count}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="flex gap-3 items-center flex-wrap">
-        <div className="relative max-w-sm flex-1 min-w-[200px]">
+        <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input type="text" placeholder="Pesquisar cliente..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
-        <select value={collabFilter} onChange={(e) => setCollabFilter(e.target.value)} className="px-3 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring">
-          <option value="all">Todos os responsáveis</option>
-          {currentCollaborator && <option value={currentCollaborator.id}>Os meus clientes</option>}
-          {collaborators.filter((c: any) => c.active && c.id !== currentCollaborator?.id).map((col: any) => (
-            <option key={col.id} value={col.id}>{col.name}</option>
-          ))}
-          <option value="none">Sem responsável</option>
-        </select>
+        <div className="flex gap-1.5 flex-wrap" role="group" aria-label="Responsável">
+          <button type="button" onClick={() => setCollabFilter("all")} aria-pressed={collabFilter === "all"}
+            className={cn("px-3 py-1.5 text-sm rounded-full border transition-colors",
+              collabFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted")}>
+            Todos <span className="text-xs opacity-70">{byResponsavelTotal}</span>
+          </button>
+          {byResponsavel.map((r) => {
+            const active = collabFilter === r.id;
+            return (
+              <button key={r.id} type="button" onClick={() => setCollabFilter(active ? "all" : r.id)} aria-pressed={active}
+                className={cn("flex items-center gap-1.5 pl-1 pr-3 py-1 text-sm rounded-full border transition-colors",
+                  active ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted")}>
+                <span className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold",
+                  r.id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(r.id))}>
+                  {r.id === "none" ? "—" : getInitials(r.name)}
+                </span>
+                {r.id === currentCollaborator?.id ? "Eu" : r.id === "none" ? "Sem responsável" : r.name.split(" ")[0]}
+                <span className="text-xs opacity-70">{r.count}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {progress && progress.pct === 100 && statusFilter === "all" && !search && (
@@ -531,7 +482,9 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
       )}
 
       {(doneInline ? doneRows : pendingRows).length > 0 ? (
-        renderGroups(doneInline ? doneRows : pendingRows)
+        <div className="bg-card rounded-xl border overflow-hidden">
+          {(doneInline ? doneRows : pendingRows).map(renderRow)}
+        </div>
       ) : !(progress?.pct === 100 && statusFilter === "all") && (
         <div className="bg-card rounded-xl border px-4 py-12 text-center text-muted-foreground">
           {filteredClients.length > 0 ? "Nenhum cliente neste estado" : "Nenhum cliente encontrado"}
@@ -545,7 +498,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
             <ChevronDown className={cn("w-4 h-4 transition-transform", !showDone && "-rotate-90")} />
             <Check className="w-4 h-4 text-success" /> Fechados ({doneRows.length})
           </button>
-          {showDone && renderGroups(doneRows)}
+          {showDone && <div className="bg-card rounded-xl border overflow-hidden">{doneRows.map(renderRow)}</div>}
         </div>
       )}
 
