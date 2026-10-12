@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, PartyPopper, Search, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertTriangle, PartyPopper, Search, ArrowRight, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useClients, useCollaborators, useMonthlyObligationsRange } from "@/hooks/useSupabaseQuery";
+import { useClients, useCollaborators, useMonthlyObligationsRange, useUpsertObligation } from "@/hooks/useSupabaseQuery";
+import { useAuth } from "@/hooks/useAuth";
 import { SUB_PAGE_CONFIG, obligationTypesFor, isColumnApplicable } from "@/lib/contabilidadesConfig";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
 
@@ -28,13 +30,13 @@ interface Missing {
   client: any;
   regime: { id: string; label: string };
   month: string;
-  missing: string[];
+  missing: { col: string; type: string }[];
   total: number;
 }
 
 interface Props {
-  /** Abrir o regime na tabela "Clientes do mês". */
-  onOpenRegime?: (regimeId: string) => void;
+  /** Abrir o regime na tabela "Clientes do mês", no mês indicado (e opcionalmente já pesquisado pelo cliente). */
+  onOpenRegime?: (regimeId: string, month: string, clientName?: string) => void;
 }
 
 /** Painel da Gestão Mensal: só os clientes com tarefas em falta, do mês de trabalho
@@ -45,6 +47,9 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
   const [collabFilter, setCollabFilter] = useState("all");
   const [regimeFilter, setRegimeFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [showLate, setShowLate] = useState(true);
+  const { user } = useAuth();
+  const upsert = useUpsertObligation();
 
   // Meses disponíveis: do início da contagem até ao mês corrente (o de trabalho é o anterior).
   const months = useMemo(() => {
@@ -74,7 +79,7 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
           if (client.inicio_contrato && client.inicio_contrato.slice(0, 7) > month.slice(0, 7)) continue;
           const cols = (config.columns || []).map((col, i) => ({ col, type: types[i] }))
             .filter(({ col }) => isColumnApplicable(client, col));
-          const missing = cols.filter(({ type }) => !done.has(`${client.id}|${month}|${type}`)).map(({ col }) => col);
+          const missing = cols.filter(({ type }) => !done.has(`${client.id}|${month}|${type}`));
           if (missing.length > 0) out.push({ client, regime, month, missing, total: cols.length });
         }
       }
@@ -106,10 +111,45 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
     return m;
   }, [rows, selMonth, regimeFilter]);
 
+  // Marcar uma tarefa como feita diretamente a partir do painel (com Desfazer).
+  const markDone = (r: Missing, m: { col: string; type: string }) => {
+    const existing = obligations.find((o: any) =>
+      o.client_id === r.client.id && o.reference_month === r.month && o.obligation_type === m.type);
+    const prev = existing ? { status: existing.status, completed_at: existing.completed_at ?? null, completed_by: existing.completed_by ?? null } : null;
+    upsert.mutate({
+      ...(existing?.id ? { id: existing.id } : {}),
+      client_id: r.client.id,
+      obligation_type: m.type,
+      reference_month: r.month,
+      status: "concluida",
+      completed_at: new Date().toISOString(),
+      completed_by: user?.id || null,
+    }, {
+      onSuccess: (saved: any) => {
+        toast(`${m.col} marcado — ${r.client.name} (${monthLabel(r.month)})`, {
+          action: {
+            label: "Desfazer",
+            onClick: () => upsert.mutate({
+              id: saved?.id ?? existing?.id,
+              client_id: r.client.id,
+              obligation_type: m.type,
+              reference_month: r.month,
+              status: prev?.status ?? "pendente",
+              completed_at: prev?.completed_at ?? null,
+              completed_by: prev?.completed_by ?? null,
+            }),
+          },
+        });
+      },
+      onError: () => toast.error("Não foi possível marcar a tarefa."),
+    });
+  };
+
   if (isLoading || loadingObl) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
   // Mês → colaborador → regime. O mês de trabalho primeiro, depois os atrasos (mais recentes primeiro).
-  const byMonth = [selMonth]
+  const lateMonths = [...new Set(lateBefore.map((r) => r.month))].sort((a, b) => b.localeCompare(a));
+  const groupMonths = (list: string[]) => list
     .map((month) => {
       const items = filtered.filter((r) => r.month === month);
       const collabIds = [...new Set(items.map((r) => r.client.responsavel_id || "none"))]
@@ -126,11 +166,81 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
       return { month, items, collabs };
     })
     .filter((m) => m.items.length > 0);
+  const current = groupMonths([selMonth]);
+  const late = groupMonths(lateMonths);
 
   const collabIdsSorted = [...collabCounts.keys()].sort((a, b) =>
     a === "none" ? 1 : b === "none" ? -1 : collabName(a).localeCompare(collabName(b), "pt"));
   const pill = (active: boolean) => cn("flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border whitespace-nowrap transition-colors",
     active ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted");
+
+  const renderMonth = ({ month, items, collabs }: ReturnType<typeof groupMonths>[number], isLate: boolean) => (
+    <section key={month} className="space-y-3">
+      <h3 className={cn("text-lg font-semibold flex items-center gap-2", isLate && "text-destructive")}>
+        {isLate && <AlertTriangle className="w-4 h-4" />}
+        {monthLabel(month)}
+        {isLate && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-destructive/15">atrasado</span>}
+        <span className="text-sm font-medium text-muted-foreground">· {items.length} clientes em falta</span>
+      </h3>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {collabs.map((col) => (
+          <div key={col.id} className="bg-card rounded-xl border overflow-hidden">
+            <div className="flex items-center gap-2.5 px-4 py-3 border-b bg-muted/30">
+              <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0",
+                col.id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(col.id))}>
+                {col.id === "none" ? "—" : getInitials(col.name)}
+              </div>
+              <span className="font-semibold flex-1">{col.name}</span>
+              <span className="text-sm font-semibold text-warning">{col.count}</span>
+            </div>
+            <div className="divide-y">
+              {col.regimes.map((reg) => (
+                <div key={reg.id} className="px-4 py-2.5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {reg.label} · {reg.items.length}
+                    </span>
+                    {onOpenRegime && (
+                      <button type="button" onClick={() => onOpenRegime(reg.id, month)} title={`Abrir ${reg.label} em ${monthLabel(month)}`}
+                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary">
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <ul className="space-y-1.5">
+                    {reg.items.map((r) => (
+                      <li key={r.client.id} className="flex items-center gap-2 flex-wrap text-sm">
+                        {onOpenRegime ? (
+                          <button type="button" onClick={() => onOpenRegime(reg.id, month, r.client.name)}
+                            title={`Abrir ${r.client.name} em ${monthLabel(month)}`}
+                            className="font-medium hover:underline hover:text-primary text-left">
+                            {r.client.name}
+                          </button>
+                        ) : <span className="font-medium">{r.client.name}</span>}
+                        {r.missing.length === r.total && (
+                          <span className="text-[11px] text-muted-foreground">nada feito ·</span>
+                        )}
+                        <span className="flex flex-wrap gap-1">
+                          {r.missing.map((m) => (
+                            <button key={m.type} type="button" onClick={() => markDone(r, m)} disabled={upsert.isPending}
+                              title={`Marcar ${m.col} como feito`}
+                              className="group inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded border border-warning/30 bg-warning/15 text-warning transition-colors hover:border-success hover:bg-success/15 hover:text-success disabled:opacity-60">
+                              <Check className="w-3 h-3 hidden group-hover:inline" />
+                              {m.col}
+                            </button>
+                          ))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 
   return (
     <div className="space-y-5">
@@ -139,7 +249,7 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
           <h2 className="text-2xl font-bold">Em falta</h2>
           <p className="text-sm text-muted-foreground mt-1">
             {inMonth.length} clientes com tarefas por fazer em {monthLabel(selMonth)}
-            {selMonth === workMonth && " (mês de trabalho)"}.
+            {selMonth === workMonth && " (mês de trabalho)"}. Clica numa tarefa para a marcar como feita.
           </p>
         </div>
         <div className="flex items-center gap-2 bg-card rounded-lg border px-2 py-1">
@@ -162,12 +272,6 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
         ))}
       </div>
 
-      {lateClients > 0 && (
-        <div className="flex items-center gap-2 text-sm rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          {lateClients} clientes têm ainda meses anteriores a {monthLabel(selMonth)} por fechar — usa as setas do mês para os ver.
-        </div>
-      )}
 
       <div className="flex gap-3 flex-wrap items-center">
         <div className="relative max-w-sm flex-1 min-w-[200px]">
@@ -186,67 +290,20 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
         <div className="bg-card rounded-xl border px-4 py-12 text-center text-muted-foreground flex items-center justify-center gap-2">
           <PartyPopper className="w-4 h-4" /> Nada em falta em {monthLabel(selMonth)}.
         </div>
-      ) : (
-        <div className="space-y-8">
-          {byMonth.map(({ month, items, collabs }) => {
-            const isLate = month !== workMonth;
-            return (
-              <section key={month} className="space-y-3">
-                <h3 className={cn("text-lg font-semibold flex items-center gap-2", isLate && "text-destructive")}>
-                  {isLate && <AlertTriangle className="w-4 h-4" />}
-                  {monthLabel(month)}
-                  {isLate && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-destructive/15">atrasado</span>}
-                  <span className="text-sm font-medium text-muted-foreground">· {items.length} clientes em falta</span>
-                </h3>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  {collabs.map((col) => (
-                    <div key={col.id} className="bg-card rounded-xl border overflow-hidden">
-                      <div className="flex items-center gap-2.5 px-4 py-3 border-b bg-muted/30">
-                        <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0",
-                          col.id === "none" ? "bg-muted text-muted-foreground" : getAvatarPalette(col.id))}>
-                          {col.id === "none" ? "—" : getInitials(col.name)}
-                        </div>
-                        <span className="font-semibold flex-1">{col.name}</span>
-                        <span className="text-sm font-semibold text-warning">{col.count}</span>
-                      </div>
-                      <div className="divide-y">
-                        {col.regimes.map((reg) => (
-                          <div key={reg.id} className="px-4 py-2.5">
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                {reg.label} · {reg.items.length}
-                              </span>
-                              {onOpenRegime && (
-                                <button type="button" onClick={() => onOpenRegime(reg.id)} title={`Abrir ${reg.label}`}
-                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-primary">
-                                  <ArrowRight className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                            <ul className="space-y-1">
-                              {reg.items.map((r) => (
-                                <li key={r.client.id} className="flex items-center gap-2 flex-wrap text-sm">
-                                  <span className="font-medium">{r.client.name}</span>
-                                  <span className="flex flex-wrap gap-1">
-                                    {r.missing.length === r.total ? (
-                                      <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">nada feito</span>
-                                    ) : r.missing.map((m) => (
-                                      <span key={m} className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-warning/15 text-warning">{m}</span>
-                                    ))}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            );
-          })}
-        </div>
+      ) : current.map((g) => renderMonth(g, selMonth !== workMonth))}
+
+      {late.length > 0 && (
+        <section className="space-y-4 pt-2">
+          <button type="button" onClick={() => setShowLate((v) => !v)}
+            className="w-full flex items-center gap-2 text-sm rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive text-left">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span className="flex-1 font-medium">
+              Atrasados: {lateClients} clientes com meses anteriores a {monthLabel(selMonth)} por fechar
+            </span>
+            <ChevronDown className={cn("w-4 h-4 transition-transform", !showLate && "-rotate-90")} />
+          </button>
+          {showLate && <div className="space-y-8">{late.map((g) => renderMonth(g, true))}</div>}
+        </section>
       )}
     </div>
   );

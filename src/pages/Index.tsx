@@ -8,7 +8,7 @@ import CollaboratorListView from "@/components/CollaboratorListView";
 import FiscalCalendarView from "@/components/FiscalCalendarView";
 import NotasView from "@/components/NotasView";
 import ObrigacoesView from "@/components/ObrigacoesView";
-import ContabilidadesView from "@/components/ContabilidadesView";
+import ContabilidadesView, { type ContabilidadesNav } from "@/components/ContabilidadesView";
 import GestaoMensalEmFaltaView from "@/components/GestaoMensalEmFaltaView";
 import ExtratosBancariosView from "@/components/ExtratosBancariosView";
 import AdminWeeklySummary from "@/components/AdminWeeklySummary";
@@ -37,6 +37,7 @@ const Index = () => {
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [analysisClientId, setAnalysisClientId] = useState<string | null>(null);
   const [openClientId, setOpenClientId] = useState<string | null>(null);
+  const [contabNav, setContabNav] = useState<ContabilidadesNav | null>(null);
 
   const handleOpenClient = (clientId: string) => {
     setAnalysisClientId(null);
@@ -77,8 +78,8 @@ const Index = () => {
 
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
         {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
-        {activeView === "contabilidades_painel" && isAdmin && <GestaoMensalEmFaltaView onOpenRegime={(t) => setActiveView(`contabilidades_${t}`)} />}
-        {activeView.startsWith("contabilidades") && activeView !== "contabilidades_painel" && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} onSubPageChange={(t) => setActiveView(`contabilidades_${t}`)} />}
+        {activeView === "contabilidades_painel" && isAdmin && <GestaoMensalEmFaltaView onOpenRegime={(t, month, search) => { setContabNav({ month, search }); setActiveView(`contabilidades_${t}`); }} />}
+        {activeView.startsWith("contabilidades") && activeView !== "contabilidades_painel" && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} onSubPageChange={(t) => setActiveView(`contabilidades_${t}`)} nav={contabNav} />}
         {activeView.startsWith("analise_") && <AnaliseFinanceiraView subPage={activeView.replace("analise_", "")} />}
         {activeView === "clients" && !analysisClientId && (
           <ClientListView
