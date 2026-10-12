@@ -223,7 +223,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, activeClients, collaborators, currentCollaborator]);
-  const byResponsavelTotal = byResponsavel.reduce((s, r) => s + r.count, 0);
 
   const toggleObl = (clientId: string, type: string, map: Record<string, any>, label?: string) => {
     const obl = map[clientId];
@@ -320,7 +319,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
     const note = notesMap[client.id]?.notes || "";
     return (
       <div key={client.id} className={cn("flex items-center gap-4 px-4 py-2 border-b last:border-0 hover:bg-muted/30 transition-colors", done && "opacity-60")}>
-        <div className="flex items-center gap-1.5 min-w-0 w-64 shrink-0">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <button type="button" onClick={() => setSelectedClient(client)} title="Abrir ficha mensal do cliente"
             className="group inline-flex items-center gap-1 min-w-0 font-medium text-left hover:text-primary">
             <span className="truncate">{client.name}</span>
@@ -330,7 +329,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
             <Popover>
               <PopoverTrigger asChild>
                 <button type="button" title={note || "Adicionar nota do mês"} aria-label="Notas do mês"
-                  className={cn("relative p-1 rounded shrink-0 transition-colors hover:bg-muted",
+                  className={cn("relative ml-auto p-1 rounded shrink-0 transition-colors hover:bg-muted",
                     note ? "text-primary" : "text-muted-foreground/40 hover:text-muted-foreground")}>
                   <MessageSquare className="w-3.5 h-3.5" />
                   {note && <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />}
@@ -343,16 +342,16 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
             </Popover>
           )}
         </div>
-        {client.responsavel_id ? (
+        {collabFilter === "all" && (client.responsavel_id ? (
           <div title={getCollabName(client.responsavel_id)} className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0", getAvatarPalette(client.responsavel_id))}>
             {getInitials(getCollabName(client.responsavel_id))}
           </div>
-        ) : <div title="Sem responsável" className="w-6 h-6 rounded-full border border-dashed shrink-0" />}
+        ) : <div title="Sem responsável" className="w-6 h-6 rounded-full border border-dashed shrink-0" />)}
         {hasMultiColumns && !noTasksTab && (
           <div className="flex gap-1.5 shrink-0">
             {columns!.map((col, i) => {
               if (!isColumnApplicable(client, col)) {
-                return <span key={col} title={`${col}: não aplicável`} className="w-[5.5rem] inline-flex items-center justify-center text-xs text-muted-foreground/30">—</span>;
+                return <span key={col} aria-hidden className="w-[5.5rem]" />;
               }
               const obl = colMaps[i][client.id];
               const isDone = obl?.status === "concluida";
@@ -391,7 +390,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   const CIRC = 2 * Math.PI * R;
 
   return (
-    <div className="space-y-4 max-w-6xl">
+    <div className="space-y-4 max-w-5xl">
       <h2 className="text-2xl font-bold">Gestão Mensal de Clientes</h2>
       <div className="flex items-end justify-between gap-4 flex-wrap border-b">
         <div className="flex gap-1 overflow-x-auto" role="tablist" aria-label="Regime">
@@ -455,7 +454,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
           <button type="button" onClick={() => setCollabFilter("all")} aria-pressed={collabFilter === "all"}
             className={cn("px-3 py-1.5 text-sm rounded-full border transition-colors",
               collabFilter === "all" ? "bg-primary text-primary-foreground border-primary" : "bg-card hover:bg-muted")}>
-            Todos <span className="text-xs opacity-70">{byResponsavelTotal}</span>
+            Todos
           </button>
           {byResponsavel.map((r) => {
             const active = collabFilter === r.id;
@@ -468,7 +467,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
                   {r.id === "none" ? "—" : getInitials(r.name)}
                 </span>
                 {r.id === currentCollaborator?.id ? "Eu" : r.id === "none" ? "Sem responsável" : r.name.split(" ")[0]}
-                <span className="text-xs opacity-70">{r.count}</span>
               </button>
             );
           })}
