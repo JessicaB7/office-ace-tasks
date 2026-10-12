@@ -13,9 +13,17 @@ const SALARIOS_FILTERS = [
   { value: "Sim até ao fim do mês", label: "Até ao fim do mês" },
 ];
 
+/** Pedido de navegação vindo do Controlo interno: abre o mês indicado e,
+ * opcionalmente, já pesquisado pelo cliente. Um objeto novo por pedido. */
+export interface ObrigacoesNav {
+  month: string;
+  search?: string;
+}
+
 interface ObrigacoesViewProps {
   subPage?: string;
   onEditTask?: (task: any) => void;
+  nav?: ObrigacoesNav | null;
 }
 
 const needsExtra = (client: any) =>
@@ -51,7 +59,7 @@ const SS_TI_DT_FILTERS = [
   { value: "TCO", label: "TCO" },
 ];
 
-const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
+const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const { user } = useAuth();
@@ -92,6 +100,16 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
       if (subPage === "SS_TI") setSsTiTab("SS_TI");
     }
   }, [subPage]);
+
+  useEffect(() => {
+    if (!nav) return;
+    const [y, m] = nav.month.split("-").map(Number);
+    setYear(y);
+    setMonth(m - 1);
+    setSearch(nav.search || "");
+    // Mostrar mensal e trimestral juntos, para o cliente aparecer seja qual for a periodicidade.
+    setSubFilter("all");
+  }, [nav]);
 
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };

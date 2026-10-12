@@ -100,6 +100,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
           label: "Obrigações Mensais",
           icon: ClipboardList,
           items: [
+            { id: "obrigacoes_controlo", label: "Controlo interno", adminOnly: true },
             { id: "obrigacoes_SAFT", label: "SAFT" },
             { id: "obrigacoes_salarios", label: "Salários" },
             { id: "obrigacoes_DMR", label: "DMR" },

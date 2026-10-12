@@ -7,8 +7,9 @@ import ClientListView from "@/components/ClientListView";
 import CollaboratorListView from "@/components/CollaboratorListView";
 import FiscalCalendarView from "@/components/FiscalCalendarView";
 import NotasView from "@/components/NotasView";
-import ObrigacoesView from "@/components/ObrigacoesView";
+import ObrigacoesView, { type ObrigacoesNav } from "@/components/ObrigacoesView";
 import ContabilidadesView, { type ContabilidadesNav } from "@/components/ContabilidadesView";
+import ObrigacoesControloView from "@/components/ObrigacoesControloView";
 import GestaoMensalEmFaltaView from "@/components/GestaoMensalEmFaltaView";
 import ExtratosBancariosView from "@/components/ExtratosBancariosView";
 import AdminWeeklySummary from "@/components/AdminWeeklySummary";
@@ -38,11 +39,19 @@ const Index = () => {
   const [analysisClientId, setAnalysisClientId] = useState<string | null>(null);
   const [openClientId, setOpenClientId] = useState<string | null>(null);
   const [contabNav, setContabNav] = useState<ContabilidadesNav | null>(null);
+  const [obrigNav, setObrigNav] = useState<ObrigacoesNav | null>(null);
 
   const handleOpenClient = (clientId: string) => {
     setAnalysisClientId(null);
     setOpenClientId(clientId);
     setActiveView("clients");
+  };
+
+  // Navegar pelo menu limpa os pedidos de navegação (mês/pesquisa) vindos dos Controlos internos.
+  const handleSidebarNav = (view: string) => {
+    setContabNav(null);
+    setObrigNav(null);
+    setActiveView(view);
   };
 
   const handleNewTask = () => {
@@ -55,11 +64,11 @@ const Index = () => {
     setDialogOpen(true);
   };
 
-  const isContabRegimes = activeView.startsWith("contabilidades_");
+  const isContabRegimes = activeView.startsWith("contabilidades_") || activeView === "obrigacoes_controlo";
 
   return (
     <div className="flex min-h-screen">
-      <AppSidebar activeView={activeView} onViewChange={setActiveView} onNewTask={handleNewTask} />
+      <AppSidebar activeView={activeView} onViewChange={handleSidebarNav} onNewTask={handleNewTask} />
       <main className="relative flex-1 p-6 lg:p-8 overflow-auto">
         {/* Na Gestão Mensal o sino flutua no canto, para o título não perder uma linha. */}
         <div className={isContabRegimes ? "absolute right-6 top-6 lg:right-8 lg:top-8" : "flex justify-end mb-4"}>
@@ -80,7 +89,8 @@ const Index = () => {
 
 
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
-        {activeView.startsWith("obrigacoes") && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} />}
+        {activeView === "obrigacoes_controlo" && isAdmin && <ObrigacoesControloView onOpenObrigacao={(g, month, search) => { setObrigNav({ month, search }); setActiveView(`obrigacoes_${g}`); }} />}
+        {activeView.startsWith("obrigacoes") && activeView !== "obrigacoes_controlo" && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} nav={obrigNav} />}
         {activeView === "contabilidades_painel" && isAdmin && <GestaoMensalEmFaltaView onOpenRegime={(t, month, search) => { setContabNav({ month, search }); setActiveView(`contabilidades_${t}`); }} />}
         {activeView.startsWith("contabilidades") && activeView !== "contabilidades_painel" && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} onSubPageChange={(t) => setActiveView(`contabilidades_${t}`)} nav={contabNav} />}
         {activeView.startsWith("analise_") && <AnaliseFinanceiraView subPage={activeView.replace("analise_", "")} />}
