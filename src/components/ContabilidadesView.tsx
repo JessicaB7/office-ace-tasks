@@ -348,10 +348,10 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
           </div>
         ) : <div title="Sem responsável" className="w-6 h-6 rounded-full border border-dashed shrink-0" />)}
         {hasMultiColumns && !noTasksTab && (
-          <div className="flex gap-1.5 shrink-0">
+          <div className="flex gap-1.5 shrink-0 w-[55%] max-w-4xl">
             {columns!.map((col, i) => {
               if (!isColumnApplicable(client, col)) {
-                return <span key={col} aria-hidden className="w-[5.5rem]" />;
+                return <span key={col} aria-hidden className="flex-1" />;
               }
               const obl = colMaps[i][client.id];
               const isDone = obl?.status === "concluida";
@@ -359,7 +359,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
               return (
                 <button key={col} type="button" onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], col)}
                   title={isDone ? `${col}: feito${whoDid(obl) ? ` — ${whoDid(obl)}` : ""} (clicar para desmarcar)` : `Marcar ${col} como feito`}
-                  className={cn("w-[5.5rem] inline-flex items-center justify-center gap-1 text-xs font-medium px-2 py-1 rounded-full border transition-colors",
+                  className={cn("flex-1 min-w-0 inline-flex items-center justify-center gap-1 text-xs font-medium px-2 py-1 rounded-full border transition-colors",
                     isDone ? "bg-success/15 text-success border-success/30 hover:bg-success/25"
                       : started ? "bg-warning/15 text-warning border-warning/30 hover:border-success hover:text-success"
                       : "bg-card text-muted-foreground hover:border-success hover:text-success")}>
@@ -390,7 +390,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   const CIRC = 2 * Math.PI * R;
 
   return (
-    <div className="space-y-4 max-w-5xl">
+    <div className="space-y-4">
       <h2 className="text-2xl font-bold">Gestão Mensal de Clientes</h2>
       <div className="flex items-end justify-between gap-4 flex-wrap border-b">
         <div className="flex gap-1 overflow-x-auto" role="tablist" aria-label="Regime">
