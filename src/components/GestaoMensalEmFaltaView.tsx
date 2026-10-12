@@ -206,7 +206,7 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h2 className="text-2xl font-bold">Tarefas em falta</h2>
+        <h2 className="text-2xl font-bold">Controlo interno</h2>
         <div className="flex items-center gap-2 mr-10">
           {selMonth !== workMonth && (
             <button type="button" onClick={() => setSelMonth(workMonth)}

@@ -369,7 +369,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
       {hasMultiColumns && !noTasksTab && (
         <>
           <div className="flex shrink-0 w-[55%] max-w-4xl">
-            {columns!.map((col) => <div key={col} className="flex-1 text-center">{col}</div>)}
+            <div className="flex-1">Tarefas</div>
           </div>
           {isAdmin && <div className="w-24 shrink-0 text-center">Fechado em</div>}
           <div className="w-7 shrink-0" />
@@ -420,7 +420,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
         ) : <div title="Sem responsável" className="w-6 h-6 rounded-full border border-dashed shrink-0" />)}
         {hasMultiColumns && !noTasksTab && (
           <>
-            <div className="flex shrink-0 w-[55%] max-w-4xl">
+            <div className="flex gap-1.5 shrink-0 w-[55%] max-w-4xl">
               {columns!.map((col, i) => {
                 if (!isColumnApplicable(client, col)) {
                   return <span key={col} aria-hidden className="flex-1" />;
@@ -429,18 +429,14 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
                 const isDone = obl?.status === "concluida";
                 const started = obl?.status === "em_andamento";
                 return (
-                  <div key={col} className="flex-1 flex justify-center">
-                    <button type="button" onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], col)}
-                      aria-label={col}
-                      title={isDone ? `${col}: feito${whoDid(obl) ? ` — ${whoDid(obl)}` : ""} (clicar para desmarcar)` : started ? `${col}: em andamento (clicar para marcar como feito)` : `Marcar ${col} como feito`}
-                      className={cn("w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110",
-                        isDone ? "bg-success border-success text-success-foreground"
-                          : started ? "border-warning bg-warning/20 hover:border-success"
-                          : "border-muted-foreground/25 hover:border-success")}>
-                      {isDone && <Check className="w-4 h-4" />}
-                      {started && <span className="w-2 h-2 rounded-full bg-warning" />}
-                    </button>
-                  </div>
+                  <button key={col} type="button" onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], col)}
+                    title={isDone ? `${col}: feito${whoDid(obl) ? ` — ${whoDid(obl)}` : ""} (clicar para desmarcar)` : started ? `${col}: em andamento (clicar para marcar como feito)` : `Marcar ${col} como feito`}
+                    className={cn("flex-1 min-w-0 truncate text-xs font-medium px-2 py-1 rounded-full border transition-colors",
+                      isDone ? "bg-success/15 text-success border-success/30 hover:bg-success/25"
+                        : started ? "bg-warning/15 text-warning border-warning/30 hover:bg-warning/25"
+                        : "bg-muted text-muted-foreground border-transparent hover:border-success hover:text-success")}>
+                    {col}
+                  </button>
                 );
               })}
             </div>
