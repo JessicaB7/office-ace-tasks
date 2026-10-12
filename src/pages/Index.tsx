@@ -55,11 +55,14 @@ const Index = () => {
     setDialogOpen(true);
   };
 
+  const isContabRegimes = activeView.startsWith("contabilidades_") && activeView !== "contabilidades_painel";
+
   return (
     <div className="flex min-h-screen">
       <AppSidebar activeView={activeView} onViewChange={setActiveView} onNewTask={handleNewTask} />
-      <main className="flex-1 p-6 lg:p-8 overflow-auto">
-        <div className="flex justify-end mb-4">
+      <main className="relative flex-1 p-6 lg:p-8 overflow-auto">
+        {/* Na Gestão Mensal o sino flutua no canto, para o título não perder uma linha. */}
+        <div className={isContabRegimes ? "absolute right-6 top-6 lg:right-8 lg:top-8" : "flex justify-end mb-4"}>
           <NotificationBell />
         </div>
         {activeView === "business" && isAdmin && <BusinessOverviewView onNavigate={setActiveView} />}
