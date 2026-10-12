@@ -162,18 +162,17 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
           className="font-medium text-left truncate hover:text-primary">
           {r.client.name}
         </button>
-        {groupFilter === "SAFT" && (
-          <span className="ml-auto text-xs text-muted-foreground shrink-0 truncate">
-            {saftModo(r.client)} · {r.client.programa_faturacao || "sem programa"}
-          </span>
-        )}
-        {groupFilter === "SS_TI" && (
-          <span className="ml-auto text-xs text-muted-foreground shrink-0">{ssPagamento(r.client)}</span>
-        )}
         {showMonth && (
           <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-destructive/10 text-destructive shrink-0">{MONTH_NAMES[Number(r.month.slice(5, 7)) - 1]}</span>
         )}
       </div>
+      {groupFilter === "SAFT" && (
+        <>
+          <div className="w-28 shrink-0 text-sm text-muted-foreground">{saftModo(r.client)}</div>
+          <div className="w-40 shrink-0 text-sm text-muted-foreground truncate">{r.client.programa_faturacao || "—"}</div>
+        </>
+      )}
+      {groupFilter === "SS_TI" && <div className="w-40 shrink-0 text-sm text-muted-foreground">{ssPagamento(r.client)}</div>}
       {collabFilter === "all" && (r.client.responsavel_id ? (
         <div title={collabName(r.client.responsavel_id)} className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0", getAvatarPalette(r.client.responsavel_id))}>
           {getInitials(collabName(r.client.responsavel_id))}
@@ -188,6 +187,22 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
           </button>
         ))}
       </div>
+    </div>
+  );
+
+  // Cabeçalho da lista, alinhado com as colunas das linhas.
+  const renderHeader = () => (
+    <div className="flex items-center gap-4 px-4 py-2 border-b bg-muted/60 rounded-t-xl text-xs font-semibold text-muted-foreground">
+      <div className="flex-1">Cliente</div>
+      {groupFilter === "SAFT" && (
+        <>
+          <div className="w-28 shrink-0">Modo</div>
+          <div className="w-40 shrink-0">Programa</div>
+        </>
+      )}
+      {groupFilter === "SS_TI" && <div className="w-40 shrink-0">Forma de pagamento</div>}
+      {collabFilter === "all" && <div className="w-6 shrink-0" />}
+      <div className="shrink-0 w-[55%] max-w-4xl">Em falta</div>
     </div>
   );
 
@@ -273,6 +288,7 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
         </div>
       ) : (
         <div className="bg-card rounded-xl border overflow-hidden">
+          {renderHeader()}
           {inMonth.map((r) => renderRow(r, false))}
         </div>
       )}
@@ -286,6 +302,7 @@ const ObrigacoesControloView = ({ onOpenObrigacao }: Props) => {
           </button>
           {showLate && (
             <div className="bg-card rounded-xl border border-destructive/20 overflow-hidden">
+              {renderHeader()}
               {lateRows.map((r) => renderRow(r, true))}
             </div>
           )}
