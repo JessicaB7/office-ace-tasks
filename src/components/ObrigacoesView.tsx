@@ -69,6 +69,8 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const [programaSearch, setProgramaSearch] = useState("");
   const [search, setSearch] = useState("");
   const [onlyPending, setOnlyPending] = useState(false);
+  // DMR: mostrar só quem ainda não tem a guia ou o pagamento marcado
+  const [dmrMissing, setDmrMissing] = useState<"all" | "guia" | "pagamento">("all");
   const [selectedClient, setSelectedClient] = useState<any>(null);
 
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -399,7 +401,16 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
   const doneCount = filteredClients.filter(c => oblMap[c.id]?.status === "concluida").length;
   // Salários: "pendente" = guia ou pagamento ainda por marcar
   const isSalarioPending = (c: any) => !(oblMap[c.id]?.status === "concluida" && oblMap[c.id]?.extra_done === true);
-  const visibleClients = isSalarios && onlyPending ? filteredClients.filter(isSalarioPending) : filteredClients;
+  // DMR: guia = status "concluida"; pagamento = extra_done
+  const isDmrGuiaMissing = (c: any) => oblMap[c.id]?.status !== "concluida";
+  const isDmrPagamentoMissing = (c: any) => oblMap[c.id]?.extra_done !== true;
+  const visibleClients = isSalarios && onlyPending
+    ? filteredClients.filter(isSalarioPending)
+    : isDMR && dmrMissing === "guia"
+      ? filteredClients.filter(isDmrGuiaMissing)
+      : isDMR && dmrMissing === "pagamento"
+        ? filteredClients.filter(isDmrPagamentoMissing)
+        : filteredClients;
 
   const pageLabels: Record<string, string> = {
     SAFT: "SAFT", salarios: "Salários", DMR: "DMR", SS_TI: "Segurança Social TI",
@@ -557,6 +568,16 @@ const ObrigacoesView = ({ subPage }: ObrigacoesViewProps) => {
             Só pendentes ({filteredClients.filter(isSalarioPending).length})
           </button>
         )}
+        {isDMR && ([
+          { id: "guia", label: "Falta guia", count: filteredClients.filter(isDmrGuiaMissing).length },
+          { id: "pagamento", label: "Falta pagamento", count: filteredClients.filter(isDmrPagamentoMissing).length },
+        ] as const).map((f) => (
+          <button key={f.id} onClick={() => setDmrMissing((v) => (v === f.id ? "all" : f.id))}
+            className={cn("px-3 py-2 text-sm font-medium rounded-lg border whitespace-nowrap transition-colors",
+              dmrMissing === f.id ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted")}>
+            {f.label} ({f.count})
+          </button>
+        ))}
       </div>
 
       {activeTab === "SAFT" && (
