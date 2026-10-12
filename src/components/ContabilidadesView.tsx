@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
-import { Search, ChevronLeft, ChevronRight, ChevronDown, Check, PartyPopper, ArrowUpRight, MessageSquare } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCheck, PartyPopper, ArrowUpRight, MessageSquare } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -314,11 +314,72 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   // Em "Todos", os fechados ficam numa secção recolhida no fim; no filtro "Fechados" aparecem logo.
   const doneInline = statusFilter === "done";
 
+  // Fechar o cliente de uma vez: marca todas as tarefas aplicáveis ainda por fazer (um só Desfazer).
+  const markAll = async (client: any) => {
+    const todo = columns!.map((col, i) => ({ col, i })).filter(({ col, i }) =>
+      isColumnApplicable(client, col) && colMaps[i][client.id]?.status !== "concluida");
+    if (todo.length === 0) return;
+    const now = new Date().toISOString();
+    try {
+      const saved = await Promise.all(todo.map(({ i }) => {
+        const obl = colMaps[i][client.id];
+        return upsert.mutateAsync({
+          ...(obl?.id ? { id: obl.id } : {}),
+          client_id: client.id,
+          obligation_type: colOblTypes[i],
+          reference_month: referenceMonth,
+          status: "concluida",
+          completed_at: now,
+          completed_by: user?.id || null,
+        }).then((row: any) => ({ i, row, prev: obl }));
+      }));
+      toast(`${client.name} fechado em ${MONTH_NAMES[month]}`, {
+        action: {
+          label: "Desfazer",
+          onClick: () => saved.forEach(({ i, row, prev }) => upsert.mutate({
+            id: row?.id ?? prev?.id,
+            client_id: client.id,
+            obligation_type: colOblTypes[i],
+            reference_month: referenceMonth,
+            status: prev?.status ?? "pendente",
+            completed_at: prev?.completed_at ?? null,
+            completed_by: prev?.completed_by ?? null,
+          })),
+        },
+      });
+    } catch {
+      toast.error("Não foi possível fechar o cliente.");
+    }
+  };
+
+  // Cabeçalho da lista: os nomes das tarefas aparecem só aqui (nas linhas ficam círculos).
+  const renderHeader = () => (
+    <div className="sticky top-0 z-10 flex items-center gap-4 px-4 py-2 border-b bg-muted/60 backdrop-blur rounded-t-xl text-xs font-semibold text-muted-foreground">
+      <div className="flex-1">Cliente</div>
+      {collabFilter === "all" && <div className="w-6 shrink-0" />}
+      {hasMultiColumns && !noTasksTab && (
+        <>
+          <div className="flex shrink-0 w-[55%] max-w-4xl">
+            {columns!.map((col) => <div key={col} className="flex-1 text-center">{col}</div>)}
+          </div>
+          <div className="w-7 shrink-0" />
+        </>
+      )}
+    </div>
+  );
+
+  const renderList = (list: any[]) => (
+    <div className="bg-card rounded-xl border">
+      {renderHeader()}
+      {list.map(renderRow)}
+    </div>
+  );
+
   const renderRow = (client: any) => {
     const done = !noTasksTab && isClientDone(client);
     const note = notesMap[client.id]?.notes || "";
     return (
-      <div key={client.id} className={cn("flex items-center gap-4 px-4 py-2 border-b last:border-0 hover:bg-muted/30 transition-colors", done && "opacity-60")}>
+      <div key={client.id} className={cn("group/row flex items-center gap-4 px-4 py-2 border-b last:border-0 last:rounded-b-xl hover:bg-muted/30 transition-colors", done && "opacity-60")}>
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <button type="button" onClick={() => setSelectedClient(client)} title="Abrir ficha mensal do cliente"
             className="group inline-flex items-center gap-1 min-w-0 font-medium text-left hover:text-primary">
@@ -348,27 +409,41 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
           </div>
         ) : <div title="Sem responsável" className="w-6 h-6 rounded-full border border-dashed shrink-0" />)}
         {hasMultiColumns && !noTasksTab && (
-          <div className="flex gap-1.5 shrink-0 w-[55%] max-w-4xl">
-            {columns!.map((col, i) => {
-              if (!isColumnApplicable(client, col)) {
-                return <span key={col} aria-hidden className="flex-1" />;
-              }
-              const obl = colMaps[i][client.id];
-              const isDone = obl?.status === "concluida";
-              const started = obl?.status === "em_andamento";
-              return (
-                <button key={col} type="button" onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], col)}
-                  title={isDone ? `${col}: feito${whoDid(obl) ? ` — ${whoDid(obl)}` : ""} (clicar para desmarcar)` : `Marcar ${col} como feito`}
-                  className={cn("flex-1 min-w-0 inline-flex items-center justify-center gap-1 text-xs font-medium px-2 py-1 rounded-full border transition-colors",
-                    isDone ? "bg-success/15 text-success border-success/30 hover:bg-success/25"
-                      : started ? "bg-warning/15 text-warning border-warning/30 hover:border-success hover:text-success"
-                      : "bg-card text-muted-foreground hover:border-success hover:text-success")}>
-                  {isDone && <Check className="w-3 h-3" />}
-                  {col}
+          <>
+            <div className="flex shrink-0 w-[55%] max-w-4xl">
+              {columns!.map((col, i) => {
+                if (!isColumnApplicable(client, col)) {
+                  return <span key={col} aria-hidden className="flex-1" />;
+                }
+                const obl = colMaps[i][client.id];
+                const isDone = obl?.status === "concluida";
+                const started = obl?.status === "em_andamento";
+                return (
+                  <div key={col} className="flex-1 flex justify-center">
+                    <button type="button" onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], col)}
+                      aria-label={col}
+                      title={isDone ? `${col}: feito${whoDid(obl) ? ` — ${whoDid(obl)}` : ""} (clicar para desmarcar)` : started ? `${col}: em andamento (clicar para marcar como feito)` : `Marcar ${col} como feito`}
+                      className={cn("w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all hover:scale-110",
+                        isDone ? "bg-success border-success text-success-foreground"
+                          : started ? "border-warning bg-warning/20 hover:border-success"
+                          : "border-muted-foreground/25 hover:border-success")}>
+                      {isDone && <Check className="w-4 h-4" />}
+                      {started && <span className="w-2 h-2 rounded-full bg-warning" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="w-7 shrink-0 flex justify-center">
+              {!done && (
+                <button type="button" onClick={() => markAll(client)} disabled={upsert.isPending}
+                  title="Marcar tudo como feito" aria-label={`Marcar tudo como feito — ${client.name}`}
+                  className="p-1 rounded-md text-muted-foreground opacity-0 group-hover/row:opacity-100 focus:opacity-100 hover:text-success hover:bg-success/10 transition-opacity disabled:opacity-40">
+                  <CheckCheck className="w-4 h-4" />
                 </button>
-              );
-            })}
-          </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     );
@@ -480,9 +555,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
       )}
 
       {(doneInline ? doneRows : pendingRows).length > 0 ? (
-        <div className="bg-card rounded-xl border overflow-hidden">
-          {(doneInline ? doneRows : pendingRows).map(renderRow)}
-        </div>
+        renderList(doneInline ? doneRows : pendingRows)
       ) : !(progress?.pct === 100 && statusFilter === "all") && (
         <div className="bg-card rounded-xl border px-4 py-12 text-center text-muted-foreground">
           {filteredClients.length > 0 ? "Nenhum cliente neste estado" : "Nenhum cliente encontrado"}
@@ -496,7 +569,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
             <ChevronDown className={cn("w-4 h-4 transition-transform", !showDone && "-rotate-90")} />
             <Check className="w-4 h-4 text-success" /> Fechados ({doneRows.length})
           </button>
-          {showDone && <div className="bg-card rounded-xl border overflow-hidden">{doneRows.map(renderRow)}</div>}
+          {showDone && renderList(doneRows)}
         </div>
       )}
 
