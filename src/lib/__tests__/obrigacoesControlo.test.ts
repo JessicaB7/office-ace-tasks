@@ -48,7 +48,9 @@ describe("deadlineFor", () => {
     expect(deadlineFor({}, "SAFT", "status", "2026-09-01")).toBe("2026-10-05");
     expect(deadlineFor({}, "SAFT", "status", "2026-03-01")).toBe("2026-04-08");
     expect(deadlineFor({}, "DMR_AT", "status", "2026-09-01")).toBe("2026-10-10");
-    expect(deadlineFor({}, "DMR_SS", "extra", "2026-09-01")).toBe("2026-10-20");
+    expect(deadlineFor({}, "DMR_SS", "status", "2026-09-01")).toBe("2026-10-10");
+    expect(deadlineFor({}, "DMR_SS", "extra", "2026-09-01")).toBe("2026-10-25");
+    expect(deadlineFor({}, "DMR_AT", "extra", "2026-09-01")).toBe("2026-10-20");
     expect(deadlineFor({ salarios: "Sim até dia 25" }, "salarios", "status", "2026-09-01")).toBe("2026-10-25");
     expect(deadlineFor({ salarios: "Sim até ao fim do mês" }, "salarios", "status", "2026-09-01")).toBe("2026-10-31");
     expect(deadlineFor({}, "retencao_fonte", "status", "2026-12-01")).toBe("2027-01-20");

@@ -70,8 +70,9 @@ export const deadlineFor = (c: any, type: string, field: "status" | "extra", mon
   switch (type) {
     case "SAFT": return ymd(y, m + 1, m + 1 === 3 ? 8 : 5); // em Abril o prazo é dia 8
     case "salarios": return c.salarios === "Sim até ao fim do mês" ? ymd(y, m + 1, 31) : ymd(y, m + 1, 25);
-    case "DMR_AT":
-    case "DMR_SS": return ymd(y, m + 1, field === "status" ? 10 : 20);
+    // Guia até dia 10; pagamento AT até dia 20, pagamento SS até dia 25.
+    case "DMR_AT": return ymd(y, m + 1, field === "status" ? 10 : 20);
+    case "DMR_SS": return ymd(y, m + 1, field === "status" ? 10 : 25);
     case "SS_TI": return ymd(y, m + 1, 20);
     case "SS_TI_DT": return ymd(y, m, 31); // último dia do próprio mês (Jan/Abr/Jul/Out)
     case "IVA": return c.iva === "Trimestral" ? ymd(y, qEnd + 2, 20) : ymd(y, m + 2, 20);

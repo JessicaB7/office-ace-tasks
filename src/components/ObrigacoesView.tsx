@@ -134,7 +134,12 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
     }
     switch (activeTab) {
       case "SAFT": { const d = addMonths(month, year, 1); return fmtDeadline(5, d.m, d.y); }
-      case "DMR": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
+      case "DMR": {
+        // Guia até dia 10; pagamento AT até dia 20, SS até dia 25.
+        const d = addMonths(month, year, 1);
+        const mm = String(d.m + 1).padStart(2, "0");
+        return `Prazo: guia 10/${mm}/${d.y} · pagamento ${dmrTab === "DMR_SS" ? 25 : 20}/${mm}/${d.y}`;
+      }
       case "retencao_fonte": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
       case "IVA": {
         if (subFilter === "OSS") {

@@ -30,7 +30,7 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS", clientFilter: (c) => hasSalarios(c) },
   { title: "Pedir documentação clientes", day: 15, months: null },
   { title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
-  { title: "DMR SS - Pagamento", day: 20, months: null, obligationType: "DMR_SS", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
+  { title: "DMR SS - Pagamento", day: 25, months: null, obligationType: "DMR_SS", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
   { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA", clientFilter: (c) => c.iva === "Mensal", refMonthOffset: 2 },
   { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa === "Mensal", refMonthOffset: 1 },
   { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA", clientFilter: (c) => c.iva === "Trimestral", refMonthOffset: 2 },

@@ -44,7 +44,7 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { title: "DMR AT - Guia", day: 10, months: null },
   { title: "DMR SS - Guia", day: 10, months: null },
   { title: "DMR AT - Pagamento", day: 20, months: null },
-  { title: "DMR SS - Pagamento", day: 20, months: null },
+  { title: "DMR SS - Pagamento", day: 25, months: null },
   { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month" },
   { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month" },
   { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
