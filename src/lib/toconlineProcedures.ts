@@ -50,7 +50,7 @@ const VENDAS_TI_DESC = "Programa de faturação: SAF-T + sugestões de vendas (c
 const NAO_CONSIDERAR_DESC = "Compras → e-Fatura do mês → em cada linha, na seta → \"Não considerar este documento na atividade\". Todas as linhas do mês; em caso de dúvida fica por marcar e vai para o Resultado.";
 const SALARIOS_DESC = "Contabilidade → Sugestões de salários → Gerar sugestões do mês (só Salários). Não finaliza — fica para revisão.";
 const MAPA_ANALISE_DESC = "Trimestral (mês da tarefa = fim do trimestre). Exporta do TOConline o Mapa de Exploração (Contabilidade → Outros mapas, Jan até ao fim do trimestre) e o Balancete dos 3 meses (Contabilidade → Balancetes), em PDF, e importa-os na Análise financeira do cliente. IVA por trimestre à mão: Declaração periódica → Rosto → campo 93 (ou 94 com sinal negativo).";
-const CLASSIFICACAO_EFATURA_DESC = "TOConline → Compras → e-Fatura do mês (n.º de diário e conta) + Empresa → Acesso direto → Portal e-Fatura → Faturação → Adquirente → Completar informação. Com n.º de diário: conta 3 = Inventários, 4 = Investimentos, 6 = Outros bens e serviços. Sem n.º de diário: Não afeto.";
+const CLASSIFICACAO_EFATURA_DESC = "TOConline → Compras → e-Fatura do mês (Nr. Diário). Empresa → Acesso Direto → Portal do e-fatura → Verificar faturas → Aceder; no e-Fatura: Adquirente → Verificar Faturas → cada fatura → Alterar. Com n.º de diário: \"Sim, despesa totalmente afeta\". Sem n.º de diário: \"Não\" (sem preencher o setor).";
 /** Salários só para quem tem o campo preenchido na ficha ("Sim até dia 25" / "Sim até ao fim do mês"). */
 const temSalarios = (c: any) => /^sim/i.test((c.salarios || "").trim());
 

@@ -45,32 +45,6 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      com a ferramenta de upload de ficheiros do Chrome. Depois, preencher à mão o **IVA por trimestre** no Dashboard
      anual (Contabilidade → Declarações → Declaração periódica → Rosto → campo 93; sem valor → campo 94 negativo).
    - `ti_rs_classificacao_efatura` / `ti_co_classificacao_efatura` → secção 6 "Classificação e-Fatura" de
-     `ti-rs.md` / `ti-co.md`. Entrar no Portal e-Fatura pelo **Empresa → Acesso direto** do TOConline (nunca escrever
-     senhas). Com n.º de diário: conta 3 = Inventários, 4 = Investimentos, 6 = Outros bens e serviços; sem n.º de
-     diário = Não afeto. Dúvidas ficam por classificar e vão para o Resultado.
-   - **TI Simplificado / TI Organizado:** o procedimento depende de o cliente passar **recibos verdes**
-     (Portal das Finanças / AT) ou usar **programa de faturação** — a Fila mostra-o numa etiqueta junto ao
-     cliente (calculada a partir do "Programa de Faturação"; "ambos" = as duas coisas). Seguir a secção do
-     manual para esse tipo; se o manual não tiver secção para esse tipo → **Bloqueada** com
-     "Sem manual para <tipo>".
-   - Na Fila, as tarefas aparecem separadas por regime (TI Simplificado / TI Organizado / Empresas)
-     e por tarefa (Vendas / Compras / Salários / Mapa de análise).
-5. Regista o resultado na Fila:
-   - **Resultado** (caixa de texto): o que foi feito — mês, tipos/n.º de documentos
-     finalizados, avisos. Curto e factual, em pt-PT.
-   - **Estado**:
-     - **Concluída** — procedimento terminado.
-     - **Bloqueada** — o manual manda parar (ex.: SAF-T do mês não importado, programa de
-       faturação vazio). Explica no Resultado o que falta.
-     - **Erro** — algo inesperado no TOConline. Descreve o que aconteceu.
-6. **Não** carregues em "Marcar …" (Gestão Mensal) — a utilizadora revê e marca.
-
-## 2. No fim
-Resumo no chat: por cliente/mês — concluídas, bloqueadas (com o motivo) e erros.
-
-## Regras
-- Uma tarefa de cada vez; nunca deixes uma tarefa "Em curso" ao parar — volta a pô-la em
-  **Pendente** se não a acabaste.
-- Não acionar diálogos `confirm()`/`alert()` do browser.
-- Se a página da app ou do TOConline não responder após 2–3 tentativas, pára e pergunta.
-- Procedimento sem manual (`procedure_id` desconhecido) → **Bloqueada** com "Sem manual".
+     `ti-rs.md` / `ti-co.md`. Entrar no e-Fatura por **Empresa → Acesso Direto → Portal do e-fatura → Verificar faturas
+     → Aceder** (nunca escrever senhas). Com n.º de diário: "Sim, despesa totalmente afeta"; sem n.º de diário: "Não"
+     sem preencher o setor. Dúvidas ficam por classificar e vão para o Resultado.
