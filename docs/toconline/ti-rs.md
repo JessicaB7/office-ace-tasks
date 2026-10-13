@@ -179,6 +179,22 @@ preenchido por trimestre (campo 93 ou 94).
    - (Alternativa: Faturação → Adquirente → botão **Complementar Informação Faturas** — mas só mostra as 50 mais recentes.)
 4. Confirmar no fim que todas as faturas do mês têm o campo preenchido (Sim ou Não).
 
+**Cruzamentos obrigatórios** (aprendidos na 1.ª execução):
+- A coluna Nr. Diário do e-Fatura do TOConline **não chega**: confirmar também em **Compras → Faturas de compra**
+  (filtro de datas do período) — cada fatura de compra finalizada com diário corresponde a uma fatura "Sim" no e-Fatura
+  (NIF do fornecedor + n.º em "Vossa Ref." + valor; aceitar 1 cêntimo de diferença). Há compras lançadas que não
+  aparecem associadas na lista e-Fatura do TOConline.
+- Comparar o **n.º de faturas do mês** no e-Fatura (AT) com o do TOConline. As que estão no e-Fatura mas **não** no
+  TOConline (o TOConline ainda não as importou) ficam **por classificar** — podem ser da atividade.
+- Compras lançadas no TOConline que não existem no e-Fatura (ex.: fornecedores que não comunicam) — não há nada a
+  classificar; só referir no Resultado.
+
+**Muitas faturas:** o e-Fatura bloqueia temporariamente ("demasiados pedidos") se se fizerem pedidos muito seguidos —
+guardar fatura a fatura com ~1 s de intervalo.
+
+**Na app (Gestão Mensal → coluna E-Fatura):** marcar o mês como concluído **só** quando todas as faturas desse mês
+ficaram classificadas; meses com faturas por classificar ficam por marcar e vão para o Resultado.
+
 **Dúvidas** (deixar a fatura **por classificar** e indicar no Resultado emitente, NIF, n.º, data e valor):
 - a fatura do e-Fatura não aparece no TOConline, ou os elementos não batem certo (NIF, n.º ou valor);
 - a linha do TOConline tem compra associada mas **ainda sem número de diário** (compra gravada por finalizar) —
