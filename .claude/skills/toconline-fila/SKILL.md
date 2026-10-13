@@ -44,6 +44,10 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      (Clientes → Análise financeira → cliente → Dados). Os PDFs ficam nas Transferências — o upload na app faz-se
      com a ferramenta de upload de ficheiros do Chrome. Depois, preencher à mão o **IVA por trimestre** no Dashboard
      anual (Contabilidade → Declarações → Declaração periódica → Rosto → campo 93; sem valor → campo 94 negativo).
+   - `ti_rs_classificacao_efatura` / `ti_co_classificacao_efatura` → secção 6 "Classificação e-Fatura" de
+     `ti-rs.md` / `ti-co.md`. Entrar no Portal e-Fatura pelo **Empresa → Acesso direto** do TOConline (nunca escrever
+     senhas). Com n.º de diário: conta 3 = Inventários, 4 = Investimentos, 6 = Outros bens e serviços; sem n.º de
+     diário = Não afeto. Dúvidas ficam por classificar e vão para o Resultado.
    - **TI Simplificado / TI Organizado:** o procedimento depende de o cliente passar **recibos verdes**
      (Portal das Finanças / AT) ou usar **programa de faturação** — a Fila mostra-o numa etiqueta junto ao
      cliente (calculada a partir do "Programa de Faturação"; "ambos" = as duas coisas). Seguir a secção do

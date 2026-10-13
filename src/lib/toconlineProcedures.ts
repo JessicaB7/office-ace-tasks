@@ -9,7 +9,7 @@ import { SUB_PAGE_CONFIG } from "@/lib/contabilidadesConfig";
 export type ToconlineJobStatus = "pendente" | "em_curso" | "concluida" | "bloqueada" | "erro" | "cancelada";
 
 export type ToconlineRegime = "ti_rs" | "ti_co" | "empresas";
-export type ToconlineTarefa = "vendas" | "compras" | "nao_considerar" | "salarios" | "mapa_analise";
+export type ToconlineTarefa = "vendas" | "compras" | "nao_considerar" | "salarios" | "mapa_analise" | "classificacao_efatura";
 
 /** Separadores da Fila: um por regime. */
 export const TOCONLINE_REGIMES: { id: ToconlineRegime; label: string }[] = [
@@ -25,6 +25,7 @@ export const TOCONLINE_TAREFAS: { id: ToconlineTarefa; label: string }[] = [
   { id: "nao_considerar", label: "Compras — Não considerar da atividade" },
   { id: "salarios", label: "Salários" },
   { id: "mapa_analise", label: "Mapa de análise" },
+  { id: "classificacao_efatura", label: "Classificação e-Fatura" },
 ];
 
 export interface ToconlineProcedure {
@@ -49,6 +50,7 @@ const VENDAS_TI_DESC = "Programa de faturação: SAF-T + sugestões de vendas (c
 const NAO_CONSIDERAR_DESC = "Compras → e-Fatura do mês → em cada linha, na seta → \"Não considerar este documento na atividade\". Todas as linhas do mês; em caso de dúvida fica por marcar e vai para o Resultado.";
 const SALARIOS_DESC = "Contabilidade → Sugestões de salários → Gerar sugestões do mês (só Salários). Não finaliza — fica para revisão.";
 const MAPA_ANALISE_DESC = "Trimestral (mês da tarefa = fim do trimestre). Exporta do TOConline o Mapa de Exploração (Contabilidade → Outros mapas, Jan até ao fim do trimestre) e o Balancete dos 3 meses (Contabilidade → Balancetes), em PDF, e importa-os na Análise financeira do cliente. IVA por trimestre à mão: Declaração periódica → Rosto → campo 93 (ou 94 com sinal negativo).";
+const CLASSIFICACAO_EFATURA_DESC = "TOConline → Compras → e-Fatura do mês (n.º de diário e conta) + Empresa → Acesso direto → Portal e-Fatura → Faturação → Adquirente → Completar informação. Com n.º de diário: conta 3 = Inventários, 4 = Investimentos, 6 = Outros bens e serviços. Sem n.º de diário: Não afeto.";
 /** Salários só para quem tem o campo preenchido na ficha ("Sim até dia 25" / "Sim até ao fim do mês"). */
 const temSalarios = (c: any) => /^sim/i.test((c.salarios || "").trim());
 
@@ -82,6 +84,11 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
     tipoContabilidade: "TI RS", regimeLabel: "TI Simplificado",
     description: MAPA_ANALISE_DESC, docPath: "docs/toconline/ti-rs.md",
   },
+  {
+    id: "ti_rs_classificacao_efatura", regime: "ti_rs", tarefa: "classificacao_efatura", label: "Classificação e-Fatura",
+    tipoContabilidade: "TI RS", regimeLabel: "TI Simplificado",
+    description: CLASSIFICACAO_EFATURA_DESC, docPath: "docs/toconline/ti-rs.md",
+  },
   // ---- TI Organizado (TI CO) ----
   {
     id: "ti_co_vendas", regime: "ti_co", tarefa: "vendas", label: "Vendas",
@@ -110,6 +117,11 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
     id: "ti_co_mapa_analise", regime: "ti_co", tarefa: "mapa_analise", label: "Mapa de análise",
     tipoContabilidade: "TI CO", regimeLabel: "TI Organizado",
     description: MAPA_ANALISE_DESC, docPath: "docs/toconline/ti-co.md",
+  },
+  {
+    id: "ti_co_classificacao_efatura", regime: "ti_co", tarefa: "classificacao_efatura", label: "Classificação e-Fatura",
+    tipoContabilidade: "TI CO", regimeLabel: "TI Organizado",
+    description: CLASSIFICACAO_EFATURA_DESC, docPath: "docs/toconline/ti-co.md",
   },
   // ---- Empresas (SQ) ----
   {

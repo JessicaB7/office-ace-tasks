@@ -146,3 +146,47 @@ trimestre** (Mar / Jun / Set / Dez). Se a tarefa estiver noutro mês, usar o tri
 **Confirmação:** não é preciso pedir — exportar, importar e concluir.
 No Resultado: trimestre, ficheiros importados, n.º de valores carregados de cada um (mensagem da app) e o IVA
 preenchido por trimestre (campo 93 ou 94).
+
+## 6. Classificação e-Fatura
+
+**Aplica-se a:** todos os clientes do regime. Tarefa **mensal**, feita só para os **meses indicados pela utilizadora**
+(o mês da tarefa na Fila). Trabalha-se em dois sítios ao mesmo tempo: o **TOConline** (para saber o que foi lançado)
+e o **Portal e-Fatura** (onde se classifica).
+
+**Passos**
+1. **TOConline — ver o que foi lançado**
+   - Confirmar a empresa (canto superior esquerdo) e o **exercício**.
+   - **Compras → e-Fatura** → filtrar pelo **mês da tarefa**.
+   - Para cada linha registar: NIF e nome do emitente, n.º da fatura, data, valor total e se tem **número de diário**.
+   - Nas linhas **com número de diário**, abrir o lançamento e ver a **conta da despesa** (a conta a débito do gasto
+     ou do ativo — ignorar as contas de IVA 24x e de fornecedores 22x).
+2. **Entrar no Portal das Finanças pelo acesso direto do TOConline**
+   - No TOConline: **Empresa → Acesso direto → Portal e-Fatura** (entra já com as credenciais do cliente — nunca
+     escrever senhas).
+   - Confirmar que o NIF com sessão iniciada no Portal é o do cliente.
+3. **e-Fatura — classificar**
+   - **Faturação → Adquirente → Completar informação** → filtrar pelo **mês da tarefa**.
+   - Para cada fatura pendente, encontrar a linha correspondente do TOConline pelo **NIF do emitente + n.º da fatura +
+     data + valor** (têm de bater todos).
+   - **Com número de diário** → afeta à atividade, com a classificação conforme a conta da despesa:
+     | Conta começa por | Classificação no e-Fatura |
+     |---|---|
+     | **3** | **Inventários** |
+     | **4** | **Investimentos** |
+     | **6** | **Outros bens e serviços** |
+   - **Sem número de diário** → **Não afeto** à atividade.
+   - Gravar/submeter a classificação.
+4. Voltar a filtrar o mês em "Completar informação" para confirmar que não ficou nenhuma fatura pendente
+   (exceto as dúvidas abaixo).
+
+**Dúvidas** (deixar a fatura **por classificar** e indicar no Resultado emitente, NIF, n.º, data e valor):
+- a fatura do e-Fatura não aparece no TOConline, ou os elementos não batem certo (NIF, n.º, data ou valor);
+- a linha do TOConline tem compra associada mas **ainda sem número de diário** (compra gravada por finalizar) —
+  não classificar como não afeto, porque pode vir a ser lançada;
+- o lançamento tem contas de despesa com classes diferentes (ex.: uma parte na 3 e outra na 6), ou a conta não
+  começa por 3, 4 nem 6;
+- o Portal pede outra informação (ex.: setor, afetação parcial) ou dá erro.
+
+**Confirmação:** não é preciso pedir — classificar e submeter sem perguntar.
+No Resultado: mês, n.º de faturas classificadas por tipo (Inventários / Investimentos / Outros bens e serviços /
+Não afeto) e as que ficaram por classificar (com o motivo).
