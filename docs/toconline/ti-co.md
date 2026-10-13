@@ -194,6 +194,9 @@ guardar fatura a fatura com ~1 s de intervalo.
 **Na app (Gestão Mensal → coluna E-Fatura):** marcar o mês como concluído **só** quando todas as faturas desse mês
 ficaram classificadas; meses com faturas por classificar ficam por marcar e vão para o Resultado.
 
+**Não entram:** documentos da série **PF** (ex.: "FT PF2026/…") que **não** estejam lançados no TOConline são
+pagamentos — deixar como estão, sem classificar, e não contam como dúvida (o mês pode ser dado como concluído).
+
 **Dúvidas** (deixar a fatura **por classificar** e indicar no Resultado emitente, NIF, n.º, data e valor):
 - a fatura do e-Fatura não aparece no TOConline, ou os elementos não batem certo (NIF, n.º ou valor);
 - a linha do TOConline tem compra associada mas **ainda sem número de diário** (compra gravada por finalizar) —
