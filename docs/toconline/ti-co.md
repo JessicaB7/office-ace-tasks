@@ -188,6 +188,16 @@ preenchido por trimestre (campo 93 ou 94).
 - Compras lançadas no TOConline que não existem no e-Fatura (ex.: fornecedores que não comunicam) — não há nada a
   classificar; só referir no Resultado.
 
+**Outros casos (aprendidos com vários clientes):**
+- **Documento anulado** — o e-Fatura responde "O documento não pode ser classificado por estar anulado": não há nada a
+  fazer, não conta como pendente.
+- **Mês sem compras lançadas** (ou com muito menos do que os outros meses) — o mais provável é as compras desse mês ainda
+  não estarem lançadas no TOConline: **não classificar esse mês** (senão tudo ficava "Não") e indicar no Resultado.
+- **Compra lançada duas vezes** no TOConline (mesmo fornecedor e n.º) — só existe uma no e-Fatura; indicar no Resultado.
+- Compras de fornecedores estrangeiros e de quem não comunica ao e-Fatura não aparecem lá — normal.
+- Em Compras → Faturas de compra, a lista com filtro de datas traz no máximo 100 linhas: se o período tiver mais,
+  dividir em períodos mais curtos.
+
 **Muitas faturas:** o e-Fatura bloqueia temporariamente ("demasiados pedidos") se se fizerem pedidos muito seguidos —
 guardar fatura a fatura com ~1 s de intervalo.
 
