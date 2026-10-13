@@ -416,6 +416,7 @@ export type Database = {
           senha_at: string | null
           senha_faturacao: string | null
           senha_ss: string | null
+          chave_ss: string | null
           status: string
           tipo_contabilidade: string | null
           updated_at: string
@@ -458,6 +459,7 @@ export type Database = {
           senha_at?: string | null
           senha_faturacao?: string | null
           senha_ss?: string | null
+          chave_ss?: string | null
           status?: string
           tipo_contabilidade?: string | null
           updated_at?: string
@@ -500,6 +502,7 @@ export type Database = {
           senha_at?: string | null
           senha_faturacao?: string | null
           senha_ss?: string | null
+          chave_ss?: string | null
           status?: string
           tipo_contabilidade?: string | null
           updated_at?: string

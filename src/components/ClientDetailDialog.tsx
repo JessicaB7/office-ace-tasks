@@ -84,6 +84,7 @@ interface ClientForm {
   senha_at: string;
   niss: string;
   senha_ss: string;
+  chave_ss: string;
   programa_faturacao: string;
   utilizador_faturacao: string;
   senha_faturacao: string;
@@ -105,15 +106,16 @@ interface ClientForm {
   salarios: string;
   responsavel_id: string;
   status: string;
+  notas_internas: string;
 }
 
 const emptyForm: ClientForm = {
-  name: "", nif: "", senha_at: "", niss: "", senha_ss: "",
+  name: "", nif: "", senha_at: "", niss: "", senha_ss: "", chave_ss: "",
   programa_faturacao: "", utilizador_faturacao: "", senha_faturacao: "",
   saft: "", via_ctt: "", via_ctt_senha: "", via_ctt_resposta: "", mensalidade: "", inicio_contrato: "",
   tipo_contabilidade: "SQ", seguranca_social: "", seguranca_social_isencao_fim: "", pag_seguranca_social: "",
   iva: "", iva_oss: "", recapitulativa: "", faturacao: "", faturacao_frequencia: "",
-  salarios: "", responsavel_id: "", status: "ativo",
+  salarios: "", responsavel_id: "", status: "ativo", notas_internas: "",
 };
 
 const STATUS_OPTIONS = [
@@ -148,6 +150,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         senha_at: client.senha_at || "",
         niss: client.niss || "",
         senha_ss: client.senha_ss || "",
+        chave_ss: client.chave_ss || "",
         programa_faturacao: client.programa_faturacao || "",
         utilizador_faturacao: client.utilizador_faturacao || "",
         senha_faturacao: client.senha_faturacao || "",
@@ -169,6 +172,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         salarios: client.salarios || "",
         responsavel_id: client.responsavel_id || "",
         status: client.status || (client.active === false ? "inativo" : "ativo"),
+        notas_internas: client.notas_internas || "",
       });
     } else {
       setForm(emptyForm);
@@ -197,6 +201,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         senha_at: form.senha_at || null,
         niss: form.niss || null,
         senha_ss: form.senha_ss || null,
+        chave_ss: form.chave_ss || null,
         programa_faturacao: form.programa_faturacao || null,
         utilizador_faturacao: form.utilizador_faturacao || null,
         senha_faturacao: form.senha_faturacao || null,
@@ -219,6 +224,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         responsavel_id: form.responsavel_id || null,
         status: form.status || "ativo",
         active: form.status !== "inativo",
+        notas_internas: form.notas_internas || null,
       };
       if (isEditing) payload.id = client.id;
       await upsert.mutateAsync(payload);
@@ -290,6 +296,10 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                   <input value={form.senha_ss} onChange={(e) => set("senha_ss", e.target.value)} className={inputClass} />
                 </div>
                 <div className="col-span-2">
+                  <label className="text-sm font-medium mb-1 block">Chave Segurança Social</label>
+                  <input value={form.chave_ss} onChange={(e) => set("chave_ss", e.target.value)} className={inputClass} />
+                </div>
+                <div className="col-span-2">
                   <label className="text-sm font-medium mb-1 block">Programa de Faturação</label>
                   <input value={form.programa_faturacao} onChange={(e) => set("programa_faturacao", e.target.value)} className={inputClass} />
                 </div>
@@ -332,6 +342,16 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                   <select value={form.status} onChange={(e) => set("status", e.target.value)} className={inputClass}>
                     {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium mb-1 block">Notas gerais</label>
+                  <textarea
+                    value={form.notas_internas}
+                    onChange={(e) => set("notas_internas", e.target.value)}
+                    placeholder="Notas gerais do cliente (as mesmas da Gestão Mensal)..."
+                    rows={3}
+                    className={cn(inputClass, "resize-y")}
+                  />
                 </div>
               </div>
             </TabsContent>
