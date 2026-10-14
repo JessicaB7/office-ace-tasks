@@ -199,6 +199,11 @@ preenchido por trimestre (campo 93 ou 94).
 - Em Compras → Faturas de compra, a lista com filtro de datas traz no máximo 100 linhas: se o período tiver mais,
   dividir em períodos mais curtos.
 
+**Faturas já classificadas antes:** ler o valor atual antes de gravar. Se já estiver certo, não mexer. Se estiver
+"Sim" e a regra der "Não" (sem compra lançada), **manter o "Sim"** e indicar no Resultado — pode ter sido marcado de
+propósito. Compras **anuladas** no TOConline (riscadas, estado "void") não contam como lançadas.
+Se o mês tiver muitas compras por finalizar, só gravar os "Sim" e deixar os "Não" para quando o mês estiver lançado.
+
 **Muitas faturas:** o e-Fatura bloqueia temporariamente ("demasiados pedidos") se se fizerem pedidos muito seguidos —
 guardar fatura a fatura com ~1 s de intervalo.
 
