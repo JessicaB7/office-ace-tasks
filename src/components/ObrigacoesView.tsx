@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { ivaObligationTypeFor, isColumnApplicable } from "@/lib/contabilidadesConfig";
+import { parcelasDoTrimestre, parcelaPrazo, metodoPagamentoIva, METODOS_PAGAMENTO_IVA } from "@/lib/ivaFlex";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const SAFT_GROUPS = ["Automático", "A entregar"];
@@ -48,19 +49,6 @@ const WEEKS = [1, 2, 3, 4];
 const hideNif = new Set(["DMR", "SS_TI", "IVA", "IVA_recapitulativa", "retencao_fonte", "SAFT", "salarios", "emissao_faturas"]);
 // Sub-separador do IVA Periódica: lê a coluna "Flexibilização" do trimestral (extra_done)
 const IVA_FLEX = "Flexibilizacao";
-// Flexibilização: pagamento do IVA do trimestre em parcelas (IVA_flex_P1..P3, no mês de fim de trimestre);
-// 3 parcelas, exceto no 3º trimestre, que tem só 2
-const parcelasDoTrimestre = (month0: number) => (Math.floor(month0 / 3) === 2 ? [1, 2] : [1, 2, 3]);
-// Data limite de cada parcela (dia 25), por trimestre: [mês 0-11, anos a somar]. 1º trimestre ainda sem datas definidas.
-const PARCELA_PRAZOS: Record<number, [number, number][]> = {
-  1: [[8, 0], [9, 0], [10, 0]],   // 2º trimestre: 25/09, 25/10, 25/11
-  2: [[10, 0], [11, 0]],          // 3º trimestre: 25/11, 25/12
-  3: [[1, 1], [2, 1], [3, 1]],    // 4º trimestre: 25/02, 25/03, 25/04 do ano seguinte
-};
-const parcelaPrazo = (month0: number, year: number, p: number) => {
-  const d = PARCELA_PRAZOS[Math.floor(month0 / 3)]?.[p - 1];
-  return d ? `25/${String(d[0] + 1).padStart(2, "0")}/${year + d[1]}` : null;
-};
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
@@ -749,22 +737,37 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                 const pagamentoDone = obl?.extra_done === true;
                 const isExtraDone = obl?.extra_done === true;
                 const showExtraForClient = showSaftExtra && needsExtra(client);
-                const metodoCell = (
+                const saveMetodo = async (val: string) => {
+                  if (val === (obl?.notes || "")) return;
+                  if (obl?.id) {
+                    await upsert.mutateAsync({ id: obl.id, client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: obl.status, notes: val || null });
+                  } else {
+                    await upsert.mutateAsync({ client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: "pendente", notes: val || null });
+                  }
+                };
+                // Flexibilização: escolha fixa (a tarefa "Guias flexibilização IVA" lê este valor)
+                const metodoFlex = metodoPagamentoIva(obl?.notes);
+                const metodoCell = isIvaFlex ? (
+                  <td className="px-3 py-3">
+                    <select
+                      value={metodoFlex || ""}
+                      onChange={(e) => saveMetodo(e.target.value)}
+                      disabled={upsert.isPending}
+                      aria-label={`Método de pagamento de ${client.name}`}
+                      className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">{obl?.notes && !metodoFlex ? obl.notes : "Escolher..."}</option>
+                      {METODOS_PAGAMENTO_IVA.map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </td>
+                ) : (
                   <td className="px-3 py-3">
                     <input
                       type="text"
                       defaultValue={obl?.notes || ""}
                       placeholder="Adicionar método..."
                       className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      onBlur={async (e) => {
-                        const val = e.target.value;
-                        if (val === (obl?.notes || "")) return;
-                        if (obl?.id) {
-                          await upsert.mutateAsync({ id: obl.id, client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: obl.status, notes: val || null });
-                        } else {
-                          await upsert.mutateAsync({ client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: "pendente", notes: val || null });
-                        }
-                      }}
+                      onBlur={(e) => saveMetodo(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                     />
                   </td>

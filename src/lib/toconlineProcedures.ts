@@ -4,18 +4,20 @@
 import empresasDoc from "../../docs/toconline/empresas.md?raw";
 import tiRsDoc from "../../docs/toconline/ti-rs.md?raw";
 import tiCoDoc from "../../docs/toconline/ti-co.md?raw";
+import ivaFlexDoc from "../../docs/toconline/iva-flexibilizacao.md?raw";
 import { SUB_PAGE_CONFIG } from "@/lib/contabilidadesConfig";
 
 export type ToconlineJobStatus = "pendente" | "em_curso" | "concluida" | "bloqueada" | "erro" | "cancelada";
 
-export type ToconlineRegime = "ti_rs" | "ti_co" | "empresas";
-export type ToconlineTarefa = "vendas" | "compras" | "nao_considerar" | "salarios" | "mapa_analise" | "classificacao_efatura";
+export type ToconlineRegime = "ti_rs" | "ti_co" | "empresas" | "iva";
+export type ToconlineTarefa = "vendas" | "compras" | "nao_considerar" | "salarios" | "mapa_analise" | "classificacao_efatura" | "guias_flex_iva";
 
 /** Separadores da Fila: um por regime. */
 export const TOCONLINE_REGIMES: { id: ToconlineRegime; label: string }[] = [
   { id: "ti_rs", label: "TI Simplificado" },
   { id: "ti_co", label: "TI Organizado" },
   { id: "empresas", label: "Empresas" },
+  { id: "iva", label: "IVA (todos os regimes)" },
 ];
 
 /** Tarefas disponíveis em cada regime. */
@@ -26,6 +28,7 @@ export const TOCONLINE_TAREFAS: { id: ToconlineTarefa; label: string }[] = [
   { id: "salarios", label: "Salários" },
   { id: "mapa_analise", label: "Mapa de análise" },
   { id: "classificacao_efatura", label: "Classificação e-Fatura" },
+  { id: "guias_flex_iva", label: "Guias flexibilização IVA" },
 ];
 
 export interface ToconlineProcedure {
@@ -33,8 +36,10 @@ export interface ToconlineProcedure {
   regime: ToconlineRegime;
   tarefa: ToconlineTarefa;
   label: string;
-  /** Regime a que se aplica (valor de clients.tipo_contabilidade). */
-  tipoContabilidade: "SQ" | "TI CO" | "TI RS";
+  /** Regime a que se aplica (valor de clients.tipo_contabilidade); null = todos os regimes. */
+  tipoContabilidade: "SQ" | "TI CO" | "TI RS" | null;
+  /** Clientes elegíveis = IVA trimestral com flexibilização e parcela a vencer no mês da tarefa. */
+  ivaFlex?: boolean;
   regimeLabel: string;
   /** Filtro extra dentro do regime (ex.: só TI RS com regime de IVA). */
   filter?: (client: any) => boolean;
@@ -51,6 +56,7 @@ const NAO_CONSIDERAR_DESC = "Compras → e-Fatura do mês → em cada linha, na 
 const SALARIOS_DESC = "Contabilidade → Sugestões de salários → Gerar sugestões do mês (só Salários). Não finaliza — fica para revisão.";
 const MAPA_ANALISE_DESC = "Trimestral (mês da tarefa = fim do trimestre). Exporta do TOConline o Mapa de Exploração (Contabilidade → Outros mapas, Jan até ao fim do trimestre) e o Balancete dos 3 meses (Contabilidade → Balancetes), em PDF, e importa-os na Análise financeira do cliente. IVA por trimestre à mão: Declaração periódica → Rosto → campo 93 (ou 94 com sinal negativo).";
 const CLASSIFICACAO_EFATURA_DESC = "TOConline → Compras → e-Fatura do mês (Nr. Diário). Empresa → Acesso Direto → Portal do e-fatura → Verificar faturas → Aceder; no e-Fatura: Adquirente → Verificar Faturas → cada fatura → Alterar. Com n.º de diário: \"Sim, despesa totalmente afeta\". Sem n.º de diário: \"Não\" (sem preencher o setor).";
+const GUIAS_FLEX_IVA_DESC = "Mês da tarefa = mês em que vence a parcela (dia 25). Portal das Finanças pelo Acesso Direto do TOConline → Pagamentos → Flexibilização de Pagamentos → Consultar Plano/Pagar. Referência: descarregar a guia da parcela para o computador. Débito direto: só consultar o valor. No fim, lista com cliente, n.º da parcela e valor.";
 /** Salários só para quem tem o campo preenchido na ficha ("Sim até dia 25" / "Sim até ao fim do mês"). */
 const temSalarios = (c: any) => /^sim/i.test((c.salarios || "").trim());
 
@@ -148,6 +154,12 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
     tipoContabilidade: "SQ", regimeLabel: "Empresas",
     description: MAPA_ANALISE_DESC, docPath: "docs/toconline/empresas.md",
   },
+  // ---- IVA (todos os regimes) ----
+  {
+    id: "iva_guias_flexibilizacao", regime: "iva", tarefa: "guias_flex_iva", label: "Guias flexibilização IVA",
+    tipoContabilidade: null, regimeLabel: "IVA", ivaFlex: true,
+    description: GUIAS_FLEX_IVA_DESC, docPath: "docs/toconline/iva-flexibilizacao.md",
+  },
 ];
 
 /** Como o cliente TI emite as vendas, a partir de clients.programa_faturacao:
@@ -185,6 +197,7 @@ export const TOCONLINE_DOCS: { regimeLabel: string; path: string; content: strin
   { regimeLabel: "Empresas (SQ)", path: "docs/toconline/empresas.md", content: empresasDoc },
   { regimeLabel: "TI Simplificado (TI RS)", path: "docs/toconline/ti-rs.md", content: tiRsDoc },
   { regimeLabel: "TI Contabilidade Organizada (TI CO)", path: "docs/toconline/ti-co.md", content: tiCoDoc },
+  { regimeLabel: "IVA — Flexibilização (todos os regimes)", path: "docs/toconline/iva-flexibilizacao.md", content: ivaFlexDoc },
 ];
 
 export const STATUS_LABELS: Record<ToconlineJobStatus, string> = {

@@ -48,3 +48,7 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      `ti-rs.md` / `ti-co.md`. Entrar no e-Fatura por **Empresa → Acesso Direto → Portal do e-fatura → Verificar faturas
      → Aceder** (nunca escrever senhas). Com n.º de diário: "Sim, despesa totalmente afeta"; sem n.º de diário: "Não"
      sem preencher o setor. Dúvidas ficam por classificar e vão para o Resultado.
+   - `iva_guias_flexibilizacao` → `docs/toconline/iva-flexibilizacao.md`, secção 1 "Guias flexibilização IVA" (todos os
+     regimes). Mês da tarefa = mês em que a parcela vence; parcela e método na área "Ativar tarefas" (separador IVA).
+     Portal das Finanças pelo **Acesso Direto** → Pagamentos → Flexibilização de Pagamentos → Consultar Plano/Pagar.
+     Referência: descarregar a guia; Débito direto: só o valor. No fim, lista Cliente · N.º da parcela · Valor · Método.

@@ -9,6 +9,7 @@ import {
   tipoFaturacao, TIPO_FATURACAO_LABELS,
   type ToconlineJobStatus, type ToconlineRegime, type ToconlineTarefa, type TipoFaturacao,
 } from "@/lib/toconlineProcedures";
+import { parcelasDevidasEm, metodoPagamentoIva } from "@/lib/ivaFlex";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const STATUS_ORDER: ToconlineJobStatus[] = ["pendente", "em_curso", "bloqueada", "erro", "concluida", "cancelada"];
@@ -75,6 +76,21 @@ const ToconlineFilaView = () => {
   const collabName = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
   const userName = (uid: string | null) => collaborators.find((c: any) => c.user_id === uid)?.name || "";
 
+  // Guias flexibilização IVA: parcelas que vencem no mês e planos (IVA trimestral com Flexibilização) desses trimestres
+  const parcelasDoMes = useMemo(() => (procedure?.ivaFlex ? parcelasDevidasEm(year, month) : []), [procedure, year, month]);
+  const { data: flexObligations = [] } = useMonthlyObligationsRange([...new Set(parcelasDoMes.map((p) => p.quarterEndMonth))]);
+  const flexInfo = useMemo(() => {
+    const map = new Map<string, { label: string; metodo: string }[]>();
+    parcelasDoMes.forEach((p) => {
+      flexObligations.forEach((o: any) => {
+        if (o.obligation_type !== "IVA" || o.reference_month !== p.quarterEndMonth || o.extra_done !== true) return;
+        const metodo = metodoPagamentoIva(o.notes) || (o.notes ? `Método por definir (${o.notes})` : "Método por definir");
+        map.set(o.client_id, [...(map.get(o.client_id) || []), { label: p.label, metodo }]);
+      });
+    });
+    return map;
+  }, [parcelasDoMes, flexObligations]);
+
   const jobFor = useMemo(() => {
     const map = new Map<string, ToconlineJob>();
     jobs.forEach((j) => { if (j.procedure_id === procedureId && j.reference_month === refMonth) map.set(j.client_id, j); });
@@ -83,7 +99,10 @@ const ToconlineFilaView = () => {
 
   const eligibleClients = useMemo(() => {
     if (!procedure) return [];
-    let list = clients.filter((c: any) => c.active && c.tipo_contabilidade === procedure.tipoContabilidade && (!procedure.filter || procedure.filter(c)));
+    let list = clients.filter((c: any) => c.active
+      && (procedure.tipoContabilidade === null || c.tipo_contabilidade === procedure.tipoContabilidade)
+      && (!procedure.filter || procedure.filter(c))
+      && (!procedure.ivaFlex || (c.iva === "Trimestral" && flexInfo.has(c.id))));
     if (collabFilter === "none") list = list.filter((c: any) => !c.responsavel_id);
     else if (collabFilter !== "all") list = list.filter((c: any) => c.responsavel_id === collabFilter);
     if (isTI && faturacaoFilter !== "all") list = list.filter((c: any) => tipoFaturacao(c.programa_faturacao) === faturacaoFilter);
@@ -92,7 +111,7 @@ const ToconlineFilaView = () => {
       list = list.filter((c: any) => c.name.toLowerCase().includes(s));
     }
     return list;
-  }, [clients, procedure, collabFilter, clientSearch, isTI, faturacaoFilter]);
+  }, [clients, procedure, collabFilter, clientSearch, isTI, faturacaoFilter, flexInfo]);
 
   // Por omissão só se podem selecionar clientes sem tarefa ativa neste mês
   const selectable = eligibleClients.filter((c: any) => {
@@ -191,7 +210,7 @@ const ToconlineFilaView = () => {
 
         <div className="flex gap-1 flex-wrap border-b pb-3" role="tablist" aria-label="Regime">
           {TOCONLINE_REGIMES.map((r) => (
-            <button key={r.id} role="tab" aria-selected={regime === r.id} onClick={() => { setRegime(r.id); if (!procedureFor(r.id, tarefa)) setTarefa("vendas"); setSelected(new Set()); }} className={tabClass(regime === r.id)}>
+            <button key={r.id} role="tab" aria-selected={regime === r.id} onClick={() => { setRegime(r.id); if (!procedureFor(r.id, tarefa)) setTarefa(TOCONLINE_TAREFAS.find((t) => procedureFor(r.id, t.id))?.id || "vendas"); setSelected(new Set()); }} className={tabClass(regime === r.id)}>
               {r.label}
             </button>
           ))}
@@ -238,7 +257,7 @@ const ToconlineFilaView = () => {
                   </th>
                   <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Cliente</th>
                   <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Responsável</th>
-                  <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Programa Faturação</th>
+                  <th className="text-left px-3 py-2 font-semibold text-muted-foreground">{procedure?.ivaFlex ? "Parcela · Método de pagamento" : "Programa Faturação"}</th>
                   <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Na fila ({MONTH_NAMES[month]})</th>
                 </tr>
               </thead>
@@ -253,12 +272,18 @@ const ToconlineFilaView = () => {
                       </td>
                       <td className="px-3 py-2 font-medium">{c.name}</td>
                       <td className="px-3 py-2 text-muted-foreground">{collabName(c.responsavel_id)}</td>
+                      {procedure?.ivaFlex ? (
+                        <td className="px-3 py-2 text-muted-foreground text-xs">
+                          {(flexInfo.get(c.id) || []).map((f) => <div key={f.label}>{f.label} · <span className="font-medium text-foreground">{f.metodo}</span></div>)}
+                        </td>
+                      ) : (
                       <td className="px-3 py-2 text-muted-foreground text-xs">
                         <div className="flex items-center gap-2 flex-wrap">
                           {isTI && <FaturacaoBadge tipo={tipoFaturacao(c.programa_faturacao)} />}
                           <span>{c.programa_faturacao || "—"}</span>
                         </div>
                       </td>
+                      )}
                       <td className="px-3 py-2">
                         {job ? (
                           <span className={cn("text-xs font-medium px-2 py-0.5 rounded", STATUS_CLASSES[job.status as ToconlineJobStatus])}>
@@ -270,7 +295,7 @@ const ToconlineFilaView = () => {
                   );
                 })}
                 {eligibleClients.length === 0 && (
-                  <tr><td colSpan={5} className="px-3 py-8 text-center text-muted-foreground">Nenhum cliente deste regime.</td></tr>
+                  <tr><td colSpan={5} className="px-3 py-8 text-center text-muted-foreground">{procedure?.ivaFlex ? "Nenhum cliente com parcela de IVA flexibilizado a vencer neste mês." : "Nenhum cliente deste regime."}</td></tr>
                 )}
               </tbody>
             </table>
@@ -336,7 +361,7 @@ const ToconlineFilaView = () => {
                   <tr key={job.id} className="border-b last:border-0 hover:bg-muted/30 align-top" data-job-id={job.id}>
                     <td className="px-4 py-3 font-medium">
                       {client?.name || "—"}
-                      {proc && proc.regime !== "empresas" && client && <div className="mt-0.5"><FaturacaoBadge tipo={tipoFaturacao(client.programa_faturacao)} /></div>}
+                      {proc && (proc.regime === "ti_rs" || proc.regime === "ti_co") && client && <div className="mt-0.5"><FaturacaoBadge tipo={tipoFaturacao(client.programa_faturacao)} /></div>}
                       <div className="text-xs text-muted-foreground font-normal">
                         {userName(job.requested_by) ? `Ativada por ${userName(job.requested_by)} · ` : ""}{fmtDateTime(job.requested_at)}
                       </div>
