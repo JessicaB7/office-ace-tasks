@@ -48,6 +48,8 @@ const WEEKS = [1, 2, 3, 4];
 const hideNif = new Set(["DMR", "SS_TI", "IVA", "IVA_recapitulativa", "retencao_fonte", "SAFT", "salarios", "emissao_faturas"]);
 // Sub-separador do IVA Periódica: lê a coluna "Flexibilização" do trimestral (extra_done)
 const IVA_FLEX = "Flexibilizacao";
+// Flexibilização: pagamento do IVA do trimestre em 3 parcelas (IVA_flex_P1..P3, no mês de fim de trimestre)
+const PARCELAS = [1, 2, 3];
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
@@ -201,6 +203,7 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   const showProgramaFaturacao = isEmissaoFaturas || activeTab === "SAFT";
   const isFaturasSemanal = isEmissaoFaturas && subFilter === "Semanal";
   const showIvaPeriodicaCols = isIVAPeriodica;
+  const isIvaFlex = isIVA && subFilter === IVA_FLEX;
   // IVA Periódica e Recapitulativa trimestrais: navegação por trimestre, registos no mês de fim de trimestre
   const isTrimestralMode = (isIVA || isIVARecap) && (subFilter === "Trimestral" || (isIVA && subFilter === IVA_FLEX));
 
@@ -339,6 +342,29 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   }, [obligations]);
   const weekDone = (clientId: string, w: number) => weekMap[clientId]?.[w]?.status === "concluida";
 
+  // IVA Flexibilização: uma marcação por parcela paga (IVA_flex_P1..P3)
+  const parcelaMap = useMemo(() => {
+    const map: Record<string, Record<number, any>> = {};
+    obligations.forEach((o: any) => {
+      const m = /^IVA_flex_P([1-3])$/.exec(o.obligation_type);
+      if (m) (map[o.client_id] ||= {})[Number(m[1])] = o;
+    });
+    return map;
+  }, [obligations]);
+  const parcelaDone = (clientId: string, p: number) => parcelaMap[clientId]?.[p]?.status === "concluida";
+
+  const toggleParcela = async (clientId: string, p: number) => {
+    const existing = parcelaMap[clientId]?.[p];
+    const nowDone = existing?.status !== "concluida";
+    await upsert.mutateAsync({
+      ...(existing ? { id: existing.id } : {}),
+      client_id: clientId, obligation_type: `IVA_flex_P${p}`, reference_month: referenceMonth,
+      status: nowDone ? "concluida" : "pendente",
+      completed_at: nowDone ? new Date().toISOString() : null,
+      completed_by: nowDone ? user?.id || null : null,
+    });
+  };
+
   // SAFT: visto "Mensagem" enviada ao cliente — registo próprio do mês (SAFT_mensagem)
   const saftMensagemMap = useMemo(() => {
     const map: Record<string, any> = {};
@@ -436,7 +462,9 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
 
   const subFilterOptions = getSubFilterOptions();
   const deadlineText = getDeadlineText();
-  const doneCount = filteredClients.filter(c => oblMap[c.id]?.status === "concluida").length;
+  const doneCount = isIvaFlex
+    ? filteredClients.filter(c => PARCELAS.every((p) => parcelaDone(c.id, p))).length
+    : filteredClients.filter(c => oblMap[c.id]?.status === "concluida").length;
   // Salários: "pendente" = guia ou pagamento ainda por marcar
   const isSalarioPending = (c: any) => !(oblMap[c.id]?.status === "concluida" && oblMap[c.id]?.extra_done === true);
   // DMR: guia = status "concluida"; pagamento = extra_done
@@ -677,7 +705,10 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Enviado</th>
                   </>
                 )}
-                {isIVAPeriodica && (
+                {isIvaFlex && PARCELAS.map((p) => (
+                  <th key={p} className="text-center px-3 py-3 font-semibold text-muted-foreground w-24">Parcela {p}</th>
+                ))}
+                {isIVAPeriodica && !isIvaFlex && (
                   <>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-24" title="Ligado à tarefa IVA da Gestão Mensal">Apuramento</th>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-20">Entregue</th>
@@ -699,7 +730,8 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                 const pagamentoDone = obl?.extra_done === true;
                 const isExtraDone = obl?.extra_done === true;
                 const showExtraForClient = showSaftExtra && needsExtra(client);
-                const rowDone = showGuiaPagamento ? (guiaDone && pagamentoDone) : showSalariosColumns ? (guiaDone && pagamentoDone) : guiaDone;
+                const rowDone = isIvaFlex ? PARCELAS.every((p) => parcelaDone(client.id, p))
+                  : showGuiaPagamento ? (guiaDone && pagamentoDone) : showSalariosColumns ? (guiaDone && pagamentoDone) : guiaDone;
 
                 return (
                   <tr key={client.id} className={cn("border-b last:border-0 transition-colors", rowDone ? "bg-green-50 dark:bg-green-950/20" : "hover:bg-muted/30")}>
@@ -839,7 +871,12 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                         <td className="text-center px-3 py-3"><CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} /></td>
                       </>
                     )}
-                    {isIVAPeriodica && (
+                    {isIvaFlex && PARCELAS.map((p) => (
+                      <td key={p} className="text-center px-3 py-3">
+                        <CheckboxCell done={parcelaDone(client.id, p)} onClick={() => toggleParcela(client.id, p)} />
+                      </td>
+                    ))}
+                    {isIVAPeriodica && !isIvaFlex && (
                       <>
                         <td className="text-center px-3 py-3">
                           {(() => {
