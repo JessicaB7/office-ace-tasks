@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, CalendarDays, AlertTriangle, Plus, X } from 
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import TaskFormDialog from "./TaskFormDialog";
+import { parcelasDevidasEm } from "@/lib/ivaFlex";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -84,6 +85,12 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number, year: num
       result.push({ day, title });
     }
   });
+  // IVA Flexibilização: parcelas que vencem no mês (dia 25)
+  parcelasDevidasEm(year, monthIndex).forEach((p) => {
+    const [qy, qm] = p.quarterEndMonth.split("-").map(Number);
+    const quarter = `${Math.ceil(qm / 3)}ºT${qy !== year ? ` ${qy}` : ""}`;
+    result.push({ day: Math.min(25, daysInMonth), title: `IVA Flexibilização - Parcela ${p.parcela}/${p.totalParcelas} (${quarter})` });
+  });
   // Salários - Envio on last day of month
   result.push({ day: daysInMonth, title: "Salários - Envio" });
   // Weekly: Emissão de faturas on every Friday
@@ -128,7 +135,7 @@ const FiscalCalendarView = () => {
       map[dl.day].push(dl);
     });
     return map;
-  }, [month, daysInMonth]);
+  }, [month, daysInMonth, year]);
 
   const prev = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); setSelectedDay(null); };
   const next = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); setSelectedDay(null); };
