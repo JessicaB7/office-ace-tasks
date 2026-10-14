@@ -1,10 +1,22 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import { Bell, Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNotifications, useUnreadCount, useMarkRead, useMarkAllRead } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { pt } from "date-fns/locale";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
+const typeIcon: Record<string, string> = {
+  task_assigned: "📋",
+  task_completed: "✅",
+  weekly_digest: "📅",
+  daily_summary: "📊",
+  calendly_lead: "📅",
+  info: "ℹ️",
+};
 
 const NotificationBell = () => {
   const navigate = useNavigate();
@@ -14,6 +26,33 @@ const NotificationBell = () => {
   const unreadCount = useUnreadCount();
   const markRead = useMarkRead();
   const markAllRead = useMarkAllRead();
+  const { user } = useAuth();
+  const instanceId = useId();
+
+  // Pop up de cada notificação nova (canal Realtime próprio, separado do da lista)
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`notifications-popup-${user.id}-${instanceId.replace(/:/g, "")}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const n = payload.new as { title: string; message: string | null; type: string };
+          toast(`${typeIcon[n.type] || "ℹ️"} ${n.title}`, {
+            description: n.message ?? undefined,
+            // As marcações do Calendly ficam no ecrã até serem fechadas
+            duration: n.type === "calendly_lead" ? Infinity : 8000,
+            closeButton: true,
+            action: { label: "Ver", onClick: () => setOpen(true) },
+          });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, instanceId]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -23,13 +62,6 @@ const NotificationBell = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const typeIcon: Record<string, string> = {
-    task_assigned: "📋",
-    task_completed: "✅",
-    weekly_digest: "📅",
-    daily_summary: "📊",
-    info: "ℹ️",
-  };
 
   return (
     <div ref={ref} className="relative">
