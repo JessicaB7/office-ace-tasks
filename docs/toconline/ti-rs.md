@@ -204,6 +204,10 @@ preenchido por trimestre (campo 93 ou 94).
 propósito. Compras **anuladas** no TOConline (riscadas, estado "void") não contam como lançadas.
 Se o mês tiver muitas compras por finalizar, só gravar os "Sim" e deixar os "Não" para quando o mês estiver lançado.
 
+**Valor diferente** entre a compra lançada e o e-Fatura (mesmo fornecedor e n.º): se for **recibo verde**
+(FR/FT ATSIRE…) é normal — o TOConline regista o valor sem IVA/retenção — fica "Sim". Noutros documentos pode ser
+afetação parcial: deixar por classificar e indicar no Resultado.
+
 **Muitas faturas:** o e-Fatura bloqueia temporariamente ("demasiados pedidos") se se fizerem pedidos muito seguidos —
 guardar fatura a fatura com ~1 s de intervalo.
 
