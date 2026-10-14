@@ -2,8 +2,9 @@
 // 3 parcelas, exceto no 3º trimestre, que tem só 2. O plano vive no mês de fim de trimestre
 // (registo "IVA" com extra_done = Flexibilização; parcelas pagas em IVA_flex_P1..P3).
 
-/** Data limite de cada parcela (dia 25), por trimestre (0 = 1º): [mês 0-11, anos a somar]. 1º trimestre ainda sem datas definidas. */
+/** Data limite de cada parcela (dia 25), por trimestre (0 = 1º): [mês 0-11, anos a somar]. */
 const PARCELA_PRAZOS: Record<number, [number, number][]> = {
+  0: [[4, 0], [5, 0], [6, 0]],    // 1º trimestre: 25/05, 25/06, 25/07
   1: [[8, 0], [9, 0], [10, 0]],   // 2º trimestre: 25/09, 25/10, 25/11
   2: [[10, 0], [11, 0]],          // 3º trimestre: 25/11, 25/12
   3: [[1, 1], [2, 1], [3, 1]],    // 4º trimestre: 25/02, 25/03, 25/04 do ano seguinte

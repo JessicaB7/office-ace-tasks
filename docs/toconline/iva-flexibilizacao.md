@@ -12,6 +12,7 @@ marcado no trimestre), com uma parcela a vencer no **mês da tarefa**.
 
 | Trimestre | Parcela 1 | Parcela 2 | Parcela 3 |
 |---|---|---|---|
+| 1º (Jan–Mar) | 25/05 | 25/06 | 25/07 |
 | 2º (Abr–Jun) | 25/09 | 25/10 | 25/11 |
 | 3º (Jul–Set) | 25/11 | 25/12 | — |
 | 4º (Out–Dez) | 25/02 | 25/03 | 25/04 (ano seguinte) |
