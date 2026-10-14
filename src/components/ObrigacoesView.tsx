@@ -51,6 +51,16 @@ const IVA_FLEX = "Flexibilizacao";
 // Flexibilização: pagamento do IVA do trimestre em parcelas (IVA_flex_P1..P3, no mês de fim de trimestre);
 // 3 parcelas, exceto no 3º trimestre, que tem só 2
 const parcelasDoTrimestre = (month0: number) => (Math.floor(month0 / 3) === 2 ? [1, 2] : [1, 2, 3]);
+// Data limite de cada parcela (dia 25), por trimestre: [mês 0-11, anos a somar]. 1º trimestre ainda sem datas definidas.
+const PARCELA_PRAZOS: Record<number, [number, number][]> = {
+  1: [[8, 0], [9, 0], [10, 0]],   // 2º trimestre: 25/09, 25/10, 25/11
+  2: [[10, 0], [11, 0]],          // 3º trimestre: 25/11, 25/12
+  3: [[1, 1], [2, 1], [3, 1]],    // 4º trimestre: 25/02, 25/03, 25/04 do ano seguinte
+};
+const parcelaPrazo = (month0: number, year: number, p: number) => {
+  const d = PARCELA_PRAZOS[Math.floor(month0 / 3)]?.[p - 1];
+  return d ? `25/${String(d[0] + 1).padStart(2, "0")}/${year + d[1]}` : null;
+};
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
@@ -708,9 +718,15 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                   </>
                 )}
                 {isIvaFlex && <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Método de Pagamento</th>}
-                {isIvaFlex && parcelas.map((p) => (
-                  <th key={p} className="text-center px-3 py-3 font-semibold text-muted-foreground w-24">Parcela {p}</th>
-                ))}
+                {isIvaFlex && parcelas.map((p) => {
+                  const prazo = parcelaPrazo(month, year, p);
+                  return (
+                    <th key={p} className="text-center px-3 py-3 font-semibold text-muted-foreground w-24">
+                      {prazo && <div className="text-xs font-normal">{prazo}</div>}
+                      Parcela {p}
+                    </th>
+                  );
+                })}
                 {isIVAPeriodica && !isIvaFlex && (
                   <>
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-24" title="Ligado à tarefa IVA da Gestão Mensal">Apuramento</th>
