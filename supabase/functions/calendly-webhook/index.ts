@@ -120,16 +120,26 @@ Deno.serve(async (req) => {
       .in("email", NOTIFY_EMAILS)
       .eq("active", true)
       .not("user_id", "is", null);
-    if (recipients?.length) {
-      await supabase.from("notifications").insert(
-        recipients.map((r: { user_id: string }) => ({
-          user_id: r.user_id,
-          title: "Nova sessão de diagnóstico",
-          message: `${name}${start ? ` · ${start.date.split("-").reverse().join("/")} às ${start.time}` : ""}. Envia a mensagem de confirmação.`,
-          type: "calendly_lead",
-        })),
-      );
-    }
+    // A administração também é avisada de cada marcação
+    const { data: admins } = await supabase.from("user_roles").select("user_id").eq("role", "admin");
+    const when = start ? ` · ${start.date.split("-").reverse().join("/")} às ${start.time}` : "";
+    const notifyIds = new Set((recipients || []).map((r: { user_id: string }) => r.user_id));
+    const adminIds = (admins || []).map((a: { user_id: string }) => a.user_id).filter((id: string) => !notifyIds.has(id));
+    const rows = [
+      ...[...notifyIds].map((user_id) => ({
+        user_id,
+        title: "Nova sessão de diagnóstico",
+        message: `${name}${when}. Envia a mensagem de confirmação.`,
+        type: "calendly_lead",
+      })),
+      ...adminIds.map((user_id: string) => ({
+        user_id,
+        title: "Nova sessão de diagnóstico",
+        message: `${name} marcou pelo Calendly${when}.`,
+        type: "calendly_lead",
+      })),
+    ];
+    if (rows.length) await supabase.from("notifications").insert(rows);
 
     return json({ ok: true, action: "created" });
   } catch (e) {
