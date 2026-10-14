@@ -48,8 +48,9 @@ const WEEKS = [1, 2, 3, 4];
 const hideNif = new Set(["DMR", "SS_TI", "IVA", "IVA_recapitulativa", "retencao_fonte", "SAFT", "salarios", "emissao_faturas"]);
 // Sub-separador do IVA Periódica: lê a coluna "Flexibilização" do trimestral (extra_done)
 const IVA_FLEX = "Flexibilizacao";
-// Flexibilização: pagamento do IVA do trimestre em 3 parcelas (IVA_flex_P1..P3, no mês de fim de trimestre)
-const PARCELAS = [1, 2, 3];
+// Flexibilização: pagamento do IVA do trimestre em parcelas (IVA_flex_P1..P3, no mês de fim de trimestre);
+// 3 parcelas, exceto no 3º trimestre, que tem só 2
+const parcelasDoTrimestre = (month0: number) => (Math.floor(month0 / 3) === 2 ? [1, 2] : [1, 2, 3]);
 const SS_TI_FILTERS = [
   { value: "Referência", label: "Referência" },
   { value: "Débito Direto", label: "Débito Direto" },
@@ -204,6 +205,7 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   const isFaturasSemanal = isEmissaoFaturas && subFilter === "Semanal";
   const showIvaPeriodicaCols = isIVAPeriodica;
   const isIvaFlex = isIVA && subFilter === IVA_FLEX;
+  const parcelas = parcelasDoTrimestre(month);
   // IVA Periódica e Recapitulativa trimestrais: navegação por trimestre, registos no mês de fim de trimestre
   const isTrimestralMode = (isIVA || isIVARecap) && (subFilter === "Trimestral" || (isIVA && subFilter === IVA_FLEX));
 
@@ -463,7 +465,7 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   const subFilterOptions = getSubFilterOptions();
   const deadlineText = getDeadlineText();
   const doneCount = isIvaFlex
-    ? filteredClients.filter(c => PARCELAS.every((p) => parcelaDone(c.id, p))).length
+    ? filteredClients.filter(c => parcelas.every((p) => parcelaDone(c.id, p))).length
     : filteredClients.filter(c => oblMap[c.id]?.status === "concluida").length;
   // Salários: "pendente" = guia ou pagamento ainda por marcar
   const isSalarioPending = (c: any) => !(oblMap[c.id]?.status === "concluida" && oblMap[c.id]?.extra_done === true);
@@ -705,7 +707,8 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                     <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-16">Enviado</th>
                   </>
                 )}
-                {isIvaFlex && PARCELAS.map((p) => (
+                {isIvaFlex && <th className="text-left px-3 py-3 font-semibold text-muted-foreground">Método de Pagamento</th>}
+                {isIvaFlex && parcelas.map((p) => (
                   <th key={p} className="text-center px-3 py-3 font-semibold text-muted-foreground w-24">Parcela {p}</th>
                 ))}
                 {isIVAPeriodica && !isIvaFlex && (
@@ -730,7 +733,27 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                 const pagamentoDone = obl?.extra_done === true;
                 const isExtraDone = obl?.extra_done === true;
                 const showExtraForClient = showSaftExtra && needsExtra(client);
-                const rowDone = isIvaFlex ? PARCELAS.every((p) => parcelaDone(client.id, p))
+                const metodoCell = (
+                  <td className="px-3 py-3">
+                    <input
+                      type="text"
+                      defaultValue={obl?.notes || ""}
+                      placeholder="Adicionar método..."
+                      className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                      onBlur={async (e) => {
+                        const val = e.target.value;
+                        if (val === (obl?.notes || "")) return;
+                        if (obl?.id) {
+                          await upsert.mutateAsync({ id: obl.id, client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: obl.status, notes: val || null });
+                        } else {
+                          await upsert.mutateAsync({ client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: "pendente", notes: val || null });
+                        }
+                      }}
+                      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                    />
+                  </td>
+                );
+                const rowDone = isIvaFlex ? parcelas.every((p) => parcelaDone(client.id, p))
                   : showGuiaPagamento ? (guiaDone && pagamentoDone) : showSalariosColumns ? (guiaDone && pagamentoDone) : guiaDone;
 
                 return (
@@ -871,7 +894,8 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                         <td className="text-center px-3 py-3"><CheckboxCell done={pagamentoDone} onClick={() => togglePagamento(client.id)} /></td>
                       </>
                     )}
-                    {isIvaFlex && PARCELAS.map((p) => (
+                    {isIvaFlex && metodoCell}
+                    {isIvaFlex && parcelas.map((p) => (
                       <td key={p} className="text-center px-3 py-3">
                         <CheckboxCell done={parcelaDone(client.id, p)} onClick={() => toggleParcela(client.id, p)} />
                       </td>
@@ -893,24 +917,7 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                             {isExtraDone && <Check className="w-4 h-4" />}
                           </button>
                         </td>
-                        <td className="px-3 py-3">
-                          <input
-                            type="text"
-                            defaultValue={obl?.notes || ""}
-                            placeholder="Adicionar método..."
-                            className="w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                            onBlur={async (e) => {
-                              const val = e.target.value;
-                              if (val === (obl?.notes || "")) return;
-                              if (obl?.id) {
-                                await upsert.mutateAsync({ id: obl.id, client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: obl.status, notes: val || null });
-                              } else {
-                                await upsert.mutateAsync({ client_id: client.id, obligation_type: "IVA", reference_month: referenceMonth, status: "pendente", notes: val || null });
-                              }
-                            }}
-                            onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                          />
-                        </td>
+                        {metodoCell}
                       </>
                     )}
                     {isFaturasSemanal && WEEKS.map((w) => (
