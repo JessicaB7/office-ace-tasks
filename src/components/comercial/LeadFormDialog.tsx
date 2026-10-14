@@ -73,18 +73,30 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
 
   // Follow-up por defeito: 15 dias (consultoria) / 3 dias após a data da reunião
   const followUpDays = isConsultoria ? 15 : 3;
-  const plusDays = (d: string) => {
+  const addDays = (d: string, n: number) => {
     const base = new Date(`${d}T12:00:00`);
     if (isNaN(base.getTime())) return "";
-    base.setDate(base.getDate() + followUpDays);
+    base.setDate(base.getDate() + n);
     return base.toISOString().slice(0, 10);
   };
+  const plusDays = (d: string) => addDays(d, followUpDays);
 
   const setMeetingDate = (v: string) =>
     setForm((p) => {
       const auto = p.next_followup === "" || (p.meeting_date && p.next_followup === plusDays(p.meeting_date));
       return { ...p, meeting_date: v, next_followup: auto && v ? plusDays(v) : p.next_followup };
     });
+
+  // Cadência após o envio da proposta: follow ups aos dias 3 e 7; ao dia 12 sem resposta, mensagem a encerrar
+  const PROPOSAL_FOLLOWUP_DAYS: Record<string, number> = { proposta_enviada: 3, followup_1: 7, followup_2: 12 };
+  const withCadence = <T extends { stage: string; proposal_sent_at: string; next_followup: string }>(p: T): T => {
+    const days = PROPOSAL_FOLLOWUP_DAYS[p.stage];
+    if (isConsultoria || days === undefined) return p;
+    const sent = p.proposal_sent_at || new Date().toLocaleDateString("sv-SE");
+    return { ...p, proposal_sent_at: sent, next_followup: addDays(sent, days) };
+  };
+  const setStage = (v: string) => setForm((p) => withCadence({ ...p, stage: v }));
+  const setProposalDate = (v: string) => setForm((p) => (v ? withCadence({ ...p, proposal_sent_at: v }) : { ...p, proposal_sent_at: v }));
 
 
   const handleSave = async () => {
@@ -215,7 +227,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
 
           <div>
             <Label>Estado</Label>
-            <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
+            <Select value={form.stage} onValueChange={setStage}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {stagesFor(lead?.segment || segment).map((s) => (
@@ -239,14 +251,16 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
           {!isConsultoria && (
             <div>
               <Label>Proposta enviada em</Label>
-              <Input type="date" value={form.proposal_sent_at} onChange={(e) => set("proposal_sent_at", e.target.value)} />
+              <Input type="date" value={form.proposal_sent_at} onChange={(e) => setProposalDate(e.target.value)} />
             </div>
           )}
           <div>
             <Label>Próximo follow-up</Label>
             <Input type="date" value={form.next_followup} onChange={(e) => set("next_followup", e.target.value)} />
             <p className="text-xs text-muted-foreground mt-1">
-              Por defeito, {followUpDays} dias após a {isConsultoria ? "sessão" : "reunião"}.
+              {isConsultoria
+                ? `Por defeito, ${followUpDays} dias após a sessão.`
+                : "Após a proposta: dia 3 (1º follow up), dia 7 (2º) e dia 12 (encerrar)."}
             </p>
           </div>
           {form.stage === "nao_e_o_momento" && (
