@@ -74,6 +74,15 @@ A parcela e o método de pagamento aparecem na Fila, na área **Ativar tarefas**
 ou "… — Débito direto (até DD/MM/AAAA)". O Resultado pode ser gravado diretamente na tabela `toconline_jobs`
 (status + result_notes) pela ferramenta SQL do Supabase, em vez de tarefa a tarefa na página da Fila.
 
+**Mensagem aos clientes de débito direto** (preparar no fim, uma por cliente com débito direto confirmado no plano;
+\<N\> = n.º da parcela, \<data\> = data limite do Portal):
+
+> Boa tarde, espero que estejas bem! A <N>ª parcela do IVA sairá da conta a <data> por débito direto.
+
+Exemplo: "Boa tarde, espero que estejas bem! A 2ª parcela do IVA sairá da conta a 26/10/2026 por débito direto."
+Não preparar para quem não tem autorização de débito direto no plano (mesmo que a app diga "Débito direto") nem
+para planos não concretizados. As mensagens são enviadas pela equipa (o Claude só as prepara).
+
 **No fim**, dar à utilizadora **uma lista** com todos os clientes tratados:
 
 | Cliente | N.º da parcela | Valor | Método |
