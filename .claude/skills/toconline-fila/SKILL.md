@@ -50,5 +50,6 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      sem preencher o setor. Dúvidas ficam por classificar e vão para o Resultado.
    - `iva_guias_flexibilizacao` → `docs/toconline/iva-flexibilizacao.md`, secção 1 "Guias flexibilização IVA" (todos os
      regimes). Mês da tarefa = mês em que a parcela vence; parcela e método na área "Ativar tarefas" (separador IVA).
-     Portal das Finanças pelo **Acesso Direto** → Pagamentos → Flexibilização de Pagamentos → Consultar Plano/Pagar.
+     Acesso Direto → "Portal das Finanças" → Aceder; depois abrir `sitfiscal.portaldasfinancas.gov.pt/flexibiliza/consultar/pesquisa`
+     no separador do Claude (fazer "Sair" no Portal antes de mudar de cliente). Guia: seta de PAGAR → IMPRIMIR; renomear.
      Referência: descarregar a guia; Débito direto: só o valor. No fim, lista Cliente · N.º da parcela · Valor · Método.

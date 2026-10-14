@@ -27,35 +27,52 @@ A parcela e o método de pagamento aparecem na Fila, na área **Ativar tarefas**
 - **Método por definir** → consultar o valor e, se houver referência disponível, descarregar também a guia; indicar
   no Resultado que o método não está escolhido na app.
 
-**Passos**
-1. **TOConline** — mudar para a empresa do cliente (confirmar o nome no canto superior esquerdo).
+**Passos** (confirmados na 1.ª execução, 14/10/2026)
+1. **TOConline — escolher a empresa:** seletor do canto superior esquerdo → escrever parte do nome (ex.: "Belem",
+   "Aniceto") → Enter (ou clicar no nome, se aparecerem vários). O seletor não pesquisa por NIF — a confirmação do NIF
+   faz-se no Portal (passo 3).
 2. **Entrar no Portal das Finanças pelo acesso direto do TOConline** (nunca escrever senhas)
-   - **Empresa → Sumário → Acesso Direto** → pesquisar "Portal das Finanças" / "Pagamentos" → **Aceder**.
-   - Abre um separador novo (`www.portaldasfinancas.gov.pt` / `sitfiscal.portaldasfinancas.gov.pt`); se ficar fora do
-     grupo do Claude, pedir à utilizadora para o arrastar para o grupo. Confirmar que a sessão é do **NIF do cliente**.
-3. **Portal → Pagamentos → Flexibilização de Pagamentos → Consultar Plano/Pagar**
-   - Abrir o plano do IVA do trimestre em causa (período do IVA, ex.: 2026/06T).
-   - Ver a parcela que vence no mês: **n.º da prestação**, **valor** e **data limite**. Confirmar que a data bate com a
-     tabela acima.
-   - **Referência:** obter o documento de pagamento da prestação (botão de pagar / emitir referência) e **descarregar
-     o PDF** — fica nas Transferências do computador.
-   - **Débito direto:** só anotar o valor.
-4. Registar o Resultado na Fila (ver abaixo) e passar ao cliente seguinte.
+   - **Empresa → Sumário → Acesso Direto** → linha **"Portal das Finanças - Autoridade Tributária e Aduaneira"** →
+     **Aceder** (à direita; o link só aparece ao passar o rato).
+   - Abre um separador novo fora do grupo do Claude — não é preciso usá-lo: a sessão fica partilhada no browser. No
+     separador do Claude abrir diretamente `https://sitfiscal.portaldasfinancas.gov.pt/flexibiliza/consultar/pesquisa`
+     (Flexibilização de Pagamentos → Consultar Plano/Pagar).
+   - Se aparecer o formulário de login, esperar uns segundos e voltar a abrir o endereço.
+   - **Antes de mudar de cliente, fazer "Sair" no Portal.** Com a sessão do cliente anterior aberta, o Aceder do
+     TOConline dá "Erro a efetuar ligação… Não foi possível estabelecer uma ligação no tempo esperado".
+   - Se em vez de "Aceder" aparecer **"Definir senhas"**, o cliente não tem a senha do Portal guardada no TOConline →
+     tarefa **Bloqueada**.
+3. **Portal → Consultar Plano de Flexibilização de Pagamentos**
+   - Confirmar o **NIF** no cabeçalho ("NIF: …") — tem de ser o do cliente.
+   - Pôr **50 elementos por página** (a lista vem ordenada pelo n.º do plano e o trimestre recente pode estar na página 2).
+   - Linha do **trimestre em causa** (ex.: "2º Trimestre 2026") com situação **DEFERIDO** — ignorar as **ANULADO**
+     (pedidos repetidos) → **+ INFO**.
+   - No detalhe: **N.º Prestações** (pode ser 2 ou 3, mesmo em trimestres com 3 parcelas na app), **Autorização de
+     Débito Direto** (preenchida = débito direto; "-" = sem débito direto) e a tabela de prestações (valor, ref. de
+     pagamento, situação, data limite).
+   - A parcela do mês aparece "EM REGULARIZAÇÃO"; as seguintes "CRIADA"; as pagas "PAGA".
+   - Quando o dia 25 calha a um fim de semana, a data limite passa para o dia útil seguinte (ex.: 26/10/2026).
+4. **Referência → descarregar a guia:** na linha da parcela, **seta ao lado de PAGAR → IMPRIMIR**. O PDF vai para as
+   Transferências com o nome `Pag_IVA_Flexi_<últimos 11 dígitos da referência>.pdf` → **renomear para
+   `Pag_IVA_Flexi_<Nome_do_Cliente>_<T>T<AAAA>_P<n>.pdf`** (ex.: `Pag_IVA_Flexi_Helena_Pereira_2T2026_P2.pdf`).
+   **Nunca** carregar em **PAGAR** nem em **ANULAR PLANO**.
+   - O Chrome bloqueia downloads seguidos do mesmo site: na 1.ª vez é preciso escolher "Permitir sempre que
+     sitfiscal.portaldasfinancas.gov.pt transfira vários ficheiros" (pedir à utilizadora).
+5. **Débito direto:** só anotar o valor. Confirmar que o plano tem mesmo "Autorização de Débito Direto" preenchida.
+6. Registar o Resultado na Fila e passar ao cliente seguinte (começando por "Sair" no Portal).
 
-**Notas da AT:** a 1.ª prestação paga-se com a referência da própria declaração periódica; as referências das prestações
-seguintes só ficam disponíveis no Portal cerca de **10 dias depois** da data limite da 1.ª prestação. Se a parcela não
-pagar até à data limite, o plano é interrompido e as seguintes vencem logo.
+**Casos encontrados (1.ª execução):**
+- **Plano "NÃO CONCRETIZADO"** — motivo "PAG. INSUFICIENTE PARA A 1ª PRESTAÇÃO": a 1.ª prestação não foi paga a
+  tempo; as seguintes não têm referência. Tarefa **Bloqueada** e avisar a utilizadora.
+- **Sem plano do trimestre** no Portal (cliente marcado na Flexibilização da app) — **Bloqueada**; pode ter pago de uma vez
+  ou a marcação na app estar errada.
+- **Na app "Débito direto" mas o plano sem autorização de débito direto** — vai ter de pagar por referência:
+  descarregar a guia na mesma e avisar no Resultado.
+- **Plano de 2 prestações** num trimestre de 3 — a parcela do mês é a 2/2 (última); indicar no Resultado.
 
-**Dúvidas** (tarefa **Bloqueada**, com o motivo no Resultado):
-- não existe plano de flexibilização para o trimestre, ou o plano está **interrompido/cessado**;
-- a referência da parcela ainda não está disponível;
-- o valor ou a data da parcela não batem com o esperado;
-- o acesso direto do TOConline não entra no Portal (credenciais em falta).
-
-**Confirmação:** não é preciso pedir — é só consulta e download (não se paga nada).
-
-**Resultado** (por tarefa): "Parcela N/T do Xº trim. AAAA — valor € — Referência (guia descarregada: <nome do ficheiro>)"
-ou "… — Débito direto".
+**Resultado** (por tarefa): "Parcela N/T do Xº trim. AAAA — valor € — Referência <n.º> (guia descarregada: <nome do ficheiro>)"
+ou "… — Débito direto (até DD/MM/AAAA)". O Resultado pode ser gravado diretamente na tabela `toconline_jobs`
+(status + result_notes) pela ferramenta SQL do Supabase, em vez de tarefa a tarefa na página da Fila.
 
 **No fim**, dar à utilizadora **uma lista** com todos os clientes tratados:
 
