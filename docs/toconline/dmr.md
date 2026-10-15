@@ -89,6 +89,26 @@ campo "Salários" preenchido e diferente de "Não tem").
 5. **Contribuições correntes = 0,00 €:** não há guia (já pago ou ainda sem valores) → tarefa **Bloqueada** com o motivo.
 6. **Terminar sessão** na Segurança Social Direta (menu do utilizador → Terminar sessão) antes do cliente seguinte.
 
+**Notas da 1.ª execução completa (15/10/2026, 52 clientes de 09/2026):**
+- **Clientes já entregues não se fazem:** em Obrigações → DMR SS, quem já tem a coluna **Pagamento** marcada
+  (`monthly_obligations.extra_done`) fica fora — tarefa concluída "já entregue". A coluna **Guia** (`status`) não serve
+  para isto.
+- Em muitas empresas a pesquisa "Segurança Social" não mostra linhas: usar a linha **"Emitir situação contributiva"**
+  do grupo Segurança Social → **Aceder** (qualquer linha deste grupo inicia a sessão da empresa). O link "Aceder" só
+  aparece ao passar o rato. Se o grupo mostrar **"Definir senhas"**, não há senha da SS → **Bloqueada**.
+- Se o Aceder não iniciar sessão (o endereço da posição atual cai no login), tentar 2 vezes e depois **Bloqueada**
+  (aconteceu com Alex Cunha e Marta Lobo).
+- Confirmar a entidade: menu do utilizador → **NISS** (nas empresas o NISS contém o NIF: 2 + NIF + 1 dígito; o nome
+  do perfil pode ser "Jéssica Contabilista" — é só o nome). No PDF confirmar sempre o NIF.
+- Em **Fazer pagamentos** escolher **só** o pacote "Contribuições - Entidade Empregadora" com "Pagar até". Não usar
+  os pacotes "Pague agora para regularizar" (atraso), "Dívidas em execução fiscal" nem "Doc. automático contribuições
+  trabalhador independente" (TI, até dia 20) — estes ficam só no Resultado.
+- Pessoas singulares com trabalhadores podem ter os dois pacotes (TI + entidade empregadora): a guia DMR SS é só a da
+  entidade empregadora; assinalar o valor de TI no Resultado. Sem pacote de entidade empregadora → sem guia (Bloqueada).
+- Algumas referências saem com a **Entidade 21431** (em vez de 21056): é normal.
+- "Terminar sessão" pede confirmação (**Sim, terminar sessão**). A sessão da SS expira em poucos minutos sem uso.
+- O TOConline também termina a sessão ao fim de algum tempo (ecrã de login): pedir à utilizadora para entrar.
+
 **Controlo de dívidas** — indicar sempre no Resultado e na lista final os clientes com **Contribuições em atraso**,
 **Coimas e custas**, **Outros valores a pagar**, **Dívida em execução fiscal** > 0 ou com acordo/plano prestacional.
 Não gerar referências para esses valores (só para as contribuições correntes), salvo indicação da utilizadora.
