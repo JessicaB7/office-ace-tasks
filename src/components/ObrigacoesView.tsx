@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { useClients, useUpsertClient, useCollaborators, useMonthlyObligations, useUpsertObligation, useObligationMessage, useSaveObligationMessage } from "@/hooks/useSupabaseQuery";
+import { useClients, useUpsertClient, useCollaborators, useDeadlineOverrides, useMonthlyObligations, useUpsertObligation, useObligationMessage, useSaveObligationMessage } from "@/hooks/useSupabaseQuery";
 import { Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { ivaObligationTypeFor, isColumnApplicable } from "@/lib/contabilidadesConfig";
+import { DEADLINE_KEYS as K, makeDayResolver } from "@/lib/deadlineOverrides";
 import { parcelasDoTrimestre, parcelaPrazo, metodoPagamentoIva, METODOS_PAGAMENTO_IVA } from "@/lib/ivaFlex";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -91,6 +92,10 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   const upsertClient = useUpsertClient();
   const { data: saftMessage, isLoading: loadingSaftMessage } = useObligationMessage("SAFT");
   const saveMessage = useSaveObligationMessage();
+  const { data: deadlineOverrides = [] } = useDeadlineOverrides();
+  const dayFor = useMemo(() => makeDayResolver(deadlineOverrides), [deadlineOverrides]);
+  /** Prazo com eventual prorrogação definida no Calendário fiscal para esse mês. */
+  const deadline = (key: string, day: number, d: { m: number; y: number }) => fmtDeadline(dayFor(key, d.y, d.m, day), d.m, d.y);
 
   useEffect(() => {
     if (subPage) {
@@ -136,47 +141,49 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
       return `Prazo: Sexta-feira`;
     }
     switch (activeTab) {
-      case "SAFT": { const d = addMonths(month, year, 1); return fmtDeadline(5, d.m, d.y); }
+      case "SAFT": { const d = addMonths(month, year, 1); return deadline(K.SAFT, d.m === 3 ? 8 : 5, d); }
       case "DMR": {
         // Guia até dia 10; pagamento AT até dia 20, SS até dia 25.
         const d = addMonths(month, year, 1);
         const mm = String(d.m + 1).padStart(2, "0");
-        return `Prazo: guia 10/${mm}/${d.y} · pagamento ${dmrTab === "DMR_SS" ? 25 : 20}/${mm}/${d.y}`;
+        const ss = dmrTab === "DMR_SS";
+        const guia = dayFor(ss ? K.DMR_SS_GUIA : K.DMR_AT_GUIA, d.y, d.m, 10);
+        const pag = dayFor(ss ? K.DMR_SS_PAG : K.DMR_AT_PAG, d.y, d.m, ss ? 25 : 20);
+        return `Prazo: guia ${guia}/${mm}/${d.y} · pagamento ${pag}/${mm}/${d.y}`;
       }
-      case "retencao_fonte": { const d = addMonths(month, year, 1); return fmtDeadline(20, d.m, d.y); }
+      case "retencao_fonte": { const d = addMonths(month, year, 1); return deadline(K.RETENCAO, 20, d); }
       case "IVA": {
         if (subFilter === "OSS") {
           // OSS: dia 15 do mês seguinte ao fim do trimestre
           const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
           const d = addMonths(qEnd, year, 1);
-          return fmtDeadline(15, d.m, d.y);
+          return deadline(K.IVA_OSS, 15, d);
         }
         if (subFilter === "Trimestral" || subFilter === IVA_FLEX) {
           const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
           const d = addMonths(qEnd, year, 2);
-          return fmtDeadline(20, d.m, d.y);
+          return deadline(K.IVA_TRIMESTRAL, 20, d);
         }
         const d = addMonths(month, year, 2);
-        return fmtDeadline(20, d.m, d.y);
+        return deadline(K.IVA_MENSAL, 20, d);
       }
       case "IVA_recapitulativa": {
         if (subFilter === "Trimestral") {
           // Trimestral: dia 20 do mês seguinte ao fim do trimestre
           const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
           const d = addMonths(qEnd, year, 1);
-          return fmtDeadline(20, d.m, d.y);
+          return deadline(K.RECAP_TRIMESTRAL, 20, d);
         }
         // Mensal: dia 20 do mês seguinte
         const d = addMonths(month, year, 1);
-        return fmtDeadline(20, d.m, d.y);
+        return deadline(K.RECAP_MENSAL, 20, d);
       }
       case "SS_TI": {
         if (ssTiTab === "SS_TI_DT") {
-          const lastDays: Record<number, number> = { 3: 30, 6: 31, 9: 31, 0: 31 };
-          return `Prazo: ${lastDays[month]}/${String(month + 1).padStart(2, "0")}/${year}`;
+          return deadline(K.SS_TI_DT, 31, { m: month, y: year });
         }
         const d = addMonths(month, year, 1);
-        return fmtDeadline(20, d.m, d.y);
+        return deadline(K.SS_TI_PAG, 20, d);
       }
       default: return "";
     }

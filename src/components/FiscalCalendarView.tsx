@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
-import { useTasks, useClients, useCollaborators, useUpsertTask } from "@/hooks/useSupabaseQuery";
+import { useTasks, useDeadlineOverrides, useSetDeadlineOverride } from "@/hooks/useSupabaseQuery";
 import { CATEGORY_LABELS, type TaskCategory, type TaskStatus, type TaskPriority } from "@/types/database";
-import { ChevronLeft, ChevronRight, CalendarDays, AlertTriangle, Plus, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, AlertTriangle, Plus, X, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import TaskFormDialog from "./TaskFormDialog";
 import { parcelasDevidasEm } from "@/lib/ivaFlex";
+import { useAuth } from "@/hooks/useAuth";
+import { DEADLINE_KEYS as K, makeDayResolver, type DayResolver } from "@/lib/deadlineOverrides";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -28,6 +30,7 @@ const categoryColors: Record<TaskCategory, string> = {
 };
 
 interface FiscalDeadline {
+  key?: string;
   title: string;
   day: number;
   months: number[] | null;
@@ -41,23 +44,25 @@ const QUARTER_REF: Record<number, string> = {
 };
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
-  { title: "SAFT", day: 5, months: null, overrides: { 4: 8 } },
-  { title: "DMR AT - Guia", day: 10, months: null },
-  { title: "DMR SS - Guia", day: 10, months: null },
-  { title: "DMR AT - Pagamento", day: 20, months: null },
-  { title: "DMR SS - Pagamento", day: 25, months: null },
-  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month" },
-  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month" },
-  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
-  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter" },
-  { title: "Retenção na Fonte", day: 20, months: null },
-  { title: "SS TI - Pagamento", day: 20, months: null },
-  { title: "Salários - Processamento", day: 25, months: null },
-  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10] },
-  { title: "SS TI - Declaração Trimestral", day: 30, months: [4] },
-  { title: "Pedir documentação clientes", day: 15, months: null },
-  { title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter" },
+  { key: K.SAFT, title: "SAFT", day: 5, months: null, overrides: { 4: 8 } },
+  { key: K.DMR_AT_GUIA, title: "DMR AT - Guia", day: 10, months: null },
+  { key: K.DMR_SS_GUIA, title: "DMR SS - Guia", day: 10, months: null },
+  { key: K.DMR_AT_PAG, title: "DMR AT - Pagamento", day: 20, months: null },
+  { key: K.DMR_SS_PAG, title: "DMR SS - Pagamento", day: 25, months: null },
+  { key: K.IVA_MENSAL, title: "IVA Periódica Mensal", day: 20, months: null, refType: "month" },
+  { key: K.RECAP_MENSAL, title: "Recapitulativa Mensal", day: 20, months: null, refType: "month" },
+  { key: K.IVA_TRIMESTRAL, title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11] },
+  { key: K.RECAP_TRIMESTRAL, title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter" },
+  { key: K.RETENCAO, title: "Retenção na Fonte", day: 20, months: null },
+  { key: K.SS_TI_PAG, title: "SS TI - Pagamento", day: 20, months: null },
+  { key: K.SALARIOS_PROC, title: "Salários - Processamento", day: 25, months: null },
+  // Último dia do mês (30 em abril)
+  { key: K.SS_TI_DT, title: "SS TI - Declaração Trimestral", day: 31, months: [1, 4, 7, 10] },
+  { key: K.PEDIR_DOC, title: "Pedir documentação clientes", day: 15, months: null },
+  { key: K.IVA_OSS, title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter" },
 ];
+
+type CalendarDeadline = { day: number; title: string; key?: string; defaultDay?: number };
 
 const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
   const fridays: number[] = [];
@@ -68,13 +73,13 @@ const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
   return fridays;
 };
 
-const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number, year: number) => {
+const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number, year: number, dayFor: DayResolver) => {
   const month1 = monthIndex + 1;
-  const result: { day: number; title: string }[] = [];
+  const result: CalendarDeadline[] = [];
   FISCAL_DEADLINES.forEach((dl) => {
     if (dl.months === null || dl.months.includes(month1)) {
-      let day = dl.overrides?.[month1] ?? dl.day;
-      day = Math.min(day, daysInMonth);
+      const defaultDay = Math.min(dl.overrides?.[month1] ?? dl.day, daysInMonth);
+      const day = dl.key ? dayFor(dl.key, year, monthIndex, defaultDay) : defaultDay;
       let title = dl.title;
       if (dl.refType === "month") {
         const refMonthIdx = (monthIndex - 2 + 12) % 12;
@@ -82,7 +87,7 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number, year: num
       } else if (dl.refType === "quarter") {
         title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
       }
-      result.push({ day, title });
+      result.push({ day, title, key: dl.key, defaultDay });
     }
   });
   // IVA Flexibilização: parcelas que vencem no mês (dia 25)
@@ -103,6 +108,11 @@ const getDeadlinesForMonth = (monthIndex: number, daysInMonth: number, year: num
 const FiscalCalendarView = () => {
   const { data: tasks = [] } = useTasks();
   const { toast } = useToast();
+  const { user, isAdmin } = useAuth();
+  const { data: overrides = [] } = useDeadlineOverrides();
+  const setOverride = useSetDeadlineOverride();
+  // Prazo em edição no painel do dia: chave + dia escolhido
+  const [editing, setEditing] = useState<{ key: string; day: number } | null>(null);
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -128,14 +138,23 @@ const FiscalCalendarView = () => {
   }, [tasks, year, month]);
 
   const deadlinesByDay = useMemo(() => {
-    const map: Record<number, { day: number; title: string }[]> = {};
-    const dls = getDeadlinesForMonth(month, daysInMonth, year);
+    const map: Record<number, CalendarDeadline[]> = {};
+    const dls = getDeadlinesForMonth(month, daysInMonth, year, makeDayResolver(overrides));
     dls.forEach((dl) => {
       if (!map[dl.day]) map[dl.day] = [];
       map[dl.day].push(dl);
     });
     return map;
-  }, [month, daysInMonth, year]);
+  }, [month, daysInMonth, year, overrides]);
+
+  const saveDeadlineDay = async (key: string, day: number | null) => {
+    await setOverride.mutateAsync({ key, year, month: month + 1, day, userId: user?.id });
+    setEditing(null);
+    const dl = Object.values(deadlinesByDay).flat().find((d) => d.key === key);
+    const newDay = day ?? dl?.defaultDay;
+    if (newDay) setSelectedDay(newDay);
+    toast({ title: day === null ? "Prazo reposto" : "Prazo alterado", description: `${dl?.title ?? ""} — dia ${newDay} de ${MONTH_NAMES[month]}` });
+  };
 
   const prev = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); setSelectedDay(null); };
   const next = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); setSelectedDay(null); };
@@ -144,6 +163,7 @@ const FiscalCalendarView = () => {
 
   const handleDayClick = (day: number) => {
     setSelectedDay(selectedDay === day ? null : day);
+    setEditing(null);
   };
 
   const handleAddTask = (day: number) => {
@@ -292,12 +312,62 @@ const FiscalCalendarView = () => {
             <div className="mb-4">
               <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Prazos Fiscais</h4>
               <div className="space-y-1.5">
-                {selectedDayDeadlines.map((dl, idx) => (
-                  <div key={idx} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/5 border border-destructive/20">
-                    <CalendarDays className="w-4 h-4 text-destructive shrink-0" />
-                    <span className="text-sm font-medium text-destructive">{dl.title}</span>
-                  </div>
-                ))}
+                {selectedDayDeadlines.map((dl, idx) => {
+                  const moved = dl.key && dl.defaultDay !== undefined && dl.day !== dl.defaultDay;
+                  const isEditingThis = editing && editing.key === dl.key;
+                  return (
+                    <div key={idx} className="px-3 py-2 rounded-lg bg-destructive/5 border border-destructive/20">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="w-4 h-4 text-destructive shrink-0" />
+                        <span className="text-sm font-medium text-destructive flex-1">{dl.title}</span>
+                        {moved && (
+                          <span className="text-[11px] font-medium bg-warning/20 text-warning-foreground px-1.5 py-0.5 rounded-full">
+                            Prorrogado · normal dia {dl.defaultDay}
+                          </span>
+                        )}
+                        {isAdmin && dl.key && !isEditingThis && (
+                          <button
+                            onClick={() => setEditing({ key: dl.key!, day: dl.day })}
+                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted"
+                          >
+                            <Pencil className="w-3 h-3" /> Alterar dia
+                          </button>
+                        )}
+                      </div>
+                      {isEditingThis && (
+                        <div className="flex flex-wrap items-center gap-2 mt-2 pl-6">
+                          <span className="text-xs text-muted-foreground">Novo dia em {MONTH_NAMES[month]}:</span>
+                          <select
+                            value={editing.day}
+                            onChange={(e) => setEditing({ key: editing.key, day: Number(e.target.value) })}
+                            className="text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                          >
+                            {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+                          <button
+                            disabled={setOverride.isPending}
+                            onClick={() => saveDeadlineDay(editing.key, editing.day === dl.defaultDay ? null : editing.day)}
+                            className="text-xs px-2.5 py-1 rounded bg-primary text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50"
+                          >
+                            Guardar
+                          </button>
+                          {moved && (
+                            <button
+                              disabled={setOverride.isPending}
+                              onClick={() => saveDeadlineDay(editing.key, null)}
+                              className="text-xs px-2.5 py-1 rounded border hover:bg-muted disabled:opacity-50"
+                            >
+                              Repor dia {dl.defaultDay}
+                            </button>
+                          )}
+                          <button onClick={() => setEditing(null)} className="text-xs text-muted-foreground hover:text-foreground">Cancelar</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

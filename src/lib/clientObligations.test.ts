@@ -41,3 +41,12 @@ describe("clientObligations", () => {
     expect(annualObligationsFor({ tipo_contabilidade: "TI RS" })).toHaveLength(2);
   });
 });
+
+describe("clientObligations com prorrogação", () => {
+  it("usa o dia prorrogado no mês do prazo", async () => {
+    const { makeDayResolver } = await import("./deadlineOverrides");
+    const r = makeDayResolver([{ deadline_key: "IVA_mensal", year: 2026, month: 11, day: 27 }]);
+    const iva = clientObligationsFor({ tipo_contabilidade: "SQ", iva: "Mensal" }, 2026, 8, r).find((o) => o.key === "IVA")!;
+    expect(iva.prazo).toBe("27/11/2026");
+  });
+});

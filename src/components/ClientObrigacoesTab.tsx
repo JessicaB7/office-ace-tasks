@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useDeadlineOverrides } from "@/hooks/useSupabaseQuery";
+import { makeDayResolver } from "@/lib/deadlineOverrides";
 import { cn } from "@/lib/utils";
 import { clientObligationsFor, obligationState, annualObligationsFor, type ObligationState } from "@/lib/clientObligations";
 
@@ -28,6 +30,7 @@ const ClientObrigacoesTab = ({ clientId, client }: Props) => {
   // Por omissão, o mês anterior (cujos prazos caem no mês corrente) — como na vista de Obrigações
   const [year, setYear] = useState(now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() === 0 ? 11 : now.getMonth() - 1);
+  const { data: overrides = [] } = useDeadlineOverrides();
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
 
   const { data: records = [], isLoading } = useQuery({
@@ -46,7 +49,7 @@ const ClientObrigacoesTab = ({ clientId, client }: Props) => {
   const prev = () => { if (month === 0) { setMonth(11); setYear((y) => y - 1); } else setMonth((m) => m - 1); };
   const next = () => { if (month === 11) { setMonth(0); setYear((y) => y + 1); } else setMonth((m) => m + 1); };
 
-  const obligations = clientObligationsFor(client, year, month);
+  const obligations = clientObligationsFor(client, year, month, makeDayResolver(overrides));
   const annual = annualObligationsFor(client);
   const byType = new Map(records.map((r: any) => [r.obligation_type, r]));
 

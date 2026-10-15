@@ -755,6 +755,39 @@ export type Database = {
         }
         Relationships: []
       }
+      fiscal_deadline_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          day: number
+          deadline_key: string
+          id: string
+          month: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          day: number
+          deadline_key: string
+          id?: string
+          month: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          day?: number
+          deadline_key?: string
+          id?: string
+          month?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       fiscal_deadlines: {
         Row: {
           category: Database["public"]["Enums"]["task_category"]

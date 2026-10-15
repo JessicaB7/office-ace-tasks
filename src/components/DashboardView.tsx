@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import { useTasks, useMonthlyObligations, useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
+import { useTasks, useMonthlyObligations, useClients, useCollaborators, useDeadlineOverrides } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
 import { CheckCircle2, Clock, AlertTriangle, CalendarDays, ClipboardList, Users, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
+import { DEADLINE_KEYS as K, makeDayResolver } from "@/lib/deadlineOverrides";
 import { referenceLabel, relativeDeadline, shortDate, type DeadlineTone } from "@/lib/deadlineLabels";
 
 type WeekDeadline = { title: string; date: Date; obligationKey?: string; ref?: string };
@@ -20,6 +21,7 @@ const hasSalarios = (c: any) => c.salarios && c.salarios !== "Não tem" && c.sal
 const isTI = (c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO";
 
 interface FiscalDeadline {
+  key?: string; // chave das prorrogações (fiscal_deadline_overrides)
   title: string;
   day: number;
   months: number[] | null;
@@ -32,22 +34,22 @@ interface FiscalDeadline {
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
-  { title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 }, clientFilter: (c) => c.saft && c.saft !== "" && c.saft !== "Não Aplicável" },
-  { title: "DMR AT - Guia", day: 10, months: null, obligationType: "DMR_AT", clientFilter: (c) => hasSalarios(c) },
-  { title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS", clientFilter: (c) => hasSalarios(c) },
-  { title: "Pedir documentação clientes", day: 15, months: null },
-  { title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
-  { title: "DMR SS - Pagamento", day: 25, months: null, obligationType: "DMR_SS", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
-  { title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA", clientFilter: (c) => c.iva === "Mensal", refMonthOffset: 2 },
-  { title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa === "Mensal", refMonthOffset: 1 },
-  { title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA", clientFilter: (c) => c.iva === "Trimestral", refMonthOffset: 2 },
-  { title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa === "Trimestral", refMonthOffset: 1 },
-  { title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte", clientFilter: (c) => c.tipo_contabilidade === "SQ" || c.tipo_contabilidade === "TI CO" },
-  { title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI", clientFilter: (c) => isTI(c) && !hasSalarios(c) },
-  { title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios", clientFilter: (c) => hasSalarios(c) },
-  { title: "SS TI - Declaração Trimestral", day: 31, months: [1, 7, 10], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
-  { title: "SS TI - Declaração Trimestral", day: 30, months: [4], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
-  { title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS", clientFilter: (c) => c.iva_oss === "Sim", refMonthOffset: 3 },
+  { key: K.SAFT, title: "SAFT", day: 5, months: null, obligationType: "SAFT", overrides: { 4: 8 }, clientFilter: (c) => c.saft && c.saft !== "" && c.saft !== "Não Aplicável" },
+  { key: K.DMR_AT_GUIA, title: "DMR AT - Guia", day: 10, months: null, obligationType: "DMR_AT", clientFilter: (c) => hasSalarios(c) },
+  { key: K.DMR_SS_GUIA, title: "DMR SS - Guia", day: 10, months: null, obligationType: "DMR_SS", clientFilter: (c) => hasSalarios(c) },
+  { key: K.PEDIR_DOC, title: "Pedir documentação clientes", day: 15, months: null },
+  { key: K.DMR_AT_PAG, title: "DMR AT - Pagamento", day: 20, months: null, obligationType: "DMR_AT", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
+  { key: K.DMR_SS_PAG, title: "DMR SS - Pagamento", day: 25, months: null, obligationType: "DMR_SS", checkExtra: true, clientFilter: (c) => hasSalarios(c) },
+  { key: K.IVA_MENSAL, title: "IVA Periódica Mensal", day: 20, months: null, refType: "month", obligationType: "IVA", clientFilter: (c) => c.iva === "Mensal", refMonthOffset: 2 },
+  { key: K.RECAP_MENSAL, title: "Recapitulativa Mensal", day: 20, months: null, refType: "month", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa === "Mensal", refMonthOffset: 1 },
+  { key: K.IVA_TRIMESTRAL, title: "IVA Periódica Trimestral", day: 20, months: [2, 5, 8, 11], obligationType: "IVA", clientFilter: (c) => c.iva === "Trimestral", refMonthOffset: 2 },
+  { key: K.RECAP_TRIMESTRAL, title: "Recapitulativa Trimestral", day: 20, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_recapitulativa", clientFilter: (c) => c.recapitulativa === "Trimestral", refMonthOffset: 1 },
+  { key: K.RETENCAO, title: "Retenção na Fonte", day: 20, months: null, obligationType: "retencao_fonte", clientFilter: (c) => c.tipo_contabilidade === "SQ" || c.tipo_contabilidade === "TI CO" },
+  { key: K.SS_TI_PAG, title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI", clientFilter: (c) => isTI(c) && !hasSalarios(c) },
+  { key: K.SALARIOS_PROC, title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios", clientFilter: (c) => hasSalarios(c) },
+  // Último dia do mês (30 em abril)
+  { key: K.SS_TI_DT, title: "SS TI - Declaração Trimestral", day: 31, months: [1, 4, 7, 10], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
+  { key: K.IVA_OSS, title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS", clientFilter: (c) => c.iva_oss === "Sim", refMonthOffset: 3 },
 ];
 
 const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
@@ -64,6 +66,7 @@ const DashboardView = () => {
   const { data: tasks = [], isLoading } = useTasks();
   const { data: clients = [] } = useClients();
   const { data: collaborators = [] } = useCollaborators();
+  const { data: deadlineOverrides = [] } = useDeadlineOverrides();
   const [expandedType, setExpandedType] = useState<string | null>(null);
   const [expandedTab, setExpandedTab] = useState<"pendentes" | "concluidos">("pendentes");
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
@@ -192,6 +195,7 @@ const DashboardView = () => {
     sunday.setHours(23, 59, 59, 999);
 
     const result: WeekDeadline[] = [];
+    const dayFor = makeDayResolver(deadlineOverrides);
 
     const monthsToCheck = new Set<number>();
     for (let d = new Date(monday); d <= sunday; d.setDate(d.getDate() + 1)) {
@@ -205,8 +209,8 @@ const DashboardView = () => {
 
       FISCAL_DEADLINES.forEach((dl, dlIdx) => {
         if (dl.months === null || dl.months.includes(month1)) {
-          let day = dl.overrides?.[month1] ?? dl.day;
-          day = Math.min(day, daysInMonth);
+          let day = Math.min(dl.overrides?.[month1] ?? dl.day, daysInMonth);
+          if (dl.key) day = dayFor(dl.key, yr, monthIndex, day);
           const deadlineDate = new Date(yr, monthIndex, day);
 
           if (deadlineDate >= monday && deadlineDate <= sunday) {
@@ -258,8 +262,8 @@ const DashboardView = () => {
     return m;
   }, [currentMonday]);
 
-  const weekDeadlines = useMemo(() => getWeekDeadlines(currentMonday), [currentMonday]);
-  const nextWeekDeadlines = useMemo(() => getWeekDeadlines(nextMonday), [nextMonday]);
+  const weekDeadlines = useMemo(() => getWeekDeadlines(currentMonday), [currentMonday, deadlineOverrides]);
+  const nextWeekDeadlines = useMemo(() => getWeekDeadlines(nextMonday), [nextMonday, deadlineOverrides]);
 
   // Helper: get collaborator name by id
   const getCollabName = (id: string | null) => {

@@ -224,6 +224,38 @@ export function useFiscalDeadlines() {
   });
 }
 
+// ---- PRORROGAÇÕES DE PRAZOS (num mês específico) ----
+export function useDeadlineOverrides() {
+  return useQuery({
+    queryKey: ["fiscal_deadline_overrides"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("fiscal_deadline_overrides").select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** Define o dia do prazo `key` no mês (1–12) indicado; `day = null` repõe o dia normal. */
+export function useSetDeadlineOverride() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ key, year, month, day, userId }: { key: string; year: number; month: number; day: number | null; userId?: string | null }) => {
+      if (day === null) {
+        const { error } = await supabase.from("fiscal_deadline_overrides").delete()
+          .eq("deadline_key", key).eq("year", year).eq("month", month);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("fiscal_deadline_overrides")
+          .upsert({ deadline_key: key, year, month, day, created_by: userId ?? null }, { onConflict: "deadline_key,year,month" });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fiscal_deadline_overrides"] }),
+    onError: (e: any) => toast.error("Erro ao alterar prazo: " + e.message),
+  });
+}
+
 // ---- MONTHLY OBLIGATIONS ----
 export function useMonthlyObligations(referenceMonth: string) {
   return useQuery({
