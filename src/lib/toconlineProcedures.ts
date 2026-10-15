@@ -11,7 +11,7 @@ import { SUB_PAGE_CONFIG } from "@/lib/contabilidadesConfig";
 export type ToconlineJobStatus = "pendente" | "em_curso" | "concluida" | "bloqueada" | "erro" | "cancelada";
 
 export type ToconlineRegime = "ti_rs" | "ti_co" | "empresas" | "iva" | "dmr";
-export type ToconlineTarefa = "vendas" | "compras" | "nao_considerar" | "salarios" | "mapa_analise" | "classificacao_efatura" | "guias_flex_iva" | "guia_dmr_at";
+export type ToconlineTarefa = "vendas" | "compras" | "nao_considerar" | "salarios" | "mapa_analise" | "classificacao_efatura" | "guias_flex_iva" | "guia_dmr_at" | "guia_dmr_ss";
 
 /** Separadores da Fila: um por regime. */
 export const TOCONLINE_REGIMES: { id: ToconlineRegime; label: string }[] = [
@@ -32,6 +32,7 @@ export const TOCONLINE_TAREFAS: { id: ToconlineTarefa; label: string }[] = [
   { id: "classificacao_efatura", label: "Classificação e-Fatura" },
   { id: "guias_flex_iva", label: "Guias flexibilização IVA" },
   { id: "guia_dmr_at", label: "Guia DMR AT" },
+  { id: "guia_dmr_ss", label: "Guia DMR SS + dívidas" },
 ];
 
 export interface ToconlineProcedure {
@@ -61,6 +62,7 @@ const MAPA_ANALISE_DESC = "Trimestral (mês da tarefa = fim do trimestre). Expor
 const CLASSIFICACAO_EFATURA_DESC = "TOConline → Compras → e-Fatura do mês (Nr. Diário). Empresa → Acesso Direto → Portal do e-fatura → Verificar faturas → Aceder; no e-Fatura: Adquirente → Verificar Faturas → cada fatura → Alterar. Com n.º de diário: \"Sim, despesa totalmente afeta\". Sem n.º de diário: \"Não\" (sem preencher o setor).";
 const GUIAS_FLEX_IVA_DESC = "Mês da tarefa = mês em que vence a parcela (dia 25). Portal das Finanças pelo Acesso Direto do TOConline (Aceder) → Flexibilização de Pagamentos → Consultar Plano/Pagar → plano DEFERIDO do trimestre → + INFO. Referência: descarregar a guia da parcela para o computador. Débito direto: só consultar o valor. No fim, lista com cliente, n.º da parcela e valor.";
 const GUIA_DMR_AT_DESC = "Mês da tarefa = mês de referência da DMR. TOConline → Empresa → Acesso Direto → pesquisa \"DMR\" → Consultar DMR-AT → Aceder (abre o Portal em Consultar Declaração) → confirmar NIF e mês → seta de OPÇÕES → OBTER DOCUMENTO DE PAGAMENTO → OBTER DOCUMENTO → renomear o PDF Guia_DMR_AT_<Cliente>_<MM>_<AAAA>.pdf.";
+const GUIA_DMR_SS_DESC = "Mês da tarefa = mês de referência. TOConline → Acesso Direto → Segurança Social → Aceder → Pagamentos e dívidas → Posição atual (valores a pagar + acordos). Contribuições correntes: Fazer pagamentos → Pagar → Multibanco → Continuar → Descarregar referências (PDF). Regista também contribuições em atraso e dívidas em execução fiscal.";
 /** DMR: os mesmos clientes da lista Obrigações → DMR AT (campo Salários preenchido e diferente de "Não tem"). */
 const temDmr = (c: any) => !!c.salarios && c.salarios !== "Não tem";
 /** Salários só para quem tem o campo preenchido na ficha ("Sim até dia 25" / "Sim até ao fim do mês"). */
@@ -171,6 +173,11 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
     id: "dmr_guia_at", regime: "dmr", tarefa: "guia_dmr_at", label: "Guia DMR AT",
     tipoContabilidade: null, regimeLabel: "DMR", filter: temDmr,
     description: GUIA_DMR_AT_DESC, docPath: "docs/toconline/dmr.md",
+  },
+  {
+    id: "dmr_guia_ss", regime: "dmr", tarefa: "guia_dmr_ss", label: "Guia DMR SS + dívidas",
+    tipoContabilidade: null, regimeLabel: "DMR", filter: temDmr,
+    description: GUIA_DMR_SS_DESC, docPath: "docs/toconline/dmr.md",
   },
 ];
 

@@ -60,3 +60,8 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      OBTER DOCUMENTO DE PAGAMENTO → anotar o montante → OBTER DOCUMENTO → renomear o PDF
      `Guia_DMR_AT_<Nome_do_Cliente>_<MM>_<AAAA>.pdf` (sempre guia). "Sair" no Portal antes de mudar de cliente.
      No fim, lista Cliente · Mês · Montante · Guia · Observações.
+   - `dmr_guia_ss` → `docs/toconline/dmr.md`, secção 2 "Guia DMR SS + controlo de dívidas". Acesso Direto → "Segurança
+     Social" → Aceder; no separador do Claude abrir `seg-social.pt/ptss/ci/posicao-atual/posicao-atual` → mostrar valores
+     a pagar e acordos. Correntes > 0: Fazer pagamentos → Pagar → Multibanco → Continuar → Descarregar referências (PDF)
+     → confirmar NIF no PDF e renomear `Guia_DMR_SS_<Cliente>_<MM>_<AAAA>.pdf` (pasta DMR SS). Registar sempre atraso,
+     coimas, outros valores e execução fiscal. Terminar sessão na SS antes do cliente seguinte.

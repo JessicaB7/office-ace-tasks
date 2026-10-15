@@ -62,3 +62,38 @@ ou o motivo do bloqueio.
 |---|---|---|---|---|
 
 Não marcar a obrigação na app: a equipa marca a coluna **Guia** em Obrigações → DMR AT.
+
+## 2. Guia DMR SS (Segurança Social) + controlo de dívidas
+
+**Aplica-se a:** clientes da listagem **Obrigações → DMR → DMR SS** da app (os mesmos da DMR AT: clientes ativos com o
+campo "Salários" preenchido e diferente de "Não tem").
+
+**Mês da tarefa** = mês de referência das remunerações (o mesmo da DMR). Na Segurança Social Direta aparece como
+"Contribuições correntes", com a data limite de pagamento (ex.: 26/10/2026 para setembro).
+
+**Passos** (confirmados na 1.ª execução, 15/10/2026)
+1. **TOConline — escolher a empresa** (como na DMR AT: pesquisa pelo NIF → ENTRAR).
+2. **Acesso Direto:** Empresa → Sumário → Acesso Direto → Pesquisa geral **"Segurança Social"** → linha
+   **"Segurança Social"** → **Aceder**. Abre a Segurança Social Direta noutro separador (fora do grupo do Claude): a
+   sessão é partilhada, por isso abrir no separador do Claude `https://www.seg-social.pt/ptss/ci/posicao-atual/posicao-atual`.
+   - Se aparecer "Verifique e atualize os seus contactos", carregar em **Cancelar** (não alterar contactos).
+3. **Pagamentos e dívidas → Posição atual → Consultar:** **Mostrar valores a pagar** e **Mostrar valores em acordo ou
+   plano prestacional**. Anotar as cinco linhas: **Contribuições correntes**, **Contribuições em atraso**, **Coimas e
+   custas**, **Outros valores a pagar**, **Dívida em execução fiscal**, e se há acordo/plano prestacional.
+4. **Contribuições correntes > 0:** abrir a linha → **Fazer pagamentos** → no pacote "Contribuições - Entidade
+   Empregadora" (valor e "Pagar até") → **Pagar** → escolher **Multibanco** → **Continuar** → aparece Entidade,
+   Referência e Valor → **Descarregar referências (PDF)**.
+   - Nunca escolher MB WAY nem Transferência; a referência Multibanco não paga nada, só gera a guia.
+   - O PDF vai para as Transferências com nome numérico (`2026…_….pdf`) → confirmar o NIF dentro do PDF e **renomear
+     para `Guia_DMR_SS_<Nome_do_Cliente>_<MM>_<AAAA>.pdf`**, na pasta **Transferências/DMR SS**.
+5. **Contribuições correntes = 0,00 €:** não há guia (já pago ou ainda sem valores) → tarefa **Bloqueada** com o motivo.
+6. **Terminar sessão** na Segurança Social Direta (menu do utilizador → Terminar sessão) antes do cliente seguinte.
+
+**Controlo de dívidas** — indicar sempre no Resultado e na lista final os clientes com **Contribuições em atraso**,
+**Coimas e custas**, **Outros valores a pagar**, **Dívida em execução fiscal** > 0 ou com acordo/plano prestacional.
+Não gerar referências para esses valores (só para as contribuições correntes), salvo indicação da utilizadora.
+
+**Resultado** (por tarefa): "DMR SS <MM/AAAA> — <valor> € até <data> — Ref. MB <entidade>/<referência> (<ficheiro>) —
+Atraso <x> € · Execução fiscal <y> €".
+
+**No fim**, lista: Cliente · Contribuições correntes · Data limite · Referência · Em atraso · Execução fiscal · Observações.
