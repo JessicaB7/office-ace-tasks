@@ -35,8 +35,21 @@ A guia desse mês paga-se até ao **dia 20 do mês seguinte**.
 6. Registar o Resultado na Fila. O Resultado pode ser gravado diretamente na tabela `toconline_jobs`
    (status + result_notes) pela ferramenta SQL do Supabase.
 
+**Notas da 1.ª execução completa (15/10/2026, 52 clientes de 09/2026):**
+- Cada empresa pode estar num servidor diferente do TOConline (`app2`, `app25`, `app40`…). Navegar sempre a partir do
+  endereço onde se está (nunca com um `appNN` fixo), senão o TOConline pede login.
+- Na lista "As minhas empresas", a pesquisa só filtra com escrita real no campo (escrever o NIF + Enter); depois entrar
+  só se ficar exatamente uma empresa com esse NIF.
+- O primeiro **Aceder** depois de um "Sair" dá muitas vezes "Erro a efetuar ligação… Não foi possível estabelecer uma
+  ligação no tempo esperado": carregar em OK, esperar uns 10 segundos e repetir o Aceder.
+- **Montante a pagar 0,00 €** é frequente (cerca de 40% dos clientes): não há guia e o "OBTER DOCUMENTO" dá
+  "funcionalidade temporariamente indisponível" — não carregar; tarefa Bloqueada com o motivo.
+- Depois do download, confirmar no PDF o NIF e o n.º da declaração (identificação) antes de o arquivar.
+
 **Casos a tratar como Bloqueada** (avisar no Resultado):
-- **Sem declaração do mês** no Portal (DMR ainda não submetida).
+- **Sem declaração do mês** no Portal ("Sem dados disponíveis" — DMR ainda não submetida).
+- **Montante a pagar 0,00 €** (sem guia).
+- **Empresa que não existe no TOConline** (nem nas inativas).
 - Declaração do mês **sem documento de pagamento** (por exemplo, valor a pagar zero) — indicar no Resultado.
 - NIF do Portal diferente do cliente.
 
