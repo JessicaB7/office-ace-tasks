@@ -5,9 +5,16 @@ import { CheckCircle2, Clock, AlertTriangle, CalendarDays, ClipboardList, Users,
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
+import { referenceLabel, relativeDeadline, shortDate, type DeadlineTone } from "@/lib/deadlineLabels";
 
-const MONTH_NAMES_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-const QUARTER_REF: Record<number, string> = { 1: "4ºT", 4: "1ºT", 7: "2ºT", 10: "3ºT" };
+type WeekDeadline = { title: string; date: Date; obligationKey?: string; ref?: string };
+
+const TONE_CLS: Record<DeadlineTone, string> = {
+  atrasado: "bg-destructive/10 text-destructive",
+  urgente: "bg-warning/20 text-warning-foreground",
+  proximo: "bg-muted text-muted-foreground",
+  concluido: "bg-success/15 text-success",
+};
 
 const hasSalarios = (c: any) => c.salarios && c.salarios !== "Não tem" && c.salarios !== "";
 const isTI = (c: any) => c.tipo_contabilidade === "TI RS" || c.tipo_contabilidade === "TI CO";
@@ -184,7 +191,7 @@ const DashboardView = () => {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    const result: { title: string; date: Date; obligationKey?: string }[] = [];
+    const result: WeekDeadline[] = [];
 
     const monthsToCheck = new Set<number>();
     for (let d = new Date(monday); d <= sunday; d.setDate(d.getDate() + 1)) {
@@ -203,17 +210,14 @@ const DashboardView = () => {
           const deadlineDate = new Date(yr, monthIndex, day);
 
           if (deadlineDate >= monday && deadlineDate <= sunday) {
-            let title = dl.title;
-            if (dl.refType === "month") {
-              const refIdx = (monthIndex - (dl.refMonthOffset ?? 1) + 12) % 12;
-              title = `${dl.title} (${MONTH_NAMES_SHORT[refIdx]})`;
-            } else if (dl.refType === "quarter") {
-              title = `${dl.title} (${QUARTER_REF[month1] || ""})`;
-            }
+            // Período a que o prazo diz respeito (o mesmo mês de registo que se conta abaixo)
+            const ref = dl.obligationType
+              ? referenceLabel(monthIndex, yr, dl.refMonthOffset ?? 1, dl.months !== null)
+              : undefined;
             const obligationKey = dl.obligationType
               ? (dl.checkExtra ? `${dl.obligationType}_extra_${dlIdx}` : `${dl.obligationType}_${dlIdx}`)
               : undefined;
-            result.push({ title, date: deadlineDate, obligationKey });
+            result.push({ title: dl.title, date: deadlineDate, obligationKey, ref });
           }
         }
       });
@@ -222,7 +226,11 @@ const DashboardView = () => {
       const salariosIdx = FISCAL_DEADLINES.findIndex(d => d.obligationType === "salarios" && !d.checkExtra);
       const lastDayDate = new Date(yr, monthIndex, daysInMonth);
       if (lastDayDate >= monday && lastDayDate <= sunday) {
-        result.push({ title: "Salários - Envio", date: lastDayDate, obligationKey: salariosIdx >= 0 ? `salarios_${salariosIdx}` : undefined });
+        result.push({
+          title: "Salários - Envio", date: lastDayDate,
+          obligationKey: salariosIdx >= 0 ? `salarios_${salariosIdx}` : undefined,
+          ref: referenceLabel(monthIndex, yr, FISCAL_DEADLINES[salariosIdx]?.refMonthOffset ?? 1, false),
+        });
       }
 
       // Emissão de faturas on every Friday
@@ -275,7 +283,7 @@ const DashboardView = () => {
 
   if (isLoading) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
-  const renderDeadlineSection = (deadlines: { title: string; date: Date; obligationKey?: string }[], title: string, icon: string, delay: string) => (
+  const renderDeadlineSection = (deadlines: WeekDeadline[], title: string, icon: string, delay: string) => (
     <div className="bg-card rounded-xl border p-5 animate-fade-in" style={{ animationDelay: delay }}>
       <div className="flex items-center gap-2 mb-4">
         <CalendarDays className={`w-4 h-4 ${icon === "primary" ? "text-primary" : "text-muted-foreground"}`} />
@@ -291,6 +299,14 @@ const DashboardView = () => {
           const allDone = info ? info.total > 0 && info.done === info.total : false;
           const expandKey = `${title}-${dl.obligationKey}-${idx}`;
           const isExpanded = expandedType === expandKey;
+          const rel = relativeDeadline(dl.date, today, allDone);
+          // Só faz sentido marcar "em atraso" o que ainda tem clientes por tratar
+          const tone: DeadlineTone = rel.tone === "atrasado" && !(pending && pending > 0) ? "proximo" : rel.tone;
+          const subtitle = [
+            dl.ref,
+            info && info.total > 0 && !allDone ? `faltam ${pending} de ${info.total} cliente${info.total !== 1 ? "s" : ""}` : null,
+            info && info.total === 0 ? "sem clientes atribuídos" : null,
+          ].filter(Boolean).join(" · ");
           return (
             <div key={idx}>
               <div
@@ -304,25 +320,24 @@ const DashboardView = () => {
                   }
                 }}
               >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <CalendarDays className={`w-3.5 h-3.5 shrink-0 ${allDone ? "text-success" : "text-destructive"}`} />
-                  <p className={`font-medium truncate ${allDone ? "line-through text-muted-foreground" : ""}`}>{dl.title}</p>
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <CalendarDays className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${allDone ? "text-success" : tone === "atrasado" ? "text-destructive" : "text-muted-foreground"}`} />
+                  <div className="min-w-0">
+                    <p className={`font-medium truncate ${allDone ? "line-through text-muted-foreground" : ""}`}>{dl.title}</p>
+                    {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
+                    {info && info.total > 0 && !allDone && (
+                      <div className="mt-1 h-1 w-32 max-w-full rounded-full bg-muted overflow-hidden">
+                        <div className="h-full bg-success" style={{ width: `${(info.done / info.total) * 100}%` }} />
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 ml-2">
-                  {info && (
-                    <>
-                      <span className="text-[10px] font-semibold bg-success/15 text-success px-1.5 py-0.5 rounded-full">
-                        {info.done} ✓
-                      </span>
-                      {pending !== null && pending > 0 && (
-                        <span className="text-[10px] font-semibold bg-warning/15 text-warning px-1.5 py-0.5 rounded-full">
-                          {pending} ○
-                        </span>
-                      )}
-                    </>
-                  )}
-                  <span className="text-muted-foreground text-xs whitespace-nowrap">
-                    {dl.date.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric" })}
+                <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
+                  <span className="text-xs font-medium whitespace-nowrap">
+                    {shortDate(dl.date)}
+                  </span>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${TONE_CLS[tone]}`}>
+                    {tone === "proximo" && rel.tone === "atrasado" ? "Prazo passado" : rel.label}
                   </span>
                 </div>
               </div>
