@@ -28,6 +28,7 @@ import NovosClientesView from "@/components/comercial/NovosClientesView";
 import ToconlineFilaView from "@/components/toconline/ToconlineFilaView";
 import ToconlineProcedimentosView from "@/components/toconline/ToconlineProcedimentosView";
 import DailyTasksReminderDialog from "@/components/DailyTasksReminderDialog";
+import AssociatedTasksDialog from "@/components/AssociatedTasksDialog";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
@@ -115,6 +116,7 @@ const Index = () => {
       </main>
       <TaskFormDialog open={dialogOpen} task={editingTask} onClose={() => setDialogOpen(false)} />
       <DailyTasksReminderDialog onViewTasks={() => setActiveView("tasks")} />
+      <AssociatedTasksDialog />
       {isAdmin && (
         <ObrigacoesPrazoReminder onOpen={(group, month) => { setObrigCtlNav({ month, group }); setActiveView("obrigacoes_controlo"); }} />
       )}

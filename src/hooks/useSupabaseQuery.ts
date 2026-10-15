@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { IVA_APURAMENTO_TYPES, emitIvaApurado } from "@/lib/associatedTasks";
 import type { Client, ClientInsert, Collaborator, CollaboratorInsert, DbTask, DbTaskInsert, FiscalDeadline } from "@/types/database";
 
 // ---- CLIENTS ----
@@ -357,9 +358,9 @@ export function useUpsertObligation() {
     onSuccess: (_data, obligation) => {
       qc.invalidateQueries({ queryKey: ["monthly_obligations"] });
       qc.invalidateQueries({ queryKey: ["monthly_obligations_range"] });
-      // O apuramento do IVA dos TI cria/apaga a tarefa do e-Fatura (trigger na BD)
-      if (/^contabilidade_(TI_iva|organizada)_iva$/.test(obligation.obligation_type)) {
-        qc.invalidateQueries({ queryKey: ["tasks"] });
+      // Fecho do IVA (TI/empresas): pop-up para ativar as tarefas associadas
+      if (obligation.status === "concluida" && IVA_APURAMENTO_TYPES[obligation.obligation_type]) {
+        emitIvaApurado({ client_id: obligation.client_id, obligation_type: obligation.obligation_type, reference_month: obligation.reference_month });
       }
     },
   });
