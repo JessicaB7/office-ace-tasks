@@ -52,6 +52,9 @@ export interface ToconlineProcedure {
   docPath?: string;
   /** Obrigação da Gestão Mensal que fica feita quando a tarefa é concluída. */
   gestaoMensal?: { obligationType: string; label: string };
+  /** Obrigação (Obrigações → DMR) cujo "Pagamento" marcado (extra_done) indica que o cliente já está entregue:
+   * esses clientes não se ativam. */
+  entregueObligation?: "DMR_AT" | "DMR_SS";
 }
 
 const COMPRAS_DESC = "Atualiza o e-Fatura do mês e grava (sem finalizar) as compras recebidas por e-mail ainda não associadas. Fornecedores em falta ficam no Resultado para a equipa criar.";
@@ -172,11 +175,13 @@ export const TOCONLINE_PROCEDURES: ToconlineProcedure[] = [
   {
     id: "dmr_guia_at", regime: "dmr", tarefa: "guia_dmr_at", label: "Guia DMR AT",
     tipoContabilidade: null, regimeLabel: "DMR", filter: temDmr,
+    entregueObligation: "DMR_AT",
     description: GUIA_DMR_AT_DESC, docPath: "docs/toconline/dmr.md",
   },
   {
     id: "dmr_guia_ss", regime: "dmr", tarefa: "guia_dmr_ss", label: "Guia DMR SS + dívidas",
     tipoContabilidade: null, regimeLabel: "DMR", filter: temDmr,
+    entregueObligation: "DMR_SS",
     description: GUIA_DMR_SS_DESC, docPath: "docs/toconline/dmr.md",
   },
 ];

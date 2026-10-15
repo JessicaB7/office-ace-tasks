@@ -85,6 +85,7 @@ interface ClientForm {
   niss: string;
   senha_ss: string;
   chave_ss: string;
+  ss_acesso_problema: string;
   programa_faturacao: string;
   utilizador_faturacao: string;
   senha_faturacao: string;
@@ -110,7 +111,7 @@ interface ClientForm {
 }
 
 const emptyForm: ClientForm = {
-  name: "", nif: "", senha_at: "", niss: "", senha_ss: "", chave_ss: "",
+  name: "", nif: "", senha_at: "", niss: "", senha_ss: "", chave_ss: "", ss_acesso_problema: "",
   programa_faturacao: "", utilizador_faturacao: "", senha_faturacao: "",
   saft: "", via_ctt: "", via_ctt_senha: "", via_ctt_resposta: "", mensalidade: "", inicio_contrato: "",
   tipo_contabilidade: "SQ", seguranca_social: "", seguranca_social_isencao_fim: "", pag_seguranca_social: "",
@@ -151,6 +152,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         niss: client.niss || "",
         senha_ss: client.senha_ss || "",
         chave_ss: client.chave_ss || "",
+        ss_acesso_problema: client.ss_acesso_problema || "",
         programa_faturacao: client.programa_faturacao || "",
         utilizador_faturacao: client.utilizador_faturacao || "",
         senha_faturacao: client.senha_faturacao || "",
@@ -202,6 +204,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
         niss: form.niss || null,
         senha_ss: form.senha_ss || null,
         chave_ss: form.chave_ss || null,
+        ss_acesso_problema: form.ss_acesso_problema.trim() || null,
         programa_faturacao: form.programa_faturacao || null,
         utilizador_faturacao: form.utilizador_faturacao || null,
         senha_faturacao: form.senha_faturacao || null,
@@ -298,6 +301,11 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                 <div className="col-span-2">
                   <label className="text-sm font-medium mb-1 block">Chave Segurança Social</label>
                   <input value={form.chave_ss} onChange={(e) => set("chave_ss", e.target.value)} className={inputClass} />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-sm font-medium mb-1 block">Problema de acesso à SS (TOConline)</label>
+                  <input value={form.ss_acesso_problema} onChange={(e) => set("ss_acesso_problema", e.target.value)}
+                    placeholder="Vazio = sem problema (ex.: sem senha da SS no TOConline)" className={inputClass} />
                 </div>
                 <div className="col-span-2">
                   <label className="text-sm font-medium mb-1 block">Programa de Faturação</label>

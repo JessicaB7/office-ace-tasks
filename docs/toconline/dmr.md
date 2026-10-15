@@ -121,4 +121,10 @@ Não gerar referências para esses valores (só para as contribuições corrente
 **Resultado** (por tarefa): "DMR SS <MM/AAAA> — <valor> € até <data> — Ref. MB <entidade>/<referência> (<ficheiro>) —
 Atraso <x> € · Execução fiscal <y> €".
 
+Gravar também os **dados estruturados** em `toconline_jobs.result_data` (JSON; alimenta o painel "Guias DMR SS e
+dívidas" da Fila): `valor`, `valor_ti`, `entidade`, `referencia` (texto, mantém zeros à esquerda), `data_limite`
+(AAAA-MM-DD), `ficheiro`, `atraso`, `coimas`, `outros`, `execucao_fiscal` (números em euros), `acordos` (texto) e
+`ja_entregue: true` quando o Pagamento já estava marcado. Quando o acesso à SS falhar, escrever o motivo em
+`clients.ss_acesso_problema` (aparece na ficha e na Fila); apagar o motivo quando voltar a funcionar.
+
 **No fim**, lista: Cliente · Contribuições correntes · Data limite · Referência · Em atraso · Execução fiscal · Observações.

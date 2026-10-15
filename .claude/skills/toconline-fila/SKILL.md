@@ -67,3 +67,5 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      coimas, outros valores e execução fiscal. Terminar sessão na SS antes do cliente seguinte.
      Saltar clientes com Pagamento já marcado em Obrigações → DMR SS. TI com salários: um só documento com os pacotes
      correntes de entidade empregadora + trabalhador independente (exceto Marta Lobo, TI por débito direto).
+     Gravar além do Resultado o `result_data` (JSON: valor, valor_ti, entidade, referencia, data_limite, ficheiro,
+     atraso, coimas, outros, execucao_fiscal, acordos, ja_entregue) e, se o acesso à SS falhar, `clients.ss_acesso_problema`.

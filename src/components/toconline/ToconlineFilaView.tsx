@@ -10,6 +10,8 @@ import {
   type ToconlineJobStatus, type ToconlineRegime, type ToconlineTarefa, type TipoFaturacao,
 } from "@/lib/toconlineProcedures";
 import { parcelasDevidasEm, metodoPagamentoIva } from "@/lib/ivaFlex";
+import { type DmrSsResult, type SsClientInfo, fmtEuro, temDividas, totalDividas } from "@/lib/dmrSs";
+import DmrSsResumo from "./DmrSsResumo";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const STATUS_ORDER: ToconlineJobStatus[] = ["pendente", "em_curso", "bloqueada", "erro", "concluida", "cancelada"];
@@ -38,6 +40,21 @@ const FATURACAO_CLASSES: Record<TipoFaturacao, string> = {
 };
 const FaturacaoBadge = ({ tipo }: { tipo: TipoFaturacao }) => (
   <span className={cn("text-[11px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap", FATURACAO_CLASSES[tipo])}>{TIPO_FATURACAO_LABELS[tipo]}</span>
+);
+
+/** Informação da Segurança Social relevante para as guias DMR SS (ficha do cliente). */
+const SsInfo = ({ client }: { client: SsClientInfo }) => (
+  <div className="flex items-center gap-1.5 flex-wrap">
+    {(client.tipo_contabilidade === "TI RS" || client.tipo_contabilidade === "TI CO") && (
+      <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-primary/15 text-primary whitespace-nowrap" title="Trabalhador independente com salários">TI + salários</span>
+    )}
+    {client.pag_seguranca_social === "Débito Direto" && (
+      <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground whitespace-nowrap">SS por débito direto</span>
+    )}
+    {client.ss_acesso_problema && (
+      <span className="text-[11px] text-warning flex items-start gap-1"><AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />{client.ss_acesso_problema}</span>
+    )}
+  </div>
 );
 
 const tabClass = (active: boolean) => cn("px-3 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-colors",
@@ -97,6 +114,14 @@ const ToconlineFilaView = () => {
     return map;
   }, [jobs, procedureId, refMonth]);
 
+  // DMR: clientes com o Pagamento já marcado em Obrigações → DMR (já entregues) não se ativam
+  const { data: refObligations = [] } = useMonthlyObligationsRange(procedure?.entregueObligation ? [refMonth] : []);
+  const entregues = useMemo(() => new Set(
+    refObligations
+      .filter((o) => o.obligation_type === procedure?.entregueObligation && o.reference_month === refMonth && o.extra_done === true)
+      .map((o) => o.client_id),
+  ), [refObligations, procedure, refMonth]);
+
   const eligibleClients = useMemo(() => {
     if (!procedure) return [];
     let list = clients.filter((c: any) => c.active
@@ -116,6 +141,7 @@ const ToconlineFilaView = () => {
   // Por omissão só se podem selecionar clientes sem tarefa ativa neste mês
   const selectable = eligibleClients.filter((c: any) => {
     const st = jobFor.get(c.id)?.status;
+    if (entregues.has(c.id)) return false;
     return !st || st === "cancelada" || st === "erro" || st === "bloqueada";
   });
   const allSelected = selectable.length > 0 && selectable.every((c: any) => selected.has(c.id));
@@ -257,7 +283,7 @@ const ToconlineFilaView = () => {
                   </th>
                   <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Cliente</th>
                   <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Responsável</th>
-                  <th className="text-left px-3 py-2 font-semibold text-muted-foreground">{procedure?.ivaFlex ? "Parcela · Método de pagamento" : "Programa Faturação"}</th>
+                  <th className="text-left px-3 py-2 font-semibold text-muted-foreground">{procedure?.ivaFlex ? "Parcela · Método de pagamento" : procedure?.regime === "dmr" ? "Segurança Social" : "Programa Faturação"}</th>
                   <th className="text-left px-3 py-2 font-semibold text-muted-foreground">Na fila ({MONTH_NAMES[month]})</th>
                 </tr>
               </thead>
@@ -276,6 +302,8 @@ const ToconlineFilaView = () => {
                         <td className="px-3 py-2 text-muted-foreground text-xs">
                           {(flexInfo.get(c.id) || []).map((f) => <div key={f.label}>{f.label} · <span className="font-medium text-foreground">{f.metodo}</span></div>)}
                         </td>
+                      ) : procedure?.regime === "dmr" ? (
+                        <td className="px-3 py-2 text-xs"><SsInfo client={c} /></td>
                       ) : (
                       <td className="px-3 py-2 text-muted-foreground text-xs">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -285,7 +313,9 @@ const ToconlineFilaView = () => {
                       </td>
                       )}
                       <td className="px-3 py-2">
-                        {job ? (
+                        {entregues.has(c.id) ? (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded bg-success/15 text-success whitespace-nowrap" title="Pagamento marcado em Obrigações → DMR">Já entregue</span>
+                        ) : job ? (
                           <span className={cn("text-xs font-medium px-2 py-0.5 rounded", STATUS_CLASSES[job.status as ToconlineJobStatus])}>
                             {STATUS_LABELS[job.status as ToconlineJobStatus]}
                           </span>
@@ -309,6 +339,8 @@ const ToconlineFilaView = () => {
           </button>
         </div>
       </section>
+
+      <DmrSsResumo jobs={jobs} clientById={clientById} />
 
       {/* ---- Fila ---- */}
       <section className="bg-card rounded-xl border overflow-hidden">
@@ -362,6 +394,7 @@ const ToconlineFilaView = () => {
                     <td className="px-4 py-3 font-medium">
                       {client?.name || "—"}
                       {proc && (proc.regime === "ti_rs" || proc.regime === "ti_co") && client && <div className="mt-0.5"><FaturacaoBadge tipo={tipoFaturacao(client.programa_faturacao)} /></div>}
+                      {proc?.regime === "dmr" && client && <div className="mt-0.5 font-normal"><SsInfo client={client} /></div>}
                       <div className="text-xs text-muted-foreground font-normal">
                         {userName(job.requested_by) ? `Ativada por ${userName(job.requested_by)} · ` : ""}{fmtDateTime(job.requested_at)}
                       </div>
@@ -392,6 +425,15 @@ const ToconlineFilaView = () => {
                           if (val !== (job.result_notes || "")) updateJob.mutate({ id: job.id, result_notes: val || null });
                         }}
                       />
+                      {job.procedure_id === "dmr_guia_ss" && job.result_data && (() => {
+                        const d = job.result_data as DmrSsResult;
+                        return (
+                          <div className="flex gap-1.5 flex-wrap mt-1 text-[11px]">
+                            {d.referencia && <span className="px-1.5 py-0.5 rounded bg-success/15 text-success font-medium">{fmtEuro(d.valor)} · {d.entidade}/{d.referencia}</span>}
+                            {temDividas(d) && <span className="px-1.5 py-0.5 rounded bg-destructive/15 text-destructive font-medium">Dívidas {fmtEuro(totalDividas(d))}{d.acordos ? " · acordo" : ""}</span>}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {proc?.gestaoMensal && status === "concluida" ? (

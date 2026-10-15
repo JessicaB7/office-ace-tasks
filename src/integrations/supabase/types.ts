@@ -418,6 +418,7 @@ export type Database = {
           senha_faturacao: string | null
           senha_ss: string | null
           chave_ss: string | null
+          ss_acesso_problema: string | null
           status: string
           tipo_contabilidade: string | null
           updated_at: string
@@ -462,6 +463,7 @@ export type Database = {
           senha_faturacao?: string | null
           senha_ss?: string | null
           chave_ss?: string | null
+          ss_acesso_problema?: string | null
           status?: string
           tipo_contabilidade?: string | null
           updated_at?: string
@@ -506,6 +508,7 @@ export type Database = {
           senha_faturacao?: string | null
           senha_ss?: string | null
           chave_ss?: string | null
+          ss_acesso_problema?: string | null
           status?: string
           tipo_contabilidade?: string | null
           updated_at?: string
@@ -1131,6 +1134,7 @@ export type Database = {
           requested_at: string
           requested_by: string | null
           result_notes: string | null
+          result_data: Json | null
           started_at: string | null
           status: string
           updated_at: string
@@ -1144,6 +1148,7 @@ export type Database = {
           requested_at?: string
           requested_by?: string | null
           result_notes?: string | null
+          result_data?: Json | null
           started_at?: string | null
           status?: string
           updated_at?: string
@@ -1157,6 +1162,7 @@ export type Database = {
           requested_at?: string
           requested_by?: string | null
           result_notes?: string | null
+          result_data?: Json | null
           started_at?: string | null
           status?: string
           updated_at?: string

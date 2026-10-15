@@ -31,7 +31,7 @@ export function useActivateToconlineJobs() {
       const now = new Date().toISOString();
       const rows = clientIds.map((client_id) => ({
         procedure_id: procedureId, client_id, reference_month: referenceMonth,
-        status: "pendente", result_notes: null, started_at: null, finished_at: null,
+        status: "pendente", result_notes: null, result_data: null, started_at: null, finished_at: null,
         requested_by: userId ?? null, requested_at: now,
       }));
       const { error } = await supabase
