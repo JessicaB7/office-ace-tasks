@@ -95,7 +95,7 @@ const Index = () => {
         {activeView === "obrigacoes_controlo" && isAdmin && <ObrigacoesControloView nav={obrigCtlNav} onOpenObrigacao={(g, month, search) => { setObrigNav({ month, search }); setActiveView(`obrigacoes_${g}`); }} />}
         {activeView.startsWith("obrigacoes") && activeView !== "obrigacoes_controlo" && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} nav={obrigNav} />}
         {activeView === "contabilidades_painel" && isAdmin && <GestaoMensalEmFaltaView onOpenRegime={(t, month, search) => { setContabNav({ month, search }); setActiveView(`contabilidades_${t}`); }} />}
-        {activeView.startsWith("contabilidades") && activeView !== "contabilidades_painel" && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} onSubPageChange={(t) => setActiveView(`contabilidades_${t}`)} nav={contabNav} />}
+        {activeView.startsWith("contabilidades") && activeView !== "contabilidades_painel" && <ContabilidadesView subPage={activeView.replace("contabilidades_", "")} onSubPageChange={(t) => setActiveView(`contabilidades_${t}`)} nav={contabNav} onOpenIvaPeriodica={(month, search) => { setObrigNav({ month, search }); setActiveView("obrigacoes_IVA"); }} />}
         {activeView.startsWith("analise_") && <AnaliseFinanceiraView subPage={activeView.replace("analise_", "")} />}
         {activeView === "clients" && !analysisClientId && (
           <ClientListView
