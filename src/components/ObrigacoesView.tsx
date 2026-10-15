@@ -54,6 +54,8 @@ const SS_TI_FILTERS = [
   { value: "Débito Direto", label: "Débito Direto" },
   { value: "Isento", label: "Isentos" },
 ];
+// Método de pagamento da SS — o mesmo campo da ficha de cliente (pag_seguranca_social)
+const PAG_SS_OPTIONS = ["Referência", "Débito Direto", "Não Aplicável"];
 const SS_TI_DT_FILTERS = [
   { value: "Trimestral", label: "Trimestral" },
   { value: "Mensal", label: "Mensal" },
@@ -702,6 +704,7 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                 {showNif && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">NIF</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tipo</th>
                 {isSSTI && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Enquadramento SS</th>}
+                {isSSTI && !isDT && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Método de pagamento</th>}
                 <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Responsável</th>
                 {showProgramaFaturacao && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Programa Faturação</th>}
                 {isEmissaoFaturas && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
@@ -818,6 +821,18 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                     {isSSTI && (
                       <td className="px-4 py-3">
                         <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">{client.seguranca_social || "—"}</span>
+                      </td>
+                    )}
+                    {isSSTI && !isDT && (
+                      <td className="px-4 py-3">
+                        <select
+                          value={client.pag_seguranca_social || ""}
+                          onChange={(e) => upsertClient.mutate({ id: client.id, name: client.name, pag_seguranca_social: e.target.value || null })}
+                          className="text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="">— Selecionar —</option>
+                          {PAG_SS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                        </select>
                       </td>
                     )}
                     <td className="px-4 py-3 text-muted-foreground">{getCollabName(client.responsavel_id)}</td>
