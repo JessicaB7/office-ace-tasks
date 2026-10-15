@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import ClientObrigacoesTab from "@/components/ClientObrigacoesTab";
 
 const TIPO_CONTAB_OPTIONS = [
   { value: "SQ", label: "Empresa (SQ)" },
@@ -278,6 +279,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
             <TabsList className="w-full">
               <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
               <TabsTrigger value="enquadramento" className="flex-1">Enquadramento</TabsTrigger>
+              {isEditing && <TabsTrigger value="obrigacoes" className="flex-1">Obrigações fiscais</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="dados" className="space-y-4 pt-2">
@@ -445,6 +447,12 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                 </div>
               </div>
             </TabsContent>
+
+            {isEditing && (
+              <TabsContent value="obrigacoes" className="pt-2">
+                <ClientObrigacoesTab clientId={client.id} client={form} />
+              </TabsContent>
+            )}
           </Tabs>
 
           <div className="flex items-center gap-3 p-5 pt-4">
