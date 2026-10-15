@@ -27,7 +27,7 @@ import ScriptsView from "@/components/comercial/ScriptsView";
 import NovosClientesView from "@/components/comercial/NovosClientesView";
 import ToconlineFilaView from "@/components/toconline/ToconlineFilaView";
 import ToconlineProcedimentosView from "@/components/toconline/ToconlineProcedimentosView";
-import WeeklyTasksReminderDialog from "@/components/WeeklyTasksReminderDialog";
+import DailyTasksReminderDialog from "@/components/DailyTasksReminderDialog";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
@@ -114,7 +114,7 @@ const Index = () => {
         {activeView === "notas" && <NotasView />}
       </main>
       <TaskFormDialog open={dialogOpen} task={editingTask} onClose={() => setDialogOpen(false)} />
-      <WeeklyTasksReminderDialog onViewTasks={() => setActiveView("tasks")} />
+      <DailyTasksReminderDialog onViewTasks={() => setActiveView("tasks")} />
       {isAdmin && (
         <ObrigacoesPrazoReminder onOpen={(group, month) => { setObrigCtlNav({ month, group }); setActiveView("obrigacoes_controlo"); }} />
       )}
