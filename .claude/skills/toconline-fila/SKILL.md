@@ -65,3 +65,5 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      a pagar e acordos. Correntes > 0: Fazer pagamentos → Pagar → Multibanco → Continuar → Descarregar referências (PDF)
      → confirmar NIF no PDF e renomear `Guia_DMR_SS_<Cliente>_<MM>_<AAAA>.pdf` (pasta DMR SS). Registar sempre atraso,
      coimas, outros valores e execução fiscal. Terminar sessão na SS antes do cliente seguinte.
+     Saltar clientes com Pagamento já marcado em Obrigações → DMR SS. TI com salários: um só documento com os pacotes
+     correntes de entidade empregadora + trabalhador independente (exceto Marta Lobo, TI por débito direto).

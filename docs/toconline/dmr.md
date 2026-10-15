@@ -103,8 +103,13 @@ campo "Salários" preenchido e diferente de "Não tem").
 - Em **Fazer pagamentos** escolher **só** o pacote "Contribuições - Entidade Empregadora" com "Pagar até". Não usar
   os pacotes "Pague agora para regularizar" (atraso), "Dívidas em execução fiscal" nem "Doc. automático contribuições
   trabalhador independente" (TI, até dia 20) — estes ficam só no Resultado.
-- Pessoas singulares com trabalhadores podem ter os dois pacotes (TI + entidade empregadora): a guia DMR SS é só a da
-  entidade empregadora; assinalar o valor de TI no Resultado. Sem pacote de entidade empregadora → sem guia (Bloqueada).
+- **Trabalhadores independentes (TI) com salários** têm dois pacotes: "Contribuições - Entidade Empregadora" (até 26)
+  e "Doc. automático contribuições trabalhador independente" (até 20). **Tirar um só documento com os dois valores**:
+  selecionar os dois pacotes correntes em Fazer pagamentos (ou "seleção de valores a pagar individualmente") e gerar
+  uma única referência Multibanco (ex.: Simão Oliveira 09/2026 — 347,50 € EE + 332,92 € TI = 680,42 €).
+  - **Exceção: Marta Lobo** — as contribuições de TI dela são por **débito direto**: guia só da entidade empregadora.
+  - Nunca juntar os pacotes de atraso/execução fiscal.
+  - Sem pacote de entidade empregadora → sem guia DMR (Bloqueada), mas indicar o valor de TI no Resultado.
 - Algumas referências saem com a **Entidade 21431** (em vez de 21056): é normal.
 - "Terminar sessão" pede confirmação (**Sim, terminar sessão**). A sessão da SS expira em poucos minutos sem uso.
 - O TOConline também termina a sessão ao fim de algum tempo (ecrã de login): pedir à utilizadora para entrar.
