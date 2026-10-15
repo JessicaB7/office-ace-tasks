@@ -53,3 +53,7 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      Acesso Direto → "Portal das Finanças" → Aceder; depois abrir `sitfiscal.portaldasfinancas.gov.pt/flexibiliza/consultar/pesquisa`
      no separador do Claude (fazer "Sair" no Portal antes de mudar de cliente). Guia: seta de PAGAR → IMPRIMIR; renomear.
      Referência: descarregar a guia; Débito direto: só o valor. No fim, lista Cliente · N.º da parcela · Valor · Método.
+   - `dmr_guia_at` → `docs/toconline/dmr.md`, secção 1 "Guia DMR AT" (todos os regimes). Mês da tarefa = mês de
+     referência da DMR. Acesso Direto → "Portal das Finanças" → Aceder; no Portal pesquisar "DMR" → ACEDER →
+     CONSULTAR DECLARAÇÃO → confirmar NIF e mês → seta ao lado das opções → OBTER DOCUMENTO → download. Fazer "Sair"
+     no Portal antes de mudar de cliente. No fim, lista Cliente · Mês · Guia · Observações.
