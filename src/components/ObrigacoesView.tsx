@@ -189,7 +189,9 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   const showNif = !hideNif.has(activeTab);
   const showSaftExtra = activeTab === "SAFT";
   // Coluna Notas fixa à direita (nota do cliente que se mantém de mês para mês)
-  const notesField = isDMR ? "notas_dmr" : "notas_saft";
+  const isRetencao = activeTab === "retencao_fonte";
+  const notesField = isDMR ? "notas_dmr" : isRetencao ? "notas_retencao" : "notas_saft";
+  const showNotasFixas = showSaftExtra || isDMR || isRetencao;
   const showGuiaPagamento = isDMR;
   const isSalarios = activeTab === "salarios";
   const showSalariosColumns = isSalarios;
@@ -416,6 +418,22 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
 
   const getOblType = () => isDMR ? dmrTab : isSSTI ? ssTiTab : (activeTab === "IVA" && subFilter === "OSS") ? "IVA_OSS" : activeTab;
   const toggleGuia = (clientId: string) => toggleObligation(clientId, getOblType(), oblMap);
+
+  // Retenção na fonte: "Entregue" ou "Não aplicável". Ambos contam como tratados (status concluida);
+  // o "Não aplicável" distingue-se por extra_done. Clicar na opção ativa volta a pendente.
+  const setRetencaoEstado = async (clientId: string, estado: "entregue" | "nao_aplicavel") => {
+    const existing = oblMap[clientId];
+    const naoAplicavel = estado === "nao_aplicavel";
+    const isActive = existing?.status === "concluida" && !!existing.extra_done === naoAplicavel;
+    await upsert.mutateAsync({
+      ...(existing ? { id: existing.id } : {}),
+      client_id: clientId, obligation_type: "retencao_fonte", reference_month: referenceMonth,
+      status: isActive ? "pendente" : "concluida",
+      extra_done: isActive ? false : naoAplicavel,
+      completed_at: isActive ? null : new Date().toISOString(),
+      completed_by: isActive ? null : user?.id || null,
+    });
+  };
 
   const togglePagamento = async (clientId: string) => {
     const oblType = getOblType();
@@ -726,8 +744,9 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                 {isFaturasSemanal && WEEKS.map((w) => (
                   <th key={w} className="text-center px-3 py-3 font-semibold text-muted-foreground w-20">Semana {w}</th>
                 ))}
-                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
-                {(showSaftExtra || isDMR) && <th className="sticky right-0 z-10 bg-muted text-left px-4 py-3 font-semibold text-muted-foreground border-l min-w-[220px]">Notas</th>}
+                {isRetencao && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Estado</th>}
+                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && !isRetencao && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
+                {showNotasFixas && <th className="sticky right-0 z-10 bg-muted text-left px-4 py-3 font-semibold text-muted-foreground border-l min-w-[220px]">Notas</th>}
               </tr>
             </thead>
             <tbody>
@@ -944,12 +963,28 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                         <CheckboxCell done={weekDone(client.id, w)} onClick={() => toggleWeek(client.id, w)} />
                       </td>
                     ))}
-                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && (
+                    {isRetencao && (
+                      <td className="text-center px-3 py-3">
+                        <div className="inline-flex gap-1.5">
+                          {([
+                            { id: "entregue", label: "Entregue", active: guiaDone && !obl?.extra_done, activeCls: "bg-green-500 border-green-500 text-white" },
+                            { id: "nao_aplicavel", label: "Não aplicável", active: guiaDone && !!obl?.extra_done, activeCls: "bg-muted-foreground border-muted-foreground text-background" },
+                          ] as const).map((opt) => (
+                            <button key={opt.id} onClick={() => setRetencaoEstado(client.id, opt.id)} disabled={upsert.isPending}
+                              className={cn("px-2.5 py-1 text-xs font-medium rounded-md border transition-colors whitespace-nowrap",
+                                opt.active ? opt.activeCls : "border-muted-foreground/30 text-muted-foreground hover:border-primary hover:text-foreground")}>
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    )}
+                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && !isRetencao && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
                     )}
-                    {(showSaftExtra || isDMR) && (
+                    {showNotasFixas && (
                       // Nota guardada no cliente: mantém-se de mês para mês; coluna fixa à direita
                       <td className={cn("sticky right-0 z-10 px-4 py-3 border-l min-w-[220px]", rowDone ? "bg-green-50 dark:bg-green-950" : "bg-card")}>
                         <input
