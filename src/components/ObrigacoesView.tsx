@@ -550,7 +550,19 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
           <h2 className="text-2xl font-bold">{pageLabels[activeTab] || activeTab}</h2>
           <p className="text-muted-foreground text-sm mt-1">
             {isDT && dtQuarterLabel && <span className="font-medium text-foreground mr-3">{dtQuarterLabel}</span>}
-            {showDTContent && <>{doneCount}/{filteredClients.length} concluídas</>}
+            {showDTContent && !isIVA && <>{doneCount}/{filteredClients.length} concluídas</>}
+            {isIVA && (
+              // IVA: resumo destacado — concluídas = entregues (ou todas as parcelas pagas, na Flexibilização)
+              <span className="inline-flex items-center gap-2 align-middle">
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-success/15 text-success">
+                  {doneCount} concluída{doneCount !== 1 ? "s" : ""}
+                </span>
+                <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold",
+                  filteredClients.length - doneCount > 0 ? "bg-warning/20 text-warning-foreground" : "bg-muted text-muted-foreground")}>
+                  {filteredClients.length - doneCount} por concluir
+                </span>
+              </span>
+            )}
             {deadlineText && showDTContent && <span className="ml-3 text-orange-500 font-medium">{deadlineText}</span>}
           </p>
         </div>
