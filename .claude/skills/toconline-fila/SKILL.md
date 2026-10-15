@@ -55,5 +55,6 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      Referência: descarregar a guia; Débito direto: só o valor. No fim, lista Cliente · N.º da parcela · Valor · Método.
    - `dmr_guia_at` → `docs/toconline/dmr.md`, secção 1 "Guia DMR AT" (todos os regimes). Mês da tarefa = mês de
      referência da DMR. Acesso Direto → "Portal das Finanças" → Aceder; no Portal pesquisar "DMR" → ACEDER →
-     CONSULTAR DECLARAÇÃO → confirmar NIF e mês → seta ao lado das opções → OBTER DOCUMENTO → download. Fazer "Sair"
+     CONSULTAR DECLARAÇÃO → confirmar NIF e mês → seta ao lado das opções → OBTER DOCUMENTO → download → renomear
+     `Guia_DMR_AT_<Nome_do_Cliente>_<MM>_<AAAA>.pdf` (sempre guia, sem débito direto). Fazer "Sair"
      no Portal antes de mudar de cliente. No fim, lista Cliente · Mês · Guia · Observações.

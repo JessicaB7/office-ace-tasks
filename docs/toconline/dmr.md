@@ -28,6 +28,10 @@ A guia desse mês paga-se até ao **dia 20 do mês seguinte**.
    referência** da tarefa.
 5. **Obter a guia:** na linha da declaração do mês, **ao lado das opções há uma seta** → **OBTER DOCUMENTO** →
    **fazer download** do documento de pagamento.
+   - O PDF vai para as Transferências → **renomear para `Guia_DMR_AT_<Nome_do_Cliente>_<MM>_<AAAA>.pdf`**, com o mês
+     de referência da DMR (ex.: `Guia_DMR_AT_Helena_Pereira_09_2026.pdf`).
+   - Todos os clientes pagam por guia (não há DMR em débito direto): tirar sempre a guia.
+   - O Chrome pode bloquear downloads seguidos do mesmo site: na 1.ª vez escolher "Permitir sempre" (pedir à utilizadora).
 6. Registar o Resultado na Fila e passar ao cliente seguinte (começando por "Sair" no Portal).
 
 **Casos a tratar como Bloqueada** (avisar no Resultado):
