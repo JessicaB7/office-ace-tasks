@@ -354,9 +354,13 @@ export function useUpsertObligation() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, obligation) => {
       qc.invalidateQueries({ queryKey: ["monthly_obligations"] });
       qc.invalidateQueries({ queryKey: ["monthly_obligations_range"] });
+      // O apuramento do IVA dos TI cria/apaga a tarefa do e-Fatura (trigger na BD)
+      if (/^contabilidade_(TI_iva|organizada)_iva$/.test(obligation.obligation_type)) {
+        qc.invalidateQueries({ queryKey: ["tasks"] });
+      }
     },
   });
 }
