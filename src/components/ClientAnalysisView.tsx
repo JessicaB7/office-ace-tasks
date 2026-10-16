@@ -16,6 +16,7 @@ import {
 } from "@/hooks/useClientFinancials";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import AnaliseMensalTab from "./financial/AnaliseMensalTab";
 import MapaExploracaoTab from "./financial/MapaExploracaoTab";
 import IvaTab from "./financial/IvaTab";
@@ -221,6 +222,24 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
             );
           })}
         </div>
+      </div>
+
+      <div className="rounded-lg border bg-card p-4">
+        <h4 className="font-semibold text-sm mb-1">Notas {year}</h4>
+        <p className="text-[11px] text-muted-foreground mb-2">
+          Notas internas da análise deste cliente (não aparecem no PDF exportado). Gravam ao sair do campo.
+        </p>
+        <Textarea
+          key={`${clientId}-${year}-${settings?.notas ?? ""}`}
+          defaultValue={settings?.notas ?? ""}
+          disabled={!settings}
+          placeholder="Ex.: falta a Segurança Social; confirmar retenções com a cliente…"
+          className="min-h-[80px] text-sm resize-y"
+          onBlur={(e) => {
+            const v = e.target.value.trim() || null;
+            if (v !== (settings?.notas ?? null)) upsertSettings.mutate({ notas: v });
+          }}
+        />
       </div>
 
       <div className="flex items-start justify-between gap-4 flex-wrap">
