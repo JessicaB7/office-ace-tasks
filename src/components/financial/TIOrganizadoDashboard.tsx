@@ -165,18 +165,18 @@ export default function TIOrganizadoDashboard({
     upsertSettings.mutate({ [`iva_q${i + 1}`]: null } as any);
   };
 
-  // Retenção na fonte e pagamentos por conta (2414 e sub-contas) — soma anual em módulo.
-  const retencoes2414 = (() => {
+  // Retenção na fonte e pagamentos por conta (241: 2414 retenções + pagamentos por conta) — soma anual em módulo.
+  const retencoes241 = (() => {
     let total = 0;
     for (const [key, val] of map.entries()) {
       const [, code] = key.split(":");
-      if (code.startsWith("2414")) total += Math.abs(val);
+      if (code.startsWith("241")) total += Math.abs(val);
     }
     return total;
   })();
   const retencoesManual = Number(settings?.irs_retencoes ?? 0);
-  const retencoes = retencoes2414 > 0 ? retencoes2414 : retencoesManual;
-  const retencoesSource: "auto" | "manual" = retencoes2414 > 0 ? "auto" : "manual";
+  const retencoes = retencoes241 > 0 ? retencoes241 : retencoesManual;
+  const retencoesSource: "auto" | "manual" = retencoes241 > 0 ? "auto" : "manual";
   const [retencoesInput, setRetencoesInput] = useState<number>(retencoesManual);
   useEffect(() => {
     setRetencoesInput(Number(settings?.irs_retencoes ?? 0));
@@ -457,7 +457,7 @@ export default function TIOrganizadoDashboard({
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <h4 className="font-semibold text-sm">Retenção na fonte e pagamentos por conta</h4>
-              <p className="text-xs text-muted-foreground mt-1">Conta 2414 · soma anual dos valores retidos por terceiros.</p>
+              <p className="text-xs text-muted-foreground mt-1">Conta 241 · soma anual das retenções por terceiros e pagamentos por conta.</p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               {!exporting && retencoesSource === "manual" && (

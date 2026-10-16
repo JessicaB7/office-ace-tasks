@@ -187,18 +187,18 @@ export default function TISimplificadoDashboard({
     upsertSettings.mutate({ [`iva_q${i + 1}`]: null } as any);
   };
 
-  // Retenção na fonte e pagamentos por conta: soma anual da conta 2414 (qualquer subconta) do balancete.
-  const retencoes2414 = (() => {
+  // Retenção na fonte e pagamentos por conta: soma anual da conta 241 (2414 retenções + restantes subcontas, ex. pagamentos por conta) do balancete.
+  const retencoes241 = (() => {
     let total = 0;
     for (const [key, val] of map.entries()) {
       const [, code] = key.split(":");
-      if (code.startsWith("2414")) total += Math.abs(val);
+      if (code.startsWith("241")) total += Math.abs(val);
     }
     return total;
   })();
   const retencoesManual = Number(settings?.irs_retencoes ?? 0);
-  const retencoes = retencoes2414 > 0 ? retencoes2414 : retencoesManual;
-  const retencoesSource: "auto" | "manual" = retencoes2414 > 0 ? "auto" : "manual";
+  const retencoes = retencoes241 > 0 ? retencoes241 : retencoesManual;
+  const retencoesSource: "auto" | "manual" = retencoes241 > 0 ? "auto" : "manual";
 
   const [retencoesInput, setRetencoesInput] = useState<number>(retencoesManual);
   useEffect(() => {
