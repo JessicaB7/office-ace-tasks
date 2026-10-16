@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Upload, Building2, Trash2, FileText } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Upload, Building2, Trash2, FileText, Bot } from "lucide-react";
 import { useClients } from "@/hooks/useSupabaseQuery";
 import {
   useFinancialAccounts,
@@ -24,6 +24,7 @@ import TISimplificadoDashboard from "./financial/TISimplificadoDashboard";
 import TIOrganizadoDashboard from "./financial/TIOrganizadoDashboard";
 import EmpresasDashboard from "./financial/EmpresasDashboard";
 import DashboardTrimestral from "./financial/DashboardTrimestral";
+import RobotAnaliseDialog from "./financial/RobotAnaliseDialog";
 
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import * as XLSX from "xlsx";
@@ -72,6 +73,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
   const fileRef = useRef<HTMLInputElement>(null);
   const pendingSlot = useRef<ImportSlot>("mapa");
   const [fichaOpen, setFichaOpen] = useState(false);
+  const [robotOpen, setRobotOpen] = useState(false);
 
 
   const handleImport = async (file: File, slot: ImportSlot) => {
@@ -246,6 +248,13 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setRobotOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+            title="O robot escreve o texto da análise para enviar ao cliente"
+          >
+            <Bot className="w-4 h-4" /> Robot
+          </button>
           <div className="flex items-center gap-1 rounded-lg border bg-card px-2 py-1">
             <button onClick={() => setYear(year - 1)} className="p-1 rounded hover:bg-muted"><ChevronLeft className="w-4 h-4" /></button>
             <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="bg-transparent text-sm font-semibold px-2 focus:outline-none">
@@ -368,6 +377,8 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
       )}
 
 
+
+      <RobotAnaliseDialog open={robotOpen} onClose={() => setRobotOpen(false)} client={client} year={year} />
 
       <ClientDetailDialog
         client={fichaOpen ? client : null}
