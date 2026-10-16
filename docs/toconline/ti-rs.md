@@ -138,6 +138,18 @@ trimestre** (Mar / Jun / Set / Dez). Se a tarefa estiver noutro mês, usar o tri
      manual (os que mostram o valor automático).
    - Trimestre sem declaração entregue → deixar o automático e indicar no Resultado "IVA <trimestre> por entregar".
 
+**Regras aprendidas (out. 2026)**
+- **Criação automática:** a tarefa entra sozinha na Fila quando o IVA Periódica de Mar/Jun/Set/Dez é marcado
+  "Entregue" (só clientes ativos e se o balancete desse trimestre ainda não estiver importado).
+- **Exercício:** confirmar sempre que o mapa/balancete mostra meses "(2026)". Se o TOConline abrir no exercício
+  anterior: **Contabilidade → Exercícios → ENTRAR** na linha de 2026.
+- **Mais do que uma declaração no mesmo trimestre** (ex.: "2º trimestre" e "2º trimestre (1)"): usar sempre a
+  **segunda** — a que tem "(1)" no nome — mesmo que a primeira esteja "Sub. ext." (submetida externamente).
+- Declaração com estado **"Sub. ext."** conta como entregue.
+- Trimestre **sem declaração** no TOConline (ex.: início de atividade): deixar o automático e indicar no Resultado.
+- Trimestres anteriores que **já têm valor manual** na app: não mexer.
+- Cliente que **não aparece** no TOConline (nem por NIF nem por nome): tarefa **Bloqueada** com esse motivo.
+
 **Parar e avisar** (tarefa **Bloqueada**, com o motivo no Resultado):
 - a app diz que o **NIF do documento não corresponde** ao do cliente;
 - "Não foram encontradas linhas com códigos de conta reconhecidos" ou "valores não pertencem ao período";

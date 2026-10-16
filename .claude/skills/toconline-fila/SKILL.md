@@ -44,6 +44,18 @@ registas o resultado **na própria app, pela página da Fila no Chrome**.
      (Clientes → Análise financeira → cliente → Dados). Os PDFs ficam nas Transferências — o upload na app faz-se
      com a ferramenta de upload de ficheiros do Chrome. Depois, preencher à mão o **IVA por trimestre** no Dashboard
      anual (Contabilidade → Declarações → Declaração periódica → Rosto → campo 93; sem valor → campo 94 negativo).
+     Atalhos técnicos (validados em 16/10/2026, 17 clientes):
+     · Mudar de empresa **sem sair do anfitrião atual**: `https://appNN.toconline.pt/companies` (o NN da empresa
+       aberta). Abrir `app2.toconline.pt` estando noutra empresa termina a sessão.
+     · URLs diretos na empresa: `/reports-exploration-map`, `/reports-trial-balances`,
+       `/toc/accounting/reports/vat_periodic_declarations`. Nos menus de mês, abrir o dropdown, esperar 1 s e só
+       depois escolher (confirmar com zoom "janeiro (2026) → setembro (2026)" / "julho → setembro").
+     · Upload na app: o file_upload só aceita ficheiros da pasta de trabalho — copiar os PDFs das Transferências para
+       o scratchpad. Para escolher o slot sem abrir o seletor nativo, neutralizar `HTMLInputElement.prototype.click`
+       para inputs file, clicar o botão "Importar/Substituir ficheiro" do slot e repor no fim.
+     · Duas declarações no mesmo trimestre → usar a com "(1)" (a segunda). "Sub. ext." conta como entregue.
+     · Se for mais rápido, o IVA por trimestre pode ser gravado diretamente em `client_financial_settings`
+       (iva_q1..q4, só nos trimestres sem valor manual) e o resultado em `toconline_jobs` pelo Supabase.
    - `ti_rs_classificacao_efatura` / `ti_co_classificacao_efatura` → secção 6 "Classificação e-Fatura" de
      `ti-rs.md` / `ti-co.md`. Entrar no e-Fatura por **Empresa → Acesso Direto → Portal do e-fatura → Verificar faturas
      → Aceder** (nunca escrever senhas). Com n.º de diário: "Sim, despesa totalmente afeta"; sem n.º de diário: "Não"
