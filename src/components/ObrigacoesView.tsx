@@ -84,6 +84,8 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   const [onlyPending, setOnlyPending] = useState(false);
   // DMR: mostrar só quem ainda não tem a guia ou o pagamento marcado
   const [dmrMissing, setDmrMissing] = useState<"all" | "guia" | "pagamento">("all");
+  // Flexibilização: mostrar só quem ainda não tem esta parcela marcada como entregue
+  const [flexParcela, setFlexParcela] = useState<number | null>(null);
   const [selectedClient, setSelectedClient] = useState<any>(null);
 
   const referenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -106,6 +108,8 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
       setSearch("");
       if (subPage === "DMR") setDmrTab("DMR_AT");
       if (subPage === "SS_TI") setSsTiTab("SS_TI");
+      setOnlyPending(false);
+      setFlexParcela(null);
     }
   }, [subPage]);
 
@@ -497,8 +501,15 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   // DMR: guia = status "concluida"; pagamento = extra_done
   const isDmrGuiaMissing = (c: any) => oblMap[c.id]?.status !== "concluida";
   const isDmrPagamentoMissing = (c: any) => oblMap[c.id]?.extra_done !== true;
+  // SS TI e Retenção na fonte: pendente = obrigação do mês ainda não concluída
+  const hasOnlyPendingFilter = isSSTI || isRetencao;
+  const isOblPending = (c: any) => oblMap[c.id]?.status !== "concluida";
   const visibleClients = isSalarios && onlyPending
     ? filteredClients.filter(isSalarioPending)
+    : hasOnlyPendingFilter && onlyPending
+      ? filteredClients.filter(isOblPending)
+    : isIvaFlex && flexParcela && parcelas.includes(flexParcela)
+      ? filteredClients.filter((c: any) => !parcelaDone(c.id, flexParcela))
     : isDMR && dmrMissing === "guia"
       ? filteredClients.filter(isDmrGuiaMissing)
       : isDMR && dmrMissing === "pagamento"
@@ -673,6 +684,21 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
             Só pendentes ({filteredClients.filter(isSalarioPending).length})
           </button>
         )}
+        {hasOnlyPendingFilter && (
+          <button onClick={() => setOnlyPending((v) => !v)}
+            className={cn("px-3 py-2 text-sm font-medium rounded-lg border whitespace-nowrap transition-colors",
+              onlyPending ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted")}>
+            Só pendentes ({filteredClients.filter(isOblPending).length})
+          </button>
+        )}
+        {isIvaFlex && parcelas.map((p) => (
+          <button key={p} onClick={() => setFlexParcela((v) => (v === p ? null : p))}
+            title={`Mostrar só quem ainda não tem a parcela ${p} marcada como entregue`}
+            className={cn("px-3 py-2 text-sm font-medium rounded-lg border whitespace-nowrap transition-colors",
+              flexParcela === p ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground hover:text-foreground hover:bg-muted")}>
+            Parcela {p} por entregar ({filteredClients.filter((c: any) => !parcelaDone(c.id, p)).length})
+          </button>
+        ))}
         {isDMR && ([
           { id: "guia", label: "Falta guia", count: filteredClients.filter(isDmrGuiaMissing).length },
           { id: "pagamento", label: "Falta pagamento", count: filteredClients.filter(isDmrPagamentoMissing).length },
