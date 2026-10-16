@@ -1,27 +1,37 @@
 import { useMemo, useState } from "react";
-import { Search, ChevronRight, Filter, X } from "lucide-react";
+import { Search, ChevronRight, Filter, X, Check } from "lucide-react";
 import { useClients, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { useReportDeliveryStatusByYear } from "@/hooks/useClientFinancials";
 import ClientAnalysisView from "@/components/ClientAnalysisView";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { cn } from "@/lib/utils";
 
-const TYPE_CONFIG: Record<string, { label: string; tipo: string; accentClass: string }> = {
+// Cores por tipo de contabilidade: SQ azul (info), TI CO âmbar (warning), TI RS verde (success)
+const TYPE_CONFIG: Record<string, { label: string; tipo: string; avatarClass: string }> = {
   TI_simplificado: {
     label: "Análise Financeira — TI Simplificado",
     tipo: "TI RS",
-    accentClass: "text-emerald-700",
+    avatarClass: "bg-success/15 text-success",
   },
   TI_organizado: {
     label: "Análise Financeira — TI Organizado",
     tipo: "TI CO",
-    accentClass: "text-amber-700",
+    avatarClass: "bg-warning/20 text-warning-foreground",
   },
   empresas: {
     label: "Análise Financeira — Empresas",
     tipo: "SQ",
-    accentClass: "text-blue-700",
+    avatarClass: "bg-info/15 text-info",
   },
+};
+
+const initials = (name: string) =>
+  (name || "?").replace(/\b(lda|unipessoal|s\.?a\.?)\b\.?/gi, "").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  ativo: { label: "Ativo", className: "bg-success/15 text-success" },
+  a_sair: { label: "A sair", className: "bg-warning/20 text-warning-foreground" },
+  inativo: { label: "Inativo", className: "bg-muted text-muted-foreground" },
 };
 
 export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) {
@@ -63,6 +73,14 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
       )
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [clients, cfg.tipo, search, ivaFilter, respFilter, statusFilter]);
+
+  // Relatórios entregues por trimestre (clientes da lista)
+  const reportsByQuarter = [1, 2, 3, 4].map((q) =>
+    filtered.filter((c: any) => {
+      const st = statusByClient.get(c.id);
+      return st ? Boolean(st[`relatorio_q${q}_entregue` as keyof typeof st]) : false;
+    }).length,
+  );
 
   const activeFilters = (ivaFilter ? 1 : 0) + (respFilter ? 1 : 0) + (statusFilter !== "ativo" ? 1 : 0);
 
@@ -150,70 +168,105 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
           Não existem clientes neste regime.
         </div>
       ) : (
-        <div className="rounded-xl border bg-card overflow-hidden">
+        <>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {reportsByQuarter.map((done, i) => {
+            const pct = filtered.length ? Math.round((done / filtered.length) * 100) : 0;
+            return (
+              <div key={i} className="rounded-xl border bg-card px-4 py-3">
+                <div className="text-xs font-medium text-muted-foreground">Relatórios {i + 1}º trimestre {year}</div>
+                <div className="mt-1 flex items-baseline gap-1.5">
+                  <span className="text-xl font-bold tabular-nums">{done}</span>
+                  <span className="text-sm text-muted-foreground">/ {filtered.length} entregues</span>
+                </div>
+                <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
           <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Nome</th>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-40">Relatórios entregues</th>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-40">Responsável</th>
-                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Estado</th>
+            <thead className="bg-muted/40 border-b">
+              <tr className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                <th className="text-left px-5 py-3 font-semibold">Cliente</th>
+                <th className="text-left px-4 py-3 font-semibold w-56">Relatórios entregues {year}</th>
+                <th className="text-left px-4 py-3 font-semibold w-48">Responsável</th>
+                <th className="text-left px-4 py-3 font-semibold w-28">Estado</th>
                 <th className="w-10"></th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-border/60">
               {filtered.map((c: any) => {
                 const resp = collaborators.find((col: any) => col.id === c.responsavel_id);
+                const st = statusByClient.get(c.id);
+                const doneQs = [1, 2, 3, 4].map((q) => (st ? Boolean(st[`relatorio_q${q}_entregue` as keyof typeof st]) : false));
+                const badge = STATUS_BADGE[c.status || "ativo"] ?? STATUS_BADGE.ativo;
                 return (
                   <tr
                     key={c.id}
                     onClick={() => setSelectedId(c.id)}
-                    className="hover:bg-muted/40 cursor-pointer transition-colors"
+                    className="group hover:bg-primary/5 cursor-pointer transition-colors"
                   >
-                    <td className={`px-4 py-2.5 font-medium ${cfg.accentClass}`}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setFichaClient(c); }}
-                        className="hover:underline text-left"
-                        title="Abrir ficha do cliente"
-                      >
-                        {c.name}
-                      </button>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4].map((q) => {
-                          const st = statusByClient.get(c.id);
-                          const done = st ? Boolean(st[`relatorio_q${q}_entregue` as keyof typeof st]) : false;
-                          return (
-                            <button
-                              key={q}
-                              onClick={(e) => { e.stopPropagation(); setSelectedId(c.id); }}
-                              title={`${q}º trimestre — ${done ? "entregue" : "por entregar"}`}
-                              className={cn(
-                                "w-6 h-6 rounded-full text-[10px] font-semibold flex items-center justify-center transition-colors",
-                                done ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-muted text-muted-foreground hover:bg-muted/70",
-                              )}
-                            >
-                              {q}
-                            </button>
-                          );
-                        })}
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className={cn("w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-xs font-bold", cfg.avatarClass)}>
+                          {initials(c.name)}
+                        </div>
+                        <div className="min-w-0">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setFichaClient(c); }}
+                            className="font-semibold text-foreground hover:text-primary hover:underline text-left truncate block max-w-full"
+                            title="Abrir ficha do cliente"
+                          >
+                            {c.name}
+                          </button>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {c.nif && <span className="tabular-nums">NIF {c.nif}</span>}
+                            {c.iva && <span className="rounded bg-muted px-1.5 py-px text-[10px] font-medium">IVA {c.iva}</span>}
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{resp?.name || "—"}</td>
-                    <td className="px-4 py-2.5">
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                        (c.status || "ativo") === "ativo"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : c.status === "a_sair"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-muted text-muted-foreground"
-                      }`}>
-                        {(c.status || "ativo") === "ativo" ? "Ativo" : c.status === "a_sair" ? "A sair" : "Inativo"}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        {doneQs.map((done, i) => (
+                          <span
+                            key={i}
+                            title={`${i + 1}º trimestre — ${done ? "entregue" : "por entregar"}`}
+                            className={cn(
+                              "h-7 min-w-9 px-1.5 rounded-md text-[11px] font-semibold flex items-center justify-center gap-0.5 border",
+                              done ? "bg-success/15 text-success border-success/30" : "bg-background text-muted-foreground border-dashed",
+                            )}
+                          >
+                            {done && <Check className="w-3 h-3" />}{i + 1}T
+                          </span>
+                        ))}
+                        <span className="ml-1 text-xs text-muted-foreground tabular-nums">{doneQs.filter(Boolean).length}/4</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      {resp ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
+                            {initials(resp.name)}
+                          </div>
+                          <span className="text-foreground/80">{resp.name}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold", badge.className)}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        {badge.label}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5">
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    <td className="px-3 py-3">
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
                     </td>
                   </tr>
                 );
@@ -221,6 +274,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <ClientDetailDialog
