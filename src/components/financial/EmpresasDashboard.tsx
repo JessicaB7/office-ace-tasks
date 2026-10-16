@@ -13,6 +13,7 @@ import {
 } from "@/hooks/useClientFinancials";
 import { buildEntryMap, MONTHS_PT, fmtEur, sumSectionMonth, sumGroupMonth } from "./financialMath";
 import { cn } from "@/lib/utils";
+import { RobotButton } from "./RobotAnaliseDialog";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
 
@@ -244,6 +245,29 @@ export default function EmpresasDashboard({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
+        <RobotButton client={client} year={year} dashboard={{
+          faturacao: totalRendimentos,
+          resultado,
+          impostos: [
+            ivaRegime === "mensal"
+              ? { imposto: "IVA (mensal)", linhas: [...ivaMensal.map((v, i) => ({ descricao: MONTHS_PT[i], valor: v })).filter((l) => l.valor !== 0), { descricao: "Total do ano", valor: totalIva }], nota: "positivo = a pagar; negativo = a recuperar" }
+              : { imposto: "IVA (trimestral)", linhas: [{ descricao: "Total do ano", valor: totalIva }], porTrimestre: ivaTrim, nota: "positivo = a pagar; negativo = a recuperar" },
+            {
+              imposto: ircRegime === "simplificado" ? "IRC (regime simplificado) — estimativa" : "IRC — estimativa",
+              linhas: [
+                { descricao: "Matéria coletável", valor: baseTributavel },
+                { descricao: `IRC (${ircMarginal})`, valor: ircBase },
+                { descricao: `Derrama (${(derramaTaxa * 100).toLocaleString("pt-PT")}%)`, valor: derrama },
+                ...(taRep ? [{ descricao: "Tributação autónoma — despesas de representação (10%)", valor: taRep }] : []),
+                ...(taAj ? [{ descricao: "Tributação autónoma — ajudas de custo e km (5%)", valor: taAj }] : []),
+                ...(taNaoDoc ? [{ descricao: "Tributação autónoma — despesas não documentadas", valor: taNaoDoc }] : []),
+                ...(taViaturas ? [{ descricao: "Tributação autónoma — viaturas", valor: taViaturas }] : []),
+                { descricao: "Total estimado (IRC + derrama + tributações autónomas)", valor: ircTotal },
+              ],
+              nota: "estimativa sobre o resultado acumulado até ao momento",
+            },
+          ],
+        }} />
         <Button onClick={exportPDF} disabled={exporting} size="sm" variant="outline">
           <Download className="h-4 w-4 mr-2" />
           {exporting ? "A exportar..." : "Exportar PDF"}

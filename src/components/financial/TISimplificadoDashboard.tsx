@@ -20,6 +20,7 @@ import {
   sumSectionMonth,
 } from "./financialMath";
 import { cn } from "@/lib/utils";
+import { RobotButton } from "./RobotAnaliseDialog";
 
 const IVA_VENDAS = ["24331111", "24333311", "24341331"];
 const IVA_COMPRAS = ["24323111", "24323211", "24323311", "24342"];
@@ -341,6 +342,25 @@ export default function TISimplificadoDashboard({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-end gap-3 flex-wrap">
+        <RobotButton client={client} year={year} dashboard={{
+          faturacao: totalFat,
+          resultado,
+          impostos: [
+            { imposto: "IVA (trimestral)", linhas: [{ descricao: "Total do ano", valor: totalIva }], porTrimestre: ivaTrim, nota: "positivo = a pagar; negativo = a recuperar" },
+            { imposto: "Segurança Social", linhas: [{ descricao: "Total do ano", valor: totalSS }], porTrimestre: ssQuarters },
+            {
+              imposto: "IRS (regime simplificado) — estimativa",
+              linhas: [
+                { descricao: `Rendimento coletável (faturação × ${coef.toLocaleString("pt-PT")})`, valor: rendimentoColectavel },
+                { descricao: "IRS calculado", valor: irsEstimado },
+                { descricao: "Deduções à coleta", valor: deducoes },
+                { descricao: "Retenção na fonte e pagamentos por conta", valor: retencoes },
+                { descricao: irsLiquido >= 0 ? "IRS a pagar" : "IRS a receber", valor: Math.abs(irsLiquido) },
+              ],
+              nota: "estimativa sobre a faturação acumulada até ao momento",
+            },
+          ],
+        }} />
         <Button onClick={exportPDF} disabled={exporting} size="sm" variant="outline">
           <Download className="h-4 w-4 mr-2" />
           {exporting ? "A exportar..." : "Exportar PDF"}

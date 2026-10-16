@@ -21,6 +21,7 @@ import {
   closeRepeatedQuarterValues,
 } from "./financialMath";
 import { cn } from "@/lib/utils";
+import { RobotButton } from "./RobotAnaliseDialog";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
 
@@ -289,6 +290,24 @@ export default function TIOrganizadoDashboard({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
+        <RobotButton client={client} year={year} dashboard={{
+          faturacao: totalFat,
+          resultado,
+          impostos: [
+            { imposto: "IVA (trimestral)", linhas: [{ descricao: "Total do ano", valor: totalIva }], porTrimestre: ivaTrim, nota: "positivo = a pagar; negativo = a recuperar" },
+            {
+              imposto: "IRS (contabilidade organizada) — estimativa",
+              linhas: [
+                { descricao: "Rendimento coletável (resultado)", valor: Math.max(0, resultado) },
+                { descricao: "IRS calculado", valor: irsOrganizado },
+                { descricao: "Deduções à coleta", valor: deducoes },
+                { descricao: "Retenção na fonte e pagamentos por conta", valor: retencoes },
+                { descricao: irsOrganizadoLiquido >= 0 ? "IRS a pagar" : "IRS a receber", valor: Math.abs(irsOrganizadoLiquido) },
+              ],
+              nota: "estimativa sobre o resultado acumulado até ao momento",
+            },
+          ],
+        }} />
         <Button onClick={exportPDF} disabled={exporting} size="sm" variant="outline">
           <Download className="h-4 w-4 mr-2" />
           {exporting ? "A exportar..." : "Exportar PDF"}

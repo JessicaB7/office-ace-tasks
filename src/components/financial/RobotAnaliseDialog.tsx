@@ -6,18 +6,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useClientFinancialEntries, useClientFinancialSettings, useFinancialAccounts } from "@/hooks/useClientFinancials";
-import { buildRobotResumo } from "@/lib/robotAnalise";
+import { buildRobotResumo, type RobotDashboard } from "@/lib/robotAnalise";
 
-/** Robot: escreve o texto da análise financeira do ano para enviar ao cliente. */
-export default function RobotAnaliseDialog({ open, onClose, client, year }: {
+/** Robot: escreve o texto da análise financeira do ano para enviar ao cliente.
+ * `dashboard` traz os totais e os impostos tal como o dashboard do regime os mostra. */
+export default function RobotAnaliseDialog({ open, onClose, client, year, dashboard }: {
   open: boolean;
   onClose: () => void;
   client: { id: string; name: string; tipo_contabilidade?: string | null };
   year: number;
+  dashboard: RobotDashboard;
 }) {
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: entries = [] } = useClientFinancialEntries(client.id, year);
-  const { data: prevEntries = [] } = useClientFinancialEntries(client.id, year - 1);
   const { data: settings } = useClientFinancialSettings(client.id, year);
   const [pedido, setPedido] = useState("");
   const [texto, setTexto] = useState("");
@@ -25,7 +26,7 @@ export default function RobotAnaliseDialog({ open, onClose, client, year }: {
 
   const gerar = async () => {
     if (!settings) return;
-    const resumo = buildRobotResumo({ regime: client.tipo_contabilidade || "SQ", year, accounts, entries, settings, prevEntries });
+    const resumo = buildRobotResumo({ regime: client.tipo_contabilidade || "SQ", year, accounts, entries, settings, dashboard });
     if (resumo.ultimoMes === 0) {
       toast.error(`Não há dados de ${year} para analisar — importe primeiro os mapas.`);
       return;
@@ -86,5 +87,18 @@ export default function RobotAnaliseDialog({ open, onClose, client, year }: {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Botão "Robot" + diálogo, para pôr ao lado do "Exportar PDF" de cada dashboard. */
+export function RobotButton(props: { client: { id: string; name: string; tipo_contabilidade?: string | null }; year: number; dashboard: RobotDashboard }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button onClick={() => setOpen(true)} size="sm" variant="outline" title="O robot escreve o texto da análise para enviar ao cliente">
+        <Bot className="h-4 w-4 mr-2" /> Robot
+      </Button>
+      {open && <RobotAnaliseDialog open onClose={() => setOpen(false)} {...props} />}
+    </>
   );
 }
