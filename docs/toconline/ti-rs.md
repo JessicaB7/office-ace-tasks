@@ -139,8 +139,9 @@ trimestre** (Mar / Jun / Set / Dez). Se a tarefa estiver noutro mês, usar o tri
    - Trimestre sem declaração entregue → deixar o automático e indicar no Resultado "IVA <trimestre> por entregar".
 
 **Regras aprendidas (out. 2026)**
-- **Criação automática:** a tarefa entra sozinha na Fila quando o IVA Periódica de Mar/Jun/Set/Dez é marcado
-  "Entregue" (só clientes ativos e se o balancete desse trimestre ainda não estiver importado).
+- **Aviso à admin:** quando um colaborador marca o IVA Periódica de Mar/Jun/Set/Dez como "Entregue", a admin
+  recebe uma notificação "IVA entregue" com o botão **Ativar Mapa de análise** — a tarefa só entra na Fila quando
+  é ativada (só clientes ativos e se o balancete desse trimestre ainda não estiver importado).
 - **Exercício:** confirmar sempre que o mapa/balancete mostra meses "(2026)". Se o TOConline abrir no exercício
   anterior: **Contabilidade → Exercícios → ENTRAR** na linha de 2026.
 - **Mais do que uma declaração no mesmo trimestre** (ex.: "2º trimestre" e "2º trimestre (1)"): usar sempre a

@@ -8,6 +8,7 @@ import { pt } from "date-fns/locale";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useActivateToconlineJobs } from "@/hooks/useToconlineJobs";
 
 const typeIcon: Record<string, string> = {
   task_assigned: "📋",
@@ -15,7 +16,15 @@ const typeIcon: Record<string, string> = {
   weekly_digest: "📅",
   daily_summary: "📊",
   calendly_lead: "📅",
+  iva_entregue: "🧾",
   info: "ℹ️",
+};
+
+/** Dados da notificação "IVA entregue": a tarefa a ativar na Fila TOConline. */
+type MapaJobData = { procedure_id: string; client_id: string; reference_month: string };
+const mapaJob = (n: { type: string; data?: unknown }): MapaJobData | null => {
+  const d = n.data as Partial<MapaJobData> | null | undefined;
+  return n.type === "iva_entregue" && d?.procedure_id && d.client_id && d.reference_month ? (d as MapaJobData) : null;
 };
 
 const NotificationBell = () => {
@@ -28,6 +37,9 @@ const NotificationBell = () => {
   const markAllRead = useMarkAllRead();
   const { user } = useAuth();
   const instanceId = useId();
+  const activateJobs = useActivateToconlineJobs();
+  const activate = (job: MapaJobData) =>
+    activateJobs.mutate({ procedureId: job.procedure_id, clientIds: [job.client_id], referenceMonth: job.reference_month, userId: user?.id });
 
   // Pop up de cada notificação nova (canal Realtime próprio, separado do da lista)
   useEffect(() => {
@@ -38,13 +50,16 @@ const NotificationBell = () => {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
         (payload) => {
-          const n = payload.new as { title: string; message: string | null; type: string };
+          const n = payload.new as { title: string; message: string | null; type: string; data?: unknown };
+          const job = mapaJob(n);
           toast(`${typeIcon[n.type] || "ℹ️"} ${n.title}`, {
             description: n.message ?? undefined,
             // As marcações do Calendly ficam no ecrã até serem fechadas
-            duration: n.type === "calendly_lead" ? Infinity : 8000,
+            duration: n.type === "calendly_lead" || job ? Infinity : 8000,
             closeButton: true,
-            action: { label: "Ver", onClick: () => setOpen(true) },
+            action: job
+              ? { label: "Ativar Mapa de análise", onClick: () => activate(job) }
+              : { label: "Ver", onClick: () => setOpen(true) },
           });
         }
       )
@@ -52,7 +67,7 @@ const NotificationBell = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, instanceId]);
+  }, [user?.id, instanceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -113,6 +128,19 @@ const NotificationBell = () => {
                   <div className="flex-1 min-w-0">
                     <p className={cn("text-sm", !n.read && "font-semibold")}>{n.title}</p>
                     {n.message && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>}
+                    {mapaJob(n) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          activate(mapaJob(n)!);
+                          if (!n.read) markRead.mutate(n.id);
+                        }}
+                        disabled={activateJobs.isPending}
+                        className="mt-1.5 text-xs font-medium px-2 py-1 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        Ativar Mapa de análise
+                      </button>
+                    )}
                     <p className="text-[11px] text-muted-foreground mt-1">
                       {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: pt })}
                     </p>
