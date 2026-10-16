@@ -345,9 +345,9 @@ export default function TISimplificadoDashboard({
         <RobotButton client={client} year={year} dashboard={{
           faturacao: totalFat,
           resultado,
+          despesas: totalDesp + outrasValor,
           impostos: [
-            { imposto: "IVA (trimestral)", linhas: [{ descricao: "Total do ano", valor: totalIva }], porTrimestre: ivaTrim, nota: "positivo = a pagar; negativo = a recuperar" },
-            { imposto: "Segurança Social", linhas: [{ descricao: "Total do ano", valor: totalSS }], porTrimestre: ssQuarters },
+            { imposto: "Segurança Social (valor pago)", linhas: [{ descricao: "Total pago no período", valor: totalSS }], porTrimestre: ssQuarters },
             {
               imposto: "IRS (regime simplificado) — estimativa",
               linhas: [
@@ -358,6 +358,16 @@ export default function TISimplificadoDashboard({
                 { descricao: irsLiquido >= 0 ? "IRS a pagar" : "IRS a receber", valor: Math.abs(irsLiquido) },
               ],
               nota: "estimativa sobre a faturação acumulada até ao momento",
+            },
+            {
+              imposto: "Comparação: regime simplificado vs contabilidade organizada",
+              linhas: [
+                { descricao: irsLiquido >= 0 ? "Regime simplificado — IRS a pagar" : "Regime simplificado — IRS a receber", valor: Math.abs(irsLiquido) },
+                { descricao: "Contabilidade organizada — rendimento coletável (resultado)", valor: Math.max(0, resultadoOrganizado) },
+                { descricao: irsOrganizadoLiquido >= 0 ? "Contabilidade organizada — IRS a pagar" : "Contabilidade organizada — IRS a receber", valor: Math.abs(irsOrganizadoLiquido) },
+                { descricao: diffRegimes === 0 ? "Ambos os regimes dão o mesmo IRS" : diffRegimes > 0 ? "Poupança estimada com contabilidade organizada" : "Poupança estimada com o regime simplificado", valor: Math.abs(diffRegimes) },
+              ],
+              nota: "simulação com os valores até ao momento",
             },
           ],
         }} />

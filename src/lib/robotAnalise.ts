@@ -21,6 +21,8 @@ export interface RobotImposto {
 export interface RobotDashboard {
   faturacao: number;
   resultado: number;
+  /** Despesas a mostrar; por defeito faturação − resultado. */
+  despesas?: number;
   impostos: RobotImposto[];
 }
 
@@ -75,7 +77,7 @@ export function buildRobotResumo(args: {
     ultimoMes: last,
     geral: {
       faturacao,
-      despesas: r2(faturacao - resultado),
+      despesas: r2(dashboard.despesas ?? faturacao - resultado),
       resultado,
       margemPct: faturacao ? r2((resultado / faturacao) * 100) : null,
     },
