@@ -5,17 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDeadlineOverrides } from "@/hooks/useSupabaseQuery";
 import { makeDayResolver } from "@/lib/deadlineOverrides";
 import { cn } from "@/lib/utils";
-import { clientObligationsFor, obligationState, annualObligationsFor, type ObligationState } from "@/lib/clientObligations";
+import { clientObligationsFor, obligationState, annualObligationsFor, STATE_UI } from "@/lib/clientObligations";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-
-const STATE_UI: Record<ObligationState, { label: string; cls: string }> = {
-  concluida: { label: "Concluída", cls: "bg-success/15 text-success" },
-  parcial: { label: "Em curso", cls: "bg-warning/20 text-warning-foreground" },
-  pendente: { label: "Pendente", cls: "bg-destructive/10 text-destructive" },
-  nao_aplicavel: { label: "Não aplicável", cls: "bg-muted text-muted-foreground" },
-  fora_periodo: { label: "Fora do período", cls: "bg-muted text-muted-foreground" },
-};
 
 interface Props {
   clientId: string;

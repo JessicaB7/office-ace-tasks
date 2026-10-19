@@ -28,6 +28,15 @@ describe("isColumnApplicable — IVA", () => {
   });
 });
 
+describe("isColumnApplicable — Depreciações", () => {
+  it("só existe a partir de janeiro de 2027", () => {
+    expect(isColumnApplicable({}, "Depreciações", "2026-12-01")).toBe(false);
+    expect(isColumnOffMonth({}, "Depreciações", "2026-09-01")).toBe(true);
+    expect(isColumnApplicable({}, "Depreciações", "2027-01-01")).toBe(true);
+    expect(isColumnOffMonth({}, "Depreciações", "2027-02-01")).toBe(false);
+  });
+});
+
 describe("ivaObligationTypeFor — ligação ao IVA Periódica", () => {
   it("usa a tarefa IVA do regime do cliente", () => {
     expect(ivaObligationTypeFor({ tipo_contabilidade: "TI RS", iva: "Mensal" })).toBe("contabilidade_TI_iva_iva");

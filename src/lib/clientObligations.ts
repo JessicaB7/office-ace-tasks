@@ -20,6 +20,15 @@ export interface ClientObligation {
 
 export type ObligationState = "concluida" | "parcial" | "pendente" | "nao_aplicavel" | "fora_periodo";
 
+/** Etiqueta e cores (tokens) de cada estado, partilhadas pelas vistas de obrigações do cliente. */
+export const STATE_UI: Record<ObligationState, { label: string; cls: string }> = {
+  concluida: { label: "Concluída", cls: "bg-success/15 text-success" },
+  parcial: { label: "Em curso", cls: "bg-warning/20 text-warning-foreground" },
+  pendente: { label: "Pendente", cls: "bg-destructive/10 text-destructive" },
+  nao_aplicavel: { label: "Não aplicável", cls: "bg-muted text-muted-foreground" },
+  fora_periodo: { label: "Fora do período", cls: "bg-muted text-muted-foreground" },
+};
+
 export interface AnnualObligation {
   label: string;
   prazo: string;

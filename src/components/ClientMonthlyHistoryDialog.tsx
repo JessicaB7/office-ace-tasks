@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { formatDurationClock } from "@/lib/formatDuration";
 import MonthlyNoteCell from "@/components/MonthlyNoteCell";
+import ClientObrigacoesAnoTable from "@/components/ClientObrigacoesAnoTable";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { isColumnApplicable, isColumnOffMonth, isObligationSatisfied } from "@/lib/contabilidadesConfig";
@@ -515,6 +516,14 @@ const ClientMonthlyHistoryDialog = ({
               </table>
             </div>
           )}
+        </div>
+
+        <div className="bg-card rounded-2xl border p-5 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className="font-semibold text-sm">Obrigações fiscais — {historyYear}</h3>
+            <span className="text-[11px] text-muted-foreground">Estado registado em Obrigações (marca-se lá)</span>
+          </div>
+          <ClientObrigacoesAnoTable client={client} year={historyYear} referenceMonth={referenceMonth} />
         </div>
       </div>
     );

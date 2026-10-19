@@ -29,16 +29,20 @@ export const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
     filter: (c) => c.tipo_contabilidade === "TI CO",
     hideNif: true,
     gallery: true,
-    columns: ["Vendas", "Compras", "Bancos", "Salários", "E-Fatura", "IVA"],
+    columns: ["Vendas", "Compras", "Bancos", "Salários", "Depreciações", "E-Fatura", "IVA"],
   },
   empresas: {
     label: "Empresas",
     filter: (c) => c.tipo_contabilidade === "SQ",
     hideNif: true,
     gallery: true,
-    columns: ["Vendas", "Compras", "Bancos", "Salários", "IVA"],
+    columns: ["Vendas", "Compras", "Bancos", "Salários", "Depreciações", "IVA"],
   },
 };
+
+/** Primeiro mês com a tarefa "Depreciações" (começa no ano novo) — os meses
+ * anteriores fecham-se sem ela e não aparecem como por concluir. */
+export const DEPRECIACOES_FROM = "2027-01-01";
 
 /** Chaves dos tipos de obrigação mensal para um dado regime (as mesmas usadas em
  * `monthly_obligations.obligation_type`), replicando a lógica de ContabilidadesView. */
@@ -55,12 +59,14 @@ export const isQuarterEndMonth = (month: string): boolean => Number(month.slice(
 /** Uma coluna pode não se aplicar a um cliente específico, apesar de existir
  * no regime:
  * - "Salários" quando a ficha tem `salarios === "Não tem"`;
+ * - "Depreciações" nos meses anteriores a DEPRECIACOES_FROM;
  * - "IVA" quando o cliente é isento; no IVA trimestral só existe no último mês
  *   do trimestre (apuramento), no mensal existe todos os meses.
  * Nesse caso a coluna conta sempre como satisfeita. `month` ("YYYY-MM-01") é
  * preciso para o IVA trimestral; sem ele assume-se que se aplica. */
 export const isColumnApplicable = (client: any, column: string, month?: string): boolean => {
   if (column === "Salários" && client?.salarios === "Não tem") return false;
+  if (column === "Depreciações") return !month || month >= DEPRECIACOES_FROM;
   if (column === "IVA") {
     if (client?.iva === "Mensal") return true;
     if (client?.iva === "Trimestral") return month ? isQuarterEndMonth(month) : true;
@@ -72,7 +78,8 @@ export const isColumnApplicable = (client: any, column: string, month?: string):
 /** A coluna existe para o cliente mas não neste mês (IVA trimestral fora do fim
  * do trimestre) — mostra-se vazia em vez de "Não aplicável". */
 export const isColumnOffMonth = (client: any, column: string, month: string): boolean =>
-  column === "IVA" && client?.iva === "Trimestral" && !isQuarterEndMonth(month);
+  (column === "IVA" && client?.iva === "Trimestral" && !isQuarterEndMonth(month)) ||
+  (column === "Depreciações" && month < DEPRECIACOES_FROM);
 
 /** Nome da tarefa para o cliente: no IVA trimestral é o apuramento do trimestre. */
 export const columnLabel = (client: any, column: string): string =>
