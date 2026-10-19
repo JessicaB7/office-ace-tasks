@@ -641,6 +641,47 @@ export type Database = {
         }
         Relationships: []
       }
+      consultoria_forms: {
+        Row: {
+          answers: Json
+          created_at: string
+          form_sent_at: string | null
+          id: string
+          lead_id: string
+          submitted_at: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          form_sent_at?: string | null
+          id?: string
+          lead_id: string
+          submitted_at?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          form_sent_at?: string | null
+          id?: string
+          lead_id?: string
+          submitted_at?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consultoria_forms_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -1269,9 +1310,17 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_consultoria_form: {
+        Args: { _token: string }
+        Returns: Json
+      }
       get_onboarding_form: {
         Args: { _token: string }
         Returns: Json
+      }
+      submit_consultoria_form: {
+        Args: { _answers: Json; _token: string }
+        Returns: boolean
       }
       submit_onboarding_form: {
         Args: { _answers: Json; _secrets: Json; _token: string }

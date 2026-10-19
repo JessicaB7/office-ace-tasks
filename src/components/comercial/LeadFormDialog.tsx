@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { stagesFor, BUSINESS_TYPES, IVA_FRAMEWORKS } from "./leadConstants";
 import { toast } from "sonner";
+import { useConsultoriaForm } from "@/hooks/useConsultoriaForms";
+import ConsultoriaFormCard from "./ConsultoriaFormCard";
 
 interface Props {
   open: boolean;
@@ -40,6 +42,7 @@ const empty = {
 const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) => {
   const [form, setForm] = useState({ ...empty });
   const upsert = useUpsertLead();
+  const consultoriaForm = useConsultoriaForm(open && lead?.segment === "consultoria" ? lead.id : null);
 
   useEffect(() => {
     if (!open) return;
@@ -304,8 +307,12 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
               </div>
             </>
           )}
+          {isConsultoria && consultoriaForm.data && (
+            <div className="sm:col-span-2">
+              <ConsultoriaFormCard form={consultoriaForm.data} name={form.name} sessionDate={form.meeting_date} />
+            </div>
+          )}
           <div className="sm:col-span-2">
-
             <Label>Notas</Label>
             <Textarea rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>

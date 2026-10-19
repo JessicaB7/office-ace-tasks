@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import ClientObrigacoesTab from "@/components/ClientObrigacoesTab";
+import { ConsultoriaAnswers } from "@/components/comercial/ConsultoriaFormCard";
+import { useClientConsultoriaForms } from "@/hooks/useConsultoriaForms";
 
 const TIPO_CONTAB_OPTIONS = [
   { value: "SQ", label: "Empresa (SQ)" },
@@ -143,6 +145,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
   const [activeTab, setActiveTab] = useState("dados");
 
   const isEditing = !!client;
+  const { data: consultoriaForms = [] } = useClientConsultoriaForms(client?.id, client?.nif);
 
   useEffect(() => {
     if (client) {
@@ -277,6 +280,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
               <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
               <TabsTrigger value="enquadramento" className="flex-1">Enquadramento</TabsTrigger>
               {isEditing && <TabsTrigger value="obrigacoes" className="flex-1">Obrigações fiscais</TabsTrigger>}
+              {consultoriaForms.length > 0 && <TabsTrigger value="consultoria" className="flex-1">Consultoria</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="dados" className="space-y-4 pt-2">
@@ -443,6 +447,21 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
             {isEditing && (
               <TabsContent value="obrigacoes" className="pt-2">
                 <ClientObrigacoesTab clientId={client.id} client={form} />
+              </TabsContent>
+            )}
+
+            {consultoriaForms.length > 0 && (
+              <TabsContent value="consultoria" className="space-y-4 pt-2">
+                {consultoriaForms.map((f) => (
+                  <div key={f.id} className="rounded-lg border p-3 space-y-3">
+                    <p className="text-xs text-muted-foreground">
+                      Formulário da consultoria · respondido em {new Date(f.submitted_at!).toLocaleDateString("pt-PT")}
+                      {f.lead?.meeting_date && ` · sessão a ${new Date(`${f.lead.meeting_date}T12:00:00`).toLocaleDateString("pt-PT")}`}
+                      {f.lead?.given_by && ` · dada por ${f.lead.given_by}`}
+                    </p>
+                    <ConsultoriaAnswers form={f} />
+                  </div>
+                ))}
               </TabsContent>
             )}
           </Tabs>

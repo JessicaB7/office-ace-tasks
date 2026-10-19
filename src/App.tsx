@@ -10,6 +10,7 @@ import ResetPassword from "./pages/ResetPassword.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Unsubscribe from "./pages/Unsubscribe.tsx";
 import OnboardingForm from "./pages/OnboardingForm.tsx";
+import ConsultoriaForm from "./pages/ConsultoriaForm.tsx";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/formulario/:token" element={<OnboardingForm />} />
+            <Route path="/consultoria/:token" element={<ConsultoriaForm />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
