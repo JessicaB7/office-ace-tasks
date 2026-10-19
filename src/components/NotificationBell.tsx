@@ -17,6 +17,7 @@ const typeIcon: Record<string, string> = {
   daily_summary: "📊",
   calendly_lead: "📅",
   iva_entregue: "🧾",
+  consultoria_form_submitted: "⚡",
   info: "ℹ️",
 };
 
@@ -54,8 +55,8 @@ const NotificationBell = () => {
           const job = mapaJob(n);
           toast(`${typeIcon[n.type] || "ℹ️"} ${n.title}`, {
             description: n.message ?? undefined,
-            // As marcações do Calendly ficam no ecrã até serem fechadas
-            duration: n.type === "calendly_lead" || job ? Infinity : 8000,
+            // Marcações do Calendly e formulários de consultoria ficam no ecrã até serem fechados
+            duration: n.type === "calendly_lead" || n.type === "consultoria_form_submitted" || job ? Infinity : 8000,
             closeButton: true,
             action: job
               ? { label: "Ativar Mapa de análise", onClick: () => activate(job) }

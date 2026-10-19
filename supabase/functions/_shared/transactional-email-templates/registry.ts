@@ -14,6 +14,7 @@ import { template as weeklyTasksDigest } from './weekly-tasks-digest.tsx'
 import { template as dailyCompletedSummary } from './daily-completed-summary.tsx'
 import { template as dailyTasksReminder } from './daily-tasks-reminder.tsx'
 import { template as monthlyObligationsReminder } from './monthly-obligations-reminder.tsx'
+import { template as consultoriaFormSubmitted } from './consultoria-form-submitted.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'task-assignment': taskAssignment,
@@ -21,4 +22,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'daily-completed-summary': dailyCompletedSummary,
   'daily-tasks-reminder': dailyTasksReminder,
   'monthly-obligations-reminder': monthlyObligationsReminder,
+  'consultoria-form-submitted': consultoriaFormSubmitted,
 }
