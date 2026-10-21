@@ -35,6 +35,16 @@ describe("isColumnApplicable — Depreciações", () => {
     expect(isColumnApplicable({}, "Depreciações", "2027-01-01")).toBe(true);
     expect(isColumnOffMonth({}, "Depreciações", "2027-02-01")).toBe(false);
   });
+
+  it("depende dos ativos da ficha (sim/não e desde quando)", () => {
+    expect(isColumnApplicable({ ativos: false }, "Depreciações", "2027-03-01")).toBe(false);
+    expect(isColumnOffMonth({ ativos: false }, "Depreciações", "2027-03-01")).toBe(false);
+    const c = { ativos: true, ativos_desde: "2027-04-15" };
+    expect(isColumnApplicable(c, "Depreciações", "2027-03-01")).toBe(false);
+    expect(isColumnOffMonth(c, "Depreciações", "2027-03-01")).toBe(true);
+    expect(isColumnApplicable(c, "Depreciações", "2027-04-01")).toBe(true);
+    expect(isColumnApplicable({ ativos: true, ativos_desde: "2020-01-01" }, "Depreciações", "2026-12-01")).toBe(false);
+  });
 });
 
 describe("ivaObligationTypeFor — ligação ao IVA Periódica", () => {

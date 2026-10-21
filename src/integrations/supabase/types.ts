@@ -387,6 +387,8 @@ export type Database = {
       clients: {
         Row: {
           active: boolean
+          ativos: boolean | null
+          ativos_desde: string | null
           address: string | null
           created_at: string
           email: string | null
@@ -432,6 +434,8 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          ativos?: boolean | null
+          ativos_desde?: string | null
           address?: string | null
           created_at?: string
           email?: string | null
@@ -477,6 +481,8 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          ativos?: boolean | null
+          ativos_desde?: string | null
           address?: string | null
           created_at?: string
           email?: string | null

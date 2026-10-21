@@ -82,6 +82,47 @@ const ReportDeliverySection = ({ clientId, year }: { clientId: string; year: num
 
 /** Notas gerais do cliente (campo `clients.notas_internas`) — ao contrário das
  * notas do mês, não estão presas a um mês: aparecem sempre, em qualquer mês. */
+/** Ativos (TI Organizado e Empresas): sim/não e desde quando — decide se há a
+ * tarefa mensal "Depreciações" (ver isColumnApplicable). */
+const AtivosField = ({ client }: { client: any }) => {
+  const upsertClient = useUpsertClient();
+  const save = (patch: { ativos?: boolean | null; ativos_desde?: string | null }) =>
+    upsertClient.mutate({ id: client.id, name: client.name, ...patch });
+  const value = client.ativos === true ? "sim" : client.ativos === false ? "nao" : "";
+  return (
+    <div className="min-w-0">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Ativos</div>
+      <div className="flex items-center gap-1.5 mt-0.5">
+        <select
+          value={value}
+          onChange={(e) => {
+            const v = e.target.value;
+            save(v === "sim" ? { ativos: true } : v === "nao" ? { ativos: false, ativos_desde: null } : { ativos: null, ativos_desde: null });
+          }}
+          disabled={upsertClient.isPending}
+          aria-label="Tem ativos"
+          className="text-sm px-1.5 py-0.5 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">—</option>
+          <option value="sim">Sim</option>
+          <option value="nao">Não</option>
+        </select>
+        {client.ativos === true && (
+          <input
+            type="date"
+            defaultValue={client.ativos_desde || ""}
+            key={client.ativos_desde || ""}
+            onBlur={(e) => { if ((e.target.value || null) !== (client.ativos_desde || null)) save({ ativos_desde: e.target.value || null }); }}
+            aria-label="Ativos desde"
+            title="Desde quando tem ativos"
+            className="min-w-0 text-sm px-1.5 py-0.5 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
 const GeneralNotesField = ({ clientId, name, initialNotes }: { clientId: string; name: string; initialNotes: string }) => {
   const [value, setValue] = useState(initialNotes || "");
   const [saving, setSaving] = useState(false);
@@ -404,6 +445,7 @@ const ClientMonthlyHistoryDialog = ({
             <Field label="IVA" value={client.iva} />
             <Field label="Salários" value={client.salarios} />
             <Field label="Responsável" value={responsavelName} />
+            {(activeTab === "empresas" || activeTab === "organizada") && <AtivosField client={client} />}
           </div>
           <div className="space-y-4">
             <div>

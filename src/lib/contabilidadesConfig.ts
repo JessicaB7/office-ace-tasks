@@ -59,14 +59,19 @@ export const isQuarterEndMonth = (month: string): boolean => Number(month.slice(
 /** Uma coluna pode não se aplicar a um cliente específico, apesar de existir
  * no regime:
  * - "Salários" quando a ficha tem `salarios === "Não tem"`;
- * - "Depreciações" nos meses anteriores a DEPRECIACOES_FROM;
+ * - "Depreciações" nos meses anteriores a DEPRECIACOES_FROM, quando a ficha diz
+ *   que o cliente não tem ativos (`ativos === false`) ou antes do mês de
+ *   `ativos_desde` (sem resposta, assume-se que tem);
  * - "IVA" quando o cliente é isento; no IVA trimestral só existe no último mês
  *   do trimestre (apuramento), no mensal existe todos os meses.
  * Nesse caso a coluna conta sempre como satisfeita. `month` ("YYYY-MM-01") é
  * preciso para o IVA trimestral; sem ele assume-se que se aplica. */
 export const isColumnApplicable = (client: any, column: string, month?: string): boolean => {
   if (column === "Salários" && client?.salarios === "Não tem") return false;
-  if (column === "Depreciações") return !month || month >= DEPRECIACOES_FROM;
+  if (column === "Depreciações") {
+    if (client?.ativos === false) return false;
+    return !month || (month >= DEPRECIACOES_FROM && month >= ativosFromMonth(client));
+  }
   if (column === "IVA") {
     if (client?.iva === "Mensal") return true;
     if (client?.iva === "Trimestral") return month ? isQuarterEndMonth(month) : true;
@@ -75,11 +80,15 @@ export const isColumnApplicable = (client: any, column: string, month?: string):
   return true;
 };
 
+/** Mês ("YYYY-MM-01") a partir do qual o cliente tem ativos; "" sem data. */
+const ativosFromMonth = (client: any): string =>
+  client?.ativos === true && client?.ativos_desde ? `${String(client.ativos_desde).slice(0, 7)}-01` : "";
+
 /** A coluna existe para o cliente mas não neste mês (IVA trimestral fora do fim
- * do trimestre) — mostra-se vazia em vez de "Não aplicável". */
+ * do trimestre; Depreciações antes de começar) — mostra-se vazia em vez de "Não aplicável". */
 export const isColumnOffMonth = (client: any, column: string, month: string): boolean =>
   (column === "IVA" && client?.iva === "Trimestral" && !isQuarterEndMonth(month)) ||
-  (column === "Depreciações" && month < DEPRECIACOES_FROM);
+  (column === "Depreciações" && client?.ativos !== false && (month < DEPRECIACOES_FROM || month < ativosFromMonth(client)));
 
 /** Nome da tarefa para o cliente: no IVA trimestral é o apuramento do trimestre. */
 export const columnLabel = (client: any, column: string): string =>
