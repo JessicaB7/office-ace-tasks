@@ -65,6 +65,14 @@ IVA **0.0% ISE**, razão **M40 – Art. 6.º n.º 6 a) CIVA, a contrário (IVA -
 da fatura. No formulário (botão **+** da coluna FT Compra) gravar com **"Gravar finalizada"** e a caixa
 **"Finalizar a sugestão na contabilidade" desmarcada** — fica "Finalizar CTB" para a utilizadora.
 
+**Faturas em moeda estrangeira (USD, etc.)** — o valor a lançar é o **débito em euros do extrato bancário**, não a
+conversão da fatura: **Bancos → Extratos** → escolher o **mês** → **Pesquisar extratos** com o nome do fornecedor
+(ex.: "stream", "mongodb") + Enter. Usar o débito principal (as linhas de comissão/imposto do selo ficam de fora).
+Se o extrato não tiver os movimentos do fim do mês, carregar em **Atualizar movimentos** (conta ligada) e voltar a
+pesquisar. Se não houver débito no extrato, **não lançar** e indicar no Resultado.
+Exemplo (Liberdade Criativa): StreamYard 44,99 USD de 24/09/2026 → 39,61 € no extrato → FC 2026/418.
+A **Cursor** da Liberdade Criativa não se lança (indicação da utilizadora).
+
 **Parar e avisar** (deixar a tarefa como **Bloqueada**, com o motivo no Resultado) quando:
 - o anexo não se consegue ler, ou não é uma fatura de compra;
 - o fornecedor não existe no TOConline — **não o criar**: a utilizadora cria-o. Indicar no Resultado
