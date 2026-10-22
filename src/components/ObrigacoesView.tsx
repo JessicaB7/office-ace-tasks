@@ -94,6 +94,8 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   const upsertClient = useUpsertClient();
   const { data: saftMessage, isLoading: loadingSaftMessage } = useObligationMessage("SAFT");
   const saveMessage = useSaveObligationMessage();
+  // Segurança Social TI: mensagem a enviar aos clientes, uma por separador (Pagamento / Declaração Trimestral)
+  const { data: ssTiMessage, isLoading: loadingSsTiMessage } = useObligationMessage(ssTiTab);
   const { data: deadlineOverrides = [] } = useDeadlineOverrides();
   const dayFor = useMemo(() => makeDayResolver(deadlineOverrides), [deadlineOverrides]);
   /** Prazo com eventual prorrogação definida no Calendário fiscal para esse mês. */
@@ -381,6 +383,13 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   };
 
   // SAFT: visto "Mensagem" enviada ao cliente — registo próprio do mês (SAFT_mensagem)
+  // Segurança Social TI: comunicação ao cliente (uma marcação por cliente/mês e por separador)
+  const ssTiComunicacaoMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    obligations.forEach((o: any) => { if (o.obligation_type === `${ssTiTab}_comunicacao`) map[o.client_id] = o; });
+    return map;
+  }, [obligations, ssTiTab]);
+
   const saftMensagemMap = useMemo(() => {
     const map: Record<string, any> = {};
     obligations.forEach((o: any) => { if (o.obligation_type === "SAFT_mensagem") map[o.client_id] = o; });
@@ -733,6 +742,30 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
         </div>
       )}
 
+      {isSSTI && showDTContent && (
+        <div className="bg-card rounded-xl border p-4 space-y-2">
+          <label htmlFor="ss-ti-mensagem" className="text-sm font-semibold">
+            Mensagem a enviar — {ssTiTab === "SS_TI_DT" ? "Declaração Trimestral" : "Pagamento"}
+          </label>
+          {!loadingSsTiMessage && (
+            <textarea
+              id="ss-ti-mensagem"
+              key={`${ssTiTab}-${ssTiMessage?.updated_at || "vazio"}`}
+              defaultValue={ssTiMessage?.message || ""}
+              placeholder="Escrever a mensagem a enviar aos clientes..."
+              rows={4}
+              className="w-full text-sm px-3 py-2 rounded-lg border bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (ssTiMessage?.message || "")) {
+                  saveMessage.mutate({ obligationType: ssTiTab, message: val || null, userId: user?.id });
+                }
+              }}
+            />
+          )}
+        </div>
+      )}
+
       {!showDTContent ? (
         <div className="bg-card rounded-xl border p-12 text-center">
           <p className="text-muted-foreground">A Declaração Trimestral não se aplica ao mês de <strong>{MONTH_NAMES[month]}</strong>.</p>
@@ -793,7 +826,9 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                   <th key={w} className="text-center px-3 py-3 font-semibold text-muted-foreground w-20">Semana {w}</th>
                 ))}
                 {isRetencao && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Estado</th>}
-                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && !isRetencao && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
+                {isSSTI && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Entregue</th>}
+                {isSSTI && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Comunicação</th>}
+                {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && !isRetencao && !isSSTI && <th className="text-center px-3 py-3 font-semibold text-muted-foreground w-12">✓</th>}
                 {showNotasFixas && <th className="sticky right-0 z-10 bg-muted text-left px-4 py-3 font-semibold text-muted-foreground border-l min-w-[220px]">Notas</th>}
               </tr>
             </thead>
@@ -1039,7 +1074,22 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                         </div>
                       </td>
                     )}
-                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && !isRetencao && (
+                    {isSSTI && (
+                      <td className="text-center px-3 py-3">
+                        <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
+                      </td>
+                    )}
+                    {isSSTI && (
+                      <td className="text-center px-3 py-3">
+                        <div className="flex justify-center">
+                          <CheckboxCell
+                            done={ssTiComunicacaoMap[client.id]?.status === "concluida"}
+                            onClick={() => toggleObligation(client.id, `${ssTiTab}_comunicacao`, ssTiComunicacaoMap)}
+                          />
+                        </div>
+                      </td>
+                    )}
+                    {isRight && !showGuiaPagamento && !showSaftExtra && !showSalariosColumns && !isIVAPeriodica && !isFaturasSemanal && !isRetencao && !isSSTI && (
                       <td className="text-center px-3 py-3">
                         <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
                       </td>
