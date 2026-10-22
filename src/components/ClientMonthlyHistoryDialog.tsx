@@ -301,6 +301,8 @@ const ClientMonthlyHistoryDialog = ({
   client, open, onClose, activeTab, columns, referenceMonth, showNotes, notesObligation, variant = "modal",
 }: ClientMonthlyHistoryDialogProps) => {
   const oblPrefix = `contabilidade_${activeTab}`;
+  // Ativos (decide a tarefa Depreciações) só existe em Empresas e TI Organizado.
+  const showAtivos = activeTab === "empresas" || activeTab === "organizada";
   const { data: obligations = [], isLoading } = useClientObligationsHistory(
     client?.id || null,
     oblPrefix
@@ -438,14 +440,14 @@ const ClientMonthlyHistoryDialog = ({
         </div>
 
         <div className="bg-card rounded-2xl border p-5 space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-3">
+          <div className={cn("grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3", showAtivos ? "lg:grid-cols-7" : "lg:grid-cols-6")}>
             <Field label="NIF" value={client.nif} />
             <Field label="NISS" value={client.niss} />
             <Field label="Programa de Faturação" value={client.programa_faturacao} />
             <Field label="IVA" value={client.iva} />
             <Field label="Salários" value={client.salarios} />
             <Field label="Responsável" value={responsavelName} />
-            {(activeTab === "empresas" || activeTab === "organizada") && <AtivosField client={client} />}
+            {showAtivos && <AtivosField client={client} />}
           </div>
           <div className="space-y-4">
             <div>
