@@ -191,6 +191,16 @@ preenchido por trimestre (campo 93 ou 94).
    - (Alternativa: Faturação → Adquirente → botão **Complementar Informação Faturas** — mas só mostra as 50 mais recentes.)
 4. Confirmar no fim que todas as faturas do mês têm o campo preenchido (Sim ou Não).
 
+**Método rápido (confirmado 22/10/2026, Suse Madeira jul–set, 96 faturas):** no separador do e-Fatura, a lista completa
+vem em JSON (`/json/obterDocumentosAdquirente.action?dataInicioFilter=AAAA-MM-DD&dataFimFilter=AAAA-MM-DD&ambitoAquisicaoFilter=TODOS`)
+e a gravação faz-se fatura a fatura com: abrir o detalhe (`detalheDocumentoAdquirente.action?idDocumento=…&dataEmissaoDocumento=…`)
+e depois POST a `resolverPendenciaAdquirente.action` com `idDocumento`, `dataEmissaoDocumento` e `dataEmissaoDocumentoOriginal`
+(data de emissão), `ambitoAquisicaoPend` (setor atual; vazio nos "Não"; C99 Outros nos "Sim" sem setor) e
+`ambitoActividadeProfPend` (0 = Sim total, 1 = Não). O `alterarDocumentoAdquirente.action` dá "O documento não foi
+registado pelo mesmo NIF" nas faturas comunicadas pelo emitente. ~1 s entre pedidos; no fim confirmar no detalhe de cada
+fatura o valor selecionado. Do lado do TOConline: Compras → e-Fatura sem o filtro de Estado, mês a mês —
+estado "in-accounting" = Sim, "void" (não considerado) = Não.
+
 **Cruzamentos obrigatórios** (aprendidos na 1.ª execução):
 - A coluna Nr. Diário do e-Fatura do TOConline **não chega**: confirmar também em **Compras → Faturas de compra**
   (filtro de datas do período) — cada fatura de compra finalizada com diário corresponde a uma fatura "Sim" no e-Fatura
