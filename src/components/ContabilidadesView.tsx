@@ -45,11 +45,9 @@ interface ContabilidadesViewProps {
   /** Mudar de separador (regime) — atualiza a vista ativa da app. */
   onSubPageChange?: (subPage: string) => void;
   nav?: ContabilidadesNav | null;
-  /** Depois de marcar o IVA: abre o IVA Periódica nesse mês ("YYYY-MM") e cliente, para marcar o Entregue à mão. */
-  onOpenIvaPeriodica?: (month: string, search: string) => void;
 }
 
-const ContabilidadesView = ({ subPage, onSubPageChange, nav, onOpenIvaPeriodica }: ContabilidadesViewProps) => {
+const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesViewProps) => {
   const { data: clients = [], isLoading: loadingClients } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const { user, isAdmin } = useAuth();
@@ -226,7 +224,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav, onOpenIvaPeriodica 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, activeClients, collaborators, currentCollaborator]);
 
-  const toggleObl = (clientId: string, type: string, map: Record<string, any>, label?: string, afterMarked?: () => void) => {
+  const toggleObl = (clientId: string, type: string, map: Record<string, any>, label?: string) => {
     const obl = map[clientId];
     const done = obl?.status === "concluida";
     const prev = obl ? { status: obl.status, completed_at: obl.completed_at ?? null, completed_by: obl.completed_by ?? null } : null;
@@ -255,12 +253,9 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav, onOpenIvaPeriodica 
             }),
           },
         });
-        if (!done) afterMarked?.();
       },
     });
   };
-
-  const openIvaPeriodica = (client: any) => onOpenIvaPeriodica?.(referenceMonth.slice(0, 7), client.name);
 
   const whoDid = (obl: any) => {
     if (!obl?.completed_at) return "";
@@ -338,7 +333,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav, onOpenIvaPeriodica 
           completed_by: user?.id || null,
         }).then((row: any) => ({ i, row, prev: obl }));
       }));
-      const ivaMarked = todo.some(({ col }) => col === "IVA");
       toast(`${client.name} fechado em ${MONTH_NAMES[month]}`, {
         action: {
           label: "Desfazer",
@@ -353,7 +347,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav, onOpenIvaPeriodica 
           })),
         },
       });
-      if (ivaMarked) openIvaPeriodica(client);
     } catch {
       toast.error("Não foi possível fechar o cliente.");
     }
@@ -443,7 +436,7 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav, onOpenIvaPeriodica 
                 const started = obl?.status === "em_andamento";
                 const label = columnLabel(client, col);
                 return (
-                  <button key={col} type="button" onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], label, col === "IVA" ? () => openIvaPeriodica(client) : undefined)}
+                  <button key={col} type="button" onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], label)}
                     title={isDone ? `${label}: feito${whoDid(obl) ? ` — ${whoDid(obl)}` : ""} (clicar para desmarcar)` : started ? `${label}: em andamento (clicar para marcar como feito)` : `Marcar ${label} como feito`}
                     className={cn("flex-1 min-w-0 truncate text-xs font-medium px-2 py-1 rounded-full border transition-colors",
                       isDone ? "bg-success/15 text-success border-success/30 hover:bg-success/25"
