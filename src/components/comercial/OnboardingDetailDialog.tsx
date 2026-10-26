@@ -257,8 +257,40 @@ const OnboardingDetailDialog = ({ onboarding: o, onClose, onOpenClient }: Props)
         <section className="rounded-xl border p-4 grid sm:grid-cols-2 gap-4">
           <h3 className="font-semibold text-sm sm:col-span-2">3. Dados do contrato</h3>
           <div>
-            <Label>Data de início</Label>
-            <Input type="date" value={o.data_inicio || ""} onChange={(e) => patch({ data_inicio: e.target.value || null })} />
+            <Label>Data de início <span className="text-destructive">*</span></Label>
+            <Input
+              type="date"
+              className={cn(!o.data_inicio && "border-destructive")}
+              value={o.data_inicio || ""}
+              onChange={(e) => patch({ data_inicio: e.target.value || null })}
+            />
+          </div>
+          <div>
+            <Label>Tratamento no contrato <span className="text-destructive">*</span></Label>
+            <Select value={o.genero || ""} onValueChange={(v) => patch({ genero: v })}>
+              <SelectTrigger className={cn(!o.genero && "border-destructive")}>
+                <SelectValue placeholder="Selecionar" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="f">{o.form_type === "empresa" ? "Sócia-gerente (feminino)" : "Segunda Outorgante (feminino)"}</SelectItem>
+                <SelectItem value="m">{o.form_type === "empresa" ? "Sócio-gerente (masculino)" : "Segundo Outorgante (masculino)"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="sm:col-span-2 rounded-lg bg-muted/50 px-3 py-2 text-xs">
+            {o.contrato_preparado_at ? (
+              <span className="text-emerald-700">
+                Contrato preparado em {fmtDate(o.contrato_preparado_at)} — OneDrive: {o.contrato_ficheiro}
+              </span>
+            ) : !o.submitted_at ? (
+              <span className="text-muted-foreground">O contrato é preparado automaticamente depois de o cliente submeter o formulário.</span>
+            ) : !o.data_inicio || !o.genero ? (
+              <span className="text-destructive">Preenche a data de início e o tratamento para o contrato ser preparado automaticamente.</span>
+            ) : o.contrato_erro ? (
+              <span className="text-destructive">Contrato por preparar — {o.contrato_erro}</span>
+            ) : (
+              <span className="text-muted-foreground">Contrato em preparação (pasta e Word no OneDrive, até 10 minutos).</span>
+            )}
           </div>
           <div>
             <Label>Responsável</Label>

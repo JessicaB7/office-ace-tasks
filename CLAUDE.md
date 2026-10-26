@@ -130,6 +130,16 @@ Dashboards por regime:
 - O **IRS a receber nunca pode exceder** a retenção na fonte + pagamentos por conta (`capReembolso`).
 - Escalões IRS **2026**; coeficiente art. 31º CIRS configurável por cliente (`clients.irs_coeficiente`).
 
+### Novos clientes — contrato automático (`scripts/onboarding-contratos/`)
+- Serviço local no Mac da admin (launchd `pt.contabilistaexplica.contratos`, 10 em 10 min; instalar com
+  `bash scripts/onboarding-contratos/instalar.sh`). Para cada `client_onboardings` submetido, sem "Contrato" marcado
+  e com **Data de início** + **Tratamento** (`genero` f/m, obrigatórios no processo): cria
+  `OneDrive/Clientes/<Primeiro Último>/Contrato/`, preenche o modelo Word do regime
+  (`Contabilista Explica/Contrato/Modelos/{TI RS,TI CO,Empresa}.docx`, campos «NOME», «NIF», «MORADA», «EMAIL»,
+  «DATA_INICIO», «VALOR»/«VALOR_EXTENSO» = mensalidade da lead + IVA, «DATA_CONTRATO», «GERENTE_*»), nos TI copia o
+  Gestor de Negócio, grava `contrato_preparado_at`/`contrato_ficheiro`, marca `pasta_drive` e notifica as admins.
+  Falta de dados → `contrato_erro` (visível no processo). Modelos na forma feminina; `genero.py` passa a masculino.
+
 ### Clientes e colaboradores
 - `clients.status`: `ativo` / `a_sair` / `inativo` (filtros na lista). **Mensalidade** e
   **início de contrato** são campos **obrigatórios** no `ClientDetailDialog`.

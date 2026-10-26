@@ -299,10 +299,14 @@ export type Database = {
           avenca: boolean
           client_id: string | null
           completed_at: string | null
+          contrato_erro: string | null
+          contrato_ficheiro: string | null
+          contrato_preparado_at: string | null
           contrato: boolean
           created_at: string
           data_inicio: string | null
           email_anterior_contabilista: boolean
+          genero: string | null
           fatura: boolean
           form_sent_at: string | null
           form_type: string
@@ -324,10 +328,14 @@ export type Database = {
           avenca?: boolean
           client_id?: string | null
           completed_at?: string | null
+          contrato_erro?: string | null
+          contrato_ficheiro?: string | null
+          contrato_preparado_at?: string | null
           contrato?: boolean
           created_at?: string
           data_inicio?: string | null
           email_anterior_contabilista?: boolean
+          genero?: string | null
           fatura?: boolean
           form_sent_at?: string | null
           form_type?: string
@@ -349,10 +357,14 @@ export type Database = {
           avenca?: boolean
           client_id?: string | null
           completed_at?: string | null
+          contrato_erro?: string | null
+          contrato_ficheiro?: string | null
+          contrato_preparado_at?: string | null
           contrato?: boolean
           created_at?: string
           data_inicio?: string | null
           email_anterior_contabilista?: boolean
+          genero?: string | null
           fatura?: boolean
           form_sent_at?: string | null
           form_type?: string

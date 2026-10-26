@@ -54,6 +54,10 @@ export const FORM_FIELDS: FieldDef[] = [
   { key: "senha_at", label: "Senha das Finanças da empresa", kind: "text", required: true, secret: true, types: ["empresa"] },
   { key: "niss", label: "NISS da empresa", hint: "Número de Identificação da Segurança Social", kind: "text", required: true, types: ["empresa"] },
   { key: "senha_ss", label: "Senha da Segurança Social da empresa", kind: "text", required: true, secret: true, types: ["empresa"] },
+  { key: "gerente_nome", label: "Nome do(a) sócio(a)-gerente", kind: "text", required: true, types: ["empresa"] },
+  { key: "gerente_nif", label: "NIF do(a) sócio(a)-gerente", kind: "text", required: true, types: ["empresa"] },
+  { key: "gerente_cc", label: "Cartão de Cidadão do(a) sócio(a)-gerente", hint: "Números e letras", kind: "text", required: true, types: ["empresa"] },
+  { key: "gerente_cc_validade", label: "Validade do Cartão de Cidadão", hint: "Ex.: 02/08/2031", kind: "text", required: true, types: ["empresa"] },
   {
     key: "ja_tinha_contabilista", label: "Já tinha contabilista?",
     hint: "No caso de estar enquadrado na contabilidade organizada antes",
