@@ -117,7 +117,7 @@ Dashboards por regime:
   reposição do automático (delta 2436−2437), outras despesas, simulador organizado vs simplificado.
 - **Empresas / SQ** (`EmpresasDashboard.tsx`): rendimentos, FSE, gastos com pessoal, depreciações,
   mercadorias (31), resultado. IVA trimestral editável + total anual + "Limpar". IRC progressivo
-  **15% / 19%** ou simplificado; derrama; **tributações autónomas**: (6266 + 625) a 10%,
+  **15% / 19%** ou simplificado; derrama; **tributações autónomas**: (6266 + 6251) a 10%,
   (6315 + 6325) a 5%.
 - `DashboardTrimestral.tsx`: FSE desagregado pelas contas-filha 62xx ("621 - Subcontratos", etc.),
   detetadas dinamicamente como folhas do balancete.

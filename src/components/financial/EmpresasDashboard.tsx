@@ -156,15 +156,15 @@ export default function EmpresasDashboard({
   const derrama = baseTributavel * derramaTaxa;
 
 
-  // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 625; ajudas de custo: 6315 + 6325)
+  // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 6251; ajudas de custo: 6315 + 6325)
   // Usa sumGroupMonth para não duplicar conta-mãe + subcontas.
   const sumGroupYear = (prefix: string) =>
     cents(months.reduce((acc, m) => acc + sumGroupMonth(map, accounts, prefix, m), 0));
-  const taRepAuto = cents(sumGroupYear("6266") + sumGroupYear("625"));
+  const taRepAuto = cents(sumGroupYear("6266") + sumGroupYear("6251"));
   const taAjAuto = cents(sumGroupYear("6315") + sumGroupYear("6325"));
   const taParts = {
     "6266": sumGroupYear("6266"),
-    "625": sumGroupYear("625"),
+    "6251": sumGroupYear("6251"),
     "6315": sumGroupYear("6315"),
     "6325": sumGroupYear("6325"),
   };
@@ -621,7 +621,7 @@ export default function EmpresasDashboard({
             <h5 className="text-xs font-semibold mb-3">Tributação autónoma</h5>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {([
-                { key: "ta_base_representacao" as const, label: "Despesas de representação", contas: "6266 + 625", codes: ["6266", "625"] as const, rate: 0.10, rateEditable: false as const, base: taRepBase, auto: taRepAuto, manual: taRepManual, imposto: taRep },
+                { key: "ta_base_representacao" as const, label: "Despesas de representação", contas: "6266 + 6251", codes: ["6266", "6251"] as const, rate: 0.10, rateEditable: false as const, base: taRepBase, auto: taRepAuto, manual: taRepManual, imposto: taRep },
                 { key: "ta_base_ajudas_custo" as const, label: "Ajudas de custo", contas: "6315 + 6325", codes: ["6315", "6325"] as const, rate: 0.05, rateEditable: false as const, base: taAjBase, auto: taAjAuto, manual: taAjManual, imposto: taAj },
                 { key: "ta_base_nao_doc" as const, label: "Despesas não documentadas", contas: null, codes: [] as const, rate: taNaoDocRate, rateEditable: false as const, base: taNaoDocBase, auto: 0, manual: taNaoDocBase, imposto: taNaoDoc },
                 { key: "ta_base_viaturas" as const, label: "Despesas de viaturas", contas: null, codes: [] as const, rate: taViaturasRate, rateEditable: true as const, rateKey: "ta_rate_viaturas" as const, base: taViaturasBase, auto: 0, manual: taViaturasBase, imposto: taViaturas },
