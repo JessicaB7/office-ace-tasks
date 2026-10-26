@@ -92,6 +92,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         toast.warning("Não foi possível ler o NIF no documento — confirma que pertence a este cliente.");
       }
 
+      let ret241: { acum: number; mes: number } | null = null;
       const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
       if (isPdf) {
         if (await isBalancetePdf(file)) {
@@ -100,6 +101,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
             toast.warning(`Balancete é de ${res.year}, mas estás a ver ${year}. Importei na vista atual.`);
           }
           entries = res.entries;
+          ret241 = res.retencoesAcum ? { acum: res.retencoesAcum, mes: res.endMonth } : null;
           toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
           const res = await parseMapaPdf(file, accounts.map((a) => ({ code: a.code, section: a.section })));
@@ -116,6 +118,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
             toast.warning(`Balancete é de ${res.year}, mas estás a ver ${year}. Importei na vista atual.`);
           }
           entries = res.entries;
+          ret241 = res.retencoesAcum ? { acum: res.retencoesAcum, mes: res.endMonth } : null;
           toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
           const buf = await file.arrayBuffer();
@@ -165,6 +168,10 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
       }
       entries = kept;
       await saveImport.mutateAsync({ slot, fileName: file.name, entries });
+      // Acumulado da 241 (retenções + pagamentos por conta): fica o do balancete mais recente do ano.
+      if (ret241 && ret241.mes >= Number(settings?.ret_241_mes ?? 0)) {
+        upsertSettings.mutate({ ret_241_acum: ret241.acum, ret_241_mes: ret241.mes });
+      }
       toast.success(`Importação concluída: ${entries.length} valores carregados.`);
     } catch (e: any) {
       toast.error("Erro a importar: " + e.message);
@@ -186,6 +193,10 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
 
   return (
     <div className="space-y-5">
+      <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="w-4 h-4" /> Voltar à lista
+      </button>
+
       <div className="rounded-lg border bg-card p-4">
         <h4 className="font-semibold text-sm mb-1">Relatórios entregues e com visto</h4>
         <p className="text-[11px] text-muted-foreground mb-3">

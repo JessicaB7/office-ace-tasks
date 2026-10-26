@@ -9,7 +9,11 @@ import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 (pdfjsLib as any).GlobalWorkerOptions.workerSrc = pdfWorker;
 
 export interface BalanceteEntry { month: number; account_code: string; value: number; }
-export interface BalanceteResult { entries: BalanceteEntry[]; startMonth: number; endMonth: number; year: number; }
+export interface BalanceteResult {
+  entries: BalanceteEntry[]; startMonth: number; endMonth: number; year: number;
+  /** Acumulado do ano da conta 241 (retenções na fonte + pagamentos por conta), coluna Acumulado. */
+  retencoesAcum?: number;
+}
 
 const MONTHS_PT: Record<string, number> = {
   janeiro: 1, fevereiro: 2, marco: 3, "março": 3, abril: 4, maio: 5, junho: 6,
@@ -43,6 +47,8 @@ export async function parseBalancetePdf(file: File, catalogCodes: string[]): Pro
   // Accumulate net per leaf account code (one row per account aggregated across the report period).
   const periodDeb = new Map<string, number>();
   const periodCred = new Map<string, number>();
+  const acumDeb = new Map<string, number>();
+  const acumCred = new Map<string, number>();
   const seenCodes = new Set<string>();
 
   // Column x-centers, learnt from first page's header row.
@@ -130,6 +136,10 @@ export async function parseBalancetePdf(file: File, catalogCodes: string[]): Pro
       // Prefer the "Período" columns. If a PDF omits them, fall back to "Acumulado".
       const deb = valByCol[0] ?? valByCol[2] ?? 0;
       const cred = valByCol[1] ?? valByCol[3] ?? 0;
+      if (code.startsWith("241")) {
+        acumDeb.set(code, (acumDeb.get(code) || 0) + (valByCol[2] ?? 0));
+        acumCred.set(code, (acumCred.get(code) || 0) + (valByCol[3] ?? 0));
+      }
       if (deb === 0 && cred === 0) continue;
 
       periodDeb.set(code, (periodDeb.get(code) || 0) + deb);
@@ -164,7 +174,13 @@ export async function parseBalancetePdf(file: File, catalogCodes: string[]): Pro
     }
   }
 
-  return { entries, startMonth, endMonth, year };
+  let retencoesAcum = 0;
+  for (const code of acumDeb.keys()) {
+    if (!isLeaf(code)) continue;
+    retencoesAcum += Math.abs((acumDeb.get(code) || 0) - (acumCred.get(code) || 0));
+  }
+
+  return { entries, startMonth, endMonth, year, retencoesAcum: Math.round(retencoesAcum * 100) / 100 };
 }
 
 export async function isBalancetePdf(file: File): Promise<boolean> {

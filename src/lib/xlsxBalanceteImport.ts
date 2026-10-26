@@ -6,7 +6,11 @@
 import * as XLSX from "xlsx";
 
 export interface BalanceteEntry { month: number; account_code: string; value: number; }
-export interface BalanceteResult { entries: BalanceteEntry[]; startMonth: number; endMonth: number; year: number; }
+export interface BalanceteResult {
+  entries: BalanceteEntry[]; startMonth: number; endMonth: number; year: number;
+  /** Acumulado do ano da conta 241 (retenções na fonte + pagamentos por conta), coluna Acumulado. */
+  retencoesAcum?: number;
+}
 
 const MONTHS_PT: Record<string, number> = {
   janeiro: 1, fevereiro: 2, marco: 3, "março": 3, abril: 4, maio: 5, junho: 6,
@@ -37,6 +41,7 @@ export async function isBalanceteXlsx(file: File): Promise<boolean> {
 }
 
 export async function parseBalanceteXlsx(file: File, catalogCodes: string[]): Promise<BalanceteResult> {
+  const acum241 = new Map<string, number>();
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
   const sortedCodes = [...catalogCodes].sort((a, b) => b.length - a.length);
@@ -67,7 +72,7 @@ export async function parseBalanceteXlsx(file: File, catalogCodes: string[]): Pr
 
     // Locate the header row that contains "Conta" / "Descrição" so we can map columns.
     let headerIdx = -1;
-    let colConta = -1, colInteg = -1, colPerDeb = -1, colPerCred = -1;
+    let colConta = -1, colInteg = -1, colPerDeb = -1, colPerCred = -1, colAcDeb = -1, colAcCred = -1;
     for (let i = 0; i < Math.min(rows.length, 40); i++) {
       const row = rows[i] || [];
       const lower = row.map((c) => (c == null ? "" : String(c).toLowerCase().trim()));
@@ -82,6 +87,8 @@ export async function parseBalanceteXlsx(file: File, catalogCodes: string[]): Pr
         const creds = lower.map((c, k) => (/cr[ée]dito/.test(c) ? k : -1)).filter((k) => k >= 0);
         colPerDeb = debs[0] ?? -1;
         colPerCred = creds[0] ?? -1;
+        colAcDeb = debs[1] ?? -1;
+        colAcCred = creds[1] ?? -1;
         break;
       }
     }
@@ -98,6 +105,12 @@ export async function parseBalanceteXlsx(file: File, catalogCodes: string[]): Pr
       // structural leaf check based on other rows.
       const integ = colInteg >= 0 ? row[colInteg] : null;
       if (integ === true || String(integ).toLowerCase() === "true" || String(integ).toLowerCase() === "sim") continue;
+
+      if (code.startsWith("241")) {
+        const ad = colAcDeb >= 0 ? num(row[colAcDeb]) : 0;
+        const ac = colAcCred >= 0 ? num(row[colAcCred]) : 0;
+        acum241.set(code, (acum241.get(code) || 0) + (ad - ac));
+      }
 
       const deb = colPerDeb >= 0 ? num(row[colPerDeb]) : 0;
       const cred = colPerCred >= 0 ? num(row[colPerCred]) : 0;
@@ -126,5 +139,13 @@ export async function parseBalanceteXlsx(file: File, catalogCodes: string[]): Pr
     }
   }
 
-  return { entries, startMonth, endMonth, year };
+  // Só contas-folha (se a flag "integradora" faltar, a 241 e a 2414 vinham as duas).
+  const codes241 = Array.from(acum241.keys());
+  let retencoesAcum = 0;
+  for (const code of codes241) {
+    if (codes241.some((o) => o.length > code.length && o.startsWith(code))) continue;
+    retencoesAcum += Math.abs(acum241.get(code) || 0);
+  }
+
+  return { entries, startMonth, endMonth, year, retencoesAcum: Math.round(retencoesAcum * 100) / 100 };
 }

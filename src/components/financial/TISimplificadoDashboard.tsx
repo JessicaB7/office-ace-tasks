@@ -196,7 +196,8 @@ export default function TISimplificadoDashboard({
       const [, code] = key.split(":");
       if (code.startsWith("241")) total += Math.abs(val);
     }
-    return total;
+    // O acumulado do último balancete cobre trimestres que não tenham sido importados.
+    return Math.max(total, Number(settings?.ret_241_acum ?? 0));
   })();
   const retencoesManual = Number(settings?.irs_retencoes ?? 0);
   const retencoes = retencoes241 > 0 ? retencoes241 : retencoesManual;

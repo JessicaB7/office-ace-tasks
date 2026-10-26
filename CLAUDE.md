@@ -112,7 +112,9 @@ Dashboards por regime:
   e multiplica-se por 3**), obrigatória para exportar; visto **TCO** só para análise (nunca no PDF).
   "Outras despesas" com título e valor editáveis, abate à faturação. **IRS Regime Simplificado**
   (coeficiente art. 31º CIRS + escalões 2026) e **IRS Regime Organizado** (sobre resultado líquido).
-  Deduções à coleta editáveis, **default 250 €**. Campo "Retenção na fonte e pagamentos por conta".
+  Deduções à coleta editáveis, **default 250 €**; "Notas IRS" internas por baixo (não vão para o PDF).
+  "Retenção na fonte e pagamentos por conta" = conta 241 (incl. 2414): o maior entre a soma dos trimestres
+  importados e o **Acumulado** do último balancete (`ret_241_acum`), para cobrir trimestres não importados.
 - **TI Organizado** (`TIOrganizadoDashboard.tsx`): balancete XLSX, IVA trimestral editável com
   reposição do automático (delta 2436−2437), outras despesas, simulador organizado vs simplificado.
 - **Empresas / SQ** (`EmpresasDashboard.tsx`): rendimentos, FSE, gastos com pessoal, depreciações,
