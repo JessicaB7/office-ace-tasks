@@ -39,7 +39,9 @@ const TI: OnboardingFormType[] = ["ti_rs", "ti_co"];
 export const FORM_FIELDS: FieldDef[] = [
   { key: "nome", label: "Nome completo", kind: "text", required: true, types: TI },
   { key: "nome", label: "Nome da empresa", kind: "text", required: true, types: ["empresa"] },
-  { key: "morada", label: "Morada completa", kind: "textarea", required: true, types: ALL },
+  { key: "morada", label: "Morada", hint: "Rua, número e andar", kind: "textarea", required: true, types: ALL },
+  { key: "codigo_postal", label: "Código postal", hint: "Ex.: 2600-033", kind: "text", required: true, types: ALL },
+  { key: "localidade", label: "Localidade", kind: "text", required: true, types: ALL },
   { key: "email", label: "E-mail", kind: "email", required: true, types: TI },
   { key: "email", label: "E-mail de contacto", kind: "email", required: true, types: ["empresa"] },
   { key: "cartao_cidadao", label: "Cartão de Cidadão", hint: "Números e letras", kind: "text", required: true, types: TI },
