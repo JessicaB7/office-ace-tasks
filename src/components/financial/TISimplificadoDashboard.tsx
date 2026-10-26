@@ -21,6 +21,7 @@ import {
 } from "./financialMath";
 import { cn } from "@/lib/utils";
 import { RobotButton } from "./RobotAnaliseDialog";
+import { NotasIrsField } from "./NotasIrsField";
 
 const IVA_VENDAS = ["24331111", "24333311", "24341331"];
 const IVA_COMPRAS = ["24323111", "24323211", "24323311", "24342"];
@@ -673,6 +674,15 @@ export default function TISimplificadoDashboard({
             )}
           </div>
         </div>
+
+        {!exporting && (
+          <NotasIrsField
+            className="mt-4"
+            value={settings?.notas_irs}
+            disabled={!settings}
+            onSave={(v) => upsertSettings.mutate({ notas_irs: v })}
+          />
+        )}
 
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4 auto-rows-fr">
           <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">

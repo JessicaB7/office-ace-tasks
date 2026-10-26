@@ -242,26 +242,6 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
         />
       </div>
 
-      {!isEmpresa && (
-        <div className="rounded-lg border bg-card p-4">
-          <h4 className="font-semibold text-sm mb-1">Notas IRS {year}</h4>
-          <p className="text-[11px] text-muted-foreground mb-2">
-            Notas internas para o IRS deste cliente (não aparecem no PDF exportado). Gravam ao sair do campo.
-          </p>
-          <Textarea
-            key={`${clientId}-${year}-irs-${settings?.notas_irs ?? ""}`}
-            defaultValue={settings?.notas_irs ?? ""}
-            disabled={!settings}
-            placeholder="Ex.: dependentes, despesas de saúde e educação, rendimentos de outras categorias…"
-            className="min-h-[80px] text-sm resize-y"
-            onBlur={(e) => {
-              const v = e.target.value.trim() || null;
-              if (v !== (settings?.notas_irs ?? null)) upsertSettings.mutate({ notas_irs: v });
-            }}
-          />
-        </div>
-      )}
-
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Voltar">

@@ -22,6 +22,7 @@ import {
 } from "./financialMath";
 import { cn } from "@/lib/utils";
 import { RobotButton } from "./RobotAnaliseDialog";
+import { NotasIrsField } from "./NotasIrsField";
 
 const cents = (v: number) => Math.round(v * 100) / 100;
 
@@ -514,6 +515,14 @@ export default function TIOrganizadoDashboard({
               <div className="text-2xl font-bold tabular-nums text-emerald-700">{fmtEur(deducoes)}</div>
             </div>
           </div>
+          {!exporting && (
+            <NotasIrsField
+              className="mt-4"
+              value={settings?.notas_irs}
+              disabled={!settings}
+              onSave={(v) => upsertSettings.mutate({ notas_irs: v })}
+            />
+          )}
         </div>
 
         {/* Simulador de IRS */}
