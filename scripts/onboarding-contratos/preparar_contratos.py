@@ -209,11 +209,36 @@ def preparar(o: dict) -> tuple[str | None, str | None]:
     if resto:
         return None, f"O modelo {modelo} tem campos «…» desconhecidos — rever {dst}"
 
+    exportar_pdf(dst)
+
     if ft in ("ti_rs", "ti_co") and os.path.exists(GESTOR):
         g = os.path.join(pasta, "Gestor de Negócio.xlsx")
         if not os.path.exists(g):
             shutil.copy2(GESTOR, g)
     return os.path.relpath(dst, ONEDRIVE), None
+
+
+def exportar_pdf(docx: str):
+    """PDF ao lado do .docx, exportado pelo Microsoft Word (mantém margens e tipos de letra do modelo).
+    O Word (sandbox) só escreve na sua pasta tmp, por isso converte-se lá e copia-se de volta."""
+    tmp = os.path.expanduser("~/Library/Containers/com.microsoft.Word/Data/tmp")
+    if not os.path.isdir("/Applications/Microsoft Word.app"):
+        return
+    os.makedirs(tmp, exist_ok=True)
+    src, out = os.path.join(tmp, "contrato_auto.docx"), os.path.join(tmp, "contrato_auto.pdf")
+    for f in (src, out):
+        if os.path.exists(f):
+            os.remove(f)
+    shutil.copy2(docx, src)
+    script = f'''tell application "Microsoft Word"
+  open file name (POSIX file "{src}" as text)
+  delay 2
+  save as active document file name (POSIX file "{out}" as text) file format format PDF
+  close active document saving no
+end tell'''
+    subprocess.run(["osascript", "-e", script], capture_output=True, timeout=120)
+    if os.path.exists(out):
+        shutil.copy2(out, os.path.splitext(docx)[0] + ".pdf")
 
 
 def _masculino(path: str):
