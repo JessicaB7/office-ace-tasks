@@ -64,6 +64,7 @@ export type FinancialSettings = {
   relatorio_q3_data: string | null;
   relatorio_q4_data: string | null;
   notas: string | null;
+  notas_irs: string | null;
 };
 
 
@@ -157,6 +158,7 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         relatorio_q3_data: null,
         relatorio_q4_data: null,
         notas: null,
+        notas_irs: null,
       }) as FinancialSettings;
     },
     enabled: !!clientId,

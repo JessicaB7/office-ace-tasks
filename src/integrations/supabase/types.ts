@@ -130,6 +130,7 @@ export type Database = {
           relatorio_q3_entregue: boolean
           relatorio_q4_data: string | null
           notas: string | null
+          notas_irs: string | null
           relatorio_q4_entregue: boolean
           ss_q1: number
           ss_q2: number
@@ -180,6 +181,7 @@ export type Database = {
           relatorio_q3_entregue?: boolean
           relatorio_q4_data?: string | null
           notas?: string | null
+          notas_irs?: string | null
           relatorio_q4_entregue?: boolean
           ss_q1?: number
           ss_q2?: number
@@ -230,6 +232,7 @@ export type Database = {
           relatorio_q3_entregue?: boolean
           relatorio_q4_data?: string | null
           notas?: string | null
+          notas_irs?: string | null
           relatorio_q4_entregue?: boolean
           ss_q1?: number
           ss_q2?: number
