@@ -40,9 +40,8 @@ export const SUB_PAGE_CONFIG: Record<string, TabConfig> = {
   },
 };
 
-/** Primeiro mês com a tarefa "Depreciações" (começa no ano novo) — os meses
- * anteriores fecham-se sem ela e não aparecem como por concluir. */
-export const DEPRECIACOES_FROM = "2027-01-01";
+/** Primeiro mês com a tarefa "Depreciações" (desde janeiro de 2026 para todos os clientes com ativos). */
+export const DEPRECIACOES_FROM = "2026-01-01";
 
 /** Chaves dos tipos de obrigação mensal para um dado regime (as mesmas usadas em
  * `monthly_obligations.obligation_type`), replicando a lógica de ContabilidadesView. */
@@ -59,9 +58,8 @@ export const isQuarterEndMonth = (month: string): boolean => Number(month.slice(
 /** Uma coluna pode não se aplicar a um cliente específico, apesar de existir
  * no regime:
  * - "Salários" quando a ficha tem `salarios === "Não tem"`;
- * - "Depreciações" nos meses anteriores a DEPRECIACOES_FROM, quando a ficha diz
- *   que o cliente não tem ativos (`ativos === false`) ou antes do mês de
- *   `ativos_desde` (sem resposta, assume-se que tem);
+ * - "Depreciações" quando a ficha diz que o cliente não tem ativos (`ativos === false`),
+ *   antes de DEPRECIACOES_FROM ou antes do mês de `ativos_desde`;
  * - "IVA" quando o cliente é isento; no IVA trimestral só existe no último mês
  *   do trimestre (apuramento), no mensal existe todos os meses.
  * Nesse caso a coluna conta sempre como satisfeita. `month` ("YYYY-MM-01") é
@@ -70,7 +68,7 @@ export const isColumnApplicable = (client: any, column: string, month?: string):
   if (column === "Salários" && client?.salarios === "Não tem") return false;
   if (column === "Depreciações") {
     if (client?.ativos === false) return false;
-    return !month || (month >= DEPRECIACOES_FROM && month >= ativosFromMonth(client));
+    return !month || month >= depreciacoesStart(client);
   }
   if (column === "IVA") {
     if (client?.iva === "Mensal") return true;
@@ -78,6 +76,13 @@ export const isColumnApplicable = (client: any, column: string, month?: string):
     return false;
   }
   return true;
+};
+
+/** Primeiro mês da tarefa Depreciações para o cliente: o mais tardio entre o início geral
+ * (DEPRECIACOES_FROM) e o "Ativos desde" da ficha. */
+const depreciacoesStart = (client: any): string => {
+  const desde = ativosFromMonth(client);
+  return desde > DEPRECIACOES_FROM ? desde : DEPRECIACOES_FROM;
 };
 
 /** Mês ("YYYY-MM-01") a partir do qual o cliente tem ativos; "" sem data. */
@@ -88,7 +93,7 @@ const ativosFromMonth = (client: any): string =>
  * do trimestre; Depreciações antes de começar) — mostra-se vazia em vez de "Não aplicável". */
 export const isColumnOffMonth = (client: any, column: string, month: string): boolean =>
   (column === "IVA" && client?.iva === "Trimestral" && !isQuarterEndMonth(month)) ||
-  (column === "Depreciações" && client?.ativos !== false && (month < DEPRECIACOES_FROM || month < ativosFromMonth(client)));
+  (column === "Depreciações" && client?.ativos !== false && month < depreciacoesStart(client));
 
 /** Nome da tarefa para o cliente: no IVA trimestral é o apuramento do trimestre. */
 export const columnLabel = (client: any, column: string): string =>

@@ -29,11 +29,11 @@ describe("isColumnApplicable — IVA", () => {
 });
 
 describe("isColumnApplicable — Depreciações", () => {
-  it("só existe a partir de janeiro de 2027", () => {
-    expect(isColumnApplicable({}, "Depreciações", "2026-12-01")).toBe(false);
-    expect(isColumnOffMonth({}, "Depreciações", "2026-09-01")).toBe(true);
-    expect(isColumnApplicable({}, "Depreciações", "2027-01-01")).toBe(true);
-    expect(isColumnOffMonth({}, "Depreciações", "2027-02-01")).toBe(false);
+  it("só existe a partir de janeiro de 2026", () => {
+    expect(isColumnApplicable({}, "Depreciações", "2025-12-01")).toBe(false);
+    expect(isColumnOffMonth({}, "Depreciações", "2025-09-01")).toBe(true);
+    expect(isColumnApplicable({}, "Depreciações", "2026-01-01")).toBe(true);
+    expect(isColumnOffMonth({}, "Depreciações", "2026-10-01")).toBe(false);
   });
 
   it("depende dos ativos da ficha (sim/não e desde quando)", () => {
@@ -43,7 +43,8 @@ describe("isColumnApplicable — Depreciações", () => {
     expect(isColumnApplicable(c, "Depreciações", "2027-03-01")).toBe(false);
     expect(isColumnOffMonth(c, "Depreciações", "2027-03-01")).toBe(true);
     expect(isColumnApplicable(c, "Depreciações", "2027-04-01")).toBe(true);
-    expect(isColumnApplicable({ ativos: true, ativos_desde: "2020-01-01" }, "Depreciações", "2026-12-01")).toBe(false);
+    expect(isColumnApplicable({ ativos: true, ativos_desde: "2020-01-01" }, "Depreciações", "2025-12-01")).toBe(false);
+    expect(isColumnApplicable({ ativos: true, ativos_desde: "2026-01-01" }, "Depreciações", "2026-10-01")).toBe(true);
   });
 });
 
