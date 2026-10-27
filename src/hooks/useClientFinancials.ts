@@ -66,6 +66,8 @@ export type FinancialSettings = {
   notas: string | null;
   notas_irs: string | null;
   ret_241_acum: number | null;
+  /** Gastos com mercadorias do ano introduzidos à mão (null = automático, conta 31). */
+  mercadorias_valor: number | null;
   ret_241_mes: number | null;
 };
 
@@ -162,6 +164,7 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         notas: null,
         notas_irs: null,
         ret_241_acum: null,
+        mercadorias_valor: null,
         ret_241_mes: null,
       }) as FinancialSettings;
     },

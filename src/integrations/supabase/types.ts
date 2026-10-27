@@ -132,6 +132,7 @@ export type Database = {
           notas: string | null
           notas_irs: string | null
           ret_241_acum: number | null
+          mercadorias_valor: number | null
           ret_241_mes: number | null
           relatorio_q4_entregue: boolean
           ss_q1: number
@@ -185,6 +186,7 @@ export type Database = {
           notas?: string | null
           notas_irs?: string | null
           ret_241_acum?: number | null
+          mercadorias_valor?: number | null
           ret_241_mes?: number | null
           relatorio_q4_entregue?: boolean
           ss_q1?: number
@@ -238,6 +240,7 @@ export type Database = {
           notas?: string | null
           notas_irs?: string | null
           ret_241_acum?: number | null
+          mercadorias_valor?: number | null
           ret_241_mes?: number | null
           relatorio_q4_entregue?: boolean
           ss_q1?: number
