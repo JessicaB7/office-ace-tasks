@@ -101,7 +101,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
             toast.warning(`Balancete é de ${res.year}, mas estás a ver ${year}. Importei na vista atual.`);
           }
           entries = res.entries;
-          ret241 = res.retencoesAcum ? { acum: res.retencoesAcum, mes: res.endMonth } : null;
+          ret241 = { acum: res.retencoesAcum ?? 0, mes: res.endMonth };
           toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
           const res = await parseMapaPdf(file, accounts.map((a) => ({ code: a.code, section: a.section })));
@@ -118,7 +118,7 @@ export default function ClientAnalysisView({ clientId, onBack }: { clientId: str
             toast.warning(`Balancete é de ${res.year}, mas estás a ver ${year}. Importei na vista atual.`);
           }
           entries = res.entries;
-          ret241 = res.retencoesAcum ? { acum: res.retencoesAcum, mes: res.endMonth } : null;
+          ret241 = { acum: res.retencoesAcum ?? 0, mes: res.endMonth };
           toast.info(`Balancete ${res.startMonth.toString().padStart(2, "0")}–${res.endMonth.toString().padStart(2, "0")}/${res.year} carregado no mês de fecho.`);
         } else {
           const buf = await file.arrayBuffer();
