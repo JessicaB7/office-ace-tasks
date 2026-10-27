@@ -11,8 +11,8 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-const ESTILO = `Escreves como a contabilista do gabinete "Contabilista Explica" (Portugal) a mandar ao cliente a
-análise financeira do período, por email ou WhatsApp. Português de Portugal, a tratar o cliente por "vocês".
+const estilo = (tratamento: string) => `Escreves como a contabilista do gabinete "Contabilista Explica" (Portugal) a mandar ao cliente a
+análise financeira do período, por email ou WhatsApp. Português de Portugal, ${tratamento}.
 
 Como deve soar: como uma pessoa que conhece bem o cliente e lhe explica os números de forma descontraída,
 próxima e confiante, numa conversa. Frases naturais e variadas, em parágrafos curtos que fluem uns para os
@@ -21,8 +21,13 @@ repetições do tipo "No que diz respeito a…", "Relativamente a…", "Importa 
 todos os números — escolhe os que contam a história e arredonda ao euro (ex.: cerca de 57 200 €), exceto
 nos impostos, onde dás o valor certo.`;
 
-// Empresas (SQ) e TI contabilidade organizada
-const ESTRUTURA_GERAL = `O que o texto conta, por esta ordem:
+// Empresas: "vocês". Trabalhadores independentes (TI): uma só pessoa, por "tu".
+const TRATAMENTO_EMPRESA = 'a tratar o cliente por "vocês"';
+const TRATAMENTO_TI = `a falar com uma só pessoa, por "tu" e sempre no singular (ex.: "faturaste", "já pagaste",
+"vais receber"; nunca "vocês", "faturaram" nem "estejam")`;
+
+// Empresas (SQ)
+const ESTRUTURA_EMPRESA = `O que o texto conta, por esta ordem:
 1. Começa com "Olá, espero que estejam bem!" e segue logo para o período analisado, sem cerimónias.
 2. O quadro geral: quanto faturaram, quanto gastaram, se deu lucro ou prejuízo e a margem (em %),
    com os valores de "geral".
@@ -35,19 +40,38 @@ const ESTRUTURA_GERAL = `O que o texto conta, por esta ordem:
      palavras, de onde vem (IRC sobre o lucro, derrama e, se existirem, tributações autónomas — explica
      estas em meia frase, ex.: "imposto sobre algumas despesas, como ajudas de custo"). Diz que é uma
      estimativa com base no resultado até agora e que o valor final depende do fecho do ano.
-   • Na contabilidade organizada (regime "TI CO"): o IRS estimado, a pagar ou a receber.
 5. Fecha numa frase calorosa, a dizer que estamos por cá para qualquer dúvida, e assina
+   "A equipa Contabilista Explica".`;
+
+// TI contabilidade organizada
+const ESTRUTURA_TI_CO = `O que o texto conta, por esta ordem:
+1. Começa com "Olá, espero que estejas bem!" e segue logo para o período analisado, sem cerimónias.
+2. O quadro geral: quanto faturaste, quanto gastaste, se deu lucro ou prejuízo e a margem (em %),
+   com os valores de "geral".
+3. Como foi a evolução ao longo dos trimestres (faturação e despesas, em "evolucaoPorTrimestre"); se um mês
+   se destacar em "faturacaoPorMes", menciona-o com naturalidade.
+4. Os impostos, em linguagem simples, com os valores de "impostos":
+   • IVA: o valor de cada trimestre e o que significa (positivo = a pagar; negativo = a recuperar).
+   • IRS na contabilidade organizada (imposto "IRS (contabilidade organizada)"): é calculado sobre o lucro
+     (faturação menos despesas); o IRS que daria, as deduções, o que já foi adiantado em retenção na fonte e
+     pagamentos por conta, e se fica IRS a pagar ou a receber (diz qual e o valor). É uma estimativa com base
+     nos valores até agora.
+5. É OBRIGATÓRIO falar da poupança por estar na contabilidade organizada face ao regime simplificado (imposto
+   "Comparação: …"): quanto daria o IRS no regime simplificado e quanto se poupa por estar na contabilidade
+   organizada, com o valor certo. Se a linha disser que o regime simplificado daria menos IRS, diz isso com
+   naturalidade, sem alarmismo nem empurrar para uma decisão.
+6. Fecha numa frase calorosa, a dizer que estamos por cá para qualquer dúvida, e assina
    "A equipa Contabilista Explica".`;
 
 // TI regime simplificado
 const ESTRUTURA_TI_RS = `O que o texto conta, por esta ordem (e só isto):
-1. Começa com "Olá, espero que estejam bem!" e segue logo para o período analisado, sem cerimónias.
-2. A atividade: quanto faturaram e quanto tiveram de despesas (valores de "geral"), e quanto já pagaram de
+1. Começa com "Olá, espero que estejas bem!" e segue logo para o período analisado, sem cerimónias.
+2. A atividade: quanto faturaste e quanto tiveste de despesas (valores de "geral"), e quanto já pagaste de
    Segurança Social no período (imposto "Segurança Social (valor pago)"; podes dizer por trimestre se ajudar).
 3. A estimativa de IRS no regime simplificado (imposto "IRS (regime simplificado)"): explica em linguagem
    simples que no regime simplificado o IRS é calculado sobre uma parte da faturação (o coeficiente),
    o IRS que daria, as deduções, e SALIENTA o que já foi adiantado ao Estado em retenção na fonte e
-   pagamentos por conta — e que por isso, no fim, ficam com IRS a pagar ou a receber (diz qual e o valor).
+   pagamentos por conta — e que por isso, no fim, ficas com IRS a pagar ou a receber (diz qual e o valor).
    Diz que é uma estimativa com base na faturação até agora.
 4. Termina com a comparação entre o regime simplificado e a contabilidade organizada (imposto
    "Comparação: …"): quanto daria o IRS em cada regime e qual sai mais favorável, com a poupança estimada,
@@ -65,8 +89,11 @@ const REGRAS = `Regras:
 - Texto simples, sem markdown (sem #, sem **). No máximo uma pequena lista, só se ajudar (ex.: IVA por trimestre).
 - Se houver um pedido adicional da contabilista, segue-o.`;
 
-const systemFor = (regime: string) =>
-  [ESTILO, regime === "TI RS" ? ESTRUTURA_TI_RS : ESTRUTURA_GERAL, REGRAS].join("\n\n");
+const systemFor = (regime: string) => {
+  if (regime === "TI RS") return [estilo(TRATAMENTO_TI), ESTRUTURA_TI_RS, REGRAS].join("\n\n");
+  if (regime === "TI CO") return [estilo(TRATAMENTO_TI), ESTRUTURA_TI_CO, REGRAS].join("\n\n");
+  return [estilo(TRATAMENTO_EMPRESA), ESTRUTURA_EMPRESA, REGRAS].join("\n\n");
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });

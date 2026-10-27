@@ -308,6 +308,16 @@ export default function TIOrganizadoDashboard({
               ],
               nota: "estimativa sobre o resultado acumulado até ao momento",
             },
+            {
+              imposto: "Comparação: contabilidade organizada vs regime simplificado",
+              linhas: [
+                { descricao: irsOrganizadoLiquido >= 0 ? "Contabilidade organizada — IRS a pagar" : "Contabilidade organizada — IRS a receber", valor: Math.abs(irsOrganizadoLiquido) },
+                { descricao: `Regime simplificado — rendimento coletável (faturação × ${coef.toLocaleString("pt-PT")})`, valor: rendimentoColectavel },
+                { descricao: irsSimplificadoLiquido >= 0 ? "Regime simplificado — IRS a pagar" : "Regime simplificado — IRS a receber", valor: Math.abs(irsSimplificadoLiquido) },
+                { descricao: diffRegimes === 0 ? "Ambos os regimes dão o mesmo IRS" : diffRegimes > 0 ? "Poupança estimada por estar na contabilidade organizada" : "O regime simplificado daria menos IRS, em", valor: Math.abs(diffRegimes) },
+              ],
+              nota: "simulação com os valores até ao momento",
+            },
           ],
         }} />
         <Button onClick={exportPDF} disabled={exporting} size="sm" variant="outline">
