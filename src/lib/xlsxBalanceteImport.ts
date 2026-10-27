@@ -126,7 +126,9 @@ export async function parseBalanceteXlsx(file: File, catalogCodes: string[]): Pr
   for (const code of periodDeb.keys()) {
     const match = sortedCodes.find((c) => code.startsWith(c));
     if (!match) continue;
-    const net = Math.abs((periodDeb.get(code) || 0) - (periodCred.get(code) || 0));
+    // Gastos (6) e rendimentos (7) com sinal da natureza da conta: um estorno abate ao total.
+    const diff = (periodDeb.get(code) || 0) - (periodCred.get(code) || 0);
+    const net = code.startsWith("6") ? diff : code.startsWith("7") ? -diff : Math.abs(diff);
     if (net === 0) continue;
     catalogAgg.set(match, (catalogAgg.get(match) || 0) + net);
   }
@@ -134,6 +136,7 @@ export async function parseBalanceteXlsx(file: File, catalogCodes: string[]): Pr
   const entries: BalanceteEntry[] = [];
   for (const [code, total] of catalogAgg.entries()) {
     const rounded = Math.round(total * 100) / 100;
+    if (rounded === 0) continue;
     for (let m = startMonth; m <= endMonth; m++) {
       entries.push({ month: m, account_code: code, value: m === endMonth ? rounded : 0 });
     }

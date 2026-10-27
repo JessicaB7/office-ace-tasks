@@ -50,6 +50,7 @@ export async function parseBalancetePdf(file: File, catalogCodes: string[]): Pro
   const acumDeb = new Map<string, number>();
   const acumCred = new Map<string, number>();
   const seenCodes = new Set<string>();
+  let hasPeriodValues = false;
 
   // Column x-centers, learnt from first page's header row.
   // Order: perDeb, perCred, acumDeb, acumCred, saldoDev, saldoCred
@@ -133,19 +134,18 @@ export async function parseBalancetePdf(file: File, catalogCodes: string[]): Pro
         valByCol[bestIdx] = n.v;
       }
 
-      // Prefer the "Período" columns. If a PDF omits them, fall back to "Acumulado".
-      const deb = valByCol[0] ?? valByCol[2] ?? 0;
-      const cred = valByCol[1] ?? valByCol[3] ?? 0;
-      if (code.startsWith("241")) {
-        acumDeb.set(code, (acumDeb.get(code) || 0) + (valByCol[2] ?? 0));
-        acumCred.set(code, (acumCred.get(code) || 0) + (valByCol[3] ?? 0));
+      // "Período" columns; "Acumulado" kept apart. A row with no movement in the
+      // period has empty Período cells — it must count as 0, not as its Acumulado.
+      if (valByCol[0] !== null || valByCol[1] !== null) hasPeriodValues = true;
+      for (const [map, v] of [[periodDeb, valByCol[0]], [periodCred, valByCol[1]], [acumDeb, valByCol[2]], [acumCred, valByCol[3]]] as const) {
+        if (v) map.set(code, (map.get(code) || 0) + v);
       }
-      if (deb === 0 && cred === 0) continue;
-
-      periodDeb.set(code, (periodDeb.get(code) || 0) + deb);
-      periodCred.set(code, (periodCred.get(code) || 0) + cred);
     }
   }
+
+  // Only when the PDF has no "Período" values at all fall back to "Acumulado".
+  const debMap = hasPeriodValues ? periodDeb : acumDeb;
+  const credMap = hasPeriodValues ? periodCred : acumCred;
 
   // Keep only leaf codes: a code is a leaf if no longer code in seenCodes starts with it.
   const seenArr = Array.from(seenCodes);
@@ -159,7 +159,9 @@ export async function parseBalancetePdf(file: File, catalogCodes: string[]): Pro
     // find longest-prefix catalog code
     const match = sortedCodes.find((c) => code.startsWith(c));
     if (!match) continue;
-    const net = Math.abs((periodDeb.get(code) || 0) - (periodCred.get(code) || 0));
+    // Gastos (6) e rendimentos (7) com sinal da natureza da conta: um estorno abate ao total.
+    const diff = (debMap.get(code) || 0) - (credMap.get(code) || 0);
+    const net = code.startsWith("6") ? diff : code.startsWith("7") ? -diff : Math.abs(diff);
     if (net === 0) continue;
     catalogAgg.set(match, (catalogAgg.get(match) || 0) + net);
   }
@@ -169,14 +171,15 @@ export async function parseBalancetePdf(file: File, catalogCodes: string[]): Pro
   const entries: BalanceteEntry[] = [];
   for (const [code, total] of catalogAgg.entries()) {
     const rounded = Math.round(total * 100) / 100;
+    if (rounded === 0) continue;
     for (let m = startMonth; m <= endMonth; m++) {
       entries.push({ month: m, account_code: code, value: m === endMonth ? rounded : 0 });
     }
   }
 
   let retencoesAcum = 0;
-  for (const code of acumDeb.keys()) {
-    if (!isLeaf(code)) continue;
+  for (const code of seenArr) {
+    if (!code.startsWith("241") || !isLeaf(code)) continue;
     retencoesAcum += Math.abs((acumDeb.get(code) || 0) - (acumCred.get(code) || 0));
   }
 
