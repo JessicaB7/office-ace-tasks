@@ -160,6 +160,24 @@ trimestre** (Mar / Jun / Set / Dez). Se a tarefa estiver noutro mês, usar o tri
 No Resultado: trimestre, ficheiros importados, n.º de valores carregados de cada um (mensagem da app) e o IVA
 preenchido por trimestre (campo 93 ou 94).
 
+### 5.1 Segurança Social no dashboard (valor mensal por trimestre)
+
+O quadro **Segurança Social** do dashboard TI Simplificado é manual e obrigatório para exportar o PDF.
+
+**Passos** (1.ª execução: Joana Bessa, 28/10/2026)
+1. **TOConline — escolher a empresa** (pesquisa pelo NIF → ENTRAR).
+2. **Empresa → Sumário → Acesso Direto** → pesquisar **"contributiva"** → linha **"Emitir situação contributiva"** →
+   **Aceder** (o link só aparece ao passar o rato; a pesquisa "Segurança Social" pode não mostrar linhas). Abre a
+   Segurança Social Direta noutro separador; a sessão é partilhada.
+3. Na Segurança Social Direta abrir
+   `https://www.seg-social.pt/ptss/gc/extratoContaCorrente/consulta` (**Consultar extrato de contribuições dos
+   Trabalhadores Independentes**) → **Ano da contribuição** = ano da análise → **Pesquisar**.
+4. A tabela mostra **Ano-Mês / Valores a pagar / Valores pagos**. O valor mensal é igual nos 3 meses de cada trimestre
+   (muda em Jan / Abr / Jul / Out).
+5. **Na app:** dashboard anual → quadro **Segurança Social** → escrever o **valor mensal** de cada trimestre
+   (a app multiplica por 3). Trimestre ainda sem valor no extrato → deixar a 0.
+6. Anotar no Resultado se algum mês tem **valor pago inferior ao valor a pagar** (dívida).
+
 ## 6. Classificação e-Fatura
 
 **Aplica-se a:** todos os clientes do regime. Tarefa **mensal**, feita só para os **meses indicados pela utilizadora**
