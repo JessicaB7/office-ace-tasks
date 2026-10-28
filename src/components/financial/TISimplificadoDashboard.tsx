@@ -106,6 +106,11 @@ export default function TISimplificadoDashboard({
   useEffect(() => {
     setCoef(Number(client?.irs_coeficiente ?? 0.75));
   }, [client?.irs_coeficiente]);
+  // Benefício de IRS (ex.: Programa Regressar 50%, IRS Jovem): fração do rendimento isenta
+  const [isencao, setIsencao] = useState<number>(Number(client?.irs_isencao_pct ?? 0));
+  useEffect(() => {
+    setIsencao(Number(client?.irs_isencao_pct ?? 0));
+  }, [client?.irs_isencao_pct]);
 
 
 
@@ -249,7 +254,7 @@ export default function TISimplificadoDashboard({
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
   const totalSS = ssQuarters.reduce((a, b) => a + b, 0);
 
-  const rendimentoColectavel = totalFat * coef;
+  const rendimentoColectavel = totalFat * coef * (1 - isencao);
   const irsEstimado = calcIRS(rendimentoColectavel);
   // O reembolso nunca pode exceder a retenção na fonte e pagamentos por conta
   const capReembolso = (v: number) => Math.max(v, -retencoes);
@@ -258,7 +263,7 @@ export default function TISimplificadoDashboard({
 
   // Simulação regime organizado: tributação sobre o resultado líquido
   const resultadoOrganizado = resultado;
-  const irsOrganizado = calcIRS(Math.max(0, resultadoOrganizado));
+  const irsOrganizado = calcIRS(Math.max(0, resultadoOrganizado) * (1 - isencao));
   const irsOrganizadoLiquido = capReembolso(irsOrganizado - deducoes - retencoes);
   const diffRegimes = irsLiquido - irsOrganizadoLiquido;
 
@@ -281,6 +286,21 @@ export default function TISimplificadoDashboard({
     } else {
       qc.invalidateQueries({ queryKey: ["clients"] });
       toast.success("Coeficiente atualizado");
+    }
+  };
+
+  const saveIsencao = async (val: number) => {
+    const safe = isFinite(val) ? Math.max(0, Math.min(1, val)) : 0;
+    setIsencao(safe);
+    const { error } = await supabase
+      .from("clients")
+      .update({ irs_isencao_pct: safe })
+      .eq("id", clientId);
+    if (error) {
+      toast.error("Erro a guardar benefício IRS");
+    } else {
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      toast.success("Benefício IRS atualizado");
     }
   };
 
@@ -353,7 +373,12 @@ export default function TISimplificadoDashboard({
             {
               imposto: "IRS (regime simplificado) — estimativa",
               linhas: [
-                { descricao: `Rendimento coletável (${(coef * 100).toLocaleString("pt-PT")}% da faturação, coeficiente do regime simplificado)`, valor: rendimentoColectavel },
+                {
+                  descricao: isencao > 0
+                    ? `Rendimento coletável (${(coef * 100).toLocaleString("pt-PT")}% da faturação, coeficiente do regime simplificado, com ${(isencao * 100).toLocaleString("pt-PT")}% isento pelo benefício de IRS)`
+                    : `Rendimento coletável (${(coef * 100).toLocaleString("pt-PT")}% da faturação, coeficiente do regime simplificado)`,
+                  valor: rendimentoColectavel,
+                },
                 { descricao: "IRS calculado", valor: irsEstimado },
                 { descricao: "Deduções à coleta", valor: deducoes },
                 { descricao: "Retenção na fonte e pagamentos por conta", valor: retencoes },
@@ -365,7 +390,7 @@ export default function TISimplificadoDashboard({
               imposto: "Comparação: regime simplificado vs contabilidade organizada",
               linhas: [
                 { descricao: irsLiquido >= 0 ? "Regime simplificado — IRS a pagar" : "Regime simplificado — IRS a receber", valor: Math.abs(irsLiquido) },
-                { descricao: "Contabilidade organizada — rendimento coletável (resultado)", valor: Math.max(0, resultadoOrganizado) },
+                { descricao: isencao > 0 ? `Contabilidade organizada — rendimento coletável (resultado, com ${(isencao * 100).toLocaleString("pt-PT")}% isento)` : "Contabilidade organizada — rendimento coletável (resultado)", valor: Math.max(0, resultadoOrganizado) * (1 - isencao) },
                 { descricao: irsOrganizadoLiquido >= 0 ? "Contabilidade organizada — IRS a pagar" : "Contabilidade organizada — IRS a receber", valor: Math.abs(irsOrganizadoLiquido) },
                 { descricao: diffRegimes === 0 ? "Ambos os regimes dão o mesmo IRS" : diffRegimes > 0 ? "Poupança estimada com contabilidade organizada" : "Poupança estimada com o regime simplificado", valor: Math.abs(diffRegimes) },
               ],
@@ -647,6 +672,22 @@ export default function TISimplificadoDashboard({
                 </select>
               </label>
             )}
+            {!exporting && (
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Benefício IRS</span>
+                <select
+                  value={isencao}
+                  onChange={(e) => saveIsencao(Number(e.target.value))}
+                  className="py-1.5 px-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value={0}>Sem benefício</option>
+                  <option value={0.25}>25% isento (IRS Jovem)</option>
+                  <option value={0.5}>50% isento (Regressar / IRS Jovem)</option>
+                  <option value={0.75}>75% isento (IRS Jovem)</option>
+                  <option value={1}>100% isento (IRS Jovem)</option>
+                </select>
+              </label>
+            )}
             {retencoesSource !== "auto" && (
               <label className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">Retenção na fonte e pagamentos por conta</span>
@@ -691,7 +732,9 @@ export default function TISimplificadoDashboard({
             <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
           </div>
           <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
-            <div className="text-[11px] text-muted-foreground">Rendimento colectável</div>
+            <div className="text-[11px] text-muted-foreground">
+              Rendimento colectável{isencao > 0 && ` (${(isencao * 100).toLocaleString("pt-PT")}% isento)`}
+            </div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(rendimentoColectavel)}</div>
           </div>
           <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
