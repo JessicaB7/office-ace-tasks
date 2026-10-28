@@ -37,3 +37,22 @@ describe("buildRobotResumo", () => {
     expect(r.impostos[0].linhas[0].valor).toBe(-7.34);
   });
 });
+
+describe("buildRobotResumo — ano anterior", () => {
+  const base = {
+    regime: "TI RS", year: 2026, accounts, settings,
+    entries: [e(1, "72", 1000), e(2, "72", 500)],
+    dashboard: { faturacao: 1500, resultado: 1500, impostos: [] },
+  };
+
+  it("faturação do ano anterior no ano todo e no mesmo período", () => {
+    const prev = [{ ...e(1, "72", 300), year: 2025 }, { ...e(2, "72", 200), year: 2025 }, { ...e(11, "72", 400), year: 2025 }];
+    const r = buildRobotResumo({ ...base, entriesAnoAnterior: prev });
+    expect(r.anoAnterior).toEqual({ ano: 2025, faturacaoAnual: 900, faturacaoMesmoPeriodo: 500 });
+  });
+
+  it("sem dados do ano anterior não há comparação", () => {
+    expect(buildRobotResumo({ ...base, entriesAnoAnterior: [] }).anoAnterior).toBeUndefined();
+    expect(buildRobotResumo(base).anoAnterior).toBeUndefined();
+  });
+});

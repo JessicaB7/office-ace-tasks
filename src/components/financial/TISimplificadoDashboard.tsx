@@ -353,7 +353,7 @@ export default function TISimplificadoDashboard({
             {
               imposto: "IRS (regime simplificado) — estimativa",
               linhas: [
-                { descricao: `Rendimento coletável (faturação × ${coef.toLocaleString("pt-PT")})`, valor: rendimentoColectavel },
+                { descricao: `Rendimento coletável (${(coef * 100).toLocaleString("pt-PT")}% da faturação, coeficiente do regime simplificado)`, valor: rendimentoColectavel },
                 { descricao: "IRS calculado", valor: irsEstimado },
                 { descricao: "Deduções à coleta", valor: deducoes },
                 { descricao: "Retenção na fonte e pagamentos por conta", valor: retencoes },

@@ -9,6 +9,7 @@ import {
   useClientFinancialEntries,
   useClientFinancialSettings,
   useFinancialAccounts,
+  useFinancialImports,
   useUpsertSettings,
 } from "@/hooks/useClientFinancials";
 import { buildEntryMap, MONTHS_PT, fmtEur, sumSectionMonth, sumGroupMonth } from "./financialMath";
@@ -31,6 +32,14 @@ export default function EmpresasDashboard({
   const { data: settings } = useClientFinancialSettings(clientId, year);
   const upsertSettings = useUpsertSettings(clientId, year);
   const map = useMemo(() => buildEntryMap(entries), [entries]);
+  const { data: imports = [] } = useFinancialImports(clientId, year);
+  // Contas de detalhe dos balancetes (6266, 6251, 6315, 6325): com Mapa de Exploração importado não passam
+  // para os lançamentos (só IVA/SS/retenções), por isso a tributação autónoma lê-as dos balancetes.
+  const balanceteMap = useMemo(
+    () => buildEntryMap(imports.filter((i) => i.slot !== "mapa").flatMap((i) =>
+      (i.entries ?? []).map((e) => ({ ...e, client_id: clientId, year })))),
+    [imports, clientId, year],
+  );
 
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
@@ -158,8 +167,10 @@ export default function EmpresasDashboard({
 
   // Tributação autónoma — bases obtidas do balancete (representação: 6266 + 6251; ajudas de custo: 6315 + 6325)
   // Usa sumGroupMonth para não duplicar conta-mãe + subcontas.
-  const sumGroupYear = (prefix: string) =>
-    cents(months.reduce((acc, m) => acc + sumGroupMonth(map, accounts, prefix, m), 0));
+  const sumGroupYear = (prefix: string) => {
+    const fromEntries = months.reduce((acc, m) => acc + sumGroupMonth(map, accounts, prefix, m), 0);
+    return cents(fromEntries !== 0 ? fromEntries : months.reduce((acc, m) => acc + sumGroupMonth(balanceteMap, accounts, prefix, m), 0));
+  };
   const taRepAuto = cents(sumGroupYear("6266") + sumGroupYear("6251"));
   const taAjAuto = cents(sumGroupYear("6315") + sumGroupYear("6325"));
   const taParts = {

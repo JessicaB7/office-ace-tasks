@@ -35,6 +35,8 @@ export interface RobotResumo {
   evolucaoPorTrimestre: { trimestre: string; faturacao: number; despesas: number }[];
   faturacaoPorMes: { mes: string; faturacao: number }[];
   impostos: { imposto: string; linhas: { descricao: string; valor: number }[]; porTrimestre?: { trimestre: string; valor: number }[]; nota?: string }[];
+  /** Faturação do ano anterior (se houver dados na app): no ano todo e no mesmo período. */
+  anoAnterior?: { ano: number; faturacaoAnual: number; faturacaoMesmoPeriodo: number };
 }
 
 /** Último mês com algum valor de rendimentos ou gastos (0 = sem dados). */
@@ -50,8 +52,10 @@ export function buildRobotResumo(args: {
   entries: FinancialEntry[];
   settings: FinancialSettings;
   dashboard: RobotDashboard;
+  /** Lançamentos do ano anterior, para comparar a faturação (opcional). */
+  entriesAnoAnterior?: FinancialEntry[];
 }): RobotResumo {
-  const { regime, year, accounts, entries, settings, dashboard } = args;
+  const { regime, year, accounts, entries, settings, dashboard, entriesAnoAnterior } = args;
   const mapa = computeMapaExploracao(buildEntryMap(entries), accounts, settings);
   // gastos/compras vêm negativos no mapa — no resumo vão positivos
   const gastos = mapa.gastos.map((g, i) => -(g + mapa.compras[i]));
@@ -69,6 +73,13 @@ export function buildRobotResumo(args: {
 
   const faturacao = r2(dashboard.faturacao);
   const resultado = r2(dashboard.resultado);
+
+  const rendAnterior = entriesAnoAnterior?.length
+    ? computeMapaExploracao(buildEntryMap(entriesAnoAnterior), accounts, settings).rendimentos
+    : null;
+  const anoAnterior = rendAnterior && sum(rendAnterior) !== 0
+    ? { ano: year - 1, faturacaoAnual: r2(sum(rendAnterior)), faturacaoMesmoPeriodo: r2(sum(rendAnterior.slice(0, last))) }
+    : undefined;
 
   return {
     regime,
@@ -91,5 +102,6 @@ export function buildRobotResumo(args: {
         : {}),
       ...(imp.nota ? { nota: imp.nota } : {}),
     })),
+    ...(anoAnterior ? { anoAnterior } : {}),
   };
 }

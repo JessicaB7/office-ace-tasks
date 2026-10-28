@@ -19,6 +19,7 @@ export default function RobotAnaliseDialog({ open, onClose, client, year, dashbo
 }) {
   const { data: accounts = [] } = useFinancialAccounts();
   const { data: entries = [] } = useClientFinancialEntries(client.id, year);
+  const { data: entriesAnoAnterior = [] } = useClientFinancialEntries(client.id, year - 1);
   const { data: settings } = useClientFinancialSettings(client.id, year);
   const [pedido, setPedido] = useState("");
   const [texto, setTexto] = useState("");
@@ -26,7 +27,7 @@ export default function RobotAnaliseDialog({ open, onClose, client, year, dashbo
 
   const gerar = async () => {
     if (!settings) return;
-    const resumo = buildRobotResumo({ regime: client.tipo_contabilidade || "SQ", year, accounts, entries, settings, dashboard });
+    const resumo = buildRobotResumo({ regime: client.tipo_contabilidade || "SQ", year, accounts, entries, settings, dashboard, entriesAnoAnterior });
     if (resumo.ultimoMes === 0) {
       toast.error(`Não há dados de ${year} para analisar — importe primeiro os mapas.`);
       return;

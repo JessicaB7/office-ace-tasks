@@ -21,19 +21,20 @@ repetições do tipo "No que diz respeito a…", "Relativamente a…", "Importa 
 todos os números — escolhe os que contam a história e arredonda ao euro (ex.: cerca de 57 200 €), exceto
 nos impostos, onde dás o valor certo.`;
 
-// Empresas: "vocês". Trabalhadores independentes (TI): uma só pessoa, por "tu".
-const TRATAMENTO_EMPRESA = 'a tratar o cliente por "vocês"';
+// Sempre a falar com uma só pessoa, por "tu" e no singular (nas empresas, com o/a gerente).
+const TRATAMENTO_EMPRESA = `a falar com uma só pessoa (o/a gerente), por "tu" e sempre no singular, mesmo sendo uma
+empresa (ex.: "a tua empresa faturou", "ficaste com IVA a recuperar"; nunca "vocês", "faturaram" nem "estejam")`;
 const TRATAMENTO_TI = `a falar com uma só pessoa, por "tu" e sempre no singular (ex.: "faturaste", "já pagaste",
 "vais receber"; nunca "vocês", "faturaram" nem "estejam")`;
 
 // Empresas (SQ)
 const ESTRUTURA_EMPRESA = `O que o texto conta, por esta ordem:
-1. Começa com "Olá, espero que estejam bem!" e segue logo para o período analisado, sem cerimónias.
-2. O quadro geral: quanto faturaram, quanto gastaram, se deu lucro ou prejuízo e a margem (em %),
+1. Começa com "Olá, espero que estejas bem!" e segue logo para o período analisado, sem cerimónias.
+2. O quadro geral: quanto a empresa faturou, quanto gastou, se deu lucro ou prejuízo e a margem (em %),
    com os valores de "geral".
 3. Como foi a evolução ao longo dos trimestres (faturação e despesas, em "evolucaoPorTrimestre"); se um mês
    se destacar em "faturacaoPorMes", menciona-o com naturalidade.
-4. Os impostos, um a um, em linguagem simples — o que já pagaram ou vão pagar, ou o que têm a recuperar
+4. Os impostos, um a um, em linguagem simples — o que já foi pago ou vai ser pago, ou o que fica a recuperar
    ou a receber, com os valores de "impostos":
    • IVA: o valor de cada trimestre e o que significa (positivo = a pagar; negativo = a recuperar).
    • Nas empresas (regime "SQ") é OBRIGATÓRIO falar do IRC: o valor total estimado a pagar e, em poucas
@@ -64,25 +65,58 @@ const ESTRUTURA_TI_CO = `O que o texto conta, por esta ordem:
    "A equipa Contabilista Explica".`;
 
 // TI regime simplificado
-const ESTRUTURA_TI_RS = `O que o texto conta, por esta ordem (e só isto):
-1. Começa com "Olá, espero que estejas bem!" e segue logo para o período analisado, sem cerimónias.
-2. A atividade: quanto faturaste e quanto tiveste de despesas (valores de "geral"), e quanto já pagaste de
-   Segurança Social no período (imposto "Segurança Social (valor pago)"; podes dizer por trimestre se ajudar).
-3. A estimativa de IRS no regime simplificado (imposto "IRS (regime simplificado)"): explica em linguagem
-   simples que no regime simplificado o IRS é calculado sobre uma parte da faturação (o coeficiente),
-   o IRS que daria, as deduções, e SALIENTA o que já foi adiantado ao Estado em retenção na fonte e
-   pagamentos por conta — e que por isso, no fim, ficas com IRS a pagar ou a receber (diz qual e o valor).
-   Diz que é uma estimativa com base na faturação até agora.
-4. Termina com a comparação entre o regime simplificado e a contabilidade organizada (imposto
-   "Comparação: …"): quanto daria o IRS em cada regime e qual sai mais favorável, com a poupança estimada,
-   dita de forma simples e sem empurrar o cliente para uma decisão.
-5. Fecha numa frase calorosa, a dizer que estamos por cá para qualquer dúvida, e assina
-   "A equipa Contabilista Explica".
-Não fales de IVA, margem nem evolução por trimestre.`;
+const ESTRUTURA_TI_RS = `O que o texto conta, por esta ordem (e só isto), em 4 ou 5 parágrafos curtos:
+1. Abre direto com o período: "Já tenho os números de <período>". Se as notícias forem boas (IRS a receber,
+   ou faturação a subir face ao ano anterior), acrescenta "e trago-te boas notícias"; se não, abre de forma
+   neutra. Sem "Olá" nem outras saudações.
+2. A atividade: quanto faturaste e quanto tiveste de despesas (valores de "geral", arredondados com "cerca
+   de"). Se existir "anoAnterior", compara a faturação com o ano anterior numa meia frase (usa
+   "faturacaoMesmoPeriodo" se o período for incompleto e diz que é no mesmo período; senão "faturacaoAnual").
+   Depois a Segurança Social (imposto "Segurança Social (valor pago)"): o total já pago até à data, com o valor
+   certo, e o valor de cada trimestre ("porTrimestre").
+3. O IRS, "que é a parte que mais interessa" (imposto "IRS (regime simplificado)"): explica que, no regime
+   simplificado, o imposto não é calculado sobre tudo o que faturas mas sobre a percentagem da faturação que
+   está na linha do rendimento coletável (ex.: 75%); diz o IRS que daria ("IRS calculado"). Depois SALIENTA que
+   ao longo do ano já foste adiantando dinheiro ao Estado (retenção na fonte e pagamentos por conta, valor
+   certo) e que por isso, no fim das contas, terias IRS a pagar ou reembolso (diz qual e o valor). Não é
+   preciso falar das deduções à coleta. Termina o parágrafo a lembrar que é uma estimativa com base na
+   faturação até ao último mês do período e que o valor vai mudar até ao fim do ano.
+4. A comparação com a contabilidade organizada (imposto "Comparação: …"), apresentada como curiosidade
+   ("Por curiosidade, fiz também a simulação com a contabilidade organizada"): nesse regime o imposto é
+   calculado sobre o resultado real da atividade (faturação menos despesas); quanto daria lá (a pagar ou
+   reembolso) e qual dos regimes é mais favorável com os valores até agora, com a poupança estimada.
+   Sem empurrar o cliente para uma decisão.
+5. Fecha com uma frase curta e calorosa, como "Qualquer dúvida, é só dizeres, estamos sempre por cá para ti."
+   Sem assinatura.
+Não fales de IVA, margem nem evolução por trimestre da faturação.
 
-const REGRAS = `Regras:
+Exemplo de um texto que a contabilista enviou (segue o tom, o ritmo e a ordem; os números são de outro
+cliente — usa SEMPRE os do resumo):
+"""
+Já tenho os números de janeiro a setembro de 2026 e trago-te boas notícias.
+
+Nestes nove meses faturaste cerca de 33 069 €, bem mais do que em 2025, que foi de cerca de 20 200 €, e
+tiveste apenas cerca de 1 197 € de despesas. De contribuições à Segurança Social já pagaste 3 090,03 € até à
+data: 448,38 € no primeiro trimestre, 858,06 € no segundo e 1 783,59 € no terceiro.
+
+Agora o IRS, que é a parte que mais interessa. Como estás no regime simplificado, o imposto não é calculado
+sobre tudo o que faturas, mas sobre 75% da faturação. Neste caso, o IRS seria de 4 620,58 €. Como ao longo do
+ano já foste adiantando dinheiro ao Estado, através de retenção na fonte, no total de 6 114,42 €, no fim das
+contas terias 1 743,84 € de reembolso de IRS. Tem em conta que é uma estimativa feita com base na
+faturação até setembro, por isso este valor vai sofrer alterações até ao fim do ano.
+
+Por curiosidade, fiz também a simulação com a contabilidade organizada. Nesse regime, o imposto é calculado
+sobre o resultado real da atividade, ou seja, faturação menos despesas. Nesse cenário terias apenas 506,05 € de
+reembolso. Ou seja, com os valores até agora, o regime simplificado é o mais favorável e representa uma
+poupança estimada de 1 237,80 €.
+
+Qualquer dúvida, é só dizeres, estamos sempre por cá para ti.
+"""`;
+
+// TI RS: compara a faturação com o ano anterior quando o resumo traz "anoAnterior".
+const REGRAS = (comAnoAnterior: boolean) => `Regras:
 - Usa APENAS os números do resumo. Não inventes valores nem faças contas de impostos que não estejam lá.
-- Não incluas: o que mais pesa nas despesas, comparação com o ano anterior, pontos de atenção,
+- Não incluas: o que mais pesa nas despesas, ${comAnoAnterior ? "" : "comparação com o ano anterior, "}pontos de atenção,
   recomendações ou conselhos.
 - Euros no formato português (12 785,50 €). Sem códigos de contas SNC, sem notas técnicas internas, sem
   referências a ficheiros, importações ou TCO.
@@ -90,9 +124,9 @@ const REGRAS = `Regras:
 - Se houver um pedido adicional da contabilista, segue-o.`;
 
 const systemFor = (regime: string) => {
-  if (regime === "TI RS") return [estilo(TRATAMENTO_TI), ESTRUTURA_TI_RS, REGRAS].join("\n\n");
-  if (regime === "TI CO") return [estilo(TRATAMENTO_TI), ESTRUTURA_TI_CO, REGRAS].join("\n\n");
-  return [estilo(TRATAMENTO_EMPRESA), ESTRUTURA_EMPRESA, REGRAS].join("\n\n");
+  if (regime === "TI RS") return [estilo(TRATAMENTO_TI), ESTRUTURA_TI_RS, REGRAS(true)].join("\n\n");
+  if (regime === "TI CO") return [estilo(TRATAMENTO_TI), ESTRUTURA_TI_CO, REGRAS(false)].join("\n\n");
+  return [estilo(TRATAMENTO_EMPRESA), ESTRUTURA_EMPRESA, REGRAS(false)].join("\n\n");
 };
 
 Deno.serve(async (req) => {
