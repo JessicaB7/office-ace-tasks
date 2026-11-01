@@ -905,6 +905,7 @@ export type Database = {
         Row: {
           business_area: string | null
           business_type: string | null
+          confirmation_date: string | null
           created_at: string
           email: string | null
           estimated_value: number | null
@@ -913,6 +914,8 @@ export type Database = {
           iva_framework: string | null
           loss_reason: string | null
           meeting: boolean
+          meeting_confirmed: boolean
+          meeting_confirmed_at: string | null
           meeting_date: string | null
           name: string
           next_followup: string | null
@@ -930,6 +933,7 @@ export type Database = {
         Insert: {
           business_area?: string | null
           business_type?: string | null
+          confirmation_date?: string | null
           created_at?: string
           email?: string | null
           estimated_value?: number | null
@@ -938,6 +942,8 @@ export type Database = {
           iva_framework?: string | null
           loss_reason?: string | null
           meeting?: boolean
+          meeting_confirmed?: boolean
+          meeting_confirmed_at?: string | null
           meeting_date?: string | null
           name: string
           next_followup?: string | null
@@ -955,6 +961,7 @@ export type Database = {
         Update: {
           business_area?: string | null
           business_type?: string | null
+          confirmation_date?: string | null
           created_at?: string
           email?: string | null
           estimated_value?: number | null
@@ -963,6 +970,8 @@ export type Database = {
           iva_framework?: string | null
           loss_reason?: string | null
           meeting?: boolean
+          meeting_confirmed?: boolean
+          meeting_confirmed_at?: string | null
           meeting_date?: string | null
           name?: string
           next_followup?: string | null

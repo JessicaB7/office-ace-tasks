@@ -110,6 +110,7 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
 
       <td className="p-3 text-xs">
         {segment === "consultoria" ? fmtDate(l.meeting_date) : l.meeting ? fmtDate(l.meeting_date) : "—"}
+        <SessionConfirmation lead={l} />
         {segment === "consultoria" && l.given_by && (
           <span className="block text-muted-foreground">{l.given_by}</span>
         )}
@@ -249,3 +250,20 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
 };
 
 export default LeadsView;
+
+/** Estado da confirmação da sessão: confirmada, a confirmar (data) ou atrasada. */
+function SessionConfirmation({ lead }: { lead: Lead }) {
+  if (!lead.meeting_date || !lead.confirmation_date) return null;
+  if (lead.meeting_confirmed) {
+    return <span className="block text-success font-medium">✓ Confirmada</span>;
+  }
+  const today = new Date().toLocaleDateString("sv-SE");
+  if (lead.meeting_date < today) return null;
+  const late = lead.confirmation_date < today;
+  const isToday = lead.confirmation_date === today;
+  return (
+    <span className={late ? "block text-destructive font-medium" : isToday ? "block text-warning font-medium" : "block text-muted-foreground"}>
+      {late ? "Confirmação atrasada" : isToday ? "Confirmar hoje" : `Confirmar a ${fmtDate(lead.confirmation_date)}`}
+    </span>
+  );
+}

@@ -412,6 +412,11 @@ export interface Lead {
   notes: string | null;
   meeting: boolean;
   meeting_date: string | null;
+  /** Dia em que se confirma a sessão com a lead (por defeito, o dia anterior à reunião). */
+  confirmation_date: string | null;
+  /** Visto "Sessão confirmada". */
+  meeting_confirmed: boolean;
+  meeting_confirmed_at: string | null;
   suggested_product: string | null;
   loss_reason: string | null;
   created_at: string;

@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
 import { stagesFor, BUSINESS_TYPES, IVA_FRAMEWORKS } from "./leadConstants";
@@ -26,6 +27,8 @@ const empty = {
   email: "",
   meeting: false,
   meeting_date: "",
+  confirmation_date: "",
+  meeting_confirmed: false,
   suggested_product: "",
   estimated_value: "",
   stage: "reuniao_agendada",
@@ -54,6 +57,8 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
             email: lead.email || "",
             meeting: !!lead.meeting,
             meeting_date: lead.meeting_date || "",
+            confirmation_date: lead.confirmation_date || "",
+            meeting_confirmed: !!lead.meeting_confirmed,
             suggested_product: lead.suggested_product || "",
             estimated_value: lead.estimated_value != null ? String(lead.estimated_value) : "",
             stage: lead.stage || "reuniao_agendada",
@@ -84,11 +89,21 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
   };
   const plusDays = (d: string) => addDays(d, followUpDays);
 
+  // Confirmação da sessão: por defeito no dia anterior à reunião (segue a data enquanto não for mudada à mão)
+  const dayBefore = (d: string) => addDays(d, -1);
   const setMeetingDate = (v: string) =>
     setForm((p) => {
       const auto = p.next_followup === "" || (p.meeting_date && p.next_followup === plusDays(p.meeting_date));
-      return { ...p, meeting_date: v, next_followup: auto && v ? plusDays(v) : p.next_followup };
+      const autoConfirm = p.confirmation_date === "" || (p.meeting_date && p.confirmation_date === dayBefore(p.meeting_date));
+      return {
+        ...p,
+        meeting_date: v,
+        next_followup: auto && v ? plusDays(v) : p.next_followup,
+        confirmation_date: autoConfirm ? (v ? dayBefore(v) : "") : p.confirmation_date,
+        meeting_confirmed: v === p.meeting_date ? p.meeting_confirmed : false,
+      };
     });
+  const hasMeeting = !!form.meeting_date && (isConsultoria || form.meeting);
 
   // Cadência após o envio da proposta: follow ups aos dias 3 e 7; ao dia 12 sem resposta, mensagem a encerrar
   const PROPOSAL_FOLLOWUP_DAYS: Record<string, number> = { proposta_enviada: 3, followup_1: 7, followup_2: 12 };
@@ -133,6 +148,8 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
         email: form.email || null,
         meeting: isConsultoria ? !!form.meeting_date : form.meeting,
         meeting_date: isConsultoria ? form.meeting_date || null : form.meeting ? form.meeting_date || null : null,
+        confirmation_date: hasMeeting ? form.confirmation_date || null : null,
+        meeting_confirmed: hasMeeting ? form.meeting_confirmed : false,
         suggested_product: isConsultoria ? null : form.suggested_product || null,
         estimated_value: form.estimated_value ? Number(form.estimated_value) : null,
         stage: form.stage,
@@ -211,6 +228,20 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
                 />
               </div>
             </>
+          )}
+
+          {hasMeeting && (
+            <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2 rounded-lg border p-3">
+              <div>
+                <Label>Confirmação da sessão</Label>
+                <Input type="date" value={form.confirmation_date} onChange={(e) => set("confirmation_date", e.target.value)} />
+                <p className="text-xs text-muted-foreground mt-1">Por defeito, o dia anterior à {isConsultoria ? "sessão" : "reunião"}.</p>
+              </div>
+              <label className="flex items-center gap-2 self-center cursor-pointer">
+                <Checkbox checked={form.meeting_confirmed} onCheckedChange={(v) => set("meeting_confirmed", v === true)} />
+                <span className="text-sm font-medium">Sessão confirmada</span>
+              </label>
+            </div>
           )}
 
           {!isConsultoria && (
