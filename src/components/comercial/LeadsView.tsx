@@ -10,8 +10,6 @@ import {
   stagesFor,
   closedStagesFor,
   BUSINESS_TYPES,
-  businessTypeLabel,
-  ivaFrameworkLabel,
   eur,
   fmtDate,
   stageClass,
@@ -80,42 +78,23 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
     [monthLeads]
   );
 
-  const colCount = segment === "consultoria" ? 8 : 11;
+  // Tabela resumida: o resto (produto, valor, tipo, IVA…) está na ficha da lead.
+  const colCount = 7;
 
   const renderRow = (l: Lead) => (
     <tr key={l.id} className="border-t hover:bg-muted/30">
-      <td className="p-3 font-medium">{l.name}{l.nif && <span className="block text-xs text-muted-foreground">NIF {l.nif}</span>}</td>
+      <td className="p-3 font-medium">{l.name}</td>
       <td className="p-3 text-xs text-muted-foreground">
-        {l.email || "—"}
-        {l.phone && <span className="block">{l.phone}</span>}
+        {l.phone || "—"}
+        {l.email && <span className="block">{l.email}</span>}
       </td>
-      {segment !== "consultoria" && (
-        <td className="p-3 text-xs text-muted-foreground">{l.suggested_product || "—"}</td>
-      )}
       <td className="p-3">
         <Badge variant="outline" className={stageClass(l.stage)}>{stageLabel(l.stage)}</Badge>
-        {segment !== "consultoria" && l.stage === "perda" && l.loss_reason && (
-          <span className="block text-xs text-muted-foreground mt-1">{l.loss_reason}</span>
-        )}
-      </td>
-      <td className="p-3 text-right font-medium">{eur(l.estimated_value)}</td>
-      {segment !== "consultoria" && (
-        <td className="p-3 text-xs">
-          {businessTypeLabel(l.business_type)}
-          <span className="block text-muted-foreground">{l.business_area || "—"}</span>
-        </td>
-      )}
-      {segment !== "consultoria" && (
-        <td className="p-3 text-xs">{ivaFrameworkLabel(l.iva_framework)}</td>
-      )}
-
-      <td className="p-3 text-xs">
-        {segment === "consultoria" ? fmtDate(l.meeting_date) : l.meeting ? fmtDate(l.meeting_date) : "—"}
-        {segment === "consultoria" && l.given_by && (
-          <span className="block text-muted-foreground">{l.given_by}</span>
-        )}
       </td>
       <td className="p-3 text-xs"><SessionConfirmation lead={l} /></td>
+      <td className="p-3 text-xs">
+        {segment === "consultoria" ? fmtDate(l.meeting_date) : l.meeting ? fmtDate(l.meeting_date) : "—"}
+      </td>
       <td className="p-3 text-xs">{fmtDate(l.next_followup)}</td>
       <td className="p-3">
         <div className="flex justify-end gap-1">
@@ -203,13 +182,9 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
               <tr>
                 <th className="text-left p-3">Nome</th>
                 <th className="text-left p-3">Contacto</th>
-                {segment !== "consultoria" && <th className="text-left p-3">Produto</th>}
                 <th className="text-left p-3">Estado</th>
-                <th className="text-right p-3">Valor</th>
-                {segment !== "consultoria" && <th className="text-left p-3">Tipo / área</th>}
-                {segment !== "consultoria" && <th className="text-left p-3">IVA</th>}
-                <th className="text-left p-3">Data da sessão</th>
                 <th className="text-left p-3">Confirmação da sessão</th>
+                <th className="text-left p-3">Data da sessão</th>
                 <th className="text-left p-3">Follow-up</th>
 
                 <th className="p-3" />
