@@ -83,7 +83,7 @@ export function clientObligationsFor(c: any, year: number, month0: number, dayFo
     const d = afterQ(1);
     list.push({
       key: "IVA_OSS", label: "IVA – OSS", periodicidade: "Trimestral",
-      prazo: at(K.IVA_OSS, 15, d), type: "IVA_OSS", kind: "simples", inPeriod: isQEnd,
+      prazo: at(K.IVA_OSS, lastDay(d.m, d.y), d), type: "IVA_OSS", kind: "simples", inPeriod: isQEnd,
     });
   }
 

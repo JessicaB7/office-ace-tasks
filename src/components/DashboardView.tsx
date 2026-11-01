@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useTasks, useMonthlyObligations, useClients, useCollaborators, useDeadlineOverrides } from "@/hooks/useSupabaseQuery";
+import { useTasks, useMonthlyObligationsRange, useClients, useCollaborators, useDeadlineOverrides } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
 import { CheckCircle2, Clock, AlertTriangle, CalendarDays, ClipboardList, Users, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,7 +8,16 @@ import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { DEADLINE_KEYS as K, makeDayResolver } from "@/lib/deadlineOverrides";
 import { referenceLabel, relativeDeadline, shortDate, type DeadlineTone } from "@/lib/deadlineLabels";
 
-type WeekDeadline = { title: string; date: Date; obligationKey?: string; ref?: string };
+/** dlIdx = índice em FISCAL_DEADLINES; refMonth = mês de registo ("AAAA-MM-01") a que o prazo diz respeito. */
+type WeekDeadline = { title: string; date: Date; obligationKey?: string; ref?: string; dlIdx?: number; refMonth?: string };
+
+/** Mês de registo ("AAAA-MM-01") de um prazo: o mês do prazo menos o offset. */
+const refMonthFor = (monthIndex: number, year: number, offset: number) => {
+  const t = monthIndex - offset;
+  const m = ((t % 12) + 12) % 12;
+  const y = year + Math.floor(t / 12);
+  return `${y}-${String(m + 1).padStart(2, "0")}-01`;
+};
 
 const TONE_CLS: Record<DeadlineTone, string> = {
   atrasado: "bg-destructive/10 text-destructive",
@@ -49,7 +58,8 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { key: K.SALARIOS_PROC, title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios", clientFilter: (c) => hasSalarios(c) },
   // Último dia do mês (30 em abril)
   { key: K.SS_TI_DT, title: "SS TI - Declaração Trimestral", day: 31, months: [1, 4, 7, 10], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
-  { key: K.IVA_OSS, title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS", clientFilter: (c) => c.iva_oss === "Sim", refMonthOffset: 3 },
+  // OSS: até ao fim do mês seguinte ao trimestre (Jan/Abr/Jul/Out); registo no mês de fim do trimestre (offset 1)
+  { key: K.IVA_OSS, title: "IVA OSS", day: 31, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS", clientFilter: (c) => c.iva_oss === "Sim", refMonthOffset: 1 },
 ];
 
 const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
@@ -73,22 +83,6 @@ const DashboardView = () => {
   const [expandedCollabId, setExpandedCollabId] = useState<string | null>(null);
 
   const today = new Date();
-  const curMonth = today.getMonth();
-  const curYear = today.getFullYear();
-
-  // Build reference months for offsets 1, 2, 3
-  const getRefMonth = (offset: number) => {
-    const m = (curMonth - offset + 12) % 12;
-    const y = curYear + Math.floor((curMonth - offset) / 12);
-    return `${y}-${String(m + 1).padStart(2, "0")}-01`;
-  };
-  const refMonth1 = getRefMonth(1);
-  const refMonth2 = getRefMonth(2);
-  const refMonth3 = getRefMonth(3);
-
-  const { data: obligations1 = [] } = useMonthlyObligations(refMonth1);
-  const { data: obligations2 = [] } = useMonthlyObligations(refMonth2);
-  const { data: obligations3 = [] } = useMonthlyObligations(refMonth3);
 
   const currentCollaborator = useMemo(() => {
     if (!user?.email) return null;
@@ -137,56 +131,6 @@ const DashboardView = () => {
       .sort((a, b) => b.items.length - a.items.length);
   }, [tasks, collaborators, isAdmin]);
 
-  const obligationsByOffset: Record<number, any[]> = useMemo(() => ({
-    1: obligations1,
-    2: obligations2,
-    3: obligations3,
-  }), [obligations1, obligations2, obligations3]);
-
-  // Count pending obligations per type — filtered to current collaborator's clients only
-  const obligationData = useMemo(() => {
-    const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string; responsavel_id: string | null }[]; doneClients: { id: string; name: string; responsavel_id: string | null }[] }> = {};
-    const activeClients = clients.filter((c: any) => c.active);
-    const myActiveClients = currentCollaborator
-      ? activeClients.filter((c: any) => c.responsavel_id === currentCollaborator.id)
-      : activeClients;
-
-    FISCAL_DEADLINES.forEach((dl, idx) => {
-      if (!dl.obligationType) return;
-      const key = dl.checkExtra ? `${dl.obligationType}_extra_${idx}` : `${dl.obligationType}_${idx}`;
-      if (data[key]) return;
-      
-      const offset = dl.refMonthOffset ?? 1;
-      const obligations = obligationsByOffset[offset] || obligations1;
-      const typeObligations = obligations.filter((o: any) => o.obligation_type === dl.obligationType);
-
-      const myClients = dl.clientFilter
-        ? myActiveClients.filter(dl.clientFilter)
-        : myActiveClients;
-
-      let doneClientIds: Set<string>;
-      if (dl.checkExtra) {
-        doneClientIds = new Set(typeObligations.filter((o: any) => o.extra_done).map((o: any) => o.client_id));
-      } else {
-        doneClientIds = new Set(typeObligations.filter((o: any) => o.status === "concluida").map((o: any) => o.client_id));
-      }
-
-      const pendingClients = myClients
-        .filter((c: any) => !doneClientIds.has(c.id))
-        .map((c: any) => ({ id: c.id, name: c.name, responsavel_id: c.responsavel_id }));
-      const doneClients = myClients
-        .filter((c: any) => doneClientIds.has(c.id))
-        .map((c: any) => ({ id: c.id, name: c.name, responsavel_id: c.responsavel_id }));
-      data[key] = {
-        total: myClients.length,
-        done: doneClients.length,
-        pendingClients,
-        doneClients,
-      };
-    });
-    return data;
-  }, [obligations1, obligations2, obligations3, clients, currentCollaborator]);
-
   const getWeekDeadlines = (mondayDate: Date) => {
     const monday = new Date(mondayDate);
     monday.setHours(0, 0, 0, 0);
@@ -218,10 +162,11 @@ const DashboardView = () => {
             const ref = dl.obligationType
               ? referenceLabel(monthIndex, yr, dl.refMonthOffset ?? 1, dl.months !== null)
               : undefined;
-            const obligationKey = dl.obligationType
-              ? (dl.checkExtra ? `${dl.obligationType}_extra_${dlIdx}` : `${dl.obligationType}_${dlIdx}`)
-              : undefined;
-            result.push({ title: dl.title, date: deadlineDate, obligationKey, ref });
+            // O registo é o do mês do prazo menos o offset (não o mês de hoje): um prazo de 26/10 visto
+            // a 1/11 continua a contar os registos de setembro.
+            const refMonth = dl.obligationType ? refMonthFor(monthIndex, yr, dl.refMonthOffset ?? 1) : undefined;
+            const obligationKey = dl.obligationType ? `${dlIdx}@${refMonth}` : undefined;
+            result.push({ title: dl.title, date: deadlineDate, obligationKey, ref, dlIdx, refMonth });
           }
         }
       });
@@ -232,7 +177,10 @@ const DashboardView = () => {
       if (lastDayDate >= monday && lastDayDate <= sunday) {
         result.push({
           title: "Salários - Envio", date: lastDayDate,
-          obligationKey: salariosIdx >= 0 ? `salarios_${salariosIdx}` : undefined,
+          ...(salariosIdx >= 0 ? (() => {
+            const refMonth = refMonthFor(monthIndex, yr, FISCAL_DEADLINES[salariosIdx].refMonthOffset ?? 1);
+            return { obligationKey: `${salariosIdx}@${refMonth}`, dlIdx: salariosIdx, refMonth };
+          })() : {}),
           ref: referenceLabel(monthIndex, yr, FISCAL_DEADLINES[salariosIdx]?.refMonthOffset ?? 1, false),
         });
       }
@@ -264,6 +212,39 @@ const DashboardView = () => {
 
   const weekDeadlines = useMemo(() => getWeekDeadlines(currentMonday), [currentMonday, deadlineOverrides]);
   const nextWeekDeadlines = useMemo(() => getWeekDeadlines(nextMonday), [nextMonday, deadlineOverrides]);
+
+  // Registos dos meses a que os prazos das duas semanas dizem respeito
+  const neededMonths = useMemo(
+    () => Array.from(new Set([...weekDeadlines, ...nextWeekDeadlines].map((d) => d.refMonth).filter(Boolean) as string[])).sort(),
+    [weekDeadlines, nextWeekDeadlines]
+  );
+  const { data: weekObligations = [] } = useMonthlyObligationsRange(neededMonths);
+
+  // Clientes feitos / por fazer em cada prazo — só os clientes do colaborador atual
+  const obligationData = useMemo(() => {
+    const data: Record<string, { total: number; done: number; pendingClients: { id: string; name: string; responsavel_id: string | null }[]; doneClients: { id: string; name: string; responsavel_id: string | null }[] }> = {};
+    const activeClients = clients.filter((c: any) => c.active);
+    const myActiveClients = currentCollaborator
+      ? activeClients.filter((c: any) => c.responsavel_id === currentCollaborator.id)
+      : activeClients;
+
+    [...weekDeadlines, ...nextWeekDeadlines].forEach((wd) => {
+      if (!wd.obligationKey || wd.dlIdx == null || data[wd.obligationKey]) return;
+      const dl = FISCAL_DEADLINES[wd.dlIdx];
+      const typeObligations = weekObligations.filter(
+        (o: any) => o.obligation_type === dl.obligationType && o.reference_month === wd.refMonth
+      );
+      const doneClientIds = new Set(
+        typeObligations.filter((o: any) => (dl.checkExtra ? o.extra_done : o.status === "concluida")).map((o: any) => o.client_id)
+      );
+      const myClients = dl.clientFilter ? myActiveClients.filter(dl.clientFilter) : myActiveClients;
+      const toEntry = (c: any) => ({ id: c.id, name: c.name, responsavel_id: c.responsavel_id });
+      const pendingClients = myClients.filter((c: any) => !doneClientIds.has(c.id)).map(toEntry);
+      const doneClients = myClients.filter((c: any) => doneClientIds.has(c.id)).map(toEntry);
+      data[wd.obligationKey] = { total: myClients.length, done: doneClients.length, pendingClients, doneClients };
+    });
+    return data;
+  }, [weekDeadlines, nextWeekDeadlines, weekObligations, clients, currentCollaborator]);
 
   // Helper: get collaborator name by id
   const getCollabName = (id: string | null) => {

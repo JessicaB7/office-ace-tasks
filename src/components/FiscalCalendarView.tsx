@@ -59,7 +59,7 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   // Último dia do mês (30 em abril)
   { key: K.SS_TI_DT, title: "SS TI - Declaração Trimestral", day: 31, months: [1, 4, 7, 10] },
   { key: K.PEDIR_DOC, title: "Pedir documentação clientes", day: 15, months: null },
-  { key: K.IVA_OSS, title: "IVA OSS", day: 15, months: [1, 4, 7, 10], refType: "quarter" },
+  { key: K.IVA_OSS, title: "IVA OSS", day: 31, months: [1, 4, 7, 10], refType: "quarter" },
 ];
 
 type CalendarDeadline = { day: number; title: string; key?: string; defaultDay?: number };

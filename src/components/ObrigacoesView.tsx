@@ -160,10 +160,10 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
       case "retencao_fonte": { const d = addMonths(month, year, 1); return deadline(K.RETENCAO, 20, d); }
       case "IVA": {
         if (subFilter === "OSS") {
-          // OSS: dia 15 do mês seguinte ao fim do trimestre
+          // OSS: até ao último dia do mês seguinte ao fim do trimestre (Jan/Abr/Jul/Out)
           const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
           const d = addMonths(qEnd, year, 1);
-          return deadline(K.IVA_OSS, 15, d);
+          return deadline(K.IVA_OSS, new Date(d.y, d.m + 1, 0).getDate(), d);
         }
         if (subFilter === "Trimestral" || subFilter === IVA_FLEX) {
           const qEnd = [2,2,2,5,5,5,8,8,8,11,11,11][month];
