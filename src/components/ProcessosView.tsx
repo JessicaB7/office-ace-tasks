@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpenCheck, ChevronDown, ChevronRight, ExternalLink, FolderOpen, Pencil, Plus, Search, Trash2, Users2, Repeat, Video, X } from "lucide-react";
+import { ArrowLeft, BookOpenCheck, Briefcase, Building2, ChevronDown, ChevronRight, User, ExternalLink, FolderOpen, Pencil, Plus, Search, Trash2, Users2, Repeat, Video, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,18 +32,24 @@ const TEMPLATE = `## Objetivo
 - [ ] `;
 
 const AREA_TABS: Record<"comercial" | "operacional", { id: ProcessoArea; label: string }[]> = {
-  comercial: [{ id: "comercial", label: "Comercial" }],
+  comercial: [
+    { id: "comercial", label: "Serviço mensal" },
+    { id: "consultorias", label: "Consultorias" },
+  ],
   operacional: [
-    { id: "gestao_mensal", label: "Gestão Mensal" },
-    { id: "obrigacoes", label: "Obrigações" },
+    { id: "obrigacoes", label: "Obrigações mensais" },
+    { id: "gestao_mensal", label: "Gestão mensal" },
   ],
 };
 
 /** Tipos de cliente — as mesmas cores da lista de clientes (SQ azul, TI CO âmbar, TI RS verde). */
-const REGIMES: { id: ProcessoRegime; label: string; cls: string }[] = [
-  { id: "TI RS", label: "TI RS", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
-  { id: "TI CO", label: "TI CO", cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  { id: "SQ", label: "Empresas", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+const REGIMES: { id: ProcessoRegime; label: string; longLabel: string; icon: typeof User; cls: string }[] = [
+  { id: "TI RS", label: "TI RS", longLabel: "Trabalhador independente — Regime simplificado", icon: User,
+    cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
+  { id: "TI CO", label: "TI CO", longLabel: "Trabalhador independente — Contabilidade organizada", icon: Briefcase,
+    cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  { id: "SQ", label: "Empresas", longLabel: "Sociedades", icon: Building2,
+    cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
 ];
 const regimeInfo = (id: ProcessoRegime) => REGIMES.find((r) => r.id === id)!;
 
@@ -60,7 +66,7 @@ const appliesTo = (p: Processo, regime: ProcessoRegime | null) =>
 
 const RegimeChips = ({ regimes, small }: { regimes: ProcessoRegime[]; small?: boolean }) =>
   !regimes?.length ? (
-    <span className={cn("rounded-full bg-muted text-muted-foreground", small ? "text-[10px] px-1.5" : "text-xs px-2.5 py-1")}>Todos</span>
+    <span className={cn("rounded-full bg-muted text-muted-foreground", small ? "text-[10px] px-1.5" : "text-xs px-2.5 py-1")}>Todos os tipos</span>
   ) : (
     <>
       {regimes.map((r) => (
@@ -93,7 +99,7 @@ const ProcessosView = ({ section }: Props) => {
   const [regime, setRegime] = useState<ProcessoRegime | null>(null);
 
   // Mudar de secção no menu repõe o separador
-  useEffect(() => { setArea(AREA_TABS[section][0].id); setDraft(null); setSelectedId(null); }, [section]);
+  useEffect(() => { setArea(AREA_TABS[section][0].id); setRegime(null); setDraft(null); setSelectedId(null); }, [section]);
 
   const inArea = useMemo(() => processos.filter((p) => p.area === area), [processos, area]);
   const filtered = useMemo(() => {
@@ -193,35 +199,63 @@ const ProcessosView = ({ section }: Props) => {
         )}
       </div>
 
-      {tabs.length > 1 && (
-        <div className="flex gap-1 border-b">
+      <div className="flex flex-col md:flex-row gap-5">
+        {/* Separadores laterais */}
+        <nav className="md:w-52 shrink-0 flex md:flex-col gap-1">
           {tabs.map((t) => (
-            <button key={t.id} onClick={() => { setArea(t.id); setSelectedId(null); setDraft(null); }}
-              className={cn("px-4 py-2 text-sm font-medium rounded-t-lg whitespace-nowrap transition-colors",
+            <button key={t.id} onClick={() => { setArea(t.id); setRegime(null); setSelectedId(null); setDraft(null); setSearch(""); }}
+              className={cn("text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-between gap-2",
                 area === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-              {t.label} <span className="opacity-70">({processos.filter((p) => p.area === t.id).length})</span>
+              <span>{t.label}</span>
+              <span className="text-xs opacity-70">{processos.filter((p) => p.area === t.id).length}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex-1 min-w-0 space-y-4">
+      {!regime && !draft ? (
+        /* Galeria por tipo de cliente */
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">Escolha o tipo de cliente.</p>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {REGIMES.map((r) => {
+              const list = inArea.filter((p) => appliesTo(p, r.id));
+              const videos = list.filter((p) => p.video_url).length;
+              const rascunhos = list.filter(porPreencher).length;
+              return (
+                <button key={r.id} onClick={() => { setRegime(r.id); setSelectedId(null); }}
+                  className="text-left bg-card rounded-xl border p-5 hover:shadow-md hover:border-primary/40 transition-all group">
+                  <div className={cn("w-11 h-11 rounded-lg flex items-center justify-center", r.cls)}>
+                    <r.icon className="w-5 h-5" />
+                  </div>
+                  <div className="mt-4 text-lg font-semibold group-hover:text-primary">{r.label}</div>
+                  <div className="text-xs text-muted-foreground">{r.longLabel}</div>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                    <span className="px-2 py-0.5 rounded-full bg-muted">{list.length} processos</span>
+                    {videos > 0 && <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary">{videos} com vídeo</span>}
+                    {rascunhos > 0 && <span className="px-2 py-0.5 rounded-full bg-warning/20 text-warning-foreground">{rascunhos} por preencher</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+      <>
+      {regime && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="ghost" onClick={() => { setRegime(null); setDraft(null); setSelectedId(null); }}>
+            <ArrowLeft className="w-4 h-4 mr-1" /> Tipos de cliente
+          </Button>
+          {REGIMES.map((r) => (
+            <button key={r.id} onClick={() => { setRegime(r.id); setSelectedId(null); setDraft(null); }}
+              className={cn("px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                regime === r.id ? cn(r.cls, "border-current") : "bg-card text-muted-foreground hover:bg-muted")}>
+              {r.label}
             </button>
           ))}
         </div>
       )}
-
-      {section === "operacional" && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground mr-1">Tipo de cliente</span>
-          {[{ id: null as ProcessoRegime | null, label: "Todos", cls: "" }, ...REGIMES].map((r) => {
-            const active = regime === r.id;
-            const count = inArea.filter((p) => appliesTo(p, r.id)).length;
-            return (
-              <button key={r.label} onClick={() => { setRegime(r.id); setSelectedId(null); }}
-                className={cn("px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
-                  active ? (r.id ? cn(r.cls, "border-current") : "bg-primary text-primary-foreground border-primary") : "bg-card text-muted-foreground hover:bg-muted")}>
-                {r.label} <span className="opacity-70">({count})</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-
       <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
         {/* Índice */}
         <aside className="space-y-3">
@@ -243,7 +277,6 @@ const ProcessosView = ({ section }: Props) => {
                     {p.video_url && <Video className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-label="Tem vídeo" />}
                   </span>
                   <span className="flex items-center gap-1 shrink-0">
-                    {section === "operacional" && !regime && p.regimes?.length > 0 && <RegimeChips regimes={p.regimes} small />}
                     {porPreencher(p) && <span className="text-[10px] px-1.5 rounded bg-warning/20 text-warning-foreground">rascunho</span>}
                   </span>
                 </button>
@@ -287,24 +320,22 @@ const ProcessosView = ({ section }: Props) => {
                   <input type="number" className={fieldClass} value={draft.position} onChange={(e) => setDraft({ ...draft, position: Number(e.target.value) || 0 })} />
                 </label>
               </div>
-              {section === "operacional" && (
-                <div className="space-y-1 text-sm">
-                  <span className="text-muted-foreground">Tipo de cliente (nenhum marcado = todos)</span>
-                  <div className="flex flex-wrap gap-2">
-                    {REGIMES.map((r) => {
-                      const on = draft.regimes.includes(r.id);
-                      return (
-                        <button key={r.id} type="button" aria-pressed={on}
-                          onClick={() => setDraft({ ...draft, regimes: on ? draft.regimes.filter((x) => x !== r.id) : [...draft.regimes, r.id] })}
-                          className={cn("px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
-                            on ? cn(r.cls, "border-current") : "bg-card text-muted-foreground hover:bg-muted")}>
-                          {r.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+              <div className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Tipo de cliente (nenhum marcado = todos)</span>
+                <div className="flex flex-wrap gap-2">
+                  {REGIMES.map((r) => {
+                    const on = draft.regimes.includes(r.id);
+                    return (
+                      <button key={r.id} type="button" aria-pressed={on}
+                        onClick={() => setDraft({ ...draft, regimes: on ? draft.regimes.filter((x) => x !== r.id) : [...draft.regimes, r.id] })}
+                        className={cn("px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                          on ? cn(r.cls, "border-current") : "bg-card text-muted-foreground hover:bg-muted")}>
+                        {r.label}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
               <label className="block space-y-1 text-sm">
                 <span className="text-muted-foreground">Vídeo da gravação — link partilhado do Google Drive, Loom, YouTube ou "Incorporar" do OneDrive</span>
                 <input className={fieldClass} placeholder="https://drive.google.com/file/d/…/view" value={draft.video_url ?? ""}
@@ -359,21 +390,19 @@ const ProcessosView = ({ section }: Props) => {
                   </div>
                 )}
               </div>
-              {(selected.frequencia || selected.aplica_se || section === "operacional") && (
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  {section === "operacional" && <RegimeChips regimes={selected.regimes} />}
-                  {selected.frequencia && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                      <Repeat className="w-3.5 h-3.5" /> {selected.frequencia}
-                    </span>
-                  )}
-                  {selected.aplica_se && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
-                      <Users2 className="w-3.5 h-3.5" /> {selected.aplica_se}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <RegimeChips regimes={selected.regimes} />
+                {selected.frequencia && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                    <Repeat className="w-3.5 h-3.5" /> {selected.frequencia}
+                  </span>
+                )}
+                {selected.aplica_se && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
+                    <Users2 className="w-3.5 h-3.5" /> {selected.aplica_se}
+                  </span>
+                )}
+              </div>
               {selected.video_url && (
                 videoEmbedUrl(selected.video_url) ? (
                   <div className="rounded-lg overflow-hidden border aspect-video bg-muted">
@@ -414,6 +443,11 @@ const ProcessosView = ({ section }: Props) => {
             </article>
           ) : null}
         </section>
+      </div>
+
+      </>
+      )}
+        </div>
       </div>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
