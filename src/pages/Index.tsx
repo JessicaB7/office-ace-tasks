@@ -27,6 +27,7 @@ import ScriptsView from "@/components/comercial/ScriptsView";
 import NovosClientesView from "@/components/comercial/NovosClientesView";
 import ToconlineFilaView from "@/components/toconline/ToconlineFilaView";
 import ToconlineProcedimentosView from "@/components/toconline/ToconlineProcedimentosView";
+import ProcessosView from "@/components/ProcessosView";
 import DailyTasksReminderDialog from "@/components/DailyTasksReminderDialog";
 import AssociatedTasksDialog from "@/components/AssociatedTasksDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -109,6 +110,8 @@ const Index = () => {
         {activeView === "extratos" && <ExtratosBancariosView />}
         {activeView === "toconline_fila" && <ToconlineFilaView />}
         {activeView === "toconline_procedimentos" && <ToconlineProcedimentosView />}
+        {activeView === "processos_comercial" && <ProcessosView section="comercial" />}
+        {activeView === "processos_operacional" && <ProcessosView section="operacional" />}
         {activeView === "resumo" && <AdminWeeklySummary />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}

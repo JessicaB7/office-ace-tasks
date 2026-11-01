@@ -6,6 +6,7 @@ import tiRsDoc from "../../docs/toconline/ti-rs.md?raw";
 import tiCoDoc from "../../docs/toconline/ti-co.md?raw";
 import ivaFlexDoc from "../../docs/toconline/iva-flexibilizacao.md?raw";
 import dmrDoc from "../../docs/toconline/dmr.md?raw";
+import emissaoFaturasDoc from "../../docs/toconline/emissao-faturas.md?raw";
 import { SUB_PAGE_CONFIG } from "@/lib/contabilidadesConfig";
 
 export type ToconlineJobStatus = "pendente" | "em_curso" | "concluida" | "bloqueada" | "erro" | "cancelada";
@@ -223,6 +224,7 @@ export const TOCONLINE_DOCS: { regimeLabel: string; path: string; content: strin
   { regimeLabel: "TI Contabilidade Organizada (TI CO)", path: "docs/toconline/ti-co.md", content: tiCoDoc },
   { regimeLabel: "IVA — Flexibilização (todos os regimes)", path: "docs/toconline/iva-flexibilizacao.md", content: ivaFlexDoc },
   { regimeLabel: "DMR (todos os regimes)", path: "docs/toconline/dmr.md", content: dmrDoc },
+  { regimeLabel: "Emissão de faturas", path: "docs/toconline/emissao-faturas.md", content: emissaoFaturasDoc },
 ];
 
 export const STATUS_LABELS: Record<ToconlineJobStatus, string> = {

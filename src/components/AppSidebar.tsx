@@ -28,6 +28,8 @@ import {
   Bot,
   FileText,
   StickyNote,
+  Workflow,
+  Cog,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -56,6 +58,14 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
       { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
       { kind: "item", item: { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays } },
       { kind: "item", item: { id: "notas", label: "Notas", icon: StickyNote } },
+    ],
+  },
+  {
+    title: "Processos",
+    icon: Workflow,
+    entries: [
+      { kind: "item", item: { id: "processos_comercial", label: "Comercial", icon: Handshake } },
+      { kind: "item", item: { id: "processos_operacional", label: "Operacional", icon: Cog } },
     ],
   },
   {
