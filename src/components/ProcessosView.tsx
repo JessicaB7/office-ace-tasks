@@ -31,15 +31,12 @@ const TEMPLATE = `## Objetivo
 ## Checklist de validação
 - [ ] `;
 
-const AREA_TABS: Record<"comercial" | "operacional", { id: ProcessoArea; label: string }[]> = {
-  comercial: [
-    { id: "comercial", label: "Serviço mensal" },
-    { id: "consultorias", label: "Consultorias" },
-  ],
-  operacional: [
-    { id: "obrigacoes", label: "Obrigações mensais" },
-    { id: "gestao_mensal", label: "Gestão mensal" },
-  ],
+/** Cada página de Processos (submenu da barra lateral): secção + nome. */
+const PROCESSO_PAGES: Record<ProcessoArea, { section: string; label: string }> = {
+  comercial: { section: "Comercial", label: "Serviço mensal" },
+  consultorias: { section: "Comercial", label: "Consultorias" },
+  obrigacoes: { section: "Operacional", label: "Obrigações mensais" },
+  gestao_mensal: { section: "Operacional", label: "Gestão mensal" },
 };
 
 /** Tipos de cliente — as mesmas cores da lista de clientes (SQ azul, TI CO âmbar, TI RS verde). */
@@ -80,17 +77,16 @@ const RegimeChips = ({ regimes, small }: { regimes: ProcessoRegime[]; small?: bo
 const fieldClass = "text-sm px-3 py-2 rounded-md border bg-background w-full focus:outline-none focus:ring-2 focus:ring-ring";
 
 interface Props {
-  section: "comercial" | "operacional";
+  area: ProcessoArea;
 }
 
-const ProcessosView = ({ section }: Props) => {
+const ProcessosView = ({ area }: Props) => {
   const { isAdmin, user } = useAuth();
   const { data: processos = [], isLoading } = useProcessos();
   const save = useSaveProcesso();
   const remove = useDeleteProcesso();
 
-  const tabs = AREA_TABS[section];
-  const [area, setArea] = useState<ProcessoArea>(tabs[0].id);
+  const page = PROCESSO_PAGES[area];
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<ProcessoInput | null>(null);
@@ -99,7 +95,8 @@ const ProcessosView = ({ section }: Props) => {
   const [regime, setRegime] = useState<ProcessoRegime | null>(null);
 
   // Mudar de secção no menu repõe o separador
-  useEffect(() => { setArea(AREA_TABS[section][0].id); setRegime(null); setDraft(null); setSelectedId(null); }, [section]);
+  // Mudar de página no menu volta à galeria
+  useEffect(() => { setRegime(null); setDraft(null); setSelectedId(null); setSearch(""); }, [area]);
 
   const inArea = useMemo(() => processos.filter((p) => p.area === area), [processos, area]);
   const filtered = useMemo(() => {
@@ -189,7 +186,8 @@ const ProcessosView = ({ section }: Props) => {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Processos — {section === "comercial" ? "Comercial" : "Operacional"}</h2>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Processos · {page.section}</div>
+          <h2 className="text-2xl font-bold">{page.label}</h2>
           <p className="text-muted-foreground text-sm mt-1">
             Manual de formação: o que se faz, quando, como e o que validar em cada processo.
           </p>
@@ -199,24 +197,11 @@ const ProcessosView = ({ section }: Props) => {
         )}
       </div>
 
-      <div className="flex flex-col md:flex-row gap-5">
-        {/* Separadores laterais */}
-        <nav className="md:w-52 shrink-0 flex md:flex-col gap-1">
-          {tabs.map((t) => (
-            <button key={t.id} onClick={() => { setArea(t.id); setRegime(null); setSelectedId(null); setDraft(null); setSearch(""); }}
-              className={cn("text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-between gap-2",
-                area === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-              <span>{t.label}</span>
-              <span className="text-xs opacity-70">{processos.filter((p) => p.area === t.id).length}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="flex-1 min-w-0 space-y-4">
+      <div className="space-y-4">
       {!regime && !draft ? (
         /* Galeria por tipo de cliente */
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">Escolha o tipo de cliente.</p>
+          <h3 className="text-lg font-semibold">Tipo de cliente</h3>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {REGIMES.map((r) => {
               const list = inArea.filter((p) => appliesTo(p, r.id));
@@ -447,7 +432,6 @@ const ProcessosView = ({ section }: Props) => {
 
       </>
       )}
-        </div>
       </div>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

@@ -63,8 +63,32 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
     title: "Processos",
     icon: Workflow,
     entries: [
-      { kind: "item", item: { id: "processos_comercial", label: "Comercial", icon: Handshake, adminOnly: true } },
-      { kind: "item", item: { id: "processos_operacional", label: "Operacional", icon: Cog, adminOnly: true } },
+      {
+        kind: "group",
+        group: {
+          id: "processos_comercial",
+          label: "Comercial",
+          icon: Handshake,
+          adminOnly: true,
+          items: [
+            { id: "processos_comercial_servico", label: "Serviço mensal" },
+            { id: "processos_comercial_consultorias", label: "Consultorias" },
+          ],
+        },
+      },
+      {
+        kind: "group",
+        group: {
+          id: "processos_operacional",
+          label: "Operacional",
+          icon: Cog,
+          adminOnly: true,
+          items: [
+            { id: "processos_operacional_obrigacoes", label: "Obrigações mensais" },
+            { id: "processos_operacional_gestao", label: "Gestão mensal" },
+          ],
+        },
+      },
     ],
   },
   {
@@ -187,6 +211,8 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
     analise: activeView.startsWith("analise"),
     obrigacoes: activeView.startsWith("obrigacoes"),
     toconline: activeView.startsWith("toconline"),
+    processos_comercial: activeView.startsWith("processos_comercial"),
+    processos_operacional: activeView.startsWith("processos_operacional"),
   });
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
