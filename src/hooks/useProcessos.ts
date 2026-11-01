@@ -1,7 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type ProcessoArea = "comercial" | "consultorias" | "servico_mensal";
+export type ProcessoArea = "comercial" | "consultorias" | "gestao_mensal" | "obrigacoes";
+
+/** Tipo de cliente (valores de clients.tipo_contabilidade). */
+export type ProcessoRegime = "TI RS" | "TI CO" | "SQ";
 
 export interface ProcessoLink {
   label: string;
@@ -16,6 +19,8 @@ export interface Processo {
   frequencia: string | null;
   aplica_se: string | null;
   toconline_doc: string | null;
+  /** Tipos de cliente a que se aplica; vazio = todos. */
+  regimes: ProcessoRegime[];
   body: string;
   /** Gravação do processo (Google Drive, OneDrive, Loom ou YouTube). */
   video_url: string | null;

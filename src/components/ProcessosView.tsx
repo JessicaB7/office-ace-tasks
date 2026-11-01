@@ -3,7 +3,7 @@ import { BookOpenCheck, ChevronDown, ChevronRight, ExternalLink, FolderOpen, Pen
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { useDeleteProcesso, useProcessos, useSaveProcesso, type Processo, type ProcessoArea, type ProcessoInput } from "@/hooks/useProcessos";
+import { useDeleteProcesso, useProcessos, useSaveProcesso, type Processo, type ProcessoArea, type ProcessoInput, type ProcessoRegime } from "@/hooks/useProcessos";
 import { renderMarkdown } from "@/lib/markdown";
 import { TOCONLINE_DOCS } from "@/lib/toconlineProcedures";
 import { isSafeUrl, videoEmbedUrl } from "@/lib/videoEmbed";
@@ -33,8 +33,43 @@ const TEMPLATE = `## Objetivo
 
 const AREA_TABS: Record<"comercial" | "operacional", { id: ProcessoArea; label: string }[]> = {
   comercial: [{ id: "comercial", label: "Comercial" }],
-  operacional: [{ id: "servico_mensal", label: "Serviço mensal" }],
+  operacional: [
+    { id: "gestao_mensal", label: "Gestão Mensal" },
+    { id: "obrigacoes", label: "Obrigações" },
+  ],
 };
+
+/** Tipos de cliente — as mesmas cores da lista de clientes (SQ azul, TI CO âmbar, TI RS verde). */
+const REGIMES: { id: ProcessoRegime; label: string; cls: string }[] = [
+  { id: "TI RS", label: "TI RS", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
+  { id: "TI CO", label: "TI CO", cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  { id: "SQ", label: "Empresas", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+];
+const regimeInfo = (id: ProcessoRegime) => REGIMES.find((r) => r.id === id)!;
+
+/** Manual TOConline de cada tipo de cliente: com um tipo escolhido, um processo ligado a um
+ * manual de regime mostra o manual desse tipo. */
+const REGIME_DOCS: Record<ProcessoRegime, string> = {
+  "TI RS": "docs/toconline/ti-rs.md",
+  "TI CO": "docs/toconline/ti-co.md",
+  SQ: "docs/toconline/empresas.md",
+};
+
+const appliesTo = (p: Processo, regime: ProcessoRegime | null) =>
+  !regime || !p.regimes?.length || p.regimes.includes(regime);
+
+const RegimeChips = ({ regimes, small }: { regimes: ProcessoRegime[]; small?: boolean }) =>
+  !regimes?.length ? (
+    <span className={cn("rounded-full bg-muted text-muted-foreground", small ? "text-[10px] px-1.5" : "text-xs px-2.5 py-1")}>Todos</span>
+  ) : (
+    <>
+      {regimes.map((r) => (
+        <span key={r} className={cn("rounded-full font-medium", regimeInfo(r).cls, small ? "text-[10px] px-1.5" : "text-xs px-2.5 py-1")}>
+          {regimeInfo(r).label}
+        </span>
+      ))}
+    </>
+  );
 
 const fieldClass = "text-sm px-3 py-2 rounded-md border bg-background w-full focus:outline-none focus:ring-2 focus:ring-ring";
 
@@ -55,6 +90,7 @@ const ProcessosView = ({ section }: Props) => {
   const [draft, setDraft] = useState<ProcessoInput | null>(null);
   const [showToconline, setShowToconline] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [regime, setRegime] = useState<ProcessoRegime | null>(null);
 
   // Mudar de secção no menu repõe o separador
   useEffect(() => { setArea(AREA_TABS[section][0].id); setDraft(null); setSelectedId(null); }, [section]);
@@ -62,9 +98,10 @@ const ProcessosView = ({ section }: Props) => {
   const inArea = useMemo(() => processos.filter((p) => p.area === area), [processos, area]);
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return inArea;
-    return inArea.filter((p) => [p.title, p.grupo, p.body, p.aplica_se, p.frequencia].some((v) => (v || "").toLowerCase().includes(q)));
-  }, [inArea, search]);
+    const byRegime = inArea.filter((p) => appliesTo(p, regime));
+    if (!q) return byRegime;
+    return byRegime.filter((p) => [p.title, p.grupo, p.body, p.aplica_se, p.frequencia].some((v) => (v || "").toLowerCase().includes(q)));
+  }, [inArea, search, regime]);
 
   const groups = useMemo(() => {
     const map = new Map<string, Processo[]>();
@@ -75,18 +112,21 @@ const ProcessosView = ({ section }: Props) => {
   const selected = filtered.find((p) => p.id === selectedId) ?? filtered[0] ?? null;
   useEffect(() => setShowToconline(false), [selected?.id]);
 
-  const toconlineDoc = selected?.toconline_doc ? TOCONLINE_DOCS.find((d) => d.path === selected.toconline_doc) : null;
+  const docPath = selected?.toconline_doc && regime && Object.values(REGIME_DOCS).includes(selected.toconline_doc)
+    ? REGIME_DOCS[regime]
+    : selected?.toconline_doc;
+  const toconlineDoc = docPath ? TOCONLINE_DOCS.find((d) => d.path === docPath) : null;
   const porPreencher = (p: Processo) => p.body.includes("Por preencher");
 
   const startNew = () => {
     const lastGroup = groups.length ? groups[groups.length - 1][0] : "Geral";
     const maxPos = inArea.reduce((m, p) => Math.max(m, p.position), 0);
-    setDraft({ area, grupo: lastGroup, title: "", frequencia: "", aplica_se: "", toconline_doc: null, body: TEMPLATE, video_url: null, links: [], position: maxPos + 10 });
+    setDraft({ area, grupo: lastGroup, title: "", frequencia: "", aplica_se: "", toconline_doc: null, regimes: regime ? [regime] : [], body: TEMPLATE, video_url: null, links: [], position: maxPos + 10 });
   };
 
   const startEdit = (p: Processo) => {
     const { updated_at: _u, ...rest } = p;
-    setDraft({ ...rest, links: Array.isArray(p.links) ? p.links : [] });
+    setDraft({ ...rest, links: Array.isArray(p.links) ? p.links : [], regimes: p.regimes ?? [] });
   };
 
   const submit = async () => {
@@ -112,6 +152,7 @@ const ProcessosView = ({ section }: Props) => {
         aplica_se: draft.aplica_se?.trim() || null,
         toconline_doc: draft.toconline_doc || null,
         video_url: video,
+        regimes: REGIMES.map((r) => r.id).filter((r) => draft.regimes.includes(r)),
         links: links.map((l) => ({ ...l, label: l.label || "Abrir" })),
         updated_by: user?.id ?? null,
       });
@@ -164,6 +205,23 @@ const ProcessosView = ({ section }: Props) => {
         </div>
       )}
 
+      {section === "operacional" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground mr-1">Tipo de cliente</span>
+          {[{ id: null as ProcessoRegime | null, label: "Todos", cls: "" }, ...REGIMES].map((r) => {
+            const active = regime === r.id;
+            const count = inArea.filter((p) => appliesTo(p, r.id)).length;
+            return (
+              <button key={r.label} onClick={() => { setRegime(r.id); setSelectedId(null); }}
+                className={cn("px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                  active ? (r.id ? cn(r.cls, "border-current") : "bg-primary text-primary-foreground border-primary") : "bg-card text-muted-foreground hover:bg-muted")}>
+                {r.label} <span className="opacity-70">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
         {/* Índice */}
         <aside className="space-y-3">
@@ -184,7 +242,10 @@ const ProcessosView = ({ section }: Props) => {
                     {p.title}
                     {p.video_url && <Video className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-label="Tem vídeo" />}
                   </span>
-                  {porPreencher(p) && <span className="text-[10px] px-1.5 rounded bg-warning/20 text-warning-foreground shrink-0">rascunho</span>}
+                  <span className="flex items-center gap-1 shrink-0">
+                    {section === "operacional" && !regime && p.regimes?.length > 0 && <RegimeChips regimes={p.regimes} small />}
+                    {porPreencher(p) && <span className="text-[10px] px-1.5 rounded bg-warning/20 text-warning-foreground">rascunho</span>}
+                  </span>
                 </button>
               ))}
             </div>
@@ -226,6 +287,24 @@ const ProcessosView = ({ section }: Props) => {
                   <input type="number" className={fieldClass} value={draft.position} onChange={(e) => setDraft({ ...draft, position: Number(e.target.value) || 0 })} />
                 </label>
               </div>
+              {section === "operacional" && (
+                <div className="space-y-1 text-sm">
+                  <span className="text-muted-foreground">Tipo de cliente (nenhum marcado = todos)</span>
+                  <div className="flex flex-wrap gap-2">
+                    {REGIMES.map((r) => {
+                      const on = draft.regimes.includes(r.id);
+                      return (
+                        <button key={r.id} type="button" aria-pressed={on}
+                          onClick={() => setDraft({ ...draft, regimes: on ? draft.regimes.filter((x) => x !== r.id) : [...draft.regimes, r.id] })}
+                          className={cn("px-3 py-1.5 rounded-full text-sm font-medium border transition-colors",
+                            on ? cn(r.cls, "border-current") : "bg-card text-muted-foreground hover:bg-muted")}>
+                          {r.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <label className="block space-y-1 text-sm">
                 <span className="text-muted-foreground">Vídeo da gravação — link partilhado do Google Drive, Loom, YouTube ou "Incorporar" do OneDrive</span>
                 <input className={fieldClass} placeholder="https://drive.google.com/file/d/…/view" value={draft.video_url ?? ""}
@@ -280,8 +359,9 @@ const ProcessosView = ({ section }: Props) => {
                   </div>
                 )}
               </div>
-              {(selected.frequencia || selected.aplica_se) && (
-                <div className="flex flex-wrap gap-2 text-xs">
+              {(selected.frequencia || selected.aplica_se || section === "operacional") && (
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  {section === "operacional" && <RegimeChips regimes={selected.regimes} />}
                   {selected.frequencia && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary">
                       <Repeat className="w-3.5 h-3.5" /> {selected.frequencia}
