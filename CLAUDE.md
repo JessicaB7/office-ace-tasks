@@ -75,7 +75,7 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
 
 ### Consultorias
 - Leads de consultoria: **sem** campo de reunião — apenas data; "Dada por" (Diogo ou Jéssica);
-  follow up automático **15 dias** após a data, com tarefa atribuída ao **Diogo** (trigger `sync_consultoria_followup_task`).
+  follow up automático **15 dias** após a data, com tarefa atribuída à **Angela** (administrativa, usa o WhatsApp do Diogo; sem Angela ativa, ao Diogo) (trigger `sync_consultoria_followup_task`).
 - Painel por mês: consultorias agendadas, valor total (c/ e s/ IVA), taxa de conversão
   (= serviço mensal sim), valor por consultor, **comissão Diogo 10% sobre valor sem IVA**.
   Sem ticket médio.
