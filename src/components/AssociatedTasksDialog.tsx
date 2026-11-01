@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useClients, useCollaborators, useTasks, useUpsertTask, useUpsertObligation } from "@/hooks/useSupabaseQuery";
+import { useClients, useCollaborators, useTasks, useUpsertTask, useUpsertObligation, fetchAllMonthlyObligations } from "@/hooks/useSupabaseQuery";
 import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -50,11 +49,7 @@ const AssociatedTasksDialog = () => {
   const { data: monthObls = [] } = useQuery({
     queryKey: ["monthly_obligations", month],
     enabled: !!month,
-    queryFn: async () => {
-      const { data, error } = await supabase.from("monthly_obligations").select("*").eq("reference_month", month!);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fetchAllMonthlyObligations([month!]),
   });
   const ivaObl: any = client ? monthObls.find((o: any) => o.client_id === client.id && o.obligation_type === "IVA") : null;
   const entregue = ivaObl?.status === "concluida";

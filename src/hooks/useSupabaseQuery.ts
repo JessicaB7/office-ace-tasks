@@ -258,17 +258,28 @@ export function useSetDeadlineOverride() {
 }
 
 // ---- MONTHLY OBLIGATIONS ----
+/** O PostgREST devolve no máximo 1000 linhas por pedido — um mês com todos os clientes passa disso
+ * (set/2026 tem 1024), e as linhas a mais desapareciam da UI. Lê por páginas até acabar. */
+const PAGE_SIZE = 1000;
+export async function fetchAllMonthlyObligations(referenceMonths: string[]) {
+  const all: any[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("monthly_obligations")
+      .select("*")
+      .in("reference_month", referenceMonths)
+      .order("id")
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    all.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) return all;
+  }
+}
+
 export function useMonthlyObligations(referenceMonth: string) {
   return useQuery({
     queryKey: ["monthly_obligations", referenceMonth],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("monthly_obligations")
-        .select("*")
-        .eq("reference_month", referenceMonth);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fetchAllMonthlyObligations([referenceMonth]),
   });
 }
 
@@ -280,12 +291,7 @@ export function useMonthlyObligationsRange(referenceMonths: string[]) {
     queryKey: ["monthly_obligations_range", key],
     queryFn: async () => {
       if (referenceMonths.length === 0) return [];
-      const { data, error } = await supabase
-        .from("monthly_obligations")
-        .select("*")
-        .in("reference_month", referenceMonths);
-      if (error) throw error;
-      return data;
+      return fetchAllMonthlyObligations(referenceMonths);
     },
     enabled: referenceMonths.length > 0,
     // Ao mudar de mês mantém os dados anteriores até chegarem os novos (sem piscar "A carregar").
