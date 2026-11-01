@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpenCheck, ChevronDown, ChevronRight, Pencil, Plus, Search, Trash2, Users2, Repeat } from "lucide-react";
+import { BookOpenCheck, ChevronDown, ChevronRight, ExternalLink, FolderOpen, Pencil, Plus, Search, Trash2, Users2, Repeat, Video, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useDeleteProcesso, useProcessos, useSaveProcesso, type Processo, type ProcessoArea, type ProcessoInput } from "@/hooks/useProcessos";
 import { renderMarkdown } from "@/lib/markdown";
 import { TOCONLINE_DOCS } from "@/lib/toconlineProcedures";
+import { isSafeUrl, videoEmbedUrl } from "@/lib/videoEmbed";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,10 +33,7 @@ const TEMPLATE = `## Objetivo
 
 const AREA_TABS: Record<"comercial" | "operacional", { id: ProcessoArea; label: string }[]> = {
   comercial: [{ id: "comercial", label: "Comercial" }],
-  operacional: [
-    { id: "servico_mensal", label: "Serviço mensal" },
-    { id: "consultorias", label: "Consultorias" },
-  ],
+  operacional: [{ id: "servico_mensal", label: "Serviço mensal" }],
 };
 
 const fieldClass = "text-sm px-3 py-2 rounded-md border bg-background w-full focus:outline-none focus:ring-2 focus:ring-ring";
@@ -83,18 +81,26 @@ const ProcessosView = ({ section }: Props) => {
   const startNew = () => {
     const lastGroup = groups.length ? groups[groups.length - 1][0] : "Geral";
     const maxPos = inArea.reduce((m, p) => Math.max(m, p.position), 0);
-    setDraft({ area, grupo: lastGroup, title: "", frequencia: "", aplica_se: "", toconline_doc: null, body: TEMPLATE, position: maxPos + 10 });
+    setDraft({ area, grupo: lastGroup, title: "", frequencia: "", aplica_se: "", toconline_doc: null, body: TEMPLATE, video_url: null, links: [], position: maxPos + 10 });
   };
 
   const startEdit = (p: Processo) => {
     const { updated_at: _u, ...rest } = p;
-    setDraft(rest);
+    setDraft({ ...rest, links: Array.isArray(p.links) ? p.links : [] });
   };
 
   const submit = async () => {
     if (!draft) return;
     if (!draft.title.trim() || !draft.grupo.trim()) {
       toast.error("Indique o título e o grupo do processo.");
+      return;
+    }
+    const video = draft.video_url?.trim() || null;
+    const links = (draft.links || [])
+      .map((l) => ({ label: l.label.trim(), url: l.url.trim() }))
+      .filter((l) => l.url);
+    if ((video && !isSafeUrl(video)) || links.some((l) => !isSafeUrl(l.url))) {
+      toast.error("As ligações têm de começar por https://");
       return;
     }
     try {
@@ -105,6 +111,8 @@ const ProcessosView = ({ section }: Props) => {
         frequencia: draft.frequencia?.trim() || null,
         aplica_se: draft.aplica_se?.trim() || null,
         toconline_doc: draft.toconline_doc || null,
+        video_url: video,
+        links: links.map((l) => ({ ...l, label: l.label || "Abrir" })),
         updated_by: user?.id ?? null,
       });
       setSelectedId(saved.id);
@@ -172,7 +180,10 @@ const ProcessosView = ({ section }: Props) => {
                 <button key={p.id} onClick={() => { setSelectedId(p.id); setDraft(null); }}
                   className={cn("w-full text-left px-2 py-1.5 rounded-md text-sm flex items-center justify-between gap-2 transition-colors",
                     selected?.id === p.id && !draft ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted")}>
-                  <span className="truncate">{p.title}</span>
+                  <span className="truncate flex items-center gap-1.5">
+                    {p.title}
+                    {p.video_url && <Video className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-label="Tem vídeo" />}
+                  </span>
                   {porPreencher(p) && <span className="text-[10px] px-1.5 rounded bg-warning/20 text-warning-foreground shrink-0">rascunho</span>}
                 </button>
               ))}
@@ -214,6 +225,29 @@ const ProcessosView = ({ section }: Props) => {
                   <span className="text-muted-foreground">Ordem</span>
                   <input type="number" className={fieldClass} value={draft.position} onChange={(e) => setDraft({ ...draft, position: Number(e.target.value) || 0 })} />
                 </label>
+              </div>
+              <label className="block space-y-1 text-sm">
+                <span className="text-muted-foreground">Vídeo da gravação — link partilhado do Google Drive, Loom, YouTube ou "Incorporar" do OneDrive</span>
+                <input className={fieldClass} placeholder="https://drive.google.com/file/d/…/view" value={draft.video_url ?? ""}
+                  onChange={(e) => setDraft({ ...draft, video_url: e.target.value })} />
+              </label>
+              <div className="space-y-2 text-sm">
+                <span className="text-muted-foreground">Ligações à Drive (pastas, modelos, exemplos)</span>
+                {draft.links.map((l, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input className={cn(fieldClass, "sm:max-w-[220px]")} placeholder="Nome (ex.: Pasta do cliente)" value={l.label}
+                      onChange={(e) => setDraft({ ...draft, links: draft.links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })} />
+                    <input className={fieldClass} placeholder="https://…" value={l.url}
+                      onChange={(e) => setDraft({ ...draft, links: draft.links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)) })} />
+                    <Button type="button" size="icon" variant="ghost" aria-label="Remover ligação"
+                      onClick={() => setDraft({ ...draft, links: draft.links.filter((_, j) => j !== i) })}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" size="sm" variant="outline" onClick={() => setDraft({ ...draft, links: [...draft.links, { label: "", url: "" }] })}>
+                  <Plus className="w-4 h-4 mr-1" /> Adicionar ligação
+                </Button>
               </div>
               <div className="grid gap-4 xl:grid-cols-2">
                 <label className="space-y-1 text-sm">
@@ -258,6 +292,29 @@ const ProcessosView = ({ section }: Props) => {
                       <Users2 className="w-3.5 h-3.5" /> {selected.aplica_se}
                     </span>
                   )}
+                </div>
+              )}
+              {selected.video_url && (
+                videoEmbedUrl(selected.video_url) ? (
+                  <div className="rounded-lg overflow-hidden border aspect-video bg-muted">
+                    <iframe src={videoEmbedUrl(selected.video_url)!} title={`Vídeo — ${selected.title}`} className="w-full h-full"
+                      allow="autoplay; fullscreen" allowFullScreen />
+                  </div>
+                ) : (
+                  <a href={selected.video_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-muted">
+                    <Video className="w-4 h-4 text-primary" /> Ver vídeo do processo <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )
+              )}
+              {selected.links?.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selected.links.filter((l) => isSafeUrl(l.url)).map((l, i) => (
+                    <a key={i} href={l.url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm hover:bg-muted">
+                      <FolderOpen className="w-4 h-4 text-primary" /> {l.label} <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+                    </a>
+                  ))}
                 </div>
               )}
               <div className="space-y-1">{renderMarkdown(selected.body)}</div>

@@ -3,6 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type ProcessoArea = "comercial" | "consultorias" | "servico_mensal";
 
+export interface ProcessoLink {
+  label: string;
+  url: string;
+}
+
 export interface Processo {
   id: string;
   area: ProcessoArea;
@@ -12,6 +17,10 @@ export interface Processo {
   aplica_se: string | null;
   toconline_doc: string | null;
   body: string;
+  /** Gravação do processo (Google Drive, OneDrive, Loom ou YouTube). */
+  video_url: string | null;
+  /** Ligações à Drive (pastas, modelos, exemplos). */
+  links: ProcessoLink[];
   position: number;
   updated_at: string;
 }

@@ -26,7 +26,6 @@ import {
   Briefcase,
   UserCheck,
   Bot,
-  FileText,
   StickyNote,
   Workflow,
   Cog,
@@ -126,6 +125,18 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
       {
         kind: "group",
         group: {
+          id: "toconline",
+          label: "TOConline",
+          icon: Bot,
+          items: [
+            { id: "toconline_fila", label: "Fila de tarefas" },
+            { id: "toconline_procedimentos", label: "Procedimentos" },
+          ],
+        },
+      },
+      {
+        kind: "group",
+        group: {
           id: "analise",
           label: "Análise Financeira",
           icon: LineChart,
@@ -136,14 +147,6 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
           ],
         },
       },
-    ],
-  },
-  {
-    title: "TOConline",
-    icon: Bot,
-    entries: [
-      { kind: "item", item: { id: "toconline_fila", label: "Fila de tarefas", icon: ListTodo } },
-      { kind: "item", item: { id: "toconline_procedimentos", label: "Procedimentos", icon: FileText } },
     ],
   },
   {
@@ -183,6 +186,7 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
     contabilidades: activeView.startsWith("contabilidades"),
     analise: activeView.startsWith("analise"),
     obrigacoes: activeView.startsWith("obrigacoes"),
+    toconline: activeView.startsWith("toconline"),
   });
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -239,6 +243,9 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
     });
   };
 
+  // Soma dos alertas dos itens de um grupo (ex.: TOConline → Fila de tarefas)
+  const groupBadge = (group: Group) => group.items.reduce((n, i) => n + (itemBadges[i.id] || 0), 0);
+
   const itemClass = (active: boolean) =>
     cn(
       "w-full flex items-center gap-3 rounded-lg text-sm font-medium transition-colors",
@@ -289,7 +296,7 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
           const sectionOpen = collapsed || !!openSections[section.title];
           const sectionActive = sectionHasView(section, activeView);
           const sectionBadge = entries.reduce(
-            (n, e) => n + (e.kind === "item" ? itemBadges[e.item.id] || 0 : 0), 0
+            (n, e) => n + (e.kind === "item" ? itemBadges[e.item.id] || 0 : groupBadge(e.group)), 0
           );
           return (
             <div key={section.title} className={collapsed ? "mb-4" : "mb-1.5"}>
@@ -356,18 +363,19 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
                 const isActive = activeView.startsWith(group.id);
                 const open = openGroups[group.id] && !collapsed;
                 const isContabilidades = group.id === "contabilidades";
+                const groupPending = isContabilidades ? contabTotalPending : groupBadge(group);
                 return (
                   <div key={group.id}>
                     <button onClick={() => handleGroupClick(group)} className={cn(itemClass(isActive), "relative")}
                       title={collapsed ? group.label : undefined}>
                       <group.icon className="w-4 h-4 shrink-0" />
                       {!collapsed && <span className="flex-1 text-left">{group.label}</span>}
-                      {isContabilidades && contabTotalPending > 0 && (
+                      {groupPending > 0 && (
                         collapsed ? (
                           <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-warning" />
                         ) : (
                           <span className="text-[10px] font-semibold bg-warning text-warning-foreground px-1.5 py-0.5 rounded-full mr-1">
-                            {contabTotalPending}
+                            {groupPending}
                           </span>
                         )
                       )}
@@ -378,7 +386,7 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
                         {group.items.filter((sub) => !sub.adminOnly || isAdmin).map((sub) => {
                           // "Clientes do mês" junta os regimes (separadores na própria página)
                           const isRegimes = isContabilidades && sub.id !== "contabilidades_painel";
-                          const subPending = isRegimes ? contabTotalPending : undefined;
+                          const subPending = isRegimes ? contabTotalPending : itemBadges[sub.id];
                           const subActive = isRegimes
                             ? activeView.startsWith("contabilidades_") && activeView !== "contabilidades_painel"
                             : activeView === sub.id;
