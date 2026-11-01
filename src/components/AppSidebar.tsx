@@ -27,8 +27,6 @@ import {
   UserCheck,
   Bot,
   StickyNote,
-  Workflow,
-  Cog,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -57,38 +55,6 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
       { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
       { kind: "item", item: { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays } },
       { kind: "item", item: { id: "notas", label: "Notas", icon: StickyNote } },
-    ],
-  },
-  {
-    title: "Processos",
-    icon: Workflow,
-    entries: [
-      {
-        kind: "group",
-        group: {
-          id: "processos_comercial",
-          label: "Comercial",
-          icon: Handshake,
-          adminOnly: true,
-          items: [
-            { id: "processos_comercial_servico", label: "Serviço mensal" },
-            { id: "processos_comercial_consultorias", label: "Consultorias" },
-          ],
-        },
-      },
-      {
-        kind: "group",
-        group: {
-          id: "processos_operacional",
-          label: "Operacional",
-          icon: Cog,
-          adminOnly: true,
-          items: [
-            { id: "processos_operacional_obrigacoes", label: "Obrigações mensais" },
-            { id: "processos_operacional_gestao", label: "Gestão mensal" },
-          ],
-        },
-      },
     ],
   },
   {
@@ -211,8 +177,6 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
     analise: activeView.startsWith("analise"),
     obrigacoes: activeView.startsWith("obrigacoes"),
     toconline: activeView.startsWith("toconline"),
-    processos_comercial: activeView.startsWith("processos_comercial"),
-    processos_operacional: activeView.startsWith("processos_operacional"),
   });
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
