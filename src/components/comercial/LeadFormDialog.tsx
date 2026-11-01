@@ -105,8 +105,8 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
     });
   const hasMeeting = !!form.meeting_date && (isConsultoria || form.meeting);
 
-  // Cadência após o envio da proposta: follow ups aos dias 3 e 7; ao dia 12 sem resposta, mensagem a encerrar
-  const PROPOSAL_FOLLOWUP_DAYS: Record<string, number> = { proposta_enviada: 3, followup_1: 7, followup_2: 12 };
+  // Cadência após o envio da proposta: follow ups aos dias 2 e 7; ao dia 14 decide-se (Ganho ou Perda — sem resposta, mensagem a encerrar)
+  const PROPOSAL_FOLLOWUP_DAYS: Record<string, number> = { proposta_enviada: 2, followup_1: 7, followup_2: 14 };
   const withCadence = <T extends { stage: string; proposal_sent_at: string; next_followup: string }>(p: T): T => {
     const days = PROPOSAL_FOLLOWUP_DAYS[p.stage];
     if (isConsultoria || days === undefined) return p;
@@ -294,7 +294,7 @@ const LeadFormDialog = ({ open, lead, defaultStage, segment, onClose }: Props) =
             <p className="text-xs text-muted-foreground mt-1">
               {isConsultoria
                 ? `Por defeito, ${followUpDays} dias após a sessão.`
-                : "Após a proposta: dia 3 (1º follow up), dia 7 (2º) e dia 12 (encerrar)."}
+                : "Após a proposta: dia 2 (1º follow up), dia 7 (2º) e dia 14 (decisão: Ganho ou Perda)."}
             </p>
           </div>
           {form.stage === "nao_e_o_momento" && (
