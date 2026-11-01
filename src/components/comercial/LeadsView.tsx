@@ -20,6 +20,7 @@ import {
   monthLabel,
 } from "./leadConstants";
 import LeadFormDialog from "./LeadFormDialog";
+import { confirmationState } from "@/lib/sessionConfirmation";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -79,7 +80,7 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
     [monthLeads]
   );
 
-  const colCount = segment === "consultoria" ? 7 : 10;
+  const colCount = segment === "consultoria" ? 8 : 11;
 
   const renderRow = (l: Lead) => (
     <tr key={l.id} className="border-t hover:bg-muted/30">
@@ -110,11 +111,11 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
 
       <td className="p-3 text-xs">
         {segment === "consultoria" ? fmtDate(l.meeting_date) : l.meeting ? fmtDate(l.meeting_date) : "—"}
-        <SessionConfirmation lead={l} />
         {segment === "consultoria" && l.given_by && (
           <span className="block text-muted-foreground">{l.given_by}</span>
         )}
       </td>
+      <td className="p-3 text-xs"><SessionConfirmation lead={l} /></td>
       <td className="p-3 text-xs">{fmtDate(l.next_followup)}</td>
       <td className="p-3">
         <div className="flex justify-end gap-1">
@@ -207,7 +208,8 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
                 <th className="text-right p-3">Valor</th>
                 {segment !== "consultoria" && <th className="text-left p-3">Tipo / área</th>}
                 {segment !== "consultoria" && <th className="text-left p-3">IVA</th>}
-                <th className="text-left p-3">{segment === "consultoria" ? "Sessão" : "Reunião"}</th>
+                <th className="text-left p-3">Data da sessão</th>
+                <th className="text-left p-3">Confirmação da sessão</th>
                 <th className="text-left p-3">Follow-up</th>
 
                 <th className="p-3" />
@@ -251,19 +253,21 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
 
 export default LeadsView;
 
-/** Estado da confirmação da sessão: confirmada, a confirmar (data) ou atrasada. */
+/** Confirmação da sessão: data e estado (verde quando confirmada). */
 function SessionConfirmation({ lead }: { lead: Lead }) {
-  if (!lead.meeting_date || !lead.confirmation_date) return null;
-  if (lead.meeting_confirmed) {
-    return <span className="block text-success font-medium">✓ Confirmada</span>;
+  const state = confirmationState(lead);
+  if (!lead.confirmation_date || (state === "sem_sessao" && !lead.meeting_confirmed)) {
+    return <span className="text-muted-foreground">{lead.confirmation_date ? fmtDate(lead.confirmation_date) : "—"}</span>;
   }
-  const today = new Date().toLocaleDateString("sv-SE");
-  if (lead.meeting_date < today) return null;
-  const late = lead.confirmation_date < today;
-  const isToday = lead.confirmation_date === today;
+  if (state === "confirmada") {
+    return <span className="text-success font-medium">✓ Confirmada <span className="font-normal">· {fmtDate(lead.confirmation_date)}</span></span>;
+  }
+  const cls = state === "atrasada" ? "text-destructive font-medium" : state === "hoje" ? "text-warning font-medium" : "text-muted-foreground";
+  const label = state === "atrasada" ? "Atrasada" : state === "hoje" ? "Hoje" : "Por confirmar";
   return (
-    <span className={late ? "block text-destructive font-medium" : isToday ? "block text-warning font-medium" : "block text-muted-foreground"}>
-      {late ? "Confirmação atrasada" : isToday ? "Confirmar hoje" : `Confirmar a ${fmtDate(lead.confirmation_date)}`}
+    <span className={cls}>
+      {fmtDate(lead.confirmation_date)}
+      <span className="block">{label}</span>
     </span>
   );
 }
