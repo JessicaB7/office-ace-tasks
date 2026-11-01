@@ -110,8 +110,8 @@ const Index = () => {
         {activeView === "extratos" && <ExtratosBancariosView />}
         {activeView === "toconline_fila" && <ToconlineFilaView />}
         {activeView === "toconline_procedimentos" && <ToconlineProcedimentosView />}
-        {activeView === "processos_comercial" && <ProcessosView section="comercial" />}
-        {activeView === "processos_operacional" && <ProcessosView section="operacional" />}
+        {activeView === "processos_comercial" && isAdmin && <ProcessosView section="comercial" />}
+        {activeView === "processos_operacional" && isAdmin && <ProcessosView section="operacional" />}
         {activeView === "resumo" && <AdminWeeklySummary />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}

@@ -63,8 +63,8 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
     title: "Processos",
     icon: Workflow,
     entries: [
-      { kind: "item", item: { id: "processos_comercial", label: "Comercial", icon: Handshake } },
-      { kind: "item", item: { id: "processos_operacional", label: "Operacional", icon: Cog } },
+      { kind: "item", item: { id: "processos_comercial", label: "Comercial", icon: Handshake, adminOnly: true } },
+      { kind: "item", item: { id: "processos_operacional", label: "Operacional", icon: Cog, adminOnly: true } },
     ],
   },
   {
