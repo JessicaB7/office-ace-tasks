@@ -40,6 +40,9 @@ interface FiscalDeadline {
   overrides?: Record<number, number>;
   clientFilter?: (c: any) => boolean;
   refMonthOffset?: number; // how many months back from current month is the reference (default 1)
+  /** Mês de registo em monthly_obligations, quando difere do período de referência (default = refMonthOffset).
+   * Ex.: SS TI declaração trimestral — referente ao trimestre anterior, mas registada no mês do prazo (0). */
+  recordMonthOffset?: number;
 }
 
 const FISCAL_DEADLINES: FiscalDeadline[] = [
@@ -57,7 +60,7 @@ const FISCAL_DEADLINES: FiscalDeadline[] = [
   { key: K.SS_TI_PAG, title: "SS TI - Pagamento", day: 20, months: null, obligationType: "SS_TI", clientFilter: (c) => isTI(c) && !hasSalarios(c) },
   { key: K.SALARIOS_PROC, title: "Salários - Processamento", day: 25, months: null, obligationType: "salarios", clientFilter: (c) => hasSalarios(c) },
   // Último dia do mês (30 em abril)
-  { key: K.SS_TI_DT, title: "SS TI - Declaração Trimestral", day: 31, months: [1, 4, 7, 10], obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c) },
+  { key: K.SS_TI_DT, title: "SS TI - Declaração Trimestral", day: 31, months: [1, 4, 7, 10], refType: "quarter", obligationType: "SS_TI_DT", clientFilter: (c) => isTI(c), recordMonthOffset: 0 },
   // OSS: até ao fim do mês seguinte ao trimestre (Jan/Abr/Jul/Out); registo no mês de fim do trimestre (offset 1)
   { key: K.IVA_OSS, title: "IVA OSS", day: 31, months: [1, 4, 7, 10], refType: "quarter", obligationType: "IVA_OSS", clientFilter: (c) => c.iva_oss === "Sim", refMonthOffset: 1 },
 ];
@@ -164,7 +167,7 @@ const DashboardView = () => {
               : undefined;
             // O registo é o do mês do prazo menos o offset (não o mês de hoje): um prazo de 26/10 visto
             // a 1/11 continua a contar os registos de setembro.
-            const refMonth = dl.obligationType ? refMonthFor(monthIndex, yr, dl.refMonthOffset ?? 1) : undefined;
+            const refMonth = dl.obligationType ? refMonthFor(monthIndex, yr, dl.recordMonthOffset ?? dl.refMonthOffset ?? 1) : undefined;
             const obligationKey = dl.obligationType ? `${dlIdx}@${refMonth}` : undefined;
             result.push({ title: dl.title, date: deadlineDate, obligationKey, ref, dlIdx, refMonth });
           }
