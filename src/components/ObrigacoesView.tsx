@@ -205,8 +205,9 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   const showSaftExtra = activeTab === "SAFT";
   // Coluna Notas fixa à direita (nota do cliente que se mantém de mês para mês)
   const isRetencao = activeTab === "retencao_fonte";
-  const notesField = isDMR ? "notas_dmr" : isRetencao ? "notas_retencao" : "notas_saft";
-  const showNotasFixas = showSaftExtra || isDMR || isRetencao;
+  const isSalariosTab = activeTab === "salarios";
+  const notesField = isDMR ? "notas_dmr" : isRetencao ? "notas_retencao" : isSalariosTab ? "notas_salarios" : "notas_saft";
+  const showNotasFixas = showSaftExtra || isDMR || isRetencao || isSalariosTab;
   const showGuiaPagamento = isDMR;
   const isSalarios = activeTab === "salarios";
   const showSalariosColumns = isSalarios;

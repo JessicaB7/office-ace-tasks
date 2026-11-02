@@ -431,6 +431,7 @@ export type Database = {
           niss: string | null
           notas_dmr: string | null
           notas_retencao: string | null
+          notas_salarios: string | null
           notas_faturas: string | null
           notas_saft: string | null
           notas_internas: string | null
@@ -479,6 +480,7 @@ export type Database = {
           niss?: string | null
           notas_dmr?: string | null
           notas_retencao?: string | null
+          notas_salarios?: string | null
           notas_faturas?: string | null
           notas_saft?: string | null
           notas_internas?: string | null
@@ -527,6 +529,7 @@ export type Database = {
           niss?: string | null
           notas_dmr?: string | null
           notas_retencao?: string | null
+          notas_salarios?: string | null
           notas_faturas?: string | null
           notas_saft?: string | null
           notas_internas?: string | null
