@@ -914,6 +914,8 @@ export type Database = {
           estimated_value: number | null
           given_by: string | null
           id: string
+          invoice_sent: boolean
+          invoice_sent_at: string | null
           iva_framework: string | null
           loss_reason: string | null
           meeting: boolean
@@ -942,6 +944,8 @@ export type Database = {
           estimated_value?: number | null
           given_by?: string | null
           id?: string
+          invoice_sent?: boolean
+          invoice_sent_at?: string | null
           iva_framework?: string | null
           loss_reason?: string | null
           meeting?: boolean
@@ -970,6 +974,8 @@ export type Database = {
           estimated_value?: number | null
           given_by?: string | null
           id?: string
+          invoice_sent?: boolean
+          invoice_sent_at?: string | null
           iva_framework?: string | null
           loss_reason?: string | null
           meeting?: boolean

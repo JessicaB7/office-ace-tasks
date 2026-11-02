@@ -417,6 +417,9 @@ export interface Lead {
   /** Visto "Sessão confirmada". */
   meeting_confirmed: boolean;
   meeting_confirmed_at: string | null;
+  /** Consultorias: visto "Fatura enviada". */
+  invoice_sent: boolean;
+  invoice_sent_at: string | null;
   suggested_product: string | null;
   loss_reason: string | null;
   created_at: string;

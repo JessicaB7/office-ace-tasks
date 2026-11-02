@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { useLeads, useDeleteLead, type Lead } from "@/hooks/useSupabaseQuery";
+import { useLeads, useDeleteLead, useUpsertLead, type Lead } from "@/hooks/useSupabaseQuery";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,16 @@ import { toast } from "sonner";
 const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
   const { data: leads = [], isLoading } = useLeads(segment);
   const del = useDeleteLead();
+  const upsert = useUpsertLead();
+  const isConsultoria = segment === "consultoria";
+  const toggleInvoice = async (l: Lead, value: boolean) => {
+    try {
+      await upsert.mutateAsync({ id: l.id, name: l.name, invoice_sent: value, invoice_sent_at: value ? new Date().toISOString() : null });
+      toast.success(value ? `Fatura enviada — ${l.name}` : `Fatura por enviar — ${l.name}`);
+    } catch (e: any) {
+      toast.error("Não foi possível guardar: " + (e.message || "erro"));
+    }
+  };
   const { isAdmin } = useAuth();
   const [search, setSearch] = useState("");
   // Comercial abre nas leads pendentes (ainda sem ganho/perda)
@@ -79,7 +90,7 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
   );
 
   // Tabela resumida: o resto (produto, valor, tipo, IVA…) está na ficha da lead.
-  const colCount = 7;
+  const colCount = isConsultoria ? 8 : 7;
 
   const renderRow = (l: Lead) => (
     <tr key={l.id} className="border-t hover:bg-muted/30">
@@ -96,6 +107,14 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
         {segment === "consultoria" ? fmtDate(l.meeting_date) : l.meeting ? fmtDate(l.meeting_date) : "—"}
       </td>
       <td className="p-3 text-xs">{fmtDate(l.next_followup)}</td>
+      {isConsultoria && (
+        <td className="p-3 text-xs">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <Checkbox checked={!!l.invoice_sent} onCheckedChange={(v) => toggleInvoice(l, v === true)} aria-label="Fatura enviada" />
+            {l.invoice_sent && l.invoice_sent_at ? <span className="text-success">{new Date(l.invoice_sent_at).toLocaleDateString("pt-PT")}</span> : <span className="text-muted-foreground">Por enviar</span>}
+          </label>
+        </td>
+      )}
       <td className="p-3">
         <div className="flex justify-end gap-1">
           <Button size="icon" variant="ghost" onClick={() => { setEditing(l); setDialogOpen(true); }}>
@@ -186,6 +205,7 @@ const LeadsView = ({ segment = "contabilidade" }: { segment?: string }) => {
                 <th className="text-left p-3">Confirmação da sessão</th>
                 <th className="text-left p-3">Data da sessão</th>
                 <th className="text-left p-3">Follow-up</th>
+                {isConsultoria && <th className="text-left p-3">Fatura enviada</th>}
 
                 <th className="p-3" />
               </tr>
