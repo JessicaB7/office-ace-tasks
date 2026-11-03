@@ -29,8 +29,10 @@ const DividasView = () => {
   const { data: collaborators = [] } = useCollaborators();
   const upsert = useUpsertClient();
   const [search, setSearch] = useState("");
-  // Filtro: "all" ou "<at|ss>:<estado>"
+  // Separador (Finanças / Segurança Social) e filtro pelo estado ("all" ou o estado).
+  const [aba, setAba] = useState<"at" | "ss">("at");
   const [filtro, setFiltro] = useState("all");
+  const descField = aba === "at" ? "divida_descricao" : "divida_ss_descricao";
   const [mostrarInativos, setMostrarInativos] = useState(false);
 
   const nomeResp = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
@@ -39,13 +41,10 @@ const DividasView = () => {
     const q = search.trim().toLowerCase();
     return clients.filter((c: any) => {
       if (!mostrarInativos && c.status === "inativo") return false;
-      if (filtro !== "all") {
-        const [ent, val] = filtro.split(":");
-        if ((c[`divida_${ent}`] || "por_verificar") !== val) return false;
-      }
+      if (filtro !== "all" && (c[`divida_${aba}`] || "por_verificar") !== filtro) return false;
       return !q || c.name.toLowerCase().includes(q) || (c.nif || "").includes(q);
     });
-  }, [clients, search, filtro, mostrarInativos]);
+  }, [clients, search, filtro, mostrarInativos, aba]);
 
   const contagem = (ent: "at" | "ss", v: string) =>
     clients.filter((c: any) => (mostrarInativos || c.status !== "inativo") && (c[`divida_${ent}`] || "por_verificar") === v).length;
@@ -64,23 +63,31 @@ const DividasView = () => {
         </p>
       </div>
 
-      <div className="space-y-2">
+      <div className="flex gap-1 border-b">
         {(["at", "ss"] as const).map((ent) => (
-          <div key={ent} className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-muted-foreground w-[110px]">{ent === "at" ? "Finanças" : "Segurança Social"}</span>
-            {DIVIDA_AT_OPTIONS.map((o) => {
-              const key = `${ent}:${o.value}`;
-              return (
-                <button
-                  key={key}
-                  onClick={() => setFiltro(filtro === key ? "all" : key)}
-                  className={cn("text-xs font-medium px-3 py-1.5 rounded-full border transition-colors", filtro === key ? "ring-2 ring-ring" : "", o.cls)}
-                >
-                  {o.label} · {contagem(ent, o.value)}
-                </button>
-              );
-            })}
-          </div>
+          <button
+            key={ent}
+            onClick={() => { setAba(ent); setFiltro("all"); }}
+            className={cn(
+              "px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors",
+              aba === ent ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {ent === "at" ? "Finanças" : "Segurança Social"}
+            <span className="ml-2 text-xs font-medium text-destructive">{contagem(ent, "com_divida")}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {DIVIDA_AT_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            onClick={() => setFiltro(filtro === o.value ? "all" : o.value)}
+            className={cn("text-xs font-medium px-3 py-1.5 rounded-full border transition-colors", filtro === o.value ? "ring-2 ring-ring" : "", o.cls)}
+          >
+            {o.label} · {contagem(aba, o.value)}
+          </button>
         ))}
       </div>
 
@@ -107,8 +114,7 @@ const DividasView = () => {
               <th className="text-left px-4 py-3">Cliente</th>
               <th className="text-left px-4 py-3">Tipo</th>
               <th className="text-left px-4 py-3">Responsável</th>
-              <th className="text-left px-4 py-3 w-[160px]">Finanças</th>
-              <th className="text-left px-4 py-3 w-[160px]">Segurança Social</th>
+              <th className="text-left px-4 py-3 w-[170px]">{aba === "at" ? "Finanças" : "Segurança Social"}</th>
               <th className="text-left px-4 py-3 min-w-[320px]">Descrição</th>
             </tr>
           </thead>
@@ -127,7 +133,7 @@ const DividasView = () => {
                     </span>
                   </td>
                   <td className="px-4 py-2 text-xs">{nomeResp(c.responsavel_id)}</td>
-                  {(["at", "ss"] as const).map((ent) => {
+                  {[aba].map((ent) => {
                     const opt = optOf(ent);
                     return (
                       <td key={ent} className="px-4 py-2">
@@ -144,13 +150,13 @@ const DividasView = () => {
                   <td className="px-4 py-2">
                     <input
                       type="text"
-                      key={`${c.id}-divida`}
-                      defaultValue={c.divida_descricao || ""}
+                      key={`${c.id}-${descField}`}
+                      defaultValue={c[descField] || ""}
                       placeholder="Descrever a situação…"
                       className={inputClass}
                       onBlur={(e) => {
                         const val = e.target.value;
-                        if (val !== (c.divida_descricao || "")) guardar(c, { divida_descricao: val || null });
+                        if (val !== (c[descField] || "")) guardar(c, { [descField]: val || null });
                       }}
                       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
                     />
@@ -159,7 +165,7 @@ const DividasView = () => {
               );
             })}
             {!isLoading && lista.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Sem clientes.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">Sem clientes.</td></tr>
             )}
           </tbody>
         </table>

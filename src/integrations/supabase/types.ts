@@ -418,6 +418,7 @@ export type Database = {
           divida_at: string
           divida_descricao: string | null
           divida_ss: string
+          divida_ss_descricao: string | null
           email: string | null
           faturacao: string | null
           faturacao_frequencia: string | null
@@ -470,6 +471,7 @@ export type Database = {
           divida_at?: string
           divida_descricao?: string | null
           divida_ss?: string
+          divida_ss_descricao?: string | null
           email?: string | null
           faturacao?: string | null
           faturacao_frequencia?: string | null
@@ -522,6 +524,7 @@ export type Database = {
           divida_at?: string
           divida_descricao?: string | null
           divida_ss?: string
+          divida_ss_descricao?: string | null
           email?: string | null
           faturacao?: string | null
           faturacao_frequencia?: string | null
