@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useClients, useCollaborators, useUpsertTask, useDeleteTask } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, PRIORITY_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskPriority, type TaskCategory } from "@/types/database";
-import { X } from "lucide-react";
+import { X, ExternalLink } from "lucide-react";
+import ClientDetailDialog from "./ClientDetailDialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -39,6 +40,7 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
     });
   }, [collaborators]);
   const [form, setForm] = useState(emptyForm);
+  const [clientDetailOpen, setClientDetailOpen] = useState(false);
   const isEditing = !!task;
 
   useEffect(() => {
@@ -186,7 +188,14 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium mb-1 block">Cliente</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium block">Cliente</label>
+                {form.client_id && (
+                  <button type="button" onClick={() => setClientDetailOpen(true)} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                    <ExternalLink className="w-3 h-3" /> Ver ficha
+                  </button>
+                )}
+              </div>
               <select value={form.client_id} onChange={(e) => set("client_id", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Sem cliente</option>
                 {clients.filter(c => c.active).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -236,6 +245,12 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
           </div>
         </form>
       </div>
+      <ClientDetailDialog
+        client={clientDetailOpen ? clients.find((c) => c.id === form.client_id) ?? null : null}
+        open={clientDetailOpen}
+        onClose={() => setClientDetailOpen(false)}
+        allowDelete={false}
+      />
     </div>
   );
 };
