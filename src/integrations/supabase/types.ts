@@ -415,6 +415,8 @@ export type Database = {
           ativos_desde: string | null
           address: string | null
           created_at: string
+          divida_at: string
+          divida_descricao: string | null
           email: string | null
           faturacao: string | null
           faturacao_frequencia: string | null
@@ -464,6 +466,8 @@ export type Database = {
           ativos_desde?: string | null
           address?: string | null
           created_at?: string
+          divida_at?: string
+          divida_descricao?: string | null
           email?: string | null
           faturacao?: string | null
           faturacao_frequencia?: string | null
@@ -513,6 +517,8 @@ export type Database = {
           ativos_desde?: string | null
           address?: string | null
           created_at?: string
+          divida_at?: string
+          divida_descricao?: string | null
           email?: string | null
           faturacao?: string | null
           faturacao_frequencia?: string | null

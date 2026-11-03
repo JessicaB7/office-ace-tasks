@@ -7,6 +7,7 @@ import ClientListView from "@/components/ClientListView";
 import CollaboratorListView from "@/components/CollaboratorListView";
 import FiscalCalendarView from "@/components/FiscalCalendarView";
 import NotasView from "@/components/NotasView";
+import DividasView from "@/components/DividasView";
 import ObrigacoesView, { type ObrigacoesNav } from "@/components/ObrigacoesView";
 import ContabilidadesView, { type ContabilidadesNav } from "@/components/ContabilidadesView";
 import ObrigacoesControloView, { type ObrigacoesControloNav } from "@/components/ObrigacoesControloView";
@@ -114,6 +115,7 @@ const Index = () => {
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}
         {activeView === "notas" && <NotasView />}
+        {activeView === "dividas" && <DividasView />}
       </main>
       <TaskFormDialog open={dialogOpen} task={editingTask} onClose={() => setDialogOpen(false)} />
       <DailyTasksReminderDialog onViewTasks={() => setActiveView("tasks")} />

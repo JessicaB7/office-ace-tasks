@@ -27,6 +27,7 @@ import {
   UserCheck,
   Bot,
   StickyNote,
+  Scale,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -55,6 +56,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
       { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
       { kind: "item", item: { id: "calendar", label: "Calendário Fiscal", icon: CalendarDays } },
       { kind: "item", item: { id: "notas", label: "Notas", icon: StickyNote } },
+      { kind: "item", item: { id: "dividas", label: "Controlo de dívidas CRM", icon: Scale } },
     ],
   },
   {
