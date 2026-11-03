@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-/** Estado da dívida à AT (Finanças) de cada cliente. Vazio = por verificar. */
+/** Estado da dívida (AT ou SS) de cada cliente. Vazio = por verificar. */
 export const DIVIDA_AT_OPTIONS = [
   { value: "por_verificar", label: "Por verificar", cls: "bg-muted text-muted-foreground" },
   { value: "sem_divida", label: "Sem dívida", cls: "bg-success/15 text-success" },
@@ -23,13 +23,14 @@ const tipoColor = (tipo: string | null) => {
 
 const inputClass = "w-full text-xs px-2 py-1 rounded border bg-background focus:outline-none focus:ring-2 focus:ring-ring";
 
-/** Visão geral → Controlo de dívidas CRM: todos os clientes, estado da dívida à AT e descrição. */
+/** Visão geral → Controlo de dívidas CRM: todos os clientes, estado da dívida à AT e à SS, e descrição. */
 const DividasView = () => {
   const { data: clients = [], isLoading } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const upsert = useUpsertClient();
   const [search, setSearch] = useState("");
-  const [estado, setEstado] = useState("all");
+  // Filtro: "all" ou "<at|ss>:<estado>"
+  const [filtro, setFiltro] = useState("all");
   const [mostrarInativos, setMostrarInativos] = useState(false);
 
   const nomeResp = (id: string | null) => collaborators.find((c: any) => c.id === id)?.name || "—";
@@ -38,13 +39,16 @@ const DividasView = () => {
     const q = search.trim().toLowerCase();
     return clients.filter((c: any) => {
       if (!mostrarInativos && c.status === "inativo") return false;
-      if (estado !== "all" && (c.divida_at || "por_verificar") !== estado) return false;
+      if (filtro !== "all") {
+        const [ent, val] = filtro.split(":");
+        if ((c[`divida_${ent}`] || "por_verificar") !== val) return false;
+      }
       return !q || c.name.toLowerCase().includes(q) || (c.nif || "").includes(q);
     });
-  }, [clients, search, estado, mostrarInativos]);
+  }, [clients, search, filtro, mostrarInativos]);
 
-  const contagem = (v: string) =>
-    clients.filter((c: any) => (mostrarInativos || c.status !== "inativo") && (c.divida_at || "por_verificar") === v).length;
+  const contagem = (ent: "at" | "ss", v: string) =>
+    clients.filter((c: any) => (mostrarInativos || c.status !== "inativo") && (c[`divida_${ent}`] || "por_verificar") === v).length;
 
   const guardar = (c: any, campos: Record<string, string | null>) =>
     upsert.mutate({ id: c.id, name: c.name, ...campos } as any, {
@@ -56,19 +60,27 @@ const DividasView = () => {
       <div>
         <h2 className="text-2xl font-bold">Controlo de dívidas CRM</h2>
         <p className="text-muted-foreground text-sm mt-1">
-          Dívidas dos clientes à AT (Finanças). Escolha o estado e descreva a situação — grava automaticamente.
+          Dívidas dos clientes à AT (Finanças) e à Segurança Social. Escolha o estado e descreva a situação — grava automaticamente.
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {DIVIDA_AT_OPTIONS.map((o) => (
-          <button
-            key={o.value}
-            onClick={() => setEstado(estado === o.value ? "all" : o.value)}
-            className={cn("text-xs font-medium px-3 py-1.5 rounded-full border transition-colors", estado === o.value ? "ring-2 ring-ring" : "", o.cls)}
-          >
-            {o.label} · {contagem(o.value)}
-          </button>
+      <div className="space-y-2">
+        {(["at", "ss"] as const).map((ent) => (
+          <div key={ent} className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-muted-foreground w-[110px]">{ent === "at" ? "AT / Finanças" : "Segurança Social"}</span>
+            {DIVIDA_AT_OPTIONS.map((o) => {
+              const key = `${ent}:${o.value}`;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setFiltro(filtro === key ? "all" : key)}
+                  className={cn("text-xs font-medium px-3 py-1.5 rounded-full border transition-colors", filtro === key ? "ring-2 ring-ring" : "", o.cls)}
+                >
+                  {o.label} · {contagem(ent, o.value)}
+                </button>
+              );
+            })}
+          </div>
         ))}
       </div>
 
@@ -95,13 +107,14 @@ const DividasView = () => {
               <th className="text-left px-4 py-3">Cliente</th>
               <th className="text-left px-4 py-3">Tipo</th>
               <th className="text-left px-4 py-3">Responsável</th>
-              <th className="text-left px-4 py-3 w-[170px]">AT / Finanças</th>
+              <th className="text-left px-4 py-3 w-[160px]">AT / Finanças</th>
+              <th className="text-left px-4 py-3 w-[160px]">Segurança Social</th>
               <th className="text-left px-4 py-3 min-w-[320px]">Descrição</th>
             </tr>
           </thead>
           <tbody>
             {lista.map((c: any) => {
-              const opt = DIVIDA_AT_OPTIONS.find((o) => o.value === (c.divida_at || "por_verificar"))!;
+              const optOf = (ent: "at" | "ss") => DIVIDA_AT_OPTIONS.find((o) => o.value === (c[`divida_${ent}`] || "por_verificar"))!;
               return (
                 <tr key={c.id} className="border-t hover:bg-muted/30">
                   <td className="px-4 py-2">
@@ -114,15 +127,20 @@ const DividasView = () => {
                     </span>
                   </td>
                   <td className="px-4 py-2 text-xs">{nomeResp(c.responsavel_id)}</td>
-                  <td className="px-4 py-2">
-                    <select
-                      value={opt.value}
-                      onChange={(e) => guardar(c, { divida_at: e.target.value })}
-                      className={cn("text-xs font-medium px-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-ring", opt.cls)}
-                    >
-                      {DIVIDA_AT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                  </td>
+                  {(["at", "ss"] as const).map((ent) => {
+                    const opt = optOf(ent);
+                    return (
+                      <td key={ent} className="px-4 py-2">
+                        <select
+                          value={opt.value}
+                          onChange={(e) => guardar(c, { [`divida_${ent}`]: e.target.value })}
+                          className={cn("text-xs font-medium px-2 py-1 rounded border focus:outline-none focus:ring-2 focus:ring-ring", opt.cls)}
+                        >
+                          {DIVIDA_AT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      </td>
+                    );
+                  })}
                   <td className="px-4 py-2">
                     <input
                       type="text"
@@ -141,7 +159,7 @@ const DividasView = () => {
               );
             })}
             {!isLoading && lista.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">Sem clientes.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">Sem clientes.</td></tr>
             )}
           </tbody>
         </table>
