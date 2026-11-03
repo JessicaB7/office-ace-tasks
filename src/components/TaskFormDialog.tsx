@@ -62,6 +62,16 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
 
   if (!open) return null;
 
+  // Dados guardados no aviso, para o pop-up "Novas tarefas" mostrar prazo e quem atribuiu.
+  const assignmentData = (taskId: string | undefined, clientName: string | undefined) => ({
+    task_id: taskId ?? null,
+    task_title: form.title,
+    client_name: clientName ?? null,
+    due_date: form.due_date,
+    priority: form.priority,
+    assigned_by: collaborators.find((c) => c.id === currentCollaboratorId)?.name ?? null,
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -72,7 +82,7 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
         // Create one task per active collaborator
         const activeCollabs = collaborators.filter(c => c.active);
         for (const collab of activeCollabs) {
-          await upsert.mutateAsync({
+          const created: any = await upsert.mutateAsync({
             ...form,
             client_id: form.client_id || null,
             collaborator_id: collab.id,
@@ -97,19 +107,20 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
               },
             }).catch(err => console.error("Failed to send assignment email:", err));
           }
-          // In-app notification
-          if (collab.user_id) {
+          // In-app notification (não avisa quem atribui a tarefa a si próprio)
+          if (collab.user_id && collab.id !== currentCollaboratorId) {
             supabase.from("notifications").insert({
               user_id: collab.user_id,
               title: "Nova tarefa atribuída",
               message: `${form.title}${client?.name ? ` — ${client.name}` : ""}`,
               type: "task_assigned",
+              data: assignmentData(created?.id, client?.name),
             }).then(({ error }) => { if (error) console.error("Notification error:", error); });
           }
         }
       } else {
         const newCollaboratorId = isTodos ? null : (form.collaborator_id || null);
-        await upsert.mutateAsync({
+        const saved: any = await upsert.mutateAsync({
           ...form,
           client_id: form.client_id || null,
           collaborator_id: newCollaboratorId,
@@ -138,13 +149,14 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
               },
             }).catch(err => console.error("Failed to send assignment email:", err));
           }
-          // In-app notification
-          if (collaborator?.user_id) {
+          // In-app notification (não avisa quem atribui a tarefa a si próprio)
+          if (collaborator?.user_id && collaborator.id !== currentCollaboratorId) {
             supabase.from("notifications").insert({
               user_id: collaborator.user_id,
               title: "Nova tarefa atribuída",
               message: `${form.title}${client?.name ? ` — ${client.name}` : ""}`,
               type: "task_assigned",
+              data: assignmentData(saved?.id || task?.id, client?.name),
             }).then(({ error }) => { if (error) console.error("Notification error:", error); });
           }
         }
