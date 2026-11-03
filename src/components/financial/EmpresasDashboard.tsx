@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Download } from "lucide-react";
+import { Download, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,7 +131,20 @@ export default function EmpresasDashboard({
   const totalMercadorias = mercadoriasM.reduce((a, b) => a + b, 0);
   const totalOutros = outrosGastosM.reduce((a, b) => a + b, 0);
   const totalVendas = totalRendimentos;
-  const totalGastos = gastosM.reduce((a, b) => a + b, 0);
+  // Gastos com mercadorias editáveis: o valor manual substitui o automático (conta 31) nos gastos e no resultado.
+  const mercadoriasManual = settings?.mercadorias_valor == null ? null : Number(settings.mercadorias_valor);
+  const mercadoriasEfetivo = mercadoriasManual ?? totalMercadorias;
+  const [mercadoriasInput, setMercadoriasInput] = useState<string>(String(cents(mercadoriasEfetivo)));
+  useEffect(() => {
+    setMercadoriasInput(String(cents(mercadoriasEfetivo)));
+  }, [mercadoriasEfetivo]);
+  const saveMercadorias = () => {
+    const v = Number(mercadoriasInput.replace(",", "."));
+    if (!isFinite(v)) return setMercadoriasInput(String(cents(mercadoriasEfetivo)));
+    if (cents(v) === cents(mercadoriasEfetivo)) return;
+    upsertSettings.mutate({ mercadorias_valor: cents(Math.max(0, v)) });
+  };
+  const totalGastos = gastosM.reduce((a, b) => a + b, 0) - totalMercadorias + mercadoriasEfetivo;
   const resultado = totalRendimentos - totalGastos;
 
 
@@ -244,7 +257,7 @@ export default function EmpresasDashboard({
 
   const kpis = [
     { label: "Rendimentos", value: totalRendimentos, tone: "primary" as const },
-    { label: "Gastos com mercadorias", value: totalMercadorias, tone: "neutral" as const },
+    { label: "Gastos com mercadorias", value: mercadoriasEfetivo, tone: "neutral" as const, editable: true },
     { label: "FSE", value: totalFse, tone: "neutral" as const },
     { label: "Gastos com salários", value: totalPessoal, tone: "neutral" as const },
     { label: "Depreciações", value: totalDepreciacoes, tone: "neutral" as const },
@@ -297,13 +310,38 @@ export default function EmpresasDashboard({
         <div className="col-span-12 grid grid-cols-2 lg:grid-cols-6 gap-3 auto-rows-fr">
           {kpis.map((k) => (
             <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
-              <div className="text-xs text-muted-foreground">{k.label}</div>
-              <div className={cn(
-                "text-xl font-bold mt-1 tabular-nums",
-                k.tone === "primary" && "text-primary",
-                k.tone === "warn" && "text-amber-700",
-                k.tone === "positive" && "text-emerald-700",
-              )}>{fmtEur(k.value)}</div>
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs text-muted-foreground">{k.label}</div>
+                {"editable" in k && !exporting && mercadoriasManual !== null && (
+                  <button
+                    type="button"
+                    onClick={() => upsertSettings.mutate({ mercadorias_valor: null })}
+                    title={`Repor valor automático (${fmtEur(totalMercadorias)})`}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              {"editable" in k && !exporting ? (
+                <input
+                  type="number"
+                  step="0.01"
+                  value={mercadoriasInput}
+                  onChange={(e) => setMercadoriasInput(e.target.value)}
+                  onBlur={saveMercadorias}
+                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                  title="Editável — substitui o valor automático da conta 31"
+                  className="mt-1 w-full rounded-md border bg-background px-2 py-0.5 text-xl font-bold tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              ) : (
+                <div className={cn(
+                  "text-xl font-bold mt-1 tabular-nums",
+                  k.tone === "primary" && "text-primary",
+                  k.tone === "warn" && "text-amber-700",
+                  k.tone === "positive" && "text-emerald-700",
+                )}>{fmtEur(k.value)}</div>
+              )}
             </div>
           ))}
         </div>
