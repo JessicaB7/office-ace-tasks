@@ -60,14 +60,14 @@ const DividasView = () => {
       <div>
         <h2 className="text-2xl font-bold">Controlo de dívidas CRM</h2>
         <p className="text-muted-foreground text-sm mt-1">
-          Dívidas dos clientes à AT (Finanças) e à Segurança Social. Escolha o estado e descreva a situação — grava automaticamente.
+          Dívidas dos clientes às Finanças e à Segurança Social. Escolha o estado e descreva a situação — grava automaticamente.
         </p>
       </div>
 
       <div className="space-y-2">
         {(["at", "ss"] as const).map((ent) => (
           <div key={ent} className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-muted-foreground w-[110px]">{ent === "at" ? "AT / Finanças" : "Segurança Social"}</span>
+            <span className="text-xs font-semibold text-muted-foreground w-[110px]">{ent === "at" ? "Finanças" : "Segurança Social"}</span>
             {DIVIDA_AT_OPTIONS.map((o) => {
               const key = `${ent}:${o.value}`;
               return (
@@ -107,7 +107,7 @@ const DividasView = () => {
               <th className="text-left px-4 py-3">Cliente</th>
               <th className="text-left px-4 py-3">Tipo</th>
               <th className="text-left px-4 py-3">Responsável</th>
-              <th className="text-left px-4 py-3 w-[160px]">AT / Finanças</th>
+              <th className="text-left px-4 py-3 w-[160px]">Finanças</th>
               <th className="text-left px-4 py-3 w-[160px]">Segurança Social</th>
               <th className="text-left px-4 py-3 min-w-[320px]">Descrição</th>
             </tr>
