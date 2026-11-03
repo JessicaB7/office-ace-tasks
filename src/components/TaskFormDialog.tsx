@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useClients, useCollaborators, useUpsertTask, useDeleteTask } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, PRIORITY_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskPriority, type TaskCategory } from "@/types/database";
-import { X, ExternalLink } from "lucide-react";
+import { X, ExternalLink, MessageCircle } from "lucide-react";
 import ClientDetailDialog from "./ClientDetailDialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TaskFormDialogProps {
   open: boolean;
@@ -31,14 +32,17 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
   const { toast } = useToast();
   const [currentCollaboratorId, setCurrentCollaboratorId] = useState<string | null>(null);
 
+  const { isAdmin } = useAuth();
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        const collab = collaborators.find(c => c.user_id === data.user.id);
+        // A admin (geral@) não tem ficha de colaborador própria: conta como a Responsável.
+        const collab = collaborators.find(c => c.user_id === data.user.id)
+          || (isAdmin ? collaborators.find((c: any) => c.role === "Responsável") : undefined);
         setCurrentCollaboratorId(collab?.id || null);
       }
     });
-  }, [collaborators]);
+  }, [collaborators, isAdmin]);
   const [form, setForm] = useState(emptyForm);
   const [clientDetailOpen, setClientDetailOpen] = useState(false);
   const isEditing = !!task;
@@ -71,6 +75,20 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
     priority: form.priority,
     assigned_by: collaborators.find((c) => c.id === currentCollaboratorId)?.name ?? null,
   });
+
+  // Mensagem pronta para o WhatsApp (sem número: o WhatsApp deixa escolher o contacto).
+  const whatsappLink = () => {
+    const pessoa = collaborators.find((c) => c.id === form.collaborator_id);
+    const cliente = clients.find((c) => c.id === form.client_id);
+    const linhas = [
+      `Olá ${pessoa?.name?.split(" ")[0] || ""}! Atribuí-te uma tarefa na app:`,
+      `• ${form.title}`,
+      cliente ? `• Cliente: ${cliente.name}` : null,
+      form.due_date ? `• Prazo: ${new Date(`${form.due_date}T12:00:00`).toLocaleDateString("pt-PT")}` : null,
+      "https://gestao.contabilistaexplica.pt",
+    ].filter(Boolean);
+    return `https://wa.me/?text=${encodeURIComponent(linhas.join("\n"))}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,7 +232,20 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Responsável</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium block">Responsável</label>
+                {form.collaborator_id && form.collaborator_id !== "__todos__" && form.title && (
+                  <a
+                    href={whatsappLink()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    title="Abre o WhatsApp com a mensagem pronta; escolhe a colega e envia"
+                  >
+                    <MessageCircle className="w-3 h-3" /> Avisar no WhatsApp
+                  </a>
+                )}
+              </div>
               <select value={form.collaborator_id} onChange={(e) => set("collaborator_id", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
                 <option value="">Sem responsável</option>
                 {!isEditing && <option value="__todos__">Todos os colaboradores</option>}

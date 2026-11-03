@@ -142,7 +142,7 @@ const TaskListView = ({ onEditTask, onNewTask }: TaskListViewProps) => {
                   <td className="px-4 py-3"><PriorityBadge priority={task.priority} /></td>
                   <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{new Date(task.due_date).toLocaleDateString("pt-PT")}</td>
                   <td className="px-4 py-3 text-muted-foreground">{task.collaborators?.name || "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{task.created_by_collaborator?.name || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{task.created_by_collaborator?.name || "Automática"}</td>
                 </tr>
               ))}
               {filtered.length === 0 && (

@@ -5,9 +5,9 @@ import { PRIORITY_LABELS, type TaskPriority } from "@/types/database";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CalendarClock } from "lucide-react";
-import { shouldShowDailyReminder, localDayKey, dueGroup, type DueGroup } from "@/lib/dailyReminder";
+import { shouldShowPendingReminder, dueGroup, type DueGroup } from "@/lib/dailyReminder";
 
-const CHECK_EVERY_MS = 60 * 1000; // verifica a cada minuto se já são 9h
+const CHECK_EVERY_MS = 60 * 1000; // verifica a cada minuto se já passaram 2 horas
 
 const GROUPS: { key: DueGroup; label: string; cls: string }[] = [
   { key: "atrasadas", label: "Em atraso", cls: "text-destructive" },
@@ -15,18 +15,20 @@ const GROUPS: { key: DueGroup; label: string; cls: string }[] = [
   { key: "proximas", label: "Próximas", cls: "text-muted-foreground" },
 ];
 
-/** Pop-up diário (9h) com as tarefas pendentes do utilizador atual — uma vez por dia:
- * às 9h se a app estiver aberta, ou na primeira abertura depois das 9h. */
+/** Pop-up com as tarefas pendentes do utilizador atual: ao abrir a app e depois de 2 em 2 horas
+ * (o último instante fica guardado no browser, para não repetir ao recarregar a página). */
 const DailyTasksReminderDialog = ({ onViewTasks }: { onViewTasks?: () => void }) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { data: tasks = [], isFetched } = useTasks();
   const { data: collaborators = [] } = useCollaborators();
   const [open, setOpen] = useState(false);
 
   const currentCollaborator = useMemo(() => {
     if (!user?.email) return null;
-    return collaborators.find((c: any) => c.email.toLowerCase() === user.email!.toLowerCase()) || null;
-  }, [user, collaborators]);
+    const byEmail = collaborators.find((c: any) => c.email.toLowerCase() === user.email!.toLowerCase());
+    // A admin (geral@) não tem ficha de colaborador própria: vê as tarefas da Responsável.
+    return byEmail || (isAdmin ? collaborators.find((c: any) => c.role === "Responsável") : null) || null;
+  }, [user, collaborators, isAdmin]);
 
   const pendingTasks = useMemo(() => {
     if (!currentCollaborator) return [];
@@ -49,15 +51,16 @@ const DailyTasksReminderDialog = ({ onViewTasks }: { onViewTasks?: () => void })
 
   useEffect(() => {
     if (!currentCollaborator || !isFetched) return;
-    const storageKey = `dailyTasksReminder:${currentCollaborator.id}`;
+    const storageKey = `pendingTasksReminder:${currentCollaborator.id}`;
 
     const maybeShow = () => {
-      let lastShown: string | null = null;
-      try { lastShown = localStorage.getItem(storageKey); } catch { /* sem localStorage */ }
-      const current = new Date();
-      if (!shouldShowDailyReminder(current, lastShown)) return;
-      try { localStorage.setItem(storageKey, localDayKey(current)); } catch { /* sem localStorage */ }
-      if (countRef.current > 0) setOpen(true);
+      let last: number | null = null;
+      try { const v = localStorage.getItem(storageKey); last = v ? Number(v) : null; } catch { /* sem localStorage */ }
+      const now = Date.now();
+      if (!shouldShowPendingReminder(now, last)) return;
+      if (countRef.current === 0) return;
+      try { localStorage.setItem(storageKey, String(now)); } catch { /* sem localStorage */ }
+      setOpen(true);
     };
 
     maybeShow();

@@ -10,6 +10,14 @@ export const localDayKey = (d: Date): string =>
 export const shouldShowDailyReminder = (now: Date, lastShownDay: string | null): boolean =>
   now.getHours() >= REMINDER_HOUR && lastShownDay !== localDayKey(now);
 
+/** Intervalo entre pop-ups das tarefas pendentes (2 horas). */
+export const REMINDER_EVERY_MS = 2 * 60 * 60 * 1000;
+
+/** Pop-up das tarefas pendentes: ao abrir a app e depois de 2 em 2 horas.
+ * `lastShownAt` é o instante (ms) do último pop-up, ou null se ainda não apareceu. */
+export const shouldShowPendingReminder = (nowMs: number, lastShownAt: number | null): boolean =>
+  lastShownAt === null || !isFinite(lastShownAt) || nowMs - lastShownAt >= REMINDER_EVERY_MS;
+
 export type DueGroup = "atrasadas" | "hoje" | "proximas";
 
 /** Agrupa pela data limite face a hoje (dias de calendário locais). */

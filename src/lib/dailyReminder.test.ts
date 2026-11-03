@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { shouldShowDailyReminder, dueGroup } from "./dailyReminder";
+import { shouldShowDailyReminder, shouldShowPendingReminder, REMINDER_EVERY_MS, dueGroup } from "./dailyReminder";
 
 describe("dailyReminder", () => {
   it("só a partir das 9h e uma vez por dia", () => {
@@ -7,6 +7,14 @@ describe("dailyReminder", () => {
     expect(shouldShowDailyReminder(new Date(2026, 9, 16, 9, 0), null)).toBe(true);
     expect(shouldShowDailyReminder(new Date(2026, 9, 16, 14, 0), "2026-10-15")).toBe(true);
     expect(shouldShowDailyReminder(new Date(2026, 9, 16, 14, 0), "2026-10-16")).toBe(false);
+  });
+
+  it("tarefas pendentes: ao abrir e de 2 em 2 horas", () => {
+    const t = Date.UTC(2026, 10, 3, 10, 0);
+    expect(shouldShowPendingReminder(t, null)).toBe(true);
+    expect(shouldShowPendingReminder(t, t - REMINDER_EVERY_MS + 60000)).toBe(false);
+    expect(shouldShowPendingReminder(t, t - REMINDER_EVERY_MS)).toBe(true);
+    expect(shouldShowPendingReminder(t, NaN)).toBe(true);
   });
 
   it("agrupa por data limite", () => {
