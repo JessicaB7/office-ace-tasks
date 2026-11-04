@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { filtrarRubricasPdf, colunasPdf } from "@/lib/pdfKpis";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Download, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
@@ -281,6 +282,8 @@ export default function TIOrganizadoDashboard({
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
 
+  const kpisPdf = filtrarRubricasPdf(kpis, exporting, (k) => k.value);
+
   const exportPDF = async () => {
     if (!reportRef.current) return;
     setExporting(true);
@@ -364,8 +367,8 @@ export default function TIOrganizadoDashboard({
           <div className="text-sm text-muted-foreground">Análise TI Organizado · {year}</div>
         </div>
 
-        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr">
-          {kpis.map((k) => (
+        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-4 gap-3 auto-rows-fr" style={exporting && kpisPdf.length < kpis.length ? colunasPdf(true, Math.min(4, kpisPdf.length)) : undefined}>
+          {kpisPdf.map((k) => (
             <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs text-muted-foreground">{k.label}</div>

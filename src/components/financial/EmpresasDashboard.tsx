@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { filtrarRubricasPdf, colunasPdf } from "@/lib/pdfKpis";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Download, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
@@ -263,6 +264,7 @@ export default function EmpresasDashboard({
     { label: "Depreciações", value: totalDepreciacoes, tone: "neutral" as const },
     { label: "Resultado", value: resultado, tone: resultado >= 0 ? ("positive" as const) : ("warn" as const) },
   ];
+  const kpisPdf = filtrarRubricasPdf(kpis, exporting, (k) => k.value);
 
 
 
@@ -307,8 +309,8 @@ export default function EmpresasDashboard({
           <div className="text-sm text-muted-foreground">Análise Empresa · {year}</div>
         </div>
 
-        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-6 gap-3 auto-rows-fr">
-          {kpis.map((k) => (
+        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-6 gap-3 auto-rows-fr" style={colunasPdf(exporting, kpisPdf.length)}>
+          {kpisPdf.map((k) => (
             <div key={k.label} className="rounded-xl border bg-card p-4 h-full min-h-[88px] flex flex-col justify-center">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs text-muted-foreground">{k.label}</div>

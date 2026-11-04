@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { filtrarRubricasPdf, colunasPdf } from "@/lib/pdfKpis";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Line, LineChart, Legend } from "recharts";
 import { Download, ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { toast } from "sonner";
@@ -164,6 +165,8 @@ export default function DashboardTrimestral({
   const reportRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
 
+  const kpisPdf = filtrarRubricasPdf(kpis, exporting, (k) => k.arr);
+
   const exportPDF = async () => {
     if (!reportRef.current) return;
     setExporting(true);
@@ -244,8 +247,8 @@ export default function DashboardTrimestral({
           </div>
         </div>
 
-        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-6 gap-3 auto-rows-fr">
-          {kpis.map((k) => {
+        <div className="col-span-12 grid grid-cols-2 lg:grid-cols-6 gap-3 auto-rows-fr" style={colunasPdf(exporting, kpisPdf.length)}>
+          {kpisPdf.map((k) => {
             const v = k.arr[i];
             const varPct = variation(k.arr);
             return (
@@ -339,7 +342,7 @@ export default function DashboardTrimestral({
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {filtrarRubricasPdf(rows, exporting, (r) => r.arr).map((r) => (
                 <tr key={r.label} className={cn("border-t", r.sub && "bg-muted/20")}>
                   <td className={cn("px-3 py-1.5", r.tone === "result" && "font-semibold", r.sub && "pl-8 text-muted-foreground")}>{r.label}</td>
 
