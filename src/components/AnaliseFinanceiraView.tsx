@@ -45,6 +45,8 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
   const [respFilter, setRespFilter] = useState("");
   // Por omissão só os clientes ativos; "Todos os estados" continua disponível.
   const [statusFilter, setStatusFilter] = useState("ativo");
+  // Filtro por análise enviada: "" = todas; "<trimestre>:enviada" ou "<trimestre>:por_enviar".
+  const [envioFilter, setEnvioFilter] = useState("");
   const year = new Date().getFullYear();
   const { data: reportStatus = [] } = useReportDeliveryStatusByYear(year);
   const statusByClient = useMemo(
@@ -58,7 +60,12 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
     return Array.from(set).sort();
   }, [clients]);
 
-  const filtered = useMemo(() => {
+  const entregue = (clientId: string, q: number) => {
+    const st = statusByClient.get(clientId);
+    return st ? Boolean(st[`relatorio_q${q}_entregue` as keyof typeof st]) : false;
+  };
+
+  const baseFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (clients as any[])
       .filter((c) => c.tipo_contabilidade === cfg.tipo)
@@ -74,15 +81,17 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
       .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [clients, cfg.tipo, search, ivaFilter, respFilter, statusFilter]);
 
-  // Relatórios entregues por trimestre (clientes da lista)
-  const reportsByQuarter = [1, 2, 3, 4].map((q) =>
-    filtered.filter((c: any) => {
-      const st = statusByClient.get(c.id);
-      return st ? Boolean(st[`relatorio_q${q}_entregue` as keyof typeof st]) : false;
-    }).length,
-  );
+  const filtered = useMemo(() => {
+    if (!envioFilter) return baseFiltered;
+    const [q, estado] = envioFilter.split(":");
+    return baseFiltered.filter((c: any) => entregue(c.id, Number(q)) === (estado === "enviada"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseFiltered, envioFilter, statusByClient]);
 
-  const activeFilters = (ivaFilter ? 1 : 0) + (respFilter ? 1 : 0) + (statusFilter !== "ativo" ? 1 : 0);
+  // Relatórios entregues por trimestre (clientes da lista, antes do filtro de envio)
+  const reportsByQuarter = [1, 2, 3, 4].map((q) => baseFiltered.filter((c: any) => entregue(c.id, q)).length);
+
+  const activeFilters = (ivaFilter ? 1 : 0) + (respFilter ? 1 : 0) + (statusFilter !== "ativo" ? 1 : 0) + (envioFilter ? 1 : 0);
 
 
   if (selectedId) {
@@ -149,9 +158,23 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
             <option value="inativo">Inativo</option>
           </select>
 
+          <select
+            value={envioFilter}
+            onChange={(e) => setEnvioFilter(e.target.value)}
+            className="py-2 px-3 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">Todas as análises</option>
+            {[1, 2, 3, 4].map((q) => (
+              <optgroup key={q} label={`${q}º trimestre`}>
+                <option value={`${q}:enviada`}>{q}º trim. — enviada</option>
+                <option value={`${q}:por_enviar`}>{q}º trim. — por enviar</option>
+              </optgroup>
+            ))}
+          </select>
+
           {activeFilters > 0 && (
             <button
-              onClick={() => { setIvaFilter(""); setRespFilter(""); setStatusFilter("ativo"); }}
+              onClick={() => { setIvaFilter(""); setRespFilter(""); setStatusFilter("ativo"); setEnvioFilter(""); }}
               className="flex items-center gap-1 px-3 py-2 rounded-lg border bg-card text-sm hover:bg-muted transition-colors"
               title="Limpar filtros"
             >
@@ -163,7 +186,7 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground">A carregar…</div>
-      ) : filtered.length === 0 ? (
+      ) : baseFiltered.length === 0 ? (
         <div className="rounded-xl border bg-card p-10 text-center text-muted-foreground">
           Não existem clientes neste regime.
         </div>
@@ -171,18 +194,31 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
         <>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {reportsByQuarter.map((done, i) => {
-            const pct = filtered.length ? Math.round((done / filtered.length) * 100) : 0;
+            const total = baseFiltered.length;
+            const pct = total ? Math.round((done / total) * 100) : 0;
+            const ativo = envioFilter.startsWith(`${i + 1}:`);
             return (
-              <div key={i} className="rounded-xl border bg-card px-4 py-3">
+              <button
+                key={i}
+                type="button"
+                onClick={() => setEnvioFilter(envioFilter === `${i + 1}:por_enviar` ? `${i + 1}:enviada` : envioFilter === `${i + 1}:enviada` ? "" : `${i + 1}:por_enviar`)}
+                title="Clique para filtrar: por enviar → enviadas → todas"
+                className={cn("rounded-xl border bg-card px-4 py-3 text-left transition-colors hover:border-primary/50", ativo && "ring-2 ring-primary/40 border-primary/50")}
+              >
                 <div className="text-xs font-medium text-muted-foreground">Relatórios {i + 1}º trimestre {year}</div>
                 <div className="mt-1 flex items-baseline gap-1.5">
                   <span className="text-xl font-bold tabular-nums">{done}</span>
-                  <span className="text-sm text-muted-foreground">/ {filtered.length} entregues</span>
+                  <span className="text-sm text-muted-foreground">/ {total} entregues</span>
                 </div>
                 <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
                   <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
                 </div>
-              </div>
+                {ativo && (
+                  <div className="mt-1.5 text-[11px] font-medium text-primary">
+                    A mostrar: {envioFilter.endsWith("por_enviar") ? "por enviar" : "enviadas"}
+                  </div>
+                )}
+              </button>
             );
           })}
         </div>
@@ -199,6 +235,9 @@ export default function AnaliseFinanceiraView({ subPage }: { subPage: string }) 
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
+              {filtered.length === 0 && (
+                <tr><td colSpan={5} className="px-5 py-10 text-center text-muted-foreground">Nenhum cliente com este filtro.</td></tr>
+              )}
               {filtered.map((c: any) => {
                 const resp = collaborators.find((col: any) => col.id === c.responsavel_id);
                 const st = statusByClient.get(c.id);
