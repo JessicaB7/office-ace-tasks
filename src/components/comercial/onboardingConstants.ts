@@ -103,19 +103,20 @@ export const CHECKLIST: { key: ChecklistKey; label: string; hint: string; types?
   },
   { key: "grupo", label: "Grupo WhatsApp", hint: "Contabilidade + primeiro e último nome, com a Jéssica" },
   { key: "avenca", label: "Avença TOConline", hint: "Criada no TOConline (envio de fatura dia 5)" },
+  { key: "crm_contab", label: "CRM Contab", hint: "Cliente registado no CRM Contab" },
   { key: "onboarding", label: "Sessão de onboarding", hint: "Agendada com o cliente" },
   { key: "resumo_sessao", label: "Resumo da sessão", hint: "Resumo da sessão de onboarding enviado ao cliente", types: ["ti_rs"] },
 ];
 
 export type ChecklistKey =
   | "pasta_drive" | "contrato" | "pagamento" | "fatura" | "grupo" | "avenca" | "onboarding" | "resumo_sessao"
-  | "email_anterior_contabilista";
+  | "email_anterior_contabilista" | "crm_contab";
 
 // Ordem própria da checklist por tipo (os restantes seguem a ordem de CHECKLIST)
 const CHECKLIST_ORDER: Partial<Record<OnboardingFormType, ChecklistKey[]>> = {
-  ti_rs: ["pasta_drive", "contrato", "fatura", "avenca", "pagamento", "grupo", "onboarding", "resumo_sessao"],
-  ti_co: ["email_anterior_contabilista", "pasta_drive", "contrato", "fatura", "avenca", "pagamento", "grupo", "onboarding"],
-  empresa: ["email_anterior_contabilista", "pasta_drive", "contrato", "fatura", "avenca", "pagamento", "grupo", "onboarding"],
+  ti_rs: ["pasta_drive", "contrato", "fatura", "avenca", "crm_contab", "pagamento", "grupo", "onboarding", "resumo_sessao"],
+  ti_co: ["email_anterior_contabilista", "pasta_drive", "contrato", "fatura", "avenca", "crm_contab", "pagamento", "grupo", "onboarding"],
+  empresa: ["email_anterior_contabilista", "pasta_drive", "contrato", "fatura", "avenca", "crm_contab", "pagamento", "grupo", "onboarding"],
 };
 
 export const checklistFor = (type: string) => {

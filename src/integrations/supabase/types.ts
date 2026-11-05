@@ -322,6 +322,7 @@ export type Database = {
           pasta_drive: boolean
           responsavel_id: string | null
           resumo_sessao: boolean
+          crm_contab: boolean
           submitted_at: string | null
           token: string
           updated_at: string
@@ -351,6 +352,7 @@ export type Database = {
           pasta_drive?: boolean
           responsavel_id?: string | null
           resumo_sessao?: boolean
+          crm_contab?: boolean
           submitted_at?: string | null
           token?: string
           updated_at?: string
@@ -380,6 +382,7 @@ export type Database = {
           pasta_drive?: boolean
           responsavel_id?: string | null
           resumo_sessao?: boolean
+          crm_contab?: boolean
           submitted_at?: string | null
           token?: string
           updated_at?: string
