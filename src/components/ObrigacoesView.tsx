@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import { ivaObligationTypeFor, isColumnApplicable } from "@/lib/contabilidadesConfig";
 import { DEADLINE_KEYS as K, makeDayResolver } from "@/lib/deadlineOverrides";
+import { SAFT_SEM_FATURACAO, faturaSoNoToconline } from "@/lib/saft";
 import { parcelasDoTrimestre, parcelaPrazo, metodoPagamentoIva, METODOS_PAGAMENTO_IVA } from "@/lib/ivaFlex";
 
 const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
@@ -397,6 +398,13 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
     return map;
   }, [obligations]);
 
+  // SAFT: visto "Sem faturação" — o cliente não emitiu faturas no mês (SAFT_sem_faturacao)
+  const saftSemFaturacaoMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    obligations.forEach((o: any) => { if (o.obligation_type === SAFT_SEM_FATURACAO) map[o.client_id] = o; });
+    return map;
+  }, [obligations]);
+
   const toggleWeek = async (clientId: string, week: number) => {
     const existing = weekMap[clientId]?.[week];
     const nowDone = existing?.status !== "concluida";
@@ -553,8 +561,8 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
 
   if (loadingClients || loadingObl) return <div className="text-center py-12 text-muted-foreground">A carregar...</div>;
 
-  const CheckboxCell = ({ done, onClick }: { done: boolean; onClick: () => void }) => (
-    <button onClick={onClick} disabled={upsert.isPending}
+  const CheckboxCell = ({ done, onClick, title }: { done: boolean; onClick: () => void; title?: string }) => (
+    <button onClick={onClick} disabled={upsert.isPending} title={title}
       className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-colors",
         done ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30 hover:border-primary")}>
       {done && <Check className="w-4 h-4" />}
@@ -790,6 +798,7 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                 {showFimIsencaoColumn && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Fim da Isenção</th>}
                 {isDT && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Variação</th>}
                 {showNotasColumn && <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Notas</th>}
+                {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground" title="O cliente não emitiu faturas no mês: comunicar a inexistência de faturação no e-Fatura até ao dia 5">Sem faturação</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Entregue</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Importado TOC</th>}
                 {showSaftExtra && <th className="text-center px-3 py-3 font-semibold text-muted-foreground">Mensagem</th>}
@@ -840,6 +849,7 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                 const pagamentoDone = obl?.extra_done === true;
                 const isExtraDone = obl?.extra_done === true;
                 const showExtraForClient = showSaftExtra && needsExtra(client);
+                const semFaturacao = showSaftExtra && saftSemFaturacaoMap[client.id]?.status === "concluida";
                 const saveMetodo = async (val: string) => {
                   if (val === (obl?.notes || "")) return;
                   if (obl?.id) {
@@ -992,12 +1002,33 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                     )}
                     {showSaftExtra && (
                       <td className="text-center px-3 py-3">
-                        <CheckboxCell done={guiaDone} onClick={() => toggleGuia(client.id)} />
+                        <div className="flex justify-center">
+                          <CheckboxCell
+                            done={semFaturacao}
+                            onClick={() => toggleObligation(client.id, SAFT_SEM_FATURACAO, saftSemFaturacaoMap)}
+                            title="O cliente não emitiu faturas no mês: comunicar a inexistência de faturação no e-Fatura até ao dia 5"
+                          />
+                        </div>
                       </td>
                     )}
                     {showSaftExtra && (
                       <td className="text-center px-3 py-3">
-                        {showExtraForClient ? (
+                        <div className="flex justify-center">
+                          <CheckboxCell
+                            done={guiaDone}
+                            onClick={() => toggleGuia(client.id)}
+                            title={semFaturacao ? "Inexistência de faturação comunicada no e-Fatura" : undefined}
+                          />
+                        </div>
+                      </td>
+                    )}
+                    {showSaftExtra && (
+                      <td className="text-center px-3 py-3">
+                        {semFaturacao ? (
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">Sem faturas</span>
+                        ) : showExtraForClient && faturaSoNoToconline(client.programa_faturacao) ? (
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">Já no TOC</span>
+                        ) : showExtraForClient ? (
                           <button onClick={() => toggleExtra(client.id)} disabled={upsert.isPending}
                             className={cn("w-6 h-6 rounded border-2 flex items-center justify-center transition-colors mx-auto",
                               isExtraDone ? "bg-blue-500 border-blue-500 text-white" : "border-muted-foreground/30 hover:border-primary")}>

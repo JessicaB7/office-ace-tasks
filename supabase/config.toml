@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.robot-analise]
 verify_jwt = true
+
+[functions.send-push]
+verify_jwt = true

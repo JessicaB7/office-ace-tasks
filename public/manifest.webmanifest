@@ -1,0 +1,14 @@
+{
+  "name": "Gestão · Contabilista Explica",
+  "short_name": "Gestão CE",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "lang": "pt-PT",
+  "theme_color": "#ab5a3c",
+  "background_color": "#ab5a3c",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

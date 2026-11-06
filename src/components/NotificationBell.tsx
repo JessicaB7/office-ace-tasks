@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useId } from "react";
-import { Bell, Check, CheckCheck } from "lucide-react";
+import { Bell, BellOff, BellRing, CheckCheck, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNotifications, useUnreadCount, useMarkRead, useMarkAllRead } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useActivateToconlineJobs } from "@/hooks/useToconlineJobs";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 
 const typeIcon: Record<string, string> = {
   task_assigned: "📋",
@@ -39,6 +40,14 @@ const NotificationBell = () => {
   const { user } = useAuth();
   const instanceId = useId();
   const activateJobs = useActivateToconlineJobs();
+  const push = usePushSubscription();
+  const ativarPush = () =>
+    push.ativar().then(
+      () => undefined,
+      (e: Error) => toast.error("Não foi possível ativar as notificações: " + (e?.message || "erro")),
+    );
+  const desativarPush = () =>
+    push.desativar().catch((e: Error) => toast.error("Não foi possível desativar: " + (e?.message || "erro")));
   const activate = (job: MapaJobData) =>
     activateJobs.mutate({ procedureId: job.procedure_id, clientIds: [job.client_id], referenceMonth: job.reference_month, userId: user?.id });
 
@@ -149,6 +158,49 @@ const NotificationBell = () => {
                   {!n.read && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />}
                 </div>
               ))
+            )}
+          </div>
+          <div className="border-t px-4 py-3 bg-muted/30 text-xs">
+            {push.estado === "instalar_ios" && (
+              <p className="flex gap-2 text-muted-foreground">
+                <Smartphone className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  Para receber notificações no iPhone: no Safari, Partilhar → Adicionar ao ecrã principal, abrir a app pelo
+                  ícone e voltar aqui.
+                </span>
+              </p>
+            )}
+            {push.estado === "inativo" && (
+              <button
+                onClick={ativarPush}
+                disabled={push.aProcessar}
+                className="flex items-center gap-2 font-medium text-primary hover:underline disabled:opacity-50"
+              >
+                <BellRing className="w-4 h-4" /> Ativar notificações neste dispositivo
+              </button>
+            )}
+            {push.estado === "ativo" && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-success font-medium">
+                  <BellRing className="w-4 h-4" /> Notificações ativas neste dispositivo
+                </span>
+                <button
+                  onClick={desativarPush}
+                  disabled={push.aProcessar}
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline disabled:opacity-50"
+                >
+                  <BellOff className="w-3.5 h-3.5" /> Desativar
+                </button>
+              </div>
+            )}
+            {push.estado === "bloqueado" && (
+              <p className="flex gap-2 text-muted-foreground">
+                <BellOff className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>As notificações estão bloqueadas neste dispositivo. Permite-as nas definições do browser/telemóvel.</span>
+              </p>
+            )}
+            {push.estado === "indisponivel" && (
+              <p className="text-muted-foreground">Este browser não suporta notificações no dispositivo.</p>
             )}
           </div>
         </div>

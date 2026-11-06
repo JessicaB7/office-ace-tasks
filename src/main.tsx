@@ -19,3 +19,10 @@ window.addEventListener("vite:preloadError", (event) => {
 });
 
 createRoot(document.getElementById("root")!).render(<App />);
+
+// Service worker (só notificações push, sem cache) — apenas em produção.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((e) => console.warn("Service worker não registado:", e));
+  });
+}
