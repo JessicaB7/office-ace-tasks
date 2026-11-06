@@ -113,6 +113,8 @@ Dashboards por regime:
   "Outras despesas" com título e valor editáveis, abate à faturação. **IRS Regime Simplificado**
   (coeficiente art. 31º CIRS + escalões 2026) e **IRS Regime Organizado** (sobre resultado líquido).
   Deduções à coleta editáveis, **default 250 €**; "Notas IRS" internas por baixo (não vão para o PDF).
+  **Outros rendimentos** (`outros_rendimentos_valor`, manual, também no TI Organizado): somam ao rendimento
+  coletável nos dois regimes; a zero não aparecem nos resultados nem no PDF.
   "Retenção na fonte e pagamentos por conta" = conta 241 (incl. 2414): o maior entre a soma dos trimestres
   importados e o **Acumulado** do último balancete (`ret_241_acum`), para cobrir trimestres não importados.
 - **TI Organizado** (`TIOrganizadoDashboard.tsx`): balancete XLSX, IVA trimestral editável com

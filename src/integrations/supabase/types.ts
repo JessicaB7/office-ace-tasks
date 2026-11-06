@@ -122,6 +122,7 @@ export type Database = {
           mapa_q4_enviado: boolean
           outras_despesas_label: string
           outras_despesas_valor: number
+          outros_rendimentos_valor: number
           relatorio_q1_data: string | null
           relatorio_q1_entregue: boolean
           relatorio_q2_data: string | null
@@ -176,6 +177,7 @@ export type Database = {
           mapa_q4_enviado?: boolean
           outras_despesas_label?: string
           outras_despesas_valor?: number
+          outros_rendimentos_valor?: number
           relatorio_q1_data?: string | null
           relatorio_q1_entregue?: boolean
           relatorio_q2_data?: string | null
@@ -230,6 +232,7 @@ export type Database = {
           mapa_q4_enviado?: boolean
           outras_despesas_label?: string
           outras_despesas_valor?: number
+          outros_rendimentos_valor?: number
           relatorio_q1_data?: string | null
           relatorio_q1_entregue?: boolean
           relatorio_q2_data?: string | null

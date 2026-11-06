@@ -192,6 +192,15 @@ export default function TIOrganizadoDashboard({
     setDeducoesInput(Number(settings?.irs_deducoes_colecta ?? 250));
   }, [settings?.irs_deducoes_colecta]);
 
+  // Outros rendimentos (preenchimento manual) — somam ao rendimento coletável no IRS.
+  // Sem valor, não aparecem no ecrã de resultados nem no PDF.
+  const outrosRend = Number(settings?.outros_rendimentos_valor ?? 0);
+  const [outrosRendInput, setOutrosRendInput] = useState<number>(outrosRend);
+  useEffect(() => {
+    setOutrosRendInput(Number(settings?.outros_rendimentos_valor ?? 0));
+  }, [settings?.outros_rendimentos_valor]);
+  const temOutrosRend = Math.abs(outrosRend) > 0.005;
+
   // Outras despesas (título e valor editáveis) — abate à faturação no resultado
   const outrasLabel = String(settings?.outras_despesas_label ?? "Outras despesas");
   const outrasValor = Number(settings?.outras_despesas_valor ?? 0);
@@ -256,9 +265,10 @@ export default function TIOrganizadoDashboard({
 
   // O reembolso nunca pode exceder a retenção na fonte e pagamentos por conta
   const capReembolso = (v: number) => Math.max(v, -retencoes);
-  const irsOrganizado = calcIRS(Math.max(0, resultado) * (1 - isencao));
+  const rendimentoColectavelOrganizado = Math.max(0, resultado) * (1 - isencao) + outrosRend;
+  const irsOrganizado = calcIRS(rendimentoColectavelOrganizado);
   const irsOrganizadoLiquido = capReembolso(irsOrganizado - deducoes - retencoes);
-  const rendimentoColectavel = totalFat * coef * (1 - isencao);
+  const rendimentoColectavel = totalFat * coef * (1 - isencao) + outrosRend;
   const irsSimplificado = calcIRS(rendimentoColectavel);
   const irsSimplificadoLiquido = capReembolso(irsSimplificado - deducoes - retencoes);
   const diffRegimes = irsSimplificadoLiquido - irsOrganizadoLiquido;
@@ -333,6 +343,10 @@ export default function TIOrganizadoDashboard({
               imposto: "IRS (contabilidade organizada) — estimativa",
               linhas: [
                 { descricao: isencao > 0 ? `Rendimento coletável (resultado, com ${(isencao * 100).toLocaleString("pt-PT")}% isento pelo benefício de IRS)` : "Rendimento coletável (resultado)", valor: Math.max(0, resultado) * (1 - isencao) },
+                ...(temOutrosRend ? [
+                  { descricao: "Outros rendimentos (somam ao rendimento coletável)", valor: outrosRend },
+                  { descricao: "Rendimento coletável total", valor: rendimentoColectavelOrganizado },
+                ] : []),
                 { descricao: "IRS calculado", valor: irsOrganizado },
                 { descricao: "Deduções à coleta", valor: deducoes },
                 { descricao: "Retenção na fonte e pagamentos por conta", valor: retencoes },
@@ -344,7 +358,7 @@ export default function TIOrganizadoDashboard({
               imposto: "Comparação: contabilidade organizada vs regime simplificado",
               linhas: [
                 { descricao: irsOrganizadoLiquido >= 0 ? "Contabilidade organizada — IRS a pagar" : "Contabilidade organizada — IRS a receber", valor: Math.abs(irsOrganizadoLiquido) },
-                { descricao: `Regime simplificado — rendimento coletável (faturação × ${coef.toLocaleString("pt-PT")}${isencao > 0 ? `, com ${(isencao * 100).toLocaleString("pt-PT")}% isento` : ""})`, valor: rendimentoColectavel },
+                { descricao: `Regime simplificado — rendimento coletável (faturação × ${coef.toLocaleString("pt-PT")}${isencao > 0 ? `, com ${(isencao * 100).toLocaleString("pt-PT")}% isento` : ""}${temOutrosRend ? ", mais outros rendimentos" : ""})`, valor: rendimentoColectavel },
                 { descricao: irsSimplificadoLiquido >= 0 ? "Regime simplificado — IRS a pagar" : "Regime simplificado — IRS a receber", valor: Math.abs(irsSimplificadoLiquido) },
                 { descricao: diffRegimes === 0 ? "Ambos os regimes dão o mesmo IRS" : diffRegimes > 0 ? "Poupança estimada por estar na contabilidade organizada" : "O regime simplificado daria menos IRS, em", valor: Math.abs(diffRegimes) },
               ],
@@ -584,6 +598,26 @@ export default function TIOrganizadoDashboard({
             </div>
           </div>
           {!exporting && (
+            <div className="mt-4 flex items-center justify-between gap-4 flex-wrap border-t pt-4">
+              <div>
+                <h4 className="font-semibold text-sm">Outros rendimentos</h4>
+                <p className="text-xs text-muted-foreground mt-1">Somam ao rendimento coletável (regime organizado e simplificado). Sem valor, não aparecem no PDF.</p>
+              </div>
+              <input
+                type="number"
+                step="0.01"
+                value={Number.isFinite(outrosRendInput) ? outrosRendInput : 0}
+                onChange={(e) => setOutrosRendInput(Number(e.target.value))}
+                onBlur={() => {
+                  const v = Number(outrosRendInput) || 0;
+                  setOutrosRendInput(v);
+                  if (v !== outrosRend) upsertSettings.mutate({ outros_rendimentos_valor: v });
+                }}
+                className="w-36 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+          )}
+          {!exporting && (
             <NotasIrsField
               className="mt-4"
               value={settings?.notas_irs}
@@ -614,11 +648,17 @@ export default function TIOrganizadoDashboard({
               </label>
             )}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4 auto-rows-fr">
+          <div className={cn("grid grid-cols-2 gap-3 mt-4 auto-rows-fr", temOutrosRend ? "md:grid-cols-7" : "md:grid-cols-6")}>
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Faturação</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
             </div>
+            {temOutrosRend && (
+              <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+                <div className="text-[11px] text-muted-foreground">Outros rendimentos</div>
+                <div className="text-lg font-bold tabular-nums">+{fmtEur(outrosRend)}</div>
+              </div>
+            )}
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Resultado líquido</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(resultado)}</div>
@@ -665,11 +705,17 @@ export default function TIOrganizadoDashboard({
               </label>
             )}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4 auto-rows-fr">
+          <div className={cn("grid grid-cols-2 gap-3 mt-4 auto-rows-fr", temOutrosRend ? "md:grid-cols-7" : "md:grid-cols-6")}>
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Faturação</div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
             </div>
+            {temOutrosRend && (
+              <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+                <div className="text-[11px] text-muted-foreground">Outros rendimentos</div>
+                <div className="text-lg font-bold tabular-nums">+{fmtEur(outrosRend)}</div>
+              </div>
+            )}
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">
                 Rendimento colectável{isencao > 0 && ` (${(isencao * 100).toLocaleString("pt-PT")}% isento)`}

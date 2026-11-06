@@ -47,6 +47,7 @@ export type FinancialSettings = {
   irc_coef: number;
   outras_despesas_label: string;
   outras_despesas_valor: number;
+  outros_rendimentos_valor: number;
   mapa_q1_enviado: boolean;
   mapa_q2_enviado: boolean;
   mapa_q3_enviado: boolean;
@@ -145,6 +146,7 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         irc_coef: 0.10,
         outras_despesas_label: "Outras despesas",
         outras_despesas_valor: 0,
+        outros_rendimentos_valor: 0,
         mapa_q1_enviado: false,
         mapa_q2_enviado: false,
         mapa_q3_enviado: false,
