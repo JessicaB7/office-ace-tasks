@@ -7,17 +7,40 @@ import webpush from 'npm:web-push@3.6.7'
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
+function jwtRole(token: string): string | null {
+  const parts = token.split('.')
+  if (parts.length < 2) return null
+  try {
+    const payload = parts[1].replaceAll('-', '+').replaceAll('_', '/')
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, '=')
+    return (JSON.parse(atob(payload)) as { role?: string }).role ?? null
+  } catch {
+    return null
+  }
+}
+
 Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-  // Só o próprio servidor (trigger com a chave de serviço) pode chamar
+  // Só o próprio servidor (trigger com a chave de serviço) pode chamar. A assinatura do
+  // JWT já é validada pela Supabase (verify_jwt = true); aqui exige-se o papel service_role.
   const authHeader = req.headers.get('Authorization') ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-  if (!token || token !== serviceRoleKey) return json({ error: 'Unauthorized' }, 401)
+  if (!token || (token !== serviceRoleKey && jwtRole(token) !== 'service_role')) {
+    return json({ error: 'Unauthorized' }, 401)
+  }
 
-  const publicKey = Deno.env.get('VAPID_PUBLIC_KEY')
-  const privateKey = Deno.env.get('VAPID_PRIVATE_KEY')
+  const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+  // Chaves VAPID: secrets das Edge Functions ou, na falta deles, o vault (get_vapid_keys)
+  let publicKey = Deno.env.get('VAPID_PUBLIC_KEY')
+  let privateKey = Deno.env.get('VAPID_PRIVATE_KEY')
+  if (!publicKey || !privateKey) {
+    const { data: k } = await supabase.rpc('get_vapid_keys')
+    publicKey = publicKey || k?.public_key
+    privateKey = privateKey || k?.private_key
+  }
   const subject = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:geral@contabilistaexplica.pt'
   if (!publicKey || !privateKey) return json({ error: 'VAPID não configurado' }, 500)
   webpush.setVapidDetails(subject, publicKey, privateKey)
@@ -28,7 +51,6 @@ Deno.serve(async (req) => {
   } catch { /* corpo inválido */ }
   if (!notificationId) return json({ error: 'notification_id em falta' }, 400)
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey)
   const { data: n, error } = await supabase
     .from('notifications')
     .select('id, user_id, title, message, link')
