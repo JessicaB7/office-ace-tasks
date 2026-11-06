@@ -123,8 +123,9 @@ export async function parseMapaPdf(file: File, accountsInfo: MapaAccountInfo[]):
           // para positivo (valor normal a somar como gasto). Se a linha aparecer
           // positiva no PDF é uma exceção (devolução/correção) — nesse caso o sinal
           // invertido dá um valor negativo, que reduz o total em vez de o inflacionar.
-          // Rendimentos (vendas) não sofrem esta inversão: vêm positivos no PDF.
-          const value = flipSign ? -n.v : Math.abs(n.v);
+          // Rendimentos (vendas) não sofrem esta inversão: vêm positivos no PDF e um mês
+          // negativo (notas de crédito acima da faturação) mantém o sinal para reduzir o total.
+          const value = flipSign ? -n.v : n.v;
           entries.push({ month, account_code: code, value });
         }
       });
