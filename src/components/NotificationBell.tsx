@@ -103,7 +103,7 @@ const NotificationBell = () => {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-card border rounded-xl shadow-lg z-50 animate-fade-in overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-card border rounded-xl shadow-lg z-50 animate-fade-in overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <h4 className="font-semibold text-sm">Notificações</h4>
             {unreadCount > 0 && (
@@ -115,7 +115,50 @@ const NotificationBell = () => {
               </button>
             )}
           </div>
-          <div className="max-h-[400px] overflow-y-auto">
+          <div className="border-b px-4 py-3 bg-muted/30 text-xs">
+            {push.estado === "instalar_ios" && (
+              <p className="flex gap-2 text-muted-foreground">
+                <Smartphone className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  Para receber notificações no iPhone: no Safari, Partilhar → Adicionar ao ecrã principal, abrir a app pelo
+                  ícone e voltar aqui.
+                </span>
+              </p>
+            )}
+            {push.estado === "inativo" && (
+              <button
+                onClick={ativarPush}
+                disabled={push.aProcessar}
+                className="flex items-center gap-2 font-medium text-primary hover:underline disabled:opacity-50"
+              >
+                <BellRing className="w-4 h-4" /> Ativar notificações neste dispositivo
+              </button>
+            )}
+            {push.estado === "ativo" && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-success font-medium">
+                  <BellRing className="w-4 h-4" /> Notificações ativas neste dispositivo
+                </span>
+                <button
+                  onClick={desativarPush}
+                  disabled={push.aProcessar}
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline disabled:opacity-50"
+                >
+                  <BellOff className="w-3.5 h-3.5" /> Desativar
+                </button>
+              </div>
+            )}
+            {push.estado === "bloqueado" && (
+              <p className="flex gap-2 text-muted-foreground">
+                <BellOff className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>As notificações estão bloqueadas neste dispositivo. Permite-as nas definições do browser/telemóvel.</span>
+              </p>
+            )}
+            {push.estado === "indisponivel" && (
+              <p className="text-muted-foreground">Este browser não suporta notificações no dispositivo.</p>
+            )}
+          </div>
+          <div className="max-h-[min(400px,60vh)] overflow-y-auto">
             {notifications.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">Sem notificações</p>
             ) : (
@@ -158,49 +201,6 @@ const NotificationBell = () => {
                   {!n.read && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />}
                 </div>
               ))
-            )}
-          </div>
-          <div className="border-t px-4 py-3 bg-muted/30 text-xs">
-            {push.estado === "instalar_ios" && (
-              <p className="flex gap-2 text-muted-foreground">
-                <Smartphone className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>
-                  Para receber notificações no iPhone: no Safari, Partilhar → Adicionar ao ecrã principal, abrir a app pelo
-                  ícone e voltar aqui.
-                </span>
-              </p>
-            )}
-            {push.estado === "inativo" && (
-              <button
-                onClick={ativarPush}
-                disabled={push.aProcessar}
-                className="flex items-center gap-2 font-medium text-primary hover:underline disabled:opacity-50"
-              >
-                <BellRing className="w-4 h-4" /> Ativar notificações neste dispositivo
-              </button>
-            )}
-            {push.estado === "ativo" && (
-              <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-2 text-success font-medium">
-                  <BellRing className="w-4 h-4" /> Notificações ativas neste dispositivo
-                </span>
-                <button
-                  onClick={desativarPush}
-                  disabled={push.aProcessar}
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline disabled:opacity-50"
-                >
-                  <BellOff className="w-3.5 h-3.5" /> Desativar
-                </button>
-              </div>
-            )}
-            {push.estado === "bloqueado" && (
-              <p className="flex gap-2 text-muted-foreground">
-                <BellOff className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>As notificações estão bloqueadas neste dispositivo. Permite-as nas definições do browser/telemóvel.</span>
-              </p>
-            )}
-            {push.estado === "indisponivel" && (
-              <p className="text-muted-foreground">Este browser não suporta notificações no dispositivo.</p>
             )}
           </div>
         </div>
