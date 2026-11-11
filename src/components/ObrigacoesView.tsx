@@ -99,6 +99,8 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
   const { data: ssTiMessage, isLoading: loadingSsTiMessage } = useObligationMessage(ssTiTab);
   // DMR: mensagem a enviar aos clientes, uma por separador (DMR AT / DMR SS)
   const { data: dmrMessage, isLoading: loadingDmrMessage } = useObligationMessage(dmrTab);
+  // IVA Flexibilização: mensagem a enviar aos clientes (ex.: parcelas por débito direto)
+  const { data: flexMessage, isLoading: loadingFlexMessage } = useObligationMessage("IVA_flex");
   const { data: deadlineOverrides = [] } = useDeadlineOverrides();
   const dayFor = useMemo(() => makeDayResolver(deadlineOverrides), [deadlineOverrides]);
   /** Prazo com eventual prorrogação definida no Calendário fiscal para esse mês. */
@@ -770,6 +772,30 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                 const val = e.target.value;
                 if (val !== (dmrMessage?.message || "")) {
                   saveMessage.mutate({ obligationType: dmrTab, message: val || null, userId: user?.id });
+                }
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {isIVA && subFilter === IVA_FLEX && (
+        <div className="bg-card rounded-xl border p-4 space-y-2">
+          <label htmlFor="flex-mensagem" className="text-sm font-semibold">
+            Mensagem a enviar — Flexibilização
+          </label>
+          {!loadingFlexMessage && (
+            <textarea
+              id="flex-mensagem"
+              key={`flex-${flexMessage?.updated_at || "vazio"}`}
+              defaultValue={flexMessage?.message || ""}
+              placeholder="Escrever a mensagem a enviar aos clientes..."
+              rows={4}
+              className="w-full text-sm px-3 py-2 rounded-lg border bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (flexMessage?.message || "")) {
+                  saveMessage.mutate({ obligationType: "IVA_flex", message: val || null, userId: user?.id });
                 }
               }}
             />
