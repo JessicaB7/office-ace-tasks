@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ativoNoMes } from "@/lib/clientSaida";
 import { AlertTriangle, PartyPopper, Search, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -87,6 +88,7 @@ const ObrigacoesControloView = ({ onOpenObrigacao, nav }: Props) => {
     const out: Missing[] = [];
     for (const client of clients.filter((c: any) => c.active)) {
       for (const month of loadMonths) {
+        if (!ativoNoMes(client, month)) continue;
         const missing = obrigacoesForClient(client, month)
           .filter((t) => !isObrigacaoDone(t, byKey.get(`${client.id}|${month}|${t.type}`)));
         if (missing.length > 0) out.push({ client, month, missing });
@@ -157,7 +159,7 @@ const ObrigacoesControloView = ({ onOpenObrigacao, nav }: Props) => {
 
   // Prazos de cada obrigação no mês escolhido (podem ser vários: ex. DMR guia dia 10, pagamento dia 20).
   const groupDeadlines: Record<string, string[]> = {};
-  clients.filter((c: any) => c.active).forEach((c: any) => obrigacoesForClient(c, selMonth).forEach((t) => {
+  clients.filter((c: any) => ativoNoMes(c, selMonth)).forEach((c: any) => obrigacoesForClient(c, selMonth).forEach((t) => {
     const list = (groupDeadlines[t.group] ||= []);
     if (!list.includes(t.deadline)) list.push(t.deadline);
   }));

@@ -146,6 +146,14 @@ Dashboards por regime:
 - `clients.status`: `ativo` / `a_sair` / `inativo` (filtros na lista). **Mensalidade** e
   **início de contrato** são campos **obrigatórios** no `ClientDetailDialog`.
 - Filtro por "Responsável" na lista de clientes.
+- **Saída de clientes** (`client_offboardings`, `src/lib/clientSaida.ts`): passar a `a_sair` cria o registo (trigger);
+  separador "Saída" na ficha com motivo, último mês de responsabilidade e checklist de 9 itens (cada um com data).
+  Checklist completa → `completed_at` e cliente `inativo`. O último mês é copiado para `clients.ultimo_mes_responsabilidade`
+  e as vistas de obrigações/gestão mensal usam `ativoNoMes()` (sem obrigações depois desse mês).
+- **Acompanhamento 60 dias** (`client_onboardings`): concluir o onboarding cria 3 tarefas da responsável
+  (boas-vindas +2 d, contacto 30 d, ponto de situação 60 d; `tasks.onboarding_id/onboarding_step`); concluir a tarefa
+  marca o campo no onboarding e vice-versa. Dashboard da admin: clientes em saída (x/9), saídas por motivo (12 meses),
+  clientes novos (60 dias).
 - Vista de colaboradores (admin): carga de trabalho, contagem só de **clientes ativos**, tabela de
   clientes "a sair" com valor, dialog com clientes agrupados por tipo, gestão de códigos de acesso.
 

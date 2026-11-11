@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { ativoNoMes, monthOf } from "@/lib/clientSaida";
 import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
 import { Search, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCheck, PartyPopper, ArrowUpRight, MessageSquare } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -115,7 +116,8 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
 
-  const activeClients = useMemo(() => clients.filter((c: any) => c.active), [clients]);
+  // Ativos no mês: inclui "a sair" até ao último mês de responsabilidade.
+  const activeClients = useMemo(() => clients.filter((c: any) => ativoNoMes(c, monthOf(year, month))), [clients, year, month]);
 
   const currentCollaborator = useMemo(() => {
     if (!user?.email) return null;

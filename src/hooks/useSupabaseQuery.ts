@@ -198,7 +198,11 @@ export function useUpsertTask() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      // Tarefas de acompanhamento dos novos clientes marcam o contacto no onboarding.
+      qc.invalidateQueries({ queryKey: ["client_onboardings"] });
+    },
   });
 }
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ativoNoMes } from "@/lib/clientSaida";
 import { AlertTriangle, PartyPopper, Search, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -84,6 +85,8 @@ const GestaoMensalEmFaltaView = ({ onOpenRegime }: Props) => {
       const types = obligationTypesFor(regime.id, config);
       for (const client of active.filter(config.filter)) {
         for (const month of loadMonths) {
+          // Depois do último mês de responsabilidade (cliente a sair) já não há nada a fazer.
+          if (!ativoNoMes(client, month)) continue;
           // Antes do início do contrato não há nada a fazer.
           if (client.inicio_contrato && client.inicio_contrato.slice(0, 7) > month.slice(0, 7)) continue;
           const cols = (config.columns || []).map((col, i) => ({ col, type: types[i] }))

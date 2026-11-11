@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import ClientObrigacoesTab from "@/components/ClientObrigacoesTab";
 import { ConsultoriaAnswers } from "@/components/comercial/ConsultoriaFormCard";
 import { useClientConsultoriaForms } from "@/hooks/useConsultoriaForms";
+import { useQueryClient } from "@tanstack/react-query";
+import { useClientOffboarding } from "@/hooks/useOffboardings";
+import ClientSaidaTab from "@/components/ClientSaidaTab";
 
 const TIPO_CONTAB_OPTIONS = [
   { value: "SQ", label: "Empresa (SQ)" },
@@ -146,6 +149,13 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
 
   const isEditing = !!client;
   const { data: consultoriaForms = [] } = useClientConsultoriaForms(client?.id, client?.nif);
+  const qc = useQueryClient();
+  const { data: offboarding } = useClientOffboarding(client?.id);
+
+  // Saída concluída na checklist → o cliente já está inativo; não deixar o formulário repor "a sair".
+  useEffect(() => {
+    if (offboarding?.completed_at) setForm((f) => (f.status === "a_sair" ? { ...f, status: "inativo" } : f));
+  }, [offboarding?.completed_at]);
 
   useEffect(() => {
     if (client) {
@@ -232,6 +242,8 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
       };
       if (isEditing) payload.id = client.id;
       await upsert.mutateAsync(payload);
+      // Passar a "a sair" abre a checklist de saída (trigger na base de dados).
+      qc.invalidateQueries({ queryKey: ["client_offboardings"] });
       onClose();
       toast({ title: isEditing ? "Cliente atualizado" : "Cliente criado", description: form.name });
     } catch (err: any) {
@@ -281,6 +293,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
               <TabsTrigger value="enquadramento" className="flex-1">Enquadramento</TabsTrigger>
               {isEditing && <TabsTrigger value="obrigacoes" className="flex-1">Obrigações fiscais</TabsTrigger>}
               {consultoriaForms.length > 0 && <TabsTrigger value="consultoria" className="flex-1">Consultoria</TabsTrigger>}
+              {isEditing && offboarding && <TabsTrigger value="saida" className="flex-1">Saída</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="dados" className="space-y-4 pt-2">
@@ -462,6 +475,12 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
                     <ConsultoriaAnswers form={f} />
                   </div>
                 ))}
+              </TabsContent>
+            )}
+
+            {isEditing && offboarding && (
+              <TabsContent value="saida">
+                <ClientSaidaTab offboarding={offboarding} />
               </TabsContent>
             )}
           </Tabs>

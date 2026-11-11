@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ativoNoMes } from "@/lib/clientSaida";
 import { AlarmClock } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const ObrigacoesPrazoReminder = ({ onOpen }: Props) => {
     const acc = new Map<string, { group: string; month: string; labels: Set<string>; clients: Set<string> }>();
     clients.filter((c: any) => c.active).forEach((c: any) => {
       refMonths.forEach((month) => {
+        if (!ativoNoMes(c, month)) return;
         obrigacoesForClient(c, month).forEach((t) => {
           if (t.deadline !== today || isObrigacaoDone(t, byKey.get(`${c.id}|${month}|${t.type}`))) return;
           const k = `${t.group}|${month}`;

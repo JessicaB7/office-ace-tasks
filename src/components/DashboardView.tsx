@@ -4,6 +4,7 @@ import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } fr
 import { CheckCircle2, Clock, AlertTriangle, CalendarDays, ClipboardList, Users, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
+import ClientesEntradaSaidaCard from "@/components/ClientesEntradaSaidaCard";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { DEADLINE_KEYS as K, makeDayResolver } from "@/lib/deadlineOverrides";
 import { referenceLabel, relativeDeadline, shortDate, type DeadlineTone } from "@/lib/deadlineLabels";
@@ -514,6 +515,9 @@ const DashboardView = () => {
 
       {renderDeadlineSection(weekDeadlines, "Prazos desta Semana", "primary", "120ms")}
       {renderDeadlineSection(nextWeekDeadlines, "Prazos da Próxima Semana", "muted", "180ms")}
+
+      {/* Saídas e novos clientes — apenas para administradores */}
+      {isAdmin && <ClientesEntradaSaidaCard onOpenClient={setSelectedClient} />}
 
       {/* Tarefas de cada colaborador — apenas para administradores */}
       {isAdmin && tasksByCollaborator.length > 0 && (

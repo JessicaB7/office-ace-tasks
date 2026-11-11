@@ -29,7 +29,11 @@ export function useUpdateOnboarding() {
       const { error } = await supabase.from("client_onboardings").update(patch).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["client_onboardings"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["client_onboardings"] });
+      // Concluir o processo / marcar contactos cria ou acerta as tarefas de acompanhamento.
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+    },
   });
 }
 

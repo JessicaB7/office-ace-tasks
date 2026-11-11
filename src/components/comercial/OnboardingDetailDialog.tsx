@@ -29,6 +29,7 @@ import {
   formTypeLabel,
 } from "./onboardingConstants";
 import { eur, fmtDate } from "./leadConstants";
+import { ACOMPANHAMENTO } from "@/lib/clientSaida";
 
 interface Props {
   onboarding: Onboarding | null;
@@ -55,7 +56,19 @@ const OnboardingDetailDialog = ({ onboarding: o, onClose, onOpenClient }: Props)
 
   useEffect(() => setNotes(o?.notes || ""), [o?.id, o?.notes]);
 
+  // Campos do acompanhamento (ainda não estão nos tipos gerados do Supabase)
+  const followup = (o || {}) as unknown as Record<string, unknown> & { feedback_60_dias?: string | null };
+  const [feedback, setFeedback] = useState("");
+  useEffect(() => setFeedback(followup.feedback_60_dias || ""), [o?.id, followup.feedback_60_dias]);
+
   if (!o) return null;
+
+  const prazo = (dias: number) => {
+    if (!o.data_inicio) return `${dias} dias após o início`;
+    const d = new Date(`${o.data_inicio}T12:00:00`);
+    d.setDate(d.getDate() + dias);
+    return `Prazo ${d.toLocaleDateString("pt-PT")}`;
+  };
 
   const answers = (o.answers || {}) as Record<string, string>;
   const name = answers.nome || o.lead?.name || "Novo cliente";
@@ -314,6 +327,50 @@ const OnboardingDetailDialog = ({ onboarding: o, onClose, onOpenClient }: Props)
             />
           </div>
         </section>
+
+        {/* 4. Acompanhamento dos primeiros 60 dias (depois de concluído) */}
+        {o.completed_at && (
+          <section className="rounded-xl border p-4 space-y-3">
+            <div>
+              <h3 className="font-semibold text-sm">4. Acompanhamento dos primeiros 60 dias</h3>
+              <p className="text-xs text-muted-foreground">
+                Cada contacto tem uma tarefa da responsável; concluir a tarefa marca aqui e vice-versa.
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-3 gap-2">
+              {ACOMPANHAMENTO.map((a) => {
+                const checked = !!followup[a.key];
+                const at = followup[`${a.key}_at`] as string | null;
+                return (
+                  <label
+                    key={a.key}
+                    className={cn(
+                      "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors",
+                      checked ? "bg-success/5 border-success/30" : "hover:border-primary/40"
+                    )}
+                  >
+                    <Checkbox checked={checked} onCheckedChange={(v) => patch({ [a.key]: !!v } as OnboardingUpdate)} className="mt-0.5" />
+                    <span>
+                      <span className={cn("block text-sm font-medium", checked && "line-through text-muted-foreground")}>{a.label}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {checked && at ? `Feito a ${fmtDate(at.slice(0, 10))}` : prazo(a.dias)}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div>
+              <Label>Feedback aos 60 dias (o que o cliente disse)</Label>
+              <Textarea
+                rows={2}
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                onBlur={() => feedback !== (followup.feedback_60_dias || "") && patch({ feedback_60_dias: feedback || null } as OnboardingUpdate)}
+              />
+            </div>
+          </section>
+        )}
 
         <DialogFooter className="gap-2 sm:justify-between flex-wrap">
           <div>
