@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTasks, useClients } from "@/hooks/useSupabaseQuery";
+import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator } from "@/hooks/useSupabaseQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Collaborator } from "@/types/database";
-import { Search, Plus, UserCircle, X, Key, Eye, EyeOff, BellRing, BellOff } from "lucide-react";
+import { Search, Plus, UserCircle, X, Key, Eye, EyeOff, BellRing, BellOff, Building2 } from "lucide-react";
 import { usePushDevicesByUser } from "@/hooks/useNotificationPreferences";
 import { useToast } from "@/hooks/use-toast";
 import CollaboratorDetailDialog from "./CollaboratorDetailDialog";
@@ -14,8 +13,6 @@ const emptyCollab = { name: "", email: "", role: "técnico", specialty: "", acce
 
 const CollaboratorListView = () => {
   const { data: collaborators = [], isLoading } = useCollaborators();
-  const { data: tasks = [] } = useTasks();
-  const { data: clients = [] } = useClients();
   const { isAdmin } = useAuth();
   const { data: pushByUser } = usePushDevicesByUser(isAdmin);
   const upsert = useUpsertCollaborator();
@@ -36,31 +33,7 @@ const CollaboratorListView = () => {
     return true;
   });
 
-  const getTaskCounts = (collabId: string) => {
-    const collabTasks = tasks.filter((t: any) => t.collaborator_id === collabId);
-    const pending = collabTasks.filter((t: any) => t.status === "pendente" || t.status === "em_progresso").length;
-    const done = collabTasks.filter((t: any) => t.status === "concluida").length;
-    return { total: collabTasks.length, pending, done };
-  };
-
-  const getClientCountsByType = (collabId: string) => {
-    const collabClients = clients.filter(c => c.responsavel_id === collabId && (c as any).status === "ativo");
-    const byType: Record<string, number> = {};
-    let totalMensalidade = 0;
-    for (const c of collabClients) {
-      const tipo = c.tipo_contabilidade || "Sem tipo";
-      byType[tipo] = (byType[tipo] || 0) + 1;
-      if (c.mensalidade) totalMensalidade += Number(c.mensalidade);
-    }
-    return { total: collabClients.length, byType, totalMensalidade };
-  };
-
-  const getLeavingClients = (collabId: string) => {
-    return clients
-      .filter(c => c.responsavel_id === collabId && (c as any).status === "a_sair")
-      .sort((a, b) => a.name.localeCompare(b.name));
-  };
-
+  // Os números da equipa (clientes, avença gerida, carga, tarefas) estão só no «Controlo» → Equipa.
   const openNew = () => { setForm(emptyCollab); setEditingId(null); setShowCode(false); setInitialCode(""); setDialogOpen(true); };
   const openEdit = async (c: Collaborator) => {
     setForm({ name: c.name, email: c.email, role: c.role, specialty: c.specialty || "", access_code: "" });
@@ -157,10 +130,6 @@ const CollaboratorListView = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((collab, i) => {
-            const counts = getTaskCounts(collab.id);
-            const clientCounts = getClientCountsByType(collab.id);
-            const leaving = getLeavingClients(collab.id);
-            const leavingTotal = leaving.reduce((s, c) => s + (Number(c.mensalidade) || 0), 0);
             return (
               <div key={collab.id} onClick={() => handleCardClick(collab)} className="bg-card rounded-xl border p-5 cursor-pointer hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
                 <div className="flex items-start gap-3 mb-4">
@@ -186,75 +155,13 @@ const CollaboratorListView = () => {
                   })()}
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">{collab.email}</p>
-                
-                
-                {clientCounts.total > 0 && (
-                  <div
-                    onClick={(e) => { e.stopPropagation(); setClientsCollab(collab); }}
-                    className="mb-3 p-2.5 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-xs font-medium">{clientCounts.total} cliente{clientCounts.total !== 1 ? "s" : ""}</p>
-                      {clientCounts.totalMensalidade > 0 && (
-                        <p className="text-xs font-semibold text-primary">{clientCounts.totalMensalidade.toFixed(2).replace(".", ",")} €</p>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {Object.entries(clientCounts.byType).map(([tipo, count]) => (
-                         <span key={tipo} className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium",
-                          tipo === "SQ" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
-                          tipo === "TI CO" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" :
-                          tipo === "TI RS" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" :
-                          "bg-background border text-muted-foreground"
-                        )}>
-                          {tipo} <span className="font-semibold">{count}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {leaving.length > 0 && (
-                  <div className="mb-3 p-2.5 rounded-lg border border-orange-200 dark:border-orange-900/40 bg-orange-50/50 dark:bg-orange-950/20">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-xs font-medium text-orange-700 dark:text-orange-300">
-                        {leaving.length} a sair
-                      </p>
-                      {leavingTotal > 0 && (
-                        <p className="text-xs font-semibold text-orange-700 dark:text-orange-300">
-                          {leavingTotal.toFixed(2).replace(".", ",")} €
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-0.5">
-                      {leaving.map((c) => (
-                        <div key={c.id} className="flex items-center justify-between text-[11px]">
-                          <span className="truncate">{c.name}</span>
-                          <span className="font-medium shrink-0 ml-2">
-                            {c.mensalidade ? `${Number(c.mensalidade).toFixed(2).replace(".", ",")} €` : "—"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-warning" />
-                    <span className="text-muted-foreground">{counts.pending} ativas</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-success" />
-                    <span className="text-muted-foreground">{counts.done} concluídas</span>
-                  </div>
-                </div>
-                {counts.pending > 0 && (
-                  <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${Math.min((counts.pending / 10) * 100, 100)}%` }} />
-                  </div>
-                )}
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setClientsCollab(collab); }}
+                  className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2"
+                >
+                  <Building2 className="w-3.5 h-3.5" /> Ver clientes por tipo
+                </button>
               </div>
             );
           })}

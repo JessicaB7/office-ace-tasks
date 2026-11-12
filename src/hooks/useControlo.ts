@@ -38,18 +38,18 @@ export function useControloCollaborators() {
   });
 }
 
-/** Tarefas em aberto com prazo antes de hoje. */
-export function useControloTarefasAtraso(today: string) {
+/** Tarefas em aberto (as em atraso calculam-se a partir destas com `tarefaEmAtraso`). */
+export function useControloTarefasAbertas() {
   return useQuery({
-    queryKey: ["controlo", "tarefas_atraso", today],
+    queryKey: ["controlo", "tarefas_abertas"],
     queryFn: () =>
       allPages<TarefaCtl>((a, b) =>
         supabase
           .from("tasks")
           .select("id, title, status, due_date, client_id, collaborator_id")
-          .lt("due_date", today)
           .not("status", "in", "(concluida,cancelada)")
           .order("due_date")
+          .order("id")
           .range(a, b),
       ),
     ...FRESH,

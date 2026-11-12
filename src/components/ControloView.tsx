@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Activity, AlertTriangle, ArrowUpRight, Euro, Gauge, RefreshCw, Users } from "lucide-react";
+import { Activity, AlertTriangle, ArrowUpRight, Gauge, RefreshCw, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -9,8 +9,10 @@ import {
   useControloObrigacoes,
   useControloOverrides,
   useControloPedidos,
-  useControloTarefasAtraso,
+  useControloTarefasAbertas,
 } from "@/hooks/useControlo";
+import { useOffboardings } from "@/hooks/useOffboardings";
+import { comUltimoMes } from "@/lib/carteira";
 import { makeDayResolver } from "@/lib/deadlineOverrides";
 import { computeFecho, mesReferenciaPadrao, diasAte, type FechoEmFalta, type Semaforo } from "@/lib/fechoMes";
 import { fmtPrazo, todayYmd } from "@/lib/obrigacoesControlo";
@@ -19,7 +21,6 @@ import { SEMAFORO_CLASSES, prazoTexto } from "@/components/FechoMesView";
 import {
   PASSAGEM,
   PESO_TIPO,
-  calcularDinheiro,
   calcularEquipa,
   calcularPassagem,
   calcularRisco,
@@ -27,6 +28,7 @@ import {
   pesoCliente,
   proximosPrazos,
   shiftMes,
+  tarefaEmAtraso,
   type ClienteCtl,
   type MotivoRisco,
   type ObrigacaoLinha,
@@ -37,9 +39,7 @@ import {
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 const nomeMes = (m: string) => MESES[Number(m.slice(5, 7)) - 1];
 const eur = (v: number) => new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(v || 0);
-const eurSinal = (v: number) => (v > 0 ? `+${eur(v)}` : eur(v));
 const fmtData = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
-const TIPO_LABEL: Record<string, string> = { SQ: "Empresas (SQ)", "TI CO": "TI Contab. Organizada", "TI RS": "TI Regime Simplificado" };
 const tipoObrigacao = (t: string) => t.replace(/^contabilidade_/, "").replace(/_/g, " ");
 
 /** Lista vazia estável (evita recalcular os useMemo a cada render enquanto carrega). */
@@ -108,19 +108,21 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate }: Props) => {
 
   const qClients = useControloClients();
   const qCollabs = useControloCollaborators();
-  const qTarefas = useControloTarefasAtraso(today);
+  const qTarefas = useControloTarefasAbertas();
   const qPedidos = useControloPedidos();
   const qObl = useControloObrigacoes(mesesPrazos);
   const qAudit = useControloAudit(auditDesde);
   const qOverrides = useControloOverrides();
-  const queries = [qClients, qCollabs, qTarefas, qPedidos, qObl, qAudit, qOverrides];
+  const qSaidas = useOffboardings();
+  const queries = [qClients, qCollabs, qTarefas, qPedidos, qObl, qAudit, qOverrides, qSaidas];
   const loading = queries.some((q) => q.isLoading);
   const fetching = queries.some((q) => q.isFetching);
   const erro = queries.find((q) => q.error)?.error as Error | undefined;
 
   const clients = qClients.data ?? NADA;
   const collaborators = qCollabs.data ?? NADA;
-  const tarefas = qTarefas.data ?? NADA;
+  const abertas = qTarefas.data ?? NADA;
+  const tarefas = useMemo(() => abertas.filter((t) => tarefaEmAtraso(t, today)), [abertas, today]);
   const pedidos = qPedidos.data ?? NADA;
   const obligations: ObrigacaoLinha[] = qObl.data ?? NADA;
   const audit = qAudit.data ?? NADA;
@@ -135,10 +137,21 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate }: Props) => {
   );
   const prazos = useMemo(() => proximosPrazos(clients, obligations, mesesPrazos, today, dayFor), [clients, obligations, mesesPrazos, today, dayFor]);
   const risco = useMemo(() => calcularRisco(clients, tarefas, pedidos, today), [clients, tarefas, pedidos, today]);
-  const equipa = useMemo(() => calcularEquipa(collaborators, clients, tarefas, fecho, today), [collaborators, clients, tarefas, fecho, today]);
+  // Equipa: clientes em carteira e avenças com as regras de carteira.ts (as mesmas da página «Negócio»).
+  const carteira = useMemo(() => comUltimoMes(clients, qSaidas.data ?? NADA), [clients, qSaidas.data]);
+  const equipa = useMemo(
+    () => calcularEquipa(collaborators, carteira, abertas, fecho, today, mesAtual, audit.filter((a) => a.campo === "mensalidade")),
+    [collaborators, carteira, abertas, fecho, today, mesAtual, audit],
+  );
+  const totEquipa = useMemo(() => ({
+    clientes: equipa.reduce((s, l) => s + l.clientes.length, 0),
+    avenca: equipa.reduce((s, l) => s + l.avenca, 0),
+    carga: equipa.reduce((s, l) => s + l.carga, 0),
+    abertas: equipa.reduce((s, l) => s + l.tarefasAbertas.length, 0),
+    atraso: equipa.reduce((s, l) => s + l.tarefasAtraso.length, 0),
+  }), [equipa]);
   const adminCol = collaborators.find((c) => c.name === PASSAGEM.deNome);
   const passagem = useMemo(() => calcularPassagem(audit, clients, adminCol?.id ?? null, today), [audit, clients, adminCol, today]);
-  const dinheiro = useMemo(() => calcularDinheiro(clients, audit.filter((a) => a.campo === "mensalidade"), mesAtual), [clients, audit, mesAtual]);
 
   const [detalhe, setDetalhe] = useState<Detalhe | null>(null);
   const abrir = (d: Detalhe) => setDetalhe(d);
@@ -173,15 +186,16 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate }: Props) => {
       valor: so ? undefined : `${r.pontos} pts`,
       tom: r.pontos >= 6 ? "destructive" : r.pontos >= 3 ? "warning" : "muted",
     }, r.emSaida && (!so || so === "saida") ? "saida" : undefined));
-  const linhasTarefas = (l: TarefaCtl[]): Linha[] =>
+  const linhasTarefas = (l: TarefaCtl[], abertas = false): Linha[] =>
     l.map((t) => {
       const c = t.client_id ? clientById.get(t.client_id) : null;
+      const atraso = tarefaEmAtraso(t, today);
       return {
         key: t.id,
-        titulo: t.title,
+        titulo: t.title ?? "",
         sub: [c?.name, nomeCol(t.collaborator_id)].filter(Boolean).join(" · "),
-        valor: `${diasAte(String(t.due_date).slice(0, 10), today)} dias`,
-        tom: "destructive",
+        valor: abertas && !atraso ? (t.due_date ? fmtPrazo(String(t.due_date).slice(0, 10)) : undefined) : `${diasAte(String(t.due_date).slice(0, 10), today)} dias`,
+        tom: atraso ? "destructive" : "muted",
         onClick: irPara(() => (c ? onOpenClient(c.id) : onNavigate("tasks"))),
       };
     });
@@ -316,123 +330,101 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate }: Props) => {
           </Secao>
 
           {/* 3. EQUIPA */}
-          <Secao titulo="Equipa" icon={Users}>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs text-muted-foreground text-left">
-                    <th className="font-medium py-1">Colaboradora</th>
-                    <th className="font-medium py-1 text-right">Clientes</th>
-                    <th className="font-medium py-1 text-right" title="SQ = 3, TI CO = 2, TI RS = 1">Carga</th>
-                    <th className="font-medium py-1 text-right">Tarefas atraso</th>
-                    <th className="font-medium py-1 text-right">% do mês</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {equipa.map((l) => {
-                    const g = fecho.porResponsavel.find((r) => r.key === l.collaborator.id);
-                    const sem = g ? SEMAFORO_CLASSES[g.semaforo] : null;
-                    return (
-                      <tr key={l.collaborator.id}>
-                        <td className="py-1.5 font-medium">{l.collaborator.name}</td>
-                        <td className="py-1.5 text-right">
-                          <Cel onClick={() => abrir({ titulo: `Clientes ativos — ${l.collaborator.name}`, linhas: l.clientes.map((c) => linhaCliente(c, { valor: eur(Number(c.mensalidade || 0)) })) })}>{l.clientes.length}</Cel>
-                        </td>
-                        <td className="py-1.5 text-right">
-                          <Cel onClick={() => abrir({
-                            titulo: `Carga ponderada — ${l.collaborator.name}`,
-                            descricao: `SQ = ${PESO_TIPO.SQ}, TI CO = ${PESO_TIPO["TI CO"]}, TI RS = ${PESO_TIPO["TI RS"]}. Total: ${l.carga}.`,
-                            linhas: [...l.clientes].sort((a, b) => pesoCliente(b) - pesoCliente(a)).map((c) => linhaCliente(c, { valor: `${pesoCliente(c)}` })),
-                          })}>{l.carga}</Cel>
-                        </td>
-                        <td className="py-1.5 text-right">
-                          <Cel className={l.tarefasAtraso.length ? "text-destructive" : "text-muted-foreground"}
-                            onClick={() => abrir({ titulo: `Tarefas em atraso — ${l.collaborator.name}`, linhas: linhasTarefas(l.tarefasAtraso) })}>{l.tarefasAtraso.length}</Cel>
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {l.pct === null ? <span className="text-muted-foreground">—</span> : (
-                            <Cel className={sem?.text} onClick={() => g && abrir({ titulo: `Em falta — ${l.collaborator.name}`, linhas: linhasEmFalta(g.emFalta) })}>
-                              <span className={cn("inline-block w-2 h-2 rounded-full mr-1.5", sem?.dot)} />{l.pct}%
-                            </Cel>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <button type="button"
-              onClick={() => abrir({
-                titulo: "Passagem de clientes",
-                descricao: `Clientes que passaram de ${PASSAGEM.deNome} para outra colaboradora desde ${fmtData(PASSAGEM.desde)} (registo de alterações). Meta: ${passagem.meta} até ${fmtData(passagem.ate)}.`,
-                linhas: passagem.feitos.map((f) => ({
-                  key: f.clientId, titulo: f.nome, sub: `para ${f.para}`, valor: fmtData(f.em),
-                  onClick: clientById.has(f.clientId) ? irPara(() => onOpenClient(f.clientId)) : undefined,
-                })),
-              })}
-              className="w-full text-left rounded-lg border bg-background px-4 py-3 hover:bg-muted/40">
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold tabular-nums">{passagem.feitos.length}</span>
-                <span className="text-sm text-muted-foreground">de {passagem.meta} até {fmtData(passagem.ate)}</span>
+          <Secao titulo={`Equipa — ${nomeMes(mesAtual)}`} icon={Users} className="xl:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+              <div className="overflow-x-auto lg:col-span-2">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-xs text-muted-foreground text-left">
+                      <th className="font-medium py-1">Colaboradora</th>
+                      <th className="font-medium py-1 text-right" title="Clientes em carteira no mês (inclui «a sair»)">Clientes</th>
+                      <th className="font-medium py-1 text-right">Avença gerida</th>
+                      <th className="font-medium py-1 text-right" title="SQ = 3, TI CO = 2, TI RS = 1">Carga</th>
+                      <th className="font-medium py-1 text-right">Tarefas abertas</th>
+                      <th className="font-medium py-1 text-right">Em atraso</th>
+                      <th className="font-medium py-1 text-right">% do mês</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {equipa.map((l) => {
+                      const g = fecho.porResponsavel.find((r) => r.key === l.collaborator.id);
+                      const sem = g ? SEMAFORO_CLASSES[g.semaforo] : null;
+                      const listaClientes = () => abrir({
+                        titulo: `Clientes em carteira — ${l.collaborator.name}`,
+                        descricao: `Avença gerida: ${eur(l.avenca)}.`,
+                        linhas: [...l.clientes].sort((a, b) => Number(b.mensalidade || 0) - Number(a.mensalidade || 0))
+                          .map((c) => linhaCliente(c, { motivo: c.status === "a_sair" ? "A sair" : undefined, valor: eur(Number(c.mensalidade || 0)) })),
+                      });
+                      return (
+                        <tr key={l.collaborator.id}>
+                          <td className="py-1.5 font-medium">{l.collaborator.name}</td>
+                          <td className="py-1.5 text-right"><Cel onClick={listaClientes}>{l.clientes.length}</Cel></td>
+                          <td className="py-1.5 text-right"><Cel onClick={listaClientes}>{eur(l.avenca)}</Cel></td>
+                          <td className="py-1.5 text-right">
+                            <Cel onClick={() => abrir({
+                              titulo: `Carga ponderada — ${l.collaborator.name}`,
+                              descricao: `SQ = ${PESO_TIPO.SQ}, TI CO = ${PESO_TIPO["TI CO"]}, TI RS = ${PESO_TIPO["TI RS"]}. Total: ${l.carga}.`,
+                              linhas: [...l.clientes].sort((a, b) => pesoCliente(b) - pesoCliente(a)).map((c) => linhaCliente(c, { valor: `${pesoCliente(c)}` })),
+                            })}>{l.carga}</Cel>
+                          </td>
+                          <td className="py-1.5 text-right">
+                            <Cel onClick={() => abrir({ titulo: `Tarefas abertas — ${l.collaborator.name}`, linhas: linhasTarefas(l.tarefasAbertas, true) })}>{l.tarefasAbertas.length}</Cel>
+                          </td>
+                          <td className="py-1.5 text-right">
+                            <Cel className={l.tarefasAtraso.length ? "text-destructive" : "text-muted-foreground"}
+                              onClick={() => abrir({ titulo: `Tarefas em atraso — ${l.collaborator.name}`, linhas: linhasTarefas(l.tarefasAtraso) })}>{l.tarefasAtraso.length}</Cel>
+                          </td>
+                          <td className="py-1.5 text-right">
+                            {l.pct === null ? <span className="text-muted-foreground">—</span> : (
+                              <Cel className={sem?.text} onClick={() => g && abrir({ titulo: `Em falta — ${l.collaborator.name}`, linhas: linhasEmFalta(g.emFalta) })}>
+                                <span className={cn("inline-block w-2 h-2 rounded-full mr-1.5", sem?.dot)} />{l.pct}%
+                              </Cel>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t text-xs text-muted-foreground">
+                      <td className="py-1.5 font-medium">Total</td>
+                      <td className="py-1.5 text-right tabular-nums">{totEquipa.clientes}</td>
+                      <td className="py-1.5 text-right tabular-nums">{eur(totEquipa.avenca)}</td>
+                      <td className="py-1.5 text-right tabular-nums">{totEquipa.carga}</td>
+                      <td className="py-1.5 text-right tabular-nums">{totEquipa.abertas}</td>
+                      <td className="py-1.5 text-right tabular-nums">{totEquipa.atraso}</td>
+                      <td className="py-1.5 text-right tabular-nums">{totalFecho.pct}%</td>
+                    </tr>
+                  </tfoot>
+                </table>
+                <p className="text-[11px] text-muted-foreground mt-2">
+                  Clientes e avenças com as regras da página «Negócio» (inclui clientes a sair; não inclui contratos que só começam depois deste mês). Clientes sem responsável não entram nesta tabela.
+                </p>
               </div>
-              <p className="text-sm font-medium">Passagem de clientes</p>
-              <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
-                <div className={cn("h-full", passPct >= 100 ? "bg-success" : "bg-primary")} style={{ width: `${passPct}%` }} />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {passagem.feitos.length >= passagem.meta ? "Meta atingida" : `Faltam ${passagem.meta - passagem.feitos.length} · ${Math.max(0, passagem.diasRestantes)} dias`}
-                {adminCol && ` · ${clients.filter((c) => c.responsavel_id === adminCol.id && c.status === "ativo").length} clientes ativos ainda com ${adminCol.name.split(" ")[0]}`}
-              </p>
-            </button>
-          </Secao>
-
-          {/* 4. DINHEIRO */}
-          <Secao titulo={`Dinheiro — ${nomeMes(mesAtual)}`} icon={Euro}>
-            <div className="grid grid-cols-2 gap-3">
-              <Numero valor={eur(dinheiro.total)} label="Avenças mensais" sub={`${dinheiro.clientesMes.length} clientes`}
+              <button type="button"
                 onClick={() => abrir({
-                  titulo: `Avenças de ${nomeMes(mesAtual)}`,
-                  descricao: `Total ${eur(dinheiro.total)}.`,
-                  linhas: [...dinheiro.clientesMes].sort((a, b) => Number(b.mensalidade || 0) - Number(a.mensalidade || 0)).map((c) => linhaCliente(c, { valor: eur(Number(c.mensalidade || 0)) })),
-                })} />
-              <Numero valor={eurSinal(dinheiro.variacao)} label={`Variação face a ${nomeMes(shiftMes(mesAtual, -1))}`}
-                tom={dinheiro.variacao > 0 ? "success" : dinheiro.variacao < 0 ? "destructive" : "muted"}
-                sub={`${eur(dinheiro.totalAnterior)} → ${eur(dinheiro.total)}`}
-                onClick={() => abrir({
-                  titulo: "Variação das avenças",
-                  descricao: `Novos ${eurSinal(dinheiro.ganho)} · saídas ${eurSinal(-dinheiro.perdido)} · alterações de mensalidade ${eurSinal(dinheiro.alteracoes.reduce((s, a) => s + a.depois - a.antes, 0))}.`,
-                  linhas: [
-                    ...dinheiro.novos.map((c) => linhaCliente(c, { key: `n${c.id}`, motivo: "Novo", valor: eurSinal(Number(c.mensalidade || 0)), tom: "success" as Tom })),
-                    ...dinheiro.saidas.map((s) => linhaCliente(s.client, { key: `s${s.client.id}`, motivo: "Saída", valor: eurSinal(-s.valor), tom: "destructive" as Tom }, "saida")),
-                    ...dinheiro.alteracoes.map((a) => linhaCliente(a.client, { key: `a${a.client.id}`, motivo: `Mensalidade ${eur(a.antes)} → ${eur(a.depois)}`, valor: eurSinal(a.depois - a.antes), tom: (a.depois > a.antes ? "success" : "destructive") as Tom })),
-                  ],
-                })} />
-              <Numero valor={dinheiro.novos.length} label="Clientes novos" sub={`${eurSinal(dinheiro.ganho)} / mês`} tom={dinheiro.novos.length ? "success" : undefined}
-                onClick={() => abrir({ titulo: `Clientes novos — ${nomeMes(mesAtual)}`, descricao: "Início de contrato neste mês.", linhas: dinheiro.novos.map((c) => linhaCliente(c, { motivo: c.inicio_contrato ? `Início ${fmtData(c.inicio_contrato)}` : undefined, valor: eur(Number(c.mensalidade || 0)) })) })} />
-              <Numero valor={dinheiro.saidas.length} label="Saídas" sub={`${eurSinal(-dinheiro.perdido)} / mês`} tom={dinheiro.saidas.length ? "destructive" : undefined}
-                onClick={() => abrir({ titulo: `Saídas — ${nomeMes(mesAtual)}`, descricao: `Clientes cujo último mês de responsabilidade foi ${nomeMes(shiftMes(mesAtual, -1))}.`, linhas: dinheiro.saidas.map((s) => linhaCliente(s.client, { valor: eur(s.valor) }, "saida")) })} />
+                  titulo: "Passagem de clientes",
+                  descricao: `Clientes que passaram de ${PASSAGEM.deNome} para outra colaboradora desde ${fmtData(PASSAGEM.desde)} (registo de alterações). Meta: ${passagem.meta} até ${fmtData(passagem.ate)}.`,
+                  linhas: passagem.feitos.map((f) => ({
+                    key: f.clientId, titulo: f.nome, sub: `para ${f.para}`, valor: fmtData(f.em),
+                    onClick: clientById.has(f.clientId) ? irPara(() => onOpenClient(f.clientId)) : undefined,
+                  })),
+                })}
+                className="w-full text-left rounded-lg border bg-background px-4 py-3 hover:bg-muted/40">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold tabular-nums">{passagem.feitos.length}</span>
+                  <span className="text-sm text-muted-foreground">de {passagem.meta} até {fmtData(passagem.ate)}</span>
+                </div>
+                <p className="text-sm font-medium">Passagem de clientes</p>
+                <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+                  <div className={cn("h-full", passPct >= 100 ? "bg-success" : "bg-primary")} style={{ width: `${passPct}%` }} />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {passagem.feitos.length >= passagem.meta ? "Meta atingida" : `Faltam ${passagem.meta - passagem.feitos.length} · ${Math.max(0, passagem.diasRestantes)} dias`}
+                  {adminCol && ` · ${clients.filter((c) => c.responsavel_id === adminCol.id && c.status === "ativo").length} clientes ativos ainda com ${adminCol.name.split(" ")[0]}`}
+                </p>
+              </button>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-1">Avença média por tipo</p>
-              <div className="divide-y">
-                {dinheiro.mediaPorTipo.map((m) => (
-                  <div key={m.tipo} className="flex items-center gap-2 py-1.5 text-sm">
-                    <span className="flex-1">{TIPO_LABEL[m.tipo] ?? m.tipo} <span className="text-xs text-muted-foreground">({m.n})</span></span>
-                    <span className="font-semibold tabular-nums w-20 text-right">{eur(m.media)}</span>
-                    <Cel className={cn("w-28 text-right text-xs", m.abaixo.length ? "text-warning" : "text-muted-foreground")}
-                      onClick={() => abrir({
-                        titulo: `${TIPO_LABEL[m.tipo] ?? m.tipo} abaixo da média`,
-                        descricao: `Média ${eur(m.media)} (${m.n} clientes com mensalidade).`,
-                        linhas: [...m.abaixo].sort((a, b) => Number(a.mensalidade || 0) - Number(b.mensalidade || 0)).map((c) => linhaCliente(c, { valor: eur(Number(c.mensalidade || 0)) })),
-                      })}>{m.abaixo.length} abaixo da média</Cel>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Aproximação: um cliente conta num mês se o contrato já tinha começado e o mês não passa do último mês de responsabilidade. A mensalidade do mês anterior é a atual, salvo alterações registadas desde o dia 1.
-            </p>
           </Secao>
         </div>
       )}

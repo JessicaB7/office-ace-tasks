@@ -47,15 +47,20 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
   edge function `manage-collaborator-auth`.
 - Admin: `geral@contabilistaexplica.pt`. RBAC via tabela `user_roles` + função
   `has_role(_user_id uuid, _role app_role)` (security definer). **Nunca** guardar roles em `profiles`/`clients`.
-- Colaboradores: acesso global a "Clientes"; "Colaboradores" e "Resumo Mensal" são admin-only;
+- Colaboradores: acesso global a "Clientes"; todo o setor "Gestão de negócio" (Controlo, Negócio, Comercial, Resumo do dia,
+  Colaboradores) é admin-only;
   criação de dados mestres é admin-only.
 - Padrão obrigatório: aplicar a sessão à UI **imediatamente** e verificar RBAC em background
   (evita deadlocks de loading em `src/hooks/useAuth.tsx`).
 
 ## 6. Navegação (setores) — `src/components/AppSidebar.tsx`
 
-0. **Gestão de negócio** (admin; primeiro setor da barra, só a admin o vê) — «Controlo» (página inicial da admin), painel,
-   painel comercial, painel de consultorias, colaboradores, resumo do dia, resumo mensal.
+0. **Gestão de negócio** (admin; primeiro setor da barra, só a admin o vê), 5 entradas sem números repetidos:
+   «Controlo» (`controlo`, página inicial da admin — só o que precisa de atenção), «Negócio» (`business`, carteira e avenças),
+   «Comercial» (`comercial`, separadores Pipeline / Consultorias), «Resumo do dia» (`resumo_dia`), «Colaboradores»
+   (`collaborators`, só gestão). Vistas antigas redirecionadas em `src/lib/vistas.ts` (`resolverVista`, usado no
+   `handleSidebarNav` do `Index`): `resumo` → `business`; `consultorias_painel` → `comercial` + separador `consultorias`
+   (`?view=comercial&tab=consultorias` também funciona).
 1. **Visão geral** — landing "O meu dia" (`DashboardView.tsx`, página inicial dos colaboradores): métricas pessoais,
    prazos da semana.
 2. **Comercial** — pipeline (Kanban), leads, propostas enviadas, follow ups, scripts.
@@ -79,7 +84,8 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
 ### Consultorias
 - Leads de consultoria: **sem** campo de reunião — apenas data; "Dada por" (Diogo ou Jéssica);
   follow up automático **15 dias** após a data, com tarefa atribuída à **Angela** (administrativa, usa o WhatsApp do Diogo; sem Angela ativa, ao Diogo) (trigger `sync_consultoria_followup_task`).
-- Painel por mês: consultorias agendadas, valor total (c/ e s/ IVA), taxa de conversão
+- Painel por mês (Gestão de negócio → Comercial → separador «Consultorias», `ConsultoriasPanelView` dentro de
+  `ComercialPainelView`; o separador «Pipeline» é o `ComercialView`): consultorias agendadas, valor total (c/ e s/ IVA), taxa de conversão
   (= serviço mensal sim), valor por consultor, **comissão Diogo 10% sobre valor sem IVA**.
   Sem ticket médio.
 
@@ -160,8 +166,8 @@ Dashboards por regime:
   (boas-vindas +2 d, contacto 30 d, ponto de situação 60 d; `tasks.onboarding_id/onboarding_step`); concluir a tarefa
   marca o campo no onboarding e vice-versa. Dashboard da admin: clientes em saída (x/9), saídas por motivo (12 meses),
   clientes novos (60 dias).
-- Vista de colaboradores (admin): carga de trabalho, contagem só de **clientes ativos**, tabela de
-  clientes "a sair" com valor, dialog com clientes agrupados por tipo, gestão de códigos de acesso.
+- Vista de colaboradores (admin): só gestão — fichas, novo colaborador, códigos de acesso, estado das notificações e
+  ligação «Ver clientes por tipo» (dialog). **Sem números** (clientes, €, tarefas): estão só no Controlo → Equipa.
 
 ### Tarefas periódicas (`task_recurrences`, `src/lib/taskRecurrence.ts`)
 - No dialog de tarefa, campo **«Repetir»**: semanal / mensal / trimestral / anual, «a cada N», dia do mês
@@ -230,12 +236,24 @@ Dashboards por regime:
   com pendentes, juntando os meses ref−1, ref e atual — o IVA trimestral/mensal vence 2 meses depois).
 - **Clientes em risco** (`calcularRisco`, só `active`): dívida AT 3, dívida SS 3 (`com_divida`), pedidos ao cliente > 5 dias
   2 cada (máx. 6), tarefas em atraso 1 cada (máx. 4, +1 se > 30 dias), em saída 2; top 10 por pontos, nº de motivos, dias.
-- **Equipa**: clientes `ativo`, carga `PESO_TIPO` (SQ 3, TI CO 2, TI RS 1), tarefas em atraso, % do fecho. **Passagem de
+- **Equipa** (tabela única da equipa na app; `calcularEquipa`): clientes em carteira no mês (`contaNoMes` de `carteira.ts`,
+  com `comUltimoMes`), avença gerida (soma = «Avenças mensais» do Negócio), carga `PESO_TIPO` (SQ 3, TI CO 2, TI RS 1),
+  tarefas abertas e em atraso (`useControloTarefasAbertas`), % do fecho; linha de totais. **Passagem de
   clientes** (`PASSAGEM`, interpretação a confirmar): mudanças de responsável de «Jéssica Brandão» para outra pessoa no
   `audit_log` desde 01/11/2026 e ainda fora dela; meta 25 até 31/12/2026.
-- **Dinheiro** (mês corrente): sem histórico de avenças, `contaNoMes` usa `inicio_contrato` e `ultimo_mes_responsabilidade`
-  (sem último mês → só se ativo); a mensalidade do mês anterior recua alterações do `audit_log` feitas desde o dia 1.
-  Variação = novos − saídas ± alterações. Média por tipo só com mensalidade > 0.
+- Sem secção de dinheiro (passou para «Negócio»).
+
+### Negócio (admin) — `NegocioView`, `src/lib/carteira.ts` (fonte única de avenças/clientes/entradas/saídas)
+- Seletor de mês (até ao atual). KPIs: avenças mensais (um só total) e variação face ao mês anterior (entradas − saídas ±
+  alterações de mensalidade), entradas e saídas com € ganho/perdido; carteira por tipo (nº, €, peso, avença média, nº abaixo
+  da média, linha de total com a média geral); estado da carteira hoje (ativos / a sair / inativos + aviso dos inativos sem
+  data de saída); listas de entradas e saídas do mês; evolução anual (`evolucaoAnual`); clientes a sair com valor em risco.
+- Regras (`carteira.ts`, usadas também na Equipa do Controlo): **em carteira no mês M** = `inicio_contrato` ≤ M (ou vazio) e
+  M ≤ último mês de responsabilidade (sem último mês: estado ≠ inativo, ou seja inclui «a sair»). Último mês = o da ficha,
+  senão o do `client_offboardings`, senão o mês de `completed_at` da saída (aproximação, assinalada). **Entrada** =
+  `inicio_contrato` no mês; **saída** = último mês de responsabilidade no mês anterior. Inativos sem data não contam como
+  saída em nenhum mês (nunca usar `updated_at`). Mensalidade de um mês passado = a atual, salvo alterações do `audit_log`
+  depois desse mês. Média só com avença > 0.
 
 ### Fecho do mês (`src/lib/fechoMes.ts`, `FechoMesView`, `FechoMesCard`)
 - Mês de referência = anterior. Usa `obrigacoesForClient`/`isObrigacaoDone`/`ativoNoMes`; `deadlineFor` aceita um

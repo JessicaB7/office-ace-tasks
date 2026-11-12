@@ -2,8 +2,9 @@
  *
  * 1. Trabalho do mês: reaproveita `computeFecho` (fechoMes.ts) e acrescenta os próximos prazos.
  * 2. Clientes em risco: dívida AT/SS, pedidos ao cliente há mais de 5 dias, tarefas em atraso, em saída.
- * 3. Equipa: clientes, carga ponderada, tarefas em atraso, % do mês; passagem de clientes.
- * 4. Dinheiro: avenças do mês vs mês anterior, novos/saídas, média por tipo.
+ * 3. Equipa: clientes em carteira, avença gerida, carga ponderada, tarefas abertas/em atraso, % do mês;
+ *    passagem de clientes.
+ * O dinheiro (avenças, entradas/saídas, médias) está em `carteira.ts` (página «Negócio»).
  */
 
 import { obrigacoesForClient, isObrigacaoDone, type ObrigacaoTask } from "./obrigacoesControlo.ts";
@@ -11,25 +12,14 @@ import { ativoNoMes } from "./clientSaida.ts";
 import { defaultDayResolver, type DayResolver } from "./deadlineOverrides.ts";
 import { diasAte, type FechoResultado } from "./fechoMes.ts";
 import { temPedido, pedidoAtrasado, diasAEspera } from "./pedidosCliente.ts";
+import { contaNoMes, mensalidadeNoMes, type AlteracaoMensalidade } from "./carteira.ts";
+
+export { shiftMes, mesDe } from "./carteira.ts";
 
 // ---------------------------------------------------------------- utilitários
 
 /** "YYYY-MM" de uma data/mês. */
 const ym = (s: string) => s.slice(0, 7);
-
-/** Mês "YYYY-MM-01" deslocado `n` meses. */
-export const shiftMes = (month: string, n: number): string => {
-  const d = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1 + n, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-};
-
-/** Mês corrente "YYYY-MM-01" de um "YYYY-MM-DD". */
-export const mesDe = (today: string): string => `${today.slice(0, 7)}-01`;
-
-const num = (v: unknown) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-};
 
 // ---------------------------------------------------------------- tipos (só os campos usados)
 
@@ -258,9 +248,12 @@ export const pesoCliente = (c: ClienteCtl) => PESO_TIPO[c.tipo_contabilidade ?? 
 
 export interface EquipaLinha {
   collaborator: ColabCtl;
-  /** Clientes com estado «ativo» (como na vista de Colaboradores). */
+  /** Clientes em carteira no mês (mesma regra das avenças: `contaNoMes`, inclui «a sair»). */
   clientes: ClienteCtl[];
+  /** Soma das avenças desses clientes (soma com o total de «Avenças mensais» da página Negócio). */
+  avenca: number;
   carga: number;
+  tarefasAbertas: TarefaCtl[];
   tarefasAtraso: TarefaCtl[];
   /** % do mês concluída (fecho do mês de referência); null se não tem obrigações. */
   pct: number | null;
@@ -268,23 +261,41 @@ export interface EquipaLinha {
   total: number;
 }
 
-export function calcularEquipa(collaborators: ColabCtl[], clients: ClienteCtl[], tasks: TarefaCtl[], fecho: FechoResultado, today: string): EquipaLinha[] {
+/** Tarefa ainda em aberto (nem concluída nem cancelada). */
+export const tarefaAberta = (t: { status?: string | null }) => t.status !== "concluida" && t.status !== "cancelada";
+
+/**
+ * Tabela única da equipa. `clients` deve vir de `comUltimoMes` (carteira.ts); `tasks` são as tarefas em aberto;
+ * `month` é o mês corrente.
+ */
+export function calcularEquipa(
+  collaborators: ColabCtl[],
+  clients: ClienteCtl[],
+  tasks: TarefaCtl[],
+  fecho: FechoResultado,
+  today: string,
+  month: string,
+  audit: AlteracaoMensalidade[] = [],
+): EquipaLinha[] {
   return collaborators
     .filter((col) => col.active !== false)
     .map((col) => {
-      const clientes = clients.filter((c) => c.responsavel_id === col.id && c.status === "ativo");
+      const clientes = clients.filter((c) => c.responsavel_id === col.id && contaNoMes(c, month));
       const g = fecho.porResponsavel.find((r) => r.key === col.id);
+      const abertas = tasks.filter((t) => t.collaborator_id === col.id && tarefaAberta(t));
       return {
         collaborator: col,
         clientes,
+        avenca: clientes.reduce((s, c) => s + mensalidadeNoMes(c, month, audit), 0),
         carga: clientes.reduce((s, c) => s + pesoCliente(c), 0),
-        tarefasAtraso: tasks.filter((t) => t.collaborator_id === col.id && tarefaEmAtraso(t, today)),
+        tarefasAbertas: abertas,
+        tarefasAtraso: abertas.filter((t) => tarefaEmAtraso(t, today)),
         pct: g && g.total > 0 ? g.pct : null,
         feitas: g?.feitas ?? 0,
         total: g?.total ?? 0,
       };
     })
-    .filter((l) => l.clientes.length > 0 || l.tarefasAtraso.length > 0 || l.total > 0)
+    .filter((l) => l.clientes.length > 0 || l.tarefasAbertas.length > 0 || l.total > 0)
     .sort((a, b) => b.carga - a.carga || String(a.collaborator.name).localeCompare(String(b.collaborator.name), "pt"));
 }
 
@@ -328,91 +339,4 @@ export function calcularPassagem(
     .map((a) => ({ clientId: a.registo_id, nome: byId.get(a.registo_id)?.name ?? a.registo_nome ?? "—", para: a.valor_novo, em: String(a.alterado_em).slice(0, 10) }))
     .sort((a, b) => b.em.localeCompare(a.em));
   return { feitos, meta: cfg.meta, ate: cfg.ate, diasRestantes: diasAte(today, cfg.ate) };
-}
-
-// ---------------------------------------------------------------- 4. Dinheiro
-
-/**
- * O cliente paga avença no mês? Sem histórico de estados, aproxima-se por datas:
- * - o contrato já começou (`inicio_contrato` ≤ mês, ou sem data);
- * - com `ultimo_mes_responsabilidade`: só até esse mês (mesmo que já esteja inativo);
- * - sem último mês: só se ainda estiver ativo (ativo ou a sair).
- */
-export function contaNoMes(c: ClienteCtl, month: string): boolean {
-  if (c.inicio_contrato && ym(c.inicio_contrato) > ym(month)) return false;
-  if (c.ultimo_mes_responsabilidade) return ym(month) <= ym(c.ultimo_mes_responsabilidade);
-  return !!c.active && c.status !== "inativo";
-}
-
-/**
- * Mensalidade em vigor no início de `month`: a atual, salvo se houve alteração registada
- * (audit_log, campo mensalidade) depois disso — então vale o valor antigo da primeira alteração.
- */
-export function mensalidadeNoInicioDe(c: ClienteCtl, month: string, auditMensalidade: AuditCtl[]): number {
-  const primeira = auditMensalidade
-    .filter((a) => a.registo_id === c.id && a.campo === "mensalidade" && String(a.alterado_em).slice(0, 10) >= month.slice(0, 10))
-    .sort((a, b) => String(a.alterado_em).localeCompare(String(b.alterado_em)))[0];
-  return primeira ? num(primeira.valor_antigo) : num(c.mensalidade);
-}
-
-export interface MediaTipo {
-  tipo: string;
-  media: number;
-  n: number;
-  abaixo: ClienteCtl[];
-}
-
-export interface DinheiroResultado {
-  mes: string;
-  total: number;
-  clientesMes: ClienteCtl[];
-  totalAnterior: number;
-  variacao: number;
-  novos: ClienteCtl[];
-  ganho: number;
-  saidas: { client: ClienteCtl; valor: number }[];
-  perdido: number;
-  /** Mudanças de mensalidade de clientes que contam nos dois meses. */
-  alteracoes: { client: ClienteCtl; antes: number; depois: number }[];
-  mediaPorTipo: MediaTipo[];
-}
-
-export const TIPOS_CLIENTE = ["SQ", "TI CO", "TI RS"] as const;
-
-/** Avenças do mês corrente (`month`) face ao anterior, novos/saídas e média por tipo. */
-export function calcularDinheiro(clients: ClienteCtl[], auditMensalidade: AuditCtl[], month: string): DinheiroResultado {
-  const anterior = shiftMes(month, -1);
-  const clientesMes = clients.filter((c) => contaNoMes(c, month));
-  const total = clientesMes.reduce((s, c) => s + num(c.mensalidade), 0);
-  const prev = clients.filter((c) => contaNoMes(c, anterior));
-  const valorAnterior = (c: ClienteCtl) => mensalidadeNoInicioDe(c, month, auditMensalidade);
-  const totalAnterior = prev.reduce((s, c) => s + valorAnterior(c), 0);
-
-  const novos = clientesMes.filter((c) => c.inicio_contrato && ym(c.inicio_contrato) === ym(month));
-  const ids = new Set(clientesMes.map((c) => c.id));
-  const saidas = prev.filter((c) => !ids.has(c.id)).map((c) => ({ client: c, valor: valorAnterior(c) }));
-  const prevIds = new Set(prev.map((c) => c.id));
-  const alteracoes = clientesMes
-    .filter((c) => prevIds.has(c.id) && valorAnterior(c) !== num(c.mensalidade))
-    .map((c) => ({ client: c, antes: valorAnterior(c), depois: num(c.mensalidade) }));
-
-  const mediaPorTipo = TIPOS_CLIENTE.map((tipo) => {
-    const l = clientesMes.filter((c) => c.tipo_contabilidade === tipo && num(c.mensalidade) > 0);
-    const media = l.length ? l.reduce((s, c) => s + num(c.mensalidade), 0) / l.length : 0;
-    return { tipo, media, n: l.length, abaixo: l.filter((c) => num(c.mensalidade) < media) };
-  });
-
-  return {
-    mes: month,
-    total,
-    clientesMes,
-    totalAnterior,
-    variacao: total - totalAnterior,
-    novos,
-    ganho: novos.reduce((s, c) => s + num(c.mensalidade), 0),
-    saidas,
-    perdido: saidas.reduce((s, x) => s + x.valor, 0),
-    alteracoes,
-    mediaPorTipo,
-  };
 }

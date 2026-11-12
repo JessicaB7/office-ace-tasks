@@ -111,7 +111,6 @@ const ConsultoriasPanelView = () => {
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Painel de consultorias</h1>
           <p className="text-sm text-muted-foreground">Sessões, conversão em serviço mensal e follow-ups</p>
         </div>
         <div className="flex items-center gap-2">

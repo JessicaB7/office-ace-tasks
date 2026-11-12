@@ -4,9 +4,6 @@ import {
   calcularRisco,
   calcularEquipa,
   calcularPassagem,
-  calcularDinheiro,
-  contaNoMes,
-  mensalidadeNoInicioDe,
   tarefaEmAtraso,
   shiftMes,
   type ClienteCtl,
@@ -100,22 +97,30 @@ describe("calcularRisco", () => {
 });
 
 describe("calcularEquipa", () => {
-  it("carga ponderada SQ=3, TI CO=2, TI RS=1 só com clientes ativos", () => {
+  it("carga ponderada SQ=3, TI CO=2, TI RS=1, avença gerida e tarefas, com a regra da carteira", () => {
     const collabs = [{ id: "a", name: "Ana", active: true }, { id: "b", name: "Bia", active: true }, { id: "z", name: "Sem nada", active: true }];
     const clients = [
-      cli({ id: "1", tipo_contabilidade: "SQ" }),
-      cli({ id: "2", tipo_contabilidade: "TI CO" }),
+      cli({ id: "1", tipo_contabilidade: "SQ", mensalidade: 200 }),
+      cli({ id: "2", tipo_contabilidade: "TI CO", mensalidade: 100 }),
       cli({ id: "3", tipo_contabilidade: "TI RS" }),
-      cli({ id: "4", tipo_contabilidade: "SQ", status: "a_sair" }),
+      cli({ id: "4", tipo_contabilidade: "SQ", status: "a_sair" }), // a sair: ainda em carteira
+      cli({ id: "6", tipo_contabilidade: "SQ", inicio_contrato: "2026-12-19" }), // só começa em dezembro
+      cli({ id: "7", tipo_contabilidade: "SQ", status: "inativo", active: false }),
       cli({ id: "5", tipo_contabilidade: "TI RS", responsavel_id: "b" }),
     ];
-    const tasks = [{ id: "t1", collaborator_id: "b", status: "pendente", due_date: "2026-11-01" }];
+    const tasks = [
+      { id: "t1", collaborator_id: "b", status: "pendente", due_date: "2026-11-01" },
+      { id: "t2", collaborator_id: "b", status: "em_progresso", due_date: "2026-11-30" },
+      { id: "t3", collaborator_id: "b", status: "concluida", due_date: "2026-11-01" },
+    ];
     const fecho = computeFecho([], [], "2026-10-01", TODAY);
-    const r = calcularEquipa(collabs, clients, tasks, fecho, TODAY);
+    const r = calcularEquipa(collabs, clients, tasks, fecho, TODAY, "2026-11-01");
     expect(r.map((l) => l.collaborator.name)).toEqual(["Ana", "Bia"]);
-    expect(r[0].carga).toBe(6);
-    expect(r[0].clientes).toHaveLength(3);
-    expect(r[1].tarefasAtraso).toHaveLength(1);
+    expect(r[0].clientes.map((c) => c.id)).toEqual(["1", "2", "3", "4"]);
+    expect(r[0].carga).toBe(3 + 2 + 1 + 3);
+    expect(r[0].avenca).toBe(200 + 100 + 50 + 50);
+    expect(r[1].tarefasAbertas).toHaveLength(2);
+    expect(r[1].tarefasAtraso.map((t) => t.id)).toEqual(["t1"]);
     expect(r[0].pct).toBeNull();
   });
 });
@@ -134,51 +139,5 @@ describe("calcularPassagem", () => {
     expect(r.feitos.map((f) => f.clientId)).toEqual(["1"]);
     expect(r.meta).toBe(25);
     expect(r.diasRestantes).toBe(49);
-  });
-});
-
-describe("dinheiro", () => {
-  it("contaNoMes usa início de contrato e último mês", () => {
-    expect(contaNoMes(cli({ inicio_contrato: "2026-12-01" }), "2026-11-01")).toBe(false);
-    expect(contaNoMes(cli({ inicio_contrato: "2026-11-15" }), "2026-11-01")).toBe(true);
-    expect(contaNoMes(cli({ status: "inativo", active: false, ultimo_mes_responsabilidade: "2026-10-01" }), "2026-10-01")).toBe(true);
-    expect(contaNoMes(cli({ status: "a_sair", ultimo_mes_responsabilidade: "2026-10-01" }), "2026-11-01")).toBe(false);
-    expect(contaNoMes(cli({ status: "inativo", active: false }), "2026-11-01")).toBe(false);
-  });
-  it("mensalidadeNoInicioDe recua alterações feitas no mês", () => {
-    const audit = [
-      { registo_id: "1", campo: "mensalidade", valor_antigo: "40", valor_novo: "45", alterado_em: "2026-11-03T09:00:00Z" },
-      { registo_id: "1", campo: "mensalidade", valor_antigo: "45", valor_novo: "60", alterado_em: "2026-11-09T09:00:00Z" },
-      { registo_id: "1", campo: "mensalidade", valor_antigo: "30", valor_novo: "40", alterado_em: "2026-10-03T09:00:00Z" },
-    ];
-    expect(mensalidadeNoInicioDe(cli({ id: "1", mensalidade: 60 }), "2026-11-01", audit)).toBe(40);
-    expect(mensalidadeNoInicioDe(cli({ id: "2", mensalidade: 60 }), "2026-11-01", audit)).toBe(60);
-  });
-  it("total, variação, novos, saídas e média por tipo", () => {
-    const clients = [
-      cli({ id: "1", mensalidade: 100, tipo_contabilidade: "SQ", inicio_contrato: "2025-01-01" }),
-      cli({ id: "2", mensalidade: 200, tipo_contabilidade: "SQ", inicio_contrato: "2026-11-01" }), // novo
-      cli({ id: "3", mensalidade: 50, inicio_contrato: "2025-01-01", status: "inativo", active: false, ultimo_mes_responsabilidade: "2026-10-01" }), // saída
-      cli({ id: "4", mensalidade: 60, inicio_contrato: "2025-01-01" }), // subiu de 40 para 60
-      cli({ id: "5", mensalidade: 30, inicio_contrato: "2025-01-01" }),
-    ];
-    const audit = [{ registo_id: "4", campo: "mensalidade", valor_antigo: "40", valor_novo: "60", alterado_em: "2026-11-05T09:00:00Z" }];
-    const d = calcularDinheiro(clients, audit, "2026-11-01");
-    expect(d.total).toBe(390);
-    expect(d.totalAnterior).toBe(100 + 50 + 40 + 30);
-    expect(d.variacao).toBe(170);
-    expect(d.novos.map((c) => c.id)).toEqual(["2"]);
-    expect(d.ganho).toBe(200);
-    expect(d.saidas.map((s) => s.client.id)).toEqual(["3"]);
-    expect(d.perdido).toBe(50);
-    expect(d.alteracoes).toEqual([{ client: clients[3], antes: 40, depois: 60 }]);
-    const sq = d.mediaPorTipo.find((m) => m.tipo === "SQ")!;
-    expect(sq.media).toBe(150);
-    expect(sq.abaixo.map((c) => c.id)).toEqual(["1"]);
-    const rs = d.mediaPorTipo.find((m) => m.tipo === "TI RS")!;
-    expect(rs.n).toBe(2);
-    expect(rs.abaixo.map((c) => c.id)).toEqual(["5"]);
-    // variação = ganho − perdido + alterações
-    expect(d.variacao).toBe(d.ganho - d.perdido + d.alteracoes.reduce((s, a) => s + a.depois - a.antes, 0));
   });
 });

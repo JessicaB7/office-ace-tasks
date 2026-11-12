@@ -15,13 +15,11 @@ import ObrigacoesControloView, { type ObrigacoesControloNav } from "@/components
 import ObrigacoesPrazoReminder from "@/components/ObrigacoesPrazoReminder";
 import GestaoMensalEmFaltaView from "@/components/GestaoMensalEmFaltaView";
 import ExtratosBancariosView from "@/components/ExtratosBancariosView";
-import AdminWeeklySummary from "@/components/AdminWeeklySummary";
 import ClientAnalysisView from "@/components/ClientAnalysisView";
 import AnaliseFinanceiraView from "@/components/AnaliseFinanceiraView";
 import NotificationBell from "@/components/NotificationBell";
-import BusinessOverviewView from "@/components/BusinessOverviewView";
-import ComercialView from "@/components/ComercialView";
-import ConsultoriasPanelView from "@/components/ConsultoriasPanelView";
+import NegocioView from "@/components/NegocioView";
+import ComercialPainelView from "@/components/ComercialPainelView";
 import LeadsView from "@/components/comercial/LeadsView";
 import PropostasView from "@/components/comercial/PropostasView";
 import FollowUpsView from "@/components/comercial/FollowUpsView";
@@ -44,6 +42,7 @@ import AssistenteFlutuante from "@/components/AssistenteFlutuante";
 import TarefasPeriodicasView from "@/components/TarefasPeriodicasView";
 import ResumoDiaView from "@/components/ResumoDiaView";
 import ControloView from "@/components/ControloView";
+import { resolverVista } from "@/lib/vistas";
 
 const Index = () => {
   const { isAdmin } = useAuth();
@@ -57,6 +56,8 @@ const Index = () => {
   const [openClientId, setOpenClientId] = useState<string | null>(null);
   const [openClientTab, setOpenClientTab] = useState<string | null>(null);
   const [viewParams, setViewParams] = useState<Record<string, string>>({});
+  /** Separador pedido para a vista (ex.: Comercial → Consultorias). */
+  const [vistaTab, setVistaTab] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const [contabNav, setContabNav] = useState<ContabilidadesNav | null>(null);
@@ -79,12 +80,15 @@ const Index = () => {
   };
 
   // Navegar pelo menu limpa os pedidos de navegação (mês/pesquisa) vindos dos Controlos internos.
-  const handleSidebarNav = (view: string) => {
+  // Vistas antigas (resumo, consultorias_painel) são redirecionadas (src/lib/vistas.ts).
+  const handleSidebarNav = (view: string, tab?: string | null) => {
     navegou.current = true;
     setContabNav(null);
     setObrigNav(null);
     setObrigCtlNav(null);
-    setActiveView(view);
+    const r = resolverVista(view, tab);
+    setVistaTab(r.tab);
+    setActiveView(r.view);
   };
 
   // Ligações diretas (notificações, push e emails): /?view=...&client=...&tab=...
@@ -97,7 +101,7 @@ const Index = () => {
       setOpenClientTab(p.get("tab"));
       handleOpenClient(p.get("client")!);
     } else {
-      handleSidebarNav(view);
+      handleSidebarNav(view, p.get("tab"));
     }
     setViewParams(params);
     navigate("/", { replace: true });
@@ -139,15 +143,14 @@ const Index = () => {
             onNavigate={handleSidebarNav}
           />
         )}
-        {activeView === "business" && isAdmin && <BusinessOverviewView onNavigate={setActiveView} />}
+        {activeView === "business" && isAdmin && <NegocioView onOpenClient={(id, tab) => handleOpenClient(id, tab ?? null)} />}
         {activeView === "dashboard" && <DashboardView onNavigate={handleSidebarNav} />}
-        {activeView === "comercial" && isAdmin && <ComercialView />}
+        {activeView === "comercial" && isAdmin && <ComercialPainelView initialTab={vistaTab} />}
         {activeView === "leads" && <LeadsView />}
         {activeView === "propostas" && <PropostasView />}
         {activeView === "followups" && <FollowUpsView />}
         {activeView === "scripts" && <ScriptsView />}
         {activeView === "novos_clientes" && <NovosClientesView onOpenClient={handleOpenClient} />}
-        {activeView === "consultorias_painel" && isAdmin && <ConsultoriasPanelView />}
         {activeView === "consultoria_leads" && <LeadsView segment="consultoria" />}
         {activeView === "consultoria_followups" && <FollowUpsView segment="consultoria" />}
 
@@ -177,7 +180,6 @@ const Index = () => {
         {activeView === "mapas_trimestrais" && (
           <MapasTrimestraisView initialYear={viewParams.year ? Number(viewParams.year) : undefined} initialQ={viewParams.q ? Number(viewParams.q) : undefined} />
         )}
-        {activeView === "resumo" && <AdminWeeklySummary />}
         {activeView === "resumo_dia" && isAdmin && <ResumoDiaView initialDate={viewParams.date} />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}
