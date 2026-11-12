@@ -1036,6 +1036,8 @@ export type Database = {
           id: string
           notes: string | null
           obligation_type: string
+          pedido_cliente_em: string | null
+          pedido_cliente_nota: string | null
           reference_month: string
           status: string
           updated_at: string
@@ -1049,6 +1051,8 @@ export type Database = {
           id?: string
           notes?: string | null
           obligation_type: string
+          pedido_cliente_em?: string | null
+          pedido_cliente_nota?: string | null
           reference_month: string
           status?: string
           updated_at?: string
@@ -1062,6 +1066,8 @@ export type Database = {
           id?: string
           notes?: string | null
           obligation_type?: string
+          pedido_cliente_em?: string | null
+          pedido_cliente_nota?: string | null
           reference_month?: string
           status?: string
           updated_at?: string

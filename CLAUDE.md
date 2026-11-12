@@ -227,6 +227,12 @@ Dashboards por regime:
   `DayResolver` (prorrogações). Semáforo: verde ≥ 90% ou prazo pendente > 7 dias; vermelho < 3 dias/ultrapassado;
   amarelo 3–7 dias. Colaboradores veem só os seus clientes.
 
+### Gestão Mensal — «Pedido ao cliente» (`ContabilidadesView`, `src/lib/pedidosCliente.ts`)
+- Cada célula pode ficar «⏳ pedido dd/mm» (`monthly_obligations.pedido_cliente_em` + `pedido_cliente_nota`): clique direito
+  na célula abre o popover (data, nota, remover); ícone de ampulheta no cabeçalho de cada coluna marca em lote. Mais de 5 dias
+  → tom `destructive`. Clicar na célula marca como feito e o trigger `monthly_obligations_clear_pedido` limpa o pedido
+  (Desfazer repõe-no). Cartão «X pedidos à espera» filtra os clientes com pedido. Não cria tarefas.
+
 ### Notificações no telemóvel
 - `notification_preferences` (por pessoa): controlam o **push** (o sino recebe sempre); o trigger
   `notify_push_on_notification` consulta `notification_pref_enabled`. Tipos: `ss_isencao`, `mapas_por_enviar`,

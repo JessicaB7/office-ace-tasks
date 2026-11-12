@@ -346,6 +346,8 @@ export function useUpsertObligation() {
       completed_by?: string | null;
       extra_done?: boolean;
       notes?: string | null;
+      pedido_cliente_em?: string | null;
+      pedido_cliente_nota?: string | null;
     }) => {
       if (obligation.id) {
         const { data, error } = await supabase
