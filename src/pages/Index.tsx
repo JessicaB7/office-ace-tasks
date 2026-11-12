@@ -36,6 +36,8 @@ import NewTasksReminder from "@/components/NewTasksReminder";
 import { useAuth } from "@/hooks/useAuth";
 import RegistoAlteracoesView from "@/components/RegistoAlteracoesView";
 import DefinicoesManuaisView from "@/components/DefinicoesManuaisView";
+import ToconlineAutomacoesView from "@/components/toconline/ToconlineAutomacoesView";
+import MapasTrimestraisView from "@/components/financial/MapasTrimestraisView";
 
 const Index = () => {
   const { isAdmin } = useAuth();
@@ -137,6 +139,10 @@ const Index = () => {
         {activeView === "extratos" && <ExtratosBancariosView />}
         {activeView === "toconline_fila" && <ToconlineFilaView />}
         {activeView === "toconline_procedimentos" && <ToconlineProcedimentosView />}
+        {activeView === "toconline_automacoes" && <ToconlineAutomacoesView />}
+        {activeView === "mapas_trimestrais" && (
+          <MapasTrimestraisView initialYear={viewParams.year ? Number(viewParams.year) : undefined} initialQ={viewParams.q ? Number(viewParams.q) : undefined} />
+        )}
         {activeView === "resumo" && <AdminWeeklySummary />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}

@@ -5,6 +5,7 @@ import { CheckCircle2, Clock, AlertTriangle, CalendarDays, ClipboardList, Users,
 import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import ClientesEntradaSaidaCard from "@/components/ClientesEntradaSaidaCard";
+import IsencoesSSCard from "@/components/IsencoesSSCard";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { DEADLINE_KEYS as K, makeDayResolver } from "@/lib/deadlineOverrides";
 import { referenceLabel, relativeDeadline, shortDate, type DeadlineTone } from "@/lib/deadlineLabels";
@@ -515,6 +516,8 @@ const DashboardView = () => {
 
       {renderDeadlineSection(weekDeadlines, "Prazos desta Semana", "primary", "120ms")}
       {renderDeadlineSection(nextWeekDeadlines, "Prazos da Próxima Semana", "muted", "180ms")}
+
+      <IsencoesSSCard onOpenClient={setSelectedClient} />
 
       {/* Saídas e novos clientes — apenas para administradores */}
       {isAdmin && <ClientesEntradaSaidaCard onOpenClient={setSelectedClient} />}

@@ -30,6 +30,7 @@ import {
   Scale,
   History,
   Settings,
+  Map as MapIcon,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -115,6 +116,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
           ],
         },
       },
+      { kind: "item", item: { id: "mapas_trimestrais", label: "Mapas trimestrais", icon: MapIcon } },
       { kind: "item", item: { id: "extratos", label: "Extratos Bancários", icon: Banknote } },
       {
         kind: "group",
@@ -125,6 +127,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
           items: [
             { id: "toconline_fila", label: "Fila de tarefas" },
             { id: "toconline_procedimentos", label: "Procedimentos" },
+            { id: "toconline_automacoes", label: "Automações (erros)" },
           ],
         },
       },
@@ -182,7 +185,7 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
   const itemBadges: Record<string, number> = {
     novos_clientes: onboardings.filter((o) => o.submitted_at && !o.completed_at).length,
     // Tarefas TOConline que precisam de atenção (bloqueadas ou com erro)
-    toconline_fila: toconlineJobs.filter((j) => j.status === "bloqueada" || j.status === "erro").length,
+    toconline_automacoes: toconlineJobs.filter((j) => j.status === "bloqueada" || j.status === "erro").length,
   };
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     contabilidades: activeView.startsWith("contabilidades"),
