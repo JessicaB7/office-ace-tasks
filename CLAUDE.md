@@ -54,7 +54,8 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
 
 ## 6. Navegação (setores) — `src/components/AppSidebar.tsx`
 
-1. **Visão geral** — landing "O meu dia" (`DashboardView.tsx`): métricas pessoais, prazos da semana.
+1. **Visão geral** — «Controlo» (admin, página inicial da admin) e landing "O meu dia" (`DashboardView.tsx`, página
+   inicial dos colaboradores): métricas pessoais, prazos da semana.
 2. **Comercial** — pipeline (Kanban), leads, propostas enviadas, follow ups, scripts.
 3. **Clientes** — dados, gestão mensal (contabilidades), obrigações, fecho do mês, mapas trimestrais, extratos, TOConline (fila, procedimentos, automações com erro), análise financeira.
 4. **Gestão de negócio** (admin) — painel, painel comercial, painel de consultorias, colaboradores, resumo do dia,
@@ -221,6 +222,20 @@ Dashboards por regime:
   após o fim do trimestre (por responsável). Novos erros TOConline → admin. Seguimentos de contactos do dia. Pedidos ao cliente da Gestão mensal há mais de 5 dias (1 notificação por responsável por dia, tipo `pedidos_cliente`).
 - Sem duplicados: `alert_log` (chave × utilizador) via `notify_once`; `notifications.data` leva client_id/alerta.
 - Cartão «Isenções SS a terminar (próximos 90 dias)» no «O meu dia».
+
+### Controlo (admin) — `ControloView`, `src/lib/controlo.ts`, `src/hooks/useControlo.ts`
+- Vista `controlo`, primeira de Visão geral e página inicial da admin (o `Index` muda para lá quando o papel chega, se
+  ninguém navegou). Dados com `staleTime 0`/`refetchOnMount 'always'`, sem polling. Cada número abre um dialog com a lista.
+- **Trabalho do mês**: `computeFecho` do mês de referência (semáforo por responsável) + `proximosPrazos` (3 prazos ≥ hoje
+  com pendentes, juntando os meses ref−1, ref e atual — o IVA trimestral/mensal vence 2 meses depois).
+- **Clientes em risco** (`calcularRisco`, só `active`): dívida AT 3, dívida SS 3 (`com_divida`), pedidos ao cliente > 5 dias
+  2 cada (máx. 6), tarefas em atraso 1 cada (máx. 4, +1 se > 30 dias), em saída 2; top 10 por pontos, nº de motivos, dias.
+- **Equipa**: clientes `ativo`, carga `PESO_TIPO` (SQ 3, TI CO 2, TI RS 1), tarefas em atraso, % do fecho. **Passagem de
+  clientes** (`PASSAGEM`, interpretação a confirmar): mudanças de responsável de «Jéssica Brandão» para outra pessoa no
+  `audit_log` desde 01/11/2026 e ainda fora dela; meta 25 até 31/12/2026.
+- **Dinheiro** (mês corrente): sem histórico de avenças, `contaNoMes` usa `inicio_contrato` e `ultimo_mes_responsabilidade`
+  (sem último mês → só se ativo); a mensalidade do mês anterior recua alterações do `audit_log` feitas desde o dia 1.
+  Variação = novos − saídas ± alterações. Média por tipo só com mensalidade > 0.
 
 ### Fecho do mês (`src/lib/fechoMes.ts`, `FechoMesView`, `FechoMesCard`)
 - Mês de referência = anterior. Usa `obrigacoesForClient`/`isObrigacaoDone`/`ativoNoMes`; `deadlineFor` aceita um

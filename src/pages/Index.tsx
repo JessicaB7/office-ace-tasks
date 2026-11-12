@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AppSidebar from "@/components/AppSidebar";
 import DashboardView from "@/components/DashboardView";
@@ -43,6 +43,7 @@ import PushPrompt from "@/components/PushPrompt";
 import AssistenteFlutuante from "@/components/AssistenteFlutuante";
 import TarefasPeriodicasView from "@/components/TarefasPeriodicasView";
 import ResumoDiaView from "@/components/ResumoDiaView";
+import ControloView from "@/components/ControloView";
 
 const Index = () => {
   const { isAdmin } = useAuth();
@@ -62,7 +63,16 @@ const Index = () => {
   const [obrigNav, setObrigNav] = useState<ObrigacoesNav | null>(null);
   const [obrigCtlNav, setObrigCtlNav] = useState<ObrigacoesControloNav | null>(null);
 
-  const handleOpenClient = (clientId: string) => {
+  // A admin começa no «Controlo»; os colaboradores no «O meu dia». O papel chega em background
+  // (useAuth), por isso só se muda se ninguém navegou entretanto.
+  const navegou = useRef(false);
+  useEffect(() => {
+    if (isAdmin && !navegou.current) setActiveView((v) => (v === "dashboard" ? "controlo" : v));
+  }, [isAdmin]);
+
+  const handleOpenClient = (clientId: string, tab?: string | null) => {
+    navegou.current = true;
+    if (tab !== undefined) setOpenClientTab(tab);
     setAnalysisClientId(null);
     setOpenClientId(clientId);
     setActiveView("clients");
@@ -70,6 +80,7 @@ const Index = () => {
 
   // Navegar pelo menu limpa os pedidos de navegação (mês/pesquisa) vindos dos Controlos internos.
   const handleSidebarNav = (view: string) => {
+    navegou.current = true;
     setContabNav(null);
     setObrigNav(null);
     setObrigCtlNav(null);
@@ -121,6 +132,13 @@ const Index = () => {
         <div className={isContabRegimes ? "absolute right-6 top-6 lg:right-8 lg:top-8" : "flex justify-end mb-4"}>
           <NotificationBell />
         </div>
+        {activeView === "controlo" && isAdmin && (
+          <ControloView
+            onOpenClient={(id, tab) => handleOpenClient(id, tab ?? null)}
+            onOpenObrigacao={(g, month, search) => { setObrigNav({ month, search }); setActiveView(`obrigacoes_${g}`); }}
+            onNavigate={handleSidebarNav}
+          />
+        )}
         {activeView === "business" && isAdmin && <BusinessOverviewView onNavigate={setActiveView} />}
         {activeView === "dashboard" && <DashboardView onNavigate={handleSidebarNav} />}
         {activeView === "comercial" && isAdmin && <ComercialView />}

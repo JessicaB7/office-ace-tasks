@@ -32,6 +32,7 @@ import {
   Bell,
   Repeat,
   CalendarCheck,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -56,6 +57,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
     title: "Visão geral",
     icon: House,
     entries: [
+      { kind: "item", item: { id: "controlo", label: "Controlo", icon: Activity, adminOnly: true } },
       { kind: "item", item: { id: "dashboard", label: "O meu dia a dia", icon: LayoutDashboard } },
       { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
       { kind: "item", item: { id: "tarefas_periodicas", label: "Tarefas periódicas", icon: Repeat } },
