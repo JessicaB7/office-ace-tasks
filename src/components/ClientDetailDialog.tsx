@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useClientOffboarding } from "@/hooks/useOffboardings";
 import ClientSaidaTab from "@/components/ClientSaidaTab";
 import ClientHistoricoTab from "@/components/ClientHistoricoTab";
+import ClientAssistenteTab from "@/components/ClientAssistenteTab";
 import AuditTable from "@/components/AuditTable";
 import { useAuditLog } from "@/hooks/useAuditLog";
 import { useAuth } from "@/hooks/useAuth";
@@ -310,6 +311,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true, initial
               {isEditing && offboarding && <TabsTrigger value="saida" className="flex-1">Saída</TabsTrigger>}
               {isEditing && <TabsTrigger value="historico" className="flex-1">Histórico</TabsTrigger>}
               {isEditing && isAdmin && <TabsTrigger value="alteracoes" className="flex-1">Alterações</TabsTrigger>}
+              {isEditing && <TabsTrigger value="assistente" className="flex-1">Assistente</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="dados" className="space-y-4 pt-2">
@@ -503,6 +505,12 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true, initial
             {isEditing && (
               <TabsContent value="historico">
                 <ClientHistoricoTab clientId={client.id} />
+              </TabsContent>
+            )}
+
+            {isEditing && (
+              <TabsContent value="assistente">
+                <ClientAssistenteTab clientId={client.id} />
               </TabsContent>
             )}
 

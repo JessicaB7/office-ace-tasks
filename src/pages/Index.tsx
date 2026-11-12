@@ -41,6 +41,7 @@ import MapasTrimestraisView from "@/components/financial/MapasTrimestraisView";
 import FechoMesView from "@/components/FechoMesView";
 import DefinicoesNotificacoesView from "@/components/DefinicoesNotificacoesView";
 import PushPrompt from "@/components/PushPrompt";
+import AssistenteFlutuante from "@/components/AssistenteFlutuante";
 
 const Index = () => {
   const { isAdmin } = useAuth();
@@ -162,6 +163,7 @@ const Index = () => {
       <SessionConfirmationReminder onViewLeads={() => setActiveView("leads")} />
       <NewTasksReminder onOpenTask={handleEditTask} />
       <PushPrompt />
+      <AssistenteFlutuante />
       {isAdmin && (
         <ObrigacoesPrazoReminder onOpen={(group, month) => { setObrigCtlNav({ month, group }); setActiveView("obrigacoes_controlo"); }} />
       )}

@@ -42,7 +42,7 @@ const PushPrompt = () => {
 
   return (
     <div role="dialog" aria-label="Ativar notificações"
-      className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-96 z-50 rounded-xl border bg-card shadow-lg p-4 animate-fade-in">
+      className="fixed bottom-20 right-4 left-4 sm:left-auto sm:w-96 z-50 rounded-xl border bg-card shadow-lg p-4 animate-fade-in">
       <button type="button" onClick={agoraNao} aria-label="Fechar" className="absolute top-2 right-2 p-1 rounded hover:bg-muted text-muted-foreground">
         <X className="w-4 h-4" />
       </button>

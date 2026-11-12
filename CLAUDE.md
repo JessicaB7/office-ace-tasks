@@ -52,12 +52,14 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
 - Padrão obrigatório: aplicar a sessão à UI **imediatamente** e verificar RBAC em background
   (evita deadlocks de loading em `src/hooks/useAuth.tsx`).
 
-## 6. Navegação (4 setores) — `src/components/AppSidebar.tsx`
+## 6. Navegação (setores) — `src/components/AppSidebar.tsx`
 
 1. **Visão geral** — landing "O meu dia" (`DashboardView.tsx`): métricas pessoais, prazos da semana.
 2. **Comercial** — pipeline (Kanban), leads, propostas enviadas, follow ups, scripts.
-3. **Clientes** — dados, gestão mensal (contabilidades), tarefas, obrigações, calendário fiscal, extratos, análise financeira.
-4. **Gestão de negócio** (admin) — painel, painel comercial, painel de consultorias, colaboradores, resumo mensal.
+3. **Clientes** — dados, gestão mensal (contabilidades), obrigações, fecho do mês, mapas trimestrais, extratos, TOConline (fila, procedimentos, automações com erro), análise financeira.
+4. **Gestão de negócio** (admin) — painel, painel comercial, painel de consultorias, colaboradores, resumo mensal,
+   registo de alterações.
+5. **Definições** — Notificações (todos) e Manuais (admin).
 
 ## 7. Módulos
 
@@ -166,13 +168,79 @@ Dashboards por regime:
   `send-weekly-digest`, `handle-email-suppression`, `handle-email-unsubscribe`,
   `preview-transactional-email`. Templates em `supabase/functions/_shared/transactional-email-templates/`.
 
+### Registo de alterações (auditoria)
+- `audit_log` + trigger `audit_clients` em `clients`: responsável, mensalidade, estado, tipo de contabilidade,
+  criação/eliminação e senhas (`senha_at`, `senha_ss`, `senha_faturacao`, `via_ctt_senha`, `chave_ss`) — das senhas
+  **nunca** se guarda o valor, só "senha alterada". Leitura só admin: separador «Alterações» na ficha e página
+  «Registo de alterações» (Gestão de negócio). Rótulos em `src/lib/auditLabels.ts`.
+
+### Histórico de contactos
+- `client_contacts` (tipo email/chamada/whatsapp/reuniao/pedido_documentos/outro, data, resumo, `seguimento_em`).
+  Com seguimento, o trigger `client_contact_followup_task` cria a tarefa para quem registou. Separador «Histórico»
+  da ficha usa a RPC `client_timeline` (contactos + emails da app para o email do cliente + mudanças de responsável
+  + notas das obrigações). Regras puras em `src/lib/clientContacts.ts` (inclui `pedidosDocumentosPendentes`).
+
+### Manuais do Notion por obrigação
+- `obligation_manuals` (match_prefix, tipo_contabilidade, titulo, notion_url, ordem). Regra em
+  `src/lib/obligationManuals.ts` (`resolveManual`): prefixo mais comprido que seja início do `obligation_type`,
+  regime igual ao do cliente ou vazio; prefixo vazio = manual geral. Prefixos reais da Gestão Mensal:
+  `contabilidade_empresas`, `contabilidade_organizada`, `contabilidade_TI_`. Ícone de livro (`ManualLink`) no
+  cabeçalho das tarefas da Gestão Mensal e em cada cliente das Obrigações. Admin edita em Definições → Manuais
+  (avisa "X tipos de obrigação sem manual").
+
+### Automações TOConline — erros
+- Página «Automações (erros)» (TOConline): tarefas `erro`/`bloqueada`, filtros, agrupamento por motivo
+  (`src/lib/toconlineErros.ts`), Repetir (RPC `toconline_job_retry`: guarda a tentativa em
+  `toconline_job_attempts` e volta a pôr o job em `pendente` — o job é único por procedimento × cliente × mês),
+  Cancelar e «Resolvido manualmente» (→ `concluida` com nota). Contador na barra lateral.
+
+### Mapas trimestrais por enviar
+- `MapasTrimestraisView` (Clientes): `client_financial_settings` do ano, colunas `mapa_qN_enviado/data` e
+  `relatorio_qN_entregue/data`; marcação individual e em lote; contador "X de Y". Regras em `src/lib/mapasTrimestrais.ts`.
+
+### Alertas diários (`run_daily_alerts`, pg_cron `run-daily-alerts`, 08:00 Lisboa)
+- Isenção SS (`clients.seguranca_social_isencao_fim`): 60 dias antes notifica responsável + admin; 15 dias antes
+  nova notificação + tarefa «Fim de isenção SS – cliente» (categoria `SS_TI`, prazo = fim). Mapas por enviar 30 dias
+  após o fim do trimestre (por responsável). Novos erros TOConline → admin. Seguimentos de contactos do dia.
+- Sem duplicados: `alert_log` (chave × utilizador) via `notify_once`; `notifications.data` leva client_id/alerta.
+- Cartão «Isenções SS a terminar (próximos 90 dias)» no «O meu dia».
+
+### Fecho do mês (`src/lib/fechoMes.ts`, `FechoMesView`, `FechoMesCard`)
+- Mês de referência = anterior. Usa `obrigacoesForClient`/`isObrigacaoDone`/`ativoNoMes`; `deadlineFor` aceita um
+  `DayResolver` (prorrogações). Semáforo: verde ≥ 90% ou prazo pendente > 7 dias; vermelho < 3 dias/ultrapassado;
+  amarelo 3–7 dias. Colaboradores veem só os seus clientes.
+
+### Notificações no telemóvel
+- `notification_preferences` (por pessoa): controlam o **push** (o sino recebe sempre); o trigger
+  `notify_push_on_notification` consulta `notification_pref_enabled`. Tipos: `ss_isencao`, `mapas_por_enviar`,
+  `toconline_erros`, `seguimento_contacto`, `task_assigned`. Convite após login (`PushPrompt`, volta a perguntar
+  ao fim de 7 dias), Definições → Notificações (dispositivos, teste via `send_test_notification`), estado por
+  colaborador na vista de Colaboradores (`push_devices_by_user`, admin).
+- Ligações diretas: `/?view=<vista>&client=<id>&tab=<separador>` (tratadas no `Index.tsx`).
+
+### Relatório semanal (`send-weekly-digest`)
+- Segunda às 08:00 de Lisboa (cron 07:00/08:00 UTC com verificação da hora). Mantém o resumo de tarefas por
+  colaborador e acrescenta o relatório do escritório para a admin + versão resumida para quem ativar
+  `relatorio_semanal_pessoal`. Renderiza `weekly-business-report.tsx` e põe na fila (`enqueue_email`).
+  Usa cópias de `src/lib` em `supabase/functions/_shared/lib/` (o teste `sharedLib.test.ts` exige que sejam iguais).
+  Botão «Enviar relatório agora» em Definições → Notificações (admin).
+
+### Assistente (`assistente`, `sync-manuais`)
+- Edge function `assistente` (secret `ANTHROPIC_API_KEY`, modelo `claude-sonnet-5-5`): resumo do cliente, rascunho de
+  pedido de pendentes (por "tu", nunca envia), pergunta livre e dúvidas de processos (só com `manual_pages`).
+  **Nunca** enviar `senha_at`, `senha_ss`, `senha_faturacao`, `via_ctt_senha`, `via_ctt_resposta`, `chave_ss`,
+  `utilizador_faturacao`, `niss` ao modelo. Cada uso em `assistant_log` (sem conteúdo).
+- `sync-manuais` (secret `NOTION_TOKEN`, pg_cron diário `sync-manuais`) copia as páginas-filhas de
+  «Manual · Técnica de contabilidade» para `manual_pages`. Ícone flutuante `AssistenteFlutuante`.
+
 ## 8. Base de dados
 
 Tabelas em `public`: `clients`, `collaborators`, `collaborator_secrets`, `user_roles`, `tasks`,
 `monthly_obligations`, `fiscal_deadlines`, `notifications`, `leads`, `comercial_scripts`,
 `comercial_script_groups`, `financial_accounts`, `client_financial_entries`,
 `client_financial_settings`, `client_financial_imports`, `email_send_log`, `email_send_state`,
-`email_unsubscribe_tokens`, `suppressed_emails`.
+`email_unsubscribe_tokens`, `suppressed_emails`, `audit_log`, `client_contacts`, `obligation_manuals`,
+`toconline_job_attempts`, `notification_preferences`, `alert_log`, `manual_pages`, `assistant_log`.
 
 Funções: `has_role`, `update_updated_at_column`, `enqueue_email`, `read_email_batch`, `delete_email`,
 `move_to_dlq`, `email_queue_dispatch`, `email_queue_wake`.

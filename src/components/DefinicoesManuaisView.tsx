@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { BookOpen, AlertTriangle, Plus, Trash2, ExternalLink, Save } from "lucide-react";
+import { BookOpen, AlertTriangle, Plus, Trash2, ExternalLink, Save, RefreshCw } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDeleteManual, useObligationManuals, useSaveManual } from "@/hooks/useObligationManuals";
@@ -55,6 +57,46 @@ const Linha = ({ m, onSaved }: { m: Draft; onSaved?: () => void }) => {
 };
 
 /** Admin: links dos manuais do Notion para cada tipo de obrigação (Definições → Manuais). */
+/** Estado e sincronização manual das páginas do Notion usadas pelo assistente (manual_pages). */
+const SyncManuais = () => {
+  const qc = useQueryClient();
+  const [aSincronizar, setASincronizar] = useState(false);
+  const { data } = useQuery({
+    queryKey: ["manual_pages_info"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("manual_pages").select("titulo, updated_at").order("updated_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as { titulo: string; updated_at: string }[];
+    },
+  });
+  const sincronizar = async () => {
+    setASincronizar(true);
+    try {
+      const { data: r, error } = await supabase.functions.invoke("sync-manuais", { body: {} });
+      if (error) throw error;
+      if ((r as any)?.error) throw new Error((r as any).error);
+      toast.success(`${(r as any)?.paginas ?? 0} páginas sincronizadas.`);
+      qc.invalidateQueries({ queryKey: ["manual_pages_info"] });
+    } catch (e) {
+      toast.error("Não foi possível sincronizar: " + (e as Error).message);
+    } finally {
+      setASincronizar(false);
+    }
+  };
+  return (
+    <div className="flex items-center justify-between gap-3 flex-wrap rounded-xl border bg-card px-4 py-3 text-sm">
+      <span className="text-muted-foreground">
+        Assistente de processos: {data?.length ?? 0} páginas do «Manual · Técnica de contabilidade» sincronizadas
+        {data?.[0] ? ` (última a ${new Date(data[0].updated_at).toLocaleString("pt-PT")})` : ""}. Sincroniza sozinho todos os dias.
+      </span>
+      <button type="button" onClick={sincronizar} disabled={aSincronizar}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border hover:bg-muted disabled:opacity-50">
+        <RefreshCw className={cn("w-4 h-4", aSincronizar && "animate-spin")} /> Sincronizar agora
+      </button>
+    </div>
+  );
+};
+
 const DefinicoesManuaisView = () => {
   const { data: manuals = [], isLoading } = useObligationManuals();
   const [novo, setNovo] = useState(0);
@@ -72,6 +114,8 @@ const DefinicoesManuaisView = () => {
         Vale o <strong>prefixo mais comprido</strong> que corresponda ao início do tipo de obrigação (ex.: <code>IVA</code> serve
         IVA, IVA_recapitulativa, IVA_flex_P1…) e cujo regime seja o do cliente (ou "Todos"). O prefixo vazio é o manual geral.
       </p>
+
+      <SyncManuais />
 
       {semManual.length > 0 && (
         <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm">
