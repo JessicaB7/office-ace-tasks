@@ -159,6 +159,18 @@ Dashboards por regime:
 - Vista de colaboradores (admin): carga de trabalho, contagem só de **clientes ativos**, tabela de
   clientes "a sair" com valor, dialog com clientes agrupados por tipo, gestão de códigos de acesso.
 
+### Tarefas periódicas (`task_recurrences`, `src/lib/taskRecurrence.ts`)
+- No dialog de tarefa, campo **«Repetir»**: semanal / mensal / trimestral / anual, «a cada N», dia do mês
+  (limitado ao fim do mês), «último dia útil» (só fins de semana) ou «último dia do mês», dia da semana, data de fim.
+  Uma tarefa existente que passa a repetir fica como 1.ª ocorrência. Vista **Visão geral → Tarefas periódicas**
+  (pausar/retomar — ao retomar saltam-se os períodos da pausa —, editar regra/modelo, «Criar já», apagar série;
+  as ocorrências já criadas ficam).
+- Cada ocorrência é uma tarefa normal com `tasks.recurrence_id` (índice único `recurrence_id + due_date`);
+  **nunca mais do que uma em aberto por série**. Concluir/cancelar cria logo a seguinte (trigger
+  `task_recurrence_next_occurrence`); job diário `run-task-recurrences` (pg_cron) cria a próxima `lead_days` (7) dias antes.
+- Datas calculadas pelo índice a partir de `start_date` (sem "escorregar" 31 → 30 → 30); SQL
+  (`task_recurrence_occurrence/next`) igual ao TS. RLS: admin vê todas; cada colaborador as que criou ou de que é responsável.
+
 ### Notificações e email
 - Realtime in-app (`useNotifications.ts`, tabela `notifications`) — usar **um canal Realtime isolado
   por hook**, nunca reutilizar nomes de canal.
@@ -238,7 +250,7 @@ Dashboards por regime:
 Tabelas em `public`: `clients`, `collaborators`, `collaborator_secrets`, `user_roles`, `tasks`,
 `monthly_obligations`, `fiscal_deadlines`, `notifications`, `leads`, `comercial_scripts`,
 `comercial_script_groups`, `financial_accounts`, `client_financial_entries`,
-`client_financial_settings`, `client_financial_imports`, `email_send_log`, `email_send_state`,
+`client_financial_settings`, `client_financial_imports`, `task_recurrences`, `email_send_log`, `email_send_state`,
 `email_unsubscribe_tokens`, `suppressed_emails`, `audit_log`, `client_contacts`, `obligation_manuals`,
 `toconline_job_attempts`, `notification_preferences`, `alert_log`, `manual_pages`, `assistant_log`.
 

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useTasks, useCollaborators } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskCategory } from "@/types/database";
 import { StatusBadge, PriorityBadge } from "@/components/TaskBadge";
-import { Search, Filter, Plus, Clock, CalendarClock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Search, Filter, Plus, Clock, CalendarClock, CheckCircle2, AlertTriangle, Repeat } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 interface TaskListViewProps {
@@ -135,7 +135,10 @@ const TaskListView = ({ onEditTask, onNewTask }: TaskListViewProps) => {
             <tbody>
               {filtered.map((task: any, i: number) => (
                 <tr key={task.id} onClick={() => onEditTask(task)} className="border-b last:border-0 cursor-pointer hover:bg-muted/30 transition-colors animate-fade-in" style={{ animationDelay: `${i * 40}ms` }}>
-                  <td className="px-4 py-3 font-medium max-w-[250px] truncate">{task.title}</td>
+                  <td className="px-4 py-3 font-medium max-w-[250px] truncate">
+                    {task.recurrence_id && <span title="Tarefa periódica"><Repeat className="inline w-3.5 h-3.5 mr-1.5 -mt-0.5 text-primary" /></span>}
+                    {task.title}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{task.clients?.name || "—"}</td>
                   
                   <td className="px-4 py-3"><StatusBadge status={task.status} /></td>

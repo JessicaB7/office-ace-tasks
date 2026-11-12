@@ -1,16 +1,22 @@
 import { useState, useEffect } from "react";
 import { useClients, useCollaborators, useUpsertTask, useDeleteTask } from "@/hooks/useSupabaseQuery";
 import { STATUS_LABELS, PRIORITY_LABELS, CATEGORY_LABELS, type TaskStatus, type TaskPriority, type TaskCategory } from "@/types/database";
-import { X, ExternalLink, MessageCircle } from "lucide-react";
+import { X, ExternalLink, MessageCircle, Repeat } from "lucide-react";
 import ClientDetailDialog from "./ClientDetailDialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import RecurrenceFields from "./RecurrenceFields";
+import { useCreateTaskRecurrence, useTaskRecurrences, ruleOf, type TaskRecurrenceInput } from "@/hooks/useTaskRecurrences";
+import { defaultRepeat, describeRecurrence, firstOccurrence, nextOccurrence, repeatToRule, type RecurrenceRule, type RepeatForm } from "@/lib/taskRecurrence";
+import type { DbTaskInsert } from "@/types/database";
 
 interface TaskFormDialogProps {
   open: boolean;
   task: any | null;
   onClose: () => void;
+  /** Abre já com «Repetir: Mensal» (botão «Nova tarefa periódica»). */
+  initialRepeat?: boolean;
 }
 
 const emptyForm = {
@@ -24,11 +30,13 @@ const emptyForm = {
   due_date: new Date().toISOString().split("T")[0],
 };
 
-const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
+const TaskFormDialog = ({ open, task, onClose, initialRepeat }: TaskFormDialogProps) => {
   const { data: clients = [] } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const upsert = useUpsertTask();
   const remove = useDeleteTask();
+  const createRecurrence = useCreateTaskRecurrence();
+  const { data: recurrences = [] } = useTaskRecurrences();
   const { toast } = useToast();
   const [currentCollaboratorId, setCurrentCollaboratorId] = useState<string | null>(null);
 
@@ -44,8 +52,10 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
     });
   }, [collaborators, isAdmin]);
   const [form, setForm] = useState(emptyForm);
+  const [repeat, setRepeat] = useState<RepeatForm>(() => defaultRepeat(emptyForm.due_date));
   const [clientDetailOpen, setClientDetailOpen] = useState(false);
   const isEditing = !!task;
+  const series = task?.recurrence_id ? recurrences.find((r) => r.id === task.recurrence_id) : undefined;
 
   useEffect(() => {
     if (task) {
@@ -62,7 +72,8 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
     } else {
       setForm(emptyForm);
     }
-  }, [task, open]);
+    setRepeat(defaultRepeat(task?.due_date || emptyForm.due_date, !task && initialRepeat ? "mensal" : "nao"));
+  }, [task, open, initialRepeat]);
 
   if (!open) return null;
 
@@ -90,12 +101,56 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
     return `https://wa.me/?text=${encodeURIComponent(linhas.join("\n"))}`;
   };
 
+  // Linha da série (task_recurrences) a partir do formulário e da regra.
+  const recurrenceRow = (rule: RecurrenceRule, collaboratorId: string | null, nextDue: string | null): TaskRecurrenceInput => ({
+    title: form.title,
+    description: form.description || null,
+    client_id: form.client_id || null,
+    collaborator_id: collaboratorId,
+    category: form.category,
+    priority: form.priority,
+    frequency: rule.frequency,
+    interval_n: rule.interval,
+    day_mode: rule.day_mode,
+    day_of_month: rule.day_of_month,
+    weekday: rule.weekday,
+    start_date: rule.start_date,
+    end_date: rule.end_date ?? null,
+    lead_days: 7,
+    next_due_date: nextDue,
+    active: true,
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const previousCollaboratorId = task?.collaborator_id || null;
       const isTodos = form.collaborator_id === "__todos__";
-      
+
+      // Tarefa periódica: a série gera as ocorrências (a 1.ª é criada já, com aviso à responsável).
+      const rule = !task?.recurrence_id ? repeatToRule(repeat, form.due_date) : null;
+      if (rule && !firstOccurrence(rule)) {
+        toast({ title: "Data de fim inválida", description: "A data de fim é anterior à primeira ocorrência.", variant: "destructive" });
+        return;
+      }
+      if (rule && !task?.id) {
+        const ids = isTodos ? collaborators.filter((c) => c.active).map((c) => c.id) : [form.collaborator_id || null];
+        for (const collaboratorId of ids) {
+          await createRecurrence.mutateAsync({ row: recurrenceRow(rule, collaboratorId, firstOccurrence(rule)), startNow: true });
+        }
+        onClose();
+        toast({ title: ids.length > 1 ? "Tarefas periódicas criadas para todos" : "Tarefa periódica criada", description: `${form.title} · ${describeRecurrence(rule)}` });
+        return;
+      }
+      // Tarefa existente que passa a repetir: fica como 1.ª ocorrência da série.
+      let newRecurrenceId: string | null = null;
+      if (rule && task?.id) {
+        newRecurrenceId = await createRecurrence.mutateAsync({
+          row: recurrenceRow(rule, isTodos ? null : form.collaborator_id || null, nextOccurrence(rule, form.due_date)),
+          startNow: false,
+        });
+      }
+
       if (isTodos && !task?.id) {
         // Create one task per active collaborator
         const activeCollabs = collaborators.filter(c => c.active);
@@ -138,13 +193,16 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
         }
       } else {
         const newCollaboratorId = isTodos ? null : (form.collaborator_id || null);
-        const saved: any = await upsert.mutateAsync({
+        // recurrence_id ainda não está nos tipos gerados.
+        const payload: DbTaskInsert & { id?: string; recurrence_id?: string } = {
           ...form,
           client_id: form.client_id || null,
           collaborator_id: newCollaboratorId,
           ...(!task?.id ? { created_by: currentCollaboratorId } : {}),
           ...(task?.id ? { id: task.id } : {}),
-        });
+          ...(newRecurrenceId ? { recurrence_id: newRecurrenceId } : {}),
+        };
+        const saved: any = await upsert.mutateAsync(payload);
 
         // Send email if collaborator was newly assigned or changed
         if (newCollaboratorId && newCollaboratorId !== previousCollaboratorId) {
@@ -268,17 +326,32 @@ const TaskFormDialog = ({ open, task, onClose }: TaskFormDialogProps) => {
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">Prazo</label>
+            <label className="text-sm font-medium mb-1 block">{repeat.frequency !== "nao" && !task?.recurrence_id ? "Prazo da 1.ª ocorrência (a partir de)" : "Prazo"}</label>
             <input type="date" required value={form.due_date} onChange={(e) => set("due_date", e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
+          {task?.recurrence_id ? (
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+              <Repeat className="w-3.5 h-3.5 mt-0.5 shrink-0 text-primary" />
+              <span>
+                Tarefa periódica{series ? <> · <span className="font-medium text-foreground">{describeRecurrence(ruleOf(series))}</span></> : null}.
+                {" "}Ao concluir, é criada a seguinte. A regra gere-se em Visão geral → Tarefas periódicas.
+              </span>
+            </div>
+          ) : (
+            <RecurrenceFields
+              value={repeat}
+              startDate={form.due_date}
+              onChange={(next) => setRepeat(repeat.frequency === "nao" && next.frequency !== "nao" ? defaultRepeat(form.due_date, next.frequency) : next)}
+            />
+          )}
           {isEditing && task?.created_by_collaborator?.name && (
             <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
               Atribuída por: <span className="font-medium text-foreground">{task.created_by_collaborator.name}</span>
             </div>
           )}
           <div className="flex items-center gap-3 pt-2">
-            <button type="submit" disabled={upsert.isPending} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
-              {upsert.isPending ? "A guardar..." : isEditing ? "Guardar" : "Criar Tarefa"}
+            <button type="submit" disabled={upsert.isPending || createRecurrence.isPending} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50">
+              {upsert.isPending || createRecurrence.isPending ? "A guardar..." : isEditing ? "Guardar" : repeat.frequency !== "nao" ? "Criar tarefa periódica" : "Criar Tarefa"}
             </button>
             {isEditing && (
               <button type="button" onClick={handleDelete} className="px-4 py-2.5 rounded-lg bg-destructive/10 text-destructive font-medium text-sm hover:bg-destructive/20 transition-colors">

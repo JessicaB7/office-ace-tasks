@@ -42,6 +42,7 @@ import FechoMesView from "@/components/FechoMesView";
 import DefinicoesNotificacoesView from "@/components/DefinicoesNotificacoesView";
 import PushPrompt from "@/components/PushPrompt";
 import AssistenteFlutuante from "@/components/AssistenteFlutuante";
+import TarefasPeriodicasView from "@/components/TarefasPeriodicasView";
 
 const Index = () => {
   const { isAdmin } = useAuth();
@@ -50,6 +51,7 @@ const Index = () => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any | null>(null);
+  const [newTaskRecurring, setNewTaskRecurring] = useState(false);
   const [analysisClientId, setAnalysisClientId] = useState<string | null>(null);
   const [openClientId, setOpenClientId] = useState<string | null>(null);
   const [openClientTab, setOpenClientTab] = useState<string | null>(null);
@@ -93,11 +95,19 @@ const Index = () => {
 
   const handleNewTask = () => {
     setEditingTask(null);
+    setNewTaskRecurring(false);
+    setDialogOpen(true);
+  };
+
+  const handleNewRecurringTask = () => {
+    setEditingTask(null);
+    setNewTaskRecurring(true);
     setDialogOpen(true);
   };
 
   const handleEditTask = (task: any) => {
     setEditingTask(task);
+    setNewTaskRecurring(false);
     setDialogOpen(true);
   };
 
@@ -126,6 +136,7 @@ const Index = () => {
 
 
         {activeView === "tasks" && <TaskListView onEditTask={handleEditTask} onNewTask={handleNewTask} />}
+        {activeView === "tarefas_periodicas" && <TarefasPeriodicasView onNewRecurring={handleNewRecurringTask} />}
         {activeView === "obrigacoes_controlo" && isAdmin && <ObrigacoesControloView nav={obrigCtlNav} onOpenObrigacao={(g, month, search) => { setObrigNav({ month, search }); setActiveView(`obrigacoes_${g}`); }} />}
         {activeView.startsWith("obrigacoes") && activeView !== "obrigacoes_controlo" && <ObrigacoesView subPage={activeView.replace("obrigacoes_", "")} onEditTask={handleEditTask} nav={obrigNav} />}
         {activeView === "contabilidades_painel" && isAdmin && <GestaoMensalEmFaltaView onOpenRegime={(t, month, search) => { setContabNav({ month, search }); setActiveView(`contabilidades_${t}`); }} />}
@@ -157,7 +168,7 @@ const Index = () => {
         {activeView === "definicoes_manuais" && isAdmin && <DefinicoesManuaisView />}
         {activeView === "definicoes_notificacoes" && <DefinicoesNotificacoesView />}
       </main>
-      <TaskFormDialog open={dialogOpen} task={editingTask} onClose={() => setDialogOpen(false)} />
+      <TaskFormDialog open={dialogOpen} task={editingTask} initialRepeat={newTaskRecurring} onClose={() => setDialogOpen(false)} />
       <DailyTasksReminderDialog onViewTasks={() => setActiveView("tasks")} />
       <AssociatedTasksDialog />
       <SessionConfirmationReminder onViewLeads={() => setActiveView("leads")} />
