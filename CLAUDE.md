@@ -218,7 +218,7 @@ Dashboards por regime:
 ### Alertas diários (`run_daily_alerts`, pg_cron `run-daily-alerts`, 08:00 Lisboa)
 - Isenção SS (`clients.seguranca_social_isencao_fim`): 60 dias antes notifica responsável + admin; 15 dias antes
   nova notificação + tarefa «Fim de isenção SS – cliente» (categoria `SS_TI`, prazo = fim). Mapas por enviar 30 dias
-  após o fim do trimestre (por responsável). Novos erros TOConline → admin. Seguimentos de contactos do dia.
+  após o fim do trimestre (por responsável). Novos erros TOConline → admin. Seguimentos de contactos do dia. Pedidos ao cliente da Gestão mensal há mais de 5 dias (1 notificação por responsável por dia, tipo `pedidos_cliente`).
 - Sem duplicados: `alert_log` (chave × utilizador) via `notify_once`; `notifications.data` leva client_id/alerta.
 - Cartão «Isenções SS a terminar (próximos 90 dias)» no «O meu dia».
 
