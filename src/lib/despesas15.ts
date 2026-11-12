@@ -6,13 +6,13 @@
  * pelo menos, 15% dos rendimentos brutos dessas atividades. Se ficar aquém, a diferença
  * é acrescida ao rendimento tributável.
  *
- * Contam para os 15%: a dedução específica de 4.104 € (ou, se superior, as contribuições
+ * Contam para os 15%: a dedução específica de 4.587,09 € (ou, se superior, as contribuições
  * obrigatórias para a Segurança Social), despesas com pessoal, rendas, despesas da atividade
  * comunicadas no e-Fatura, 1,5% do VPT de imóveis afetos, etc.
  */
 
 export const DESPESAS_15_PCT = 0.15;
-export const DEDUCAO_ESPECIFICA_15 = 4104;
+export const DEDUCAO_ESPECIFICA_15 = 4587.09;
 const COEFS_SUJEITOS = [0.75, 0.35];
 
 export type Despesas15Input = {
@@ -31,7 +31,7 @@ export type Despesas15Result = {
   aplicavel: boolean;
   /** 15% do rendimento bruto. */
   exigido: number;
-  /** max(4.104 €, SS). */
+  /** max(4.587,09 €, SS). */
   deducaoEspecifica: number;
   deducaoEspecificaOrigem: "fixa" | "ss";
   /** Despesas da atividade + extra. */

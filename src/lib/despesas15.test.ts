@@ -12,23 +12,26 @@ describe("calcDespesas15 (art. 31.º n.os 13/14 CIRS)", () => {
     expect(r.acrescimo).toBe(0);
   });
 
-  it("até 27.360 € a dedução de 4.104 € cobre os 15%", () => {
-    const r = calcDespesas15({ rendimentoBruto: 27360, coeficiente: 0.75, segurancaSocial: 0, despesasAtividade: 0 });
-    expect(r.exigido).toBe(4104);
-    expect(r.justificado).toBe(4104);
+  it("até 30.580,60 € a dedução de 4.587,09 € cobre os 15%", () => {
+    const r = calcDespesas15({ rendimentoBruto: 30580.6, coeficiente: 0.75, segurancaSocial: 0, despesasAtividade: 0 });
+    expect(r.exigido).toBe(4587.09);
+    expect(r.justificado).toBe(4587.09);
     expect(r.cumpre).toBe(true);
     expect(r.acrescimo).toBe(0);
+    const acima = calcDespesas15({ rendimentoBruto: 30600, coeficiente: 0.75, segurancaSocial: 0, despesasAtividade: 0 });
+    expect(acima.cumpre).toBe(false);
+    expect(acima.acrescimo).toBe(2.91);
   });
 
   it("acima disso, sem despesas, a diferença é acrescida", () => {
     const r = calcDespesas15({ rendimentoBruto: 50000, coeficiente: 0.75, segurancaSocial: 0, despesasAtividade: 0 });
     expect(r.exigido).toBe(7500);
-    expect(r.emFalta).toBe(3396);
-    expect(r.acrescimo).toBe(3396);
+    expect(r.emFalta).toBe(2912.91);
+    expect(r.acrescimo).toBe(2912.91);
     expect(r.cumpre).toBe(false);
   });
 
-  it("usa a SS quando superior a 4.104 € e soma despesas e extra", () => {
+  it("usa a SS quando superior a 4.587,09 € e soma despesas e extra", () => {
     const r = calcDespesas15({
       rendimentoBruto: 60000,
       coeficiente: 0.75,
@@ -46,7 +49,7 @@ describe("calcDespesas15 (art. 31.º n.os 13/14 CIRS)", () => {
   it("cumpre quando as despesas chegam aos 15%", () => {
     const r = calcDespesas15({ rendimentoBruto: 40000, coeficiente: 0.35, segurancaSocial: 2000, despesasAtividade: 3000 });
     expect(r.deducaoEspecificaOrigem).toBe("fixa");
-    expect(r.justificado).toBe(7104);
+    expect(r.justificado).toBe(7587.09);
     expect(r.cumpre).toBe(true);
     expect(r.acrescimo).toBe(0);
   });
@@ -54,6 +57,6 @@ describe("calcDespesas15 (art. 31.º n.os 13/14 CIRS)", () => {
   it("ignora valores negativos", () => {
     const r = calcDespesas15({ rendimentoBruto: 40000, coeficiente: 0.75, segurancaSocial: -10, despesasAtividade: -500, despesasExtra: -1 });
     expect(r.despesas).toBe(0);
-    expect(r.acrescimo).toBe(1896);
+    expect(r.acrescimo).toBe(1412.91);
   });
 });
