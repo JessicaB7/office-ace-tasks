@@ -11,8 +11,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useClientOffboarding } from "@/hooks/useOffboardings";
 import ClientSaidaTab from "@/components/ClientSaidaTab";
 import ClientHistoricoTab from "@/components/ClientHistoricoTab";
-import AuditTable from "@/components/AuditTable";
-import { useAuditLog } from "@/hooks/useAuditLog";
 import { useAuth } from "@/hooks/useAuth";
 
 const TIPO_CONTAB_OPTIONS = [
@@ -144,13 +142,6 @@ interface ClientDetailDialogProps {
 }
 
 const inputClass = "w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring";
-
-/** Separador "Alterações" (só admin): registo de alterações deste cliente. */
-const ClientAlteracoesTab = ({ clientId }: { clientId: string }) => {
-  const { data: entries = [], isLoading } = useAuditLog({ clientId });
-  if (isLoading) return <p className="text-sm text-muted-foreground text-center py-6">A carregar...</p>;
-  return <div className="pt-2"><AuditTable entries={entries} /></div>;
-};
 
 const ClientDetailDialog = ({ client, open, onClose, allowDelete = true, initialTab }: ClientDetailDialogProps) => {
   const { isAdmin } = useAuth();
@@ -309,7 +300,6 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true, initial
               {consultoriaForms.length > 0 && <TabsTrigger value="consultoria" className="flex-1">Consultoria</TabsTrigger>}
               {isEditing && offboarding && <TabsTrigger value="saida" className="flex-1">Saída</TabsTrigger>}
               {isEditing && <TabsTrigger value="historico" className="flex-1">Histórico</TabsTrigger>}
-              {isEditing && isAdmin && <TabsTrigger value="alteracoes" className="flex-1">Alterações</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="dados" className="space-y-4 pt-2">
@@ -503,12 +493,6 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true, initial
             {isEditing && (
               <TabsContent value="historico">
                 <ClientHistoricoTab clientId={client.id} />
-              </TabsContent>
-            )}
-
-            {isEditing && isAdmin && (
-              <TabsContent value="alteracoes">
-                <ClientAlteracoesTab clientId={client.id} />
               </TabsContent>
             )}
           </Tabs>

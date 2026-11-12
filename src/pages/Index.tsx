@@ -34,7 +34,6 @@ import AssociatedTasksDialog from "@/components/AssociatedTasksDialog";
 import SessionConfirmationReminder from "@/components/comercial/SessionConfirmationReminder";
 import NewTasksReminder from "@/components/NewTasksReminder";
 import { useAuth } from "@/hooks/useAuth";
-import RegistoAlteracoesView from "@/components/RegistoAlteracoesView";
 import DefinicoesManuaisView from "@/components/DefinicoesManuaisView";
 import ToconlineAutomacoesView from "@/components/toconline/ToconlineAutomacoesView";
 import MapasTrimestraisView from "@/components/financial/MapasTrimestraisView";
@@ -164,7 +163,6 @@ const Index = () => {
         {activeView === "calendar" && <FiscalCalendarView />}
         {activeView === "notas" && <NotasView />}
         {activeView === "dividas" && <DividasView />}
-        {activeView === "registo_alteracoes" && isAdmin && <RegistoAlteracoesView />}
         {activeView === "definicoes_manuais" && isAdmin && <DefinicoesManuaisView />}
         {activeView === "definicoes_notificacoes" && <DefinicoesNotificacoesView />}
       </main>
