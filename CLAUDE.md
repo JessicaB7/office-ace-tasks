@@ -54,12 +54,12 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
 
 ## 6. Navegação (setores) — `src/components/AppSidebar.tsx`
 
-1. **Visão geral** — «Controlo» (admin, página inicial da admin) e landing "O meu dia" (`DashboardView.tsx`, página
-   inicial dos colaboradores): métricas pessoais, prazos da semana.
+0. **Gestão de negócio** (admin; primeiro setor da barra, só a admin o vê) — «Controlo» (página inicial da admin), painel,
+   painel comercial, painel de consultorias, colaboradores, resumo do dia, resumo mensal.
+1. **Visão geral** — landing "O meu dia" (`DashboardView.tsx`, página inicial dos colaboradores): métricas pessoais,
+   prazos da semana.
 2. **Comercial** — pipeline (Kanban), leads, propostas enviadas, follow ups, scripts.
-3. **Clientes** — dados, gestão mensal (contabilidades), obrigações, fecho do mês, mapas trimestrais, extratos, TOConline (fila, procedimentos, automações com erro), análise financeira.
-4. **Gestão de negócio** (admin) — painel, painel comercial, painel de consultorias, colaboradores, resumo do dia,
-   resumo mensal.
+3. **Clientes** — dados, gestão mensal (contabilidades), obrigações, fecho do mês, extratos, TOConline (fila, procedimentos, automações com erro), análise financeira.
 5. **Definições** — Notificações (todos) e Manuais (admin).
 
 ## 7. Módulos
@@ -224,7 +224,7 @@ Dashboards por regime:
 - Cartão «Isenções SS a terminar (próximos 90 dias)» no «O meu dia».
 
 ### Controlo (admin) — `ControloView`, `src/lib/controlo.ts`, `src/hooks/useControlo.ts`
-- Vista `controlo`, primeira de Visão geral e página inicial da admin (o `Index` muda para lá quando o papel chega, se
+- Vista `controlo`, primeira de Gestão de negócio (setor no topo da barra) e página inicial da admin (o `Index` muda para lá quando o papel chega, se
   ninguém navegou). Dados com `staleTime 0`/`refetchOnMount 'always'`, sem polling. Cada número abre um dialog com a lista.
 - **Trabalho do mês**: `computeFecho` do mês de referência (semáforo por responsável) + `proximosPrazos` (3 prazos ≥ hoje
   com pendentes, juntando os meses ref−1, ref e atual — o IVA trimestral/mensal vence 2 meses depois).

@@ -54,10 +54,22 @@ type Entry = { kind: "item"; item: Item } | { kind: "group"; group: Group };
 
 const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
   {
+    title: "Gestão de negócio",
+    icon: Briefcase,
+    entries: [
+      { kind: "item", item: { id: "controlo", label: "Controlo", icon: Activity, adminOnly: true } },
+      { kind: "item", item: { id: "business", label: "Painel do negócio", icon: Gauge, adminOnly: true } },
+      { kind: "item", item: { id: "comercial", label: "Painel comercial", icon: TrendingUp, adminOnly: true } },
+      { kind: "item", item: { id: "consultorias_painel", label: "Painel de consultorias", icon: MessageSquareQuote, adminOnly: true } },
+      { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
+      { kind: "item", item: { id: "resumo_dia", label: "Resumo do dia", icon: CalendarCheck, adminOnly: true } },
+      { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
+    ],
+  },
+  {
     title: "Visão geral",
     icon: House,
     entries: [
-      { kind: "item", item: { id: "controlo", label: "Controlo", icon: Activity, adminOnly: true } },
       { kind: "item", item: { id: "dashboard", label: "O meu dia a dia", icon: LayoutDashboard } },
       { kind: "item", item: { id: "tasks", label: "Tarefas", icon: ListTodo } },
       { kind: "item", item: { id: "tarefas_periodicas", label: "Tarefas periódicas", icon: Repeat } },
@@ -148,18 +160,6 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
           ],
         },
       },
-    ],
-  },
-  {
-    title: "Gestão de negócio",
-    icon: Briefcase,
-    entries: [
-      { kind: "item", item: { id: "business", label: "Painel do negócio", icon: Gauge, adminOnly: true } },
-      { kind: "item", item: { id: "comercial", label: "Painel comercial", icon: TrendingUp, adminOnly: true } },
-      { kind: "item", item: { id: "consultorias_painel", label: "Painel de consultorias", icon: MessageSquareQuote, adminOnly: true } },
-      { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
-      { kind: "item", item: { id: "resumo_dia", label: "Resumo do dia", icon: CalendarCheck, adminOnly: true } },
-      { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
     ],
   },
   {
