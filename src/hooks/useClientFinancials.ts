@@ -48,6 +48,8 @@ export type FinancialSettings = {
   outras_despesas_label: string;
   outras_despesas_valor: number;
   outros_rendimentos_valor: number;
+  /** Despesas justificadas extra para o teste dos 15% (TI Simplificado). */
+  despesas_15_extra: number;
   mapa_q1_enviado: boolean;
   mapa_q2_enviado: boolean;
   mapa_q3_enviado: boolean;
@@ -147,6 +149,7 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         outras_despesas_label: "Outras despesas",
         outras_despesas_valor: 0,
         outros_rendimentos_valor: 0,
+        despesas_15_extra: 0,
         mapa_q1_enviado: false,
         mapa_q2_enviado: false,
         mapa_q3_enviado: false,

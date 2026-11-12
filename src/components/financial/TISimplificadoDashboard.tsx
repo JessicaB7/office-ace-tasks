@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { RobotButton } from "./RobotAnaliseDialog";
 import { NotasIrsField } from "./NotasIrsField";
+import { calcDespesas15, DEDUCAO_ESPECIFICA_15 } from "@/lib/despesas15";
 
 const IVA_VENDAS = ["24331111", "24333311", "24341331"];
 const IVA_COMPRAS = ["24323111", "24323211", "24323311", "24342"];
@@ -263,7 +264,26 @@ export default function TISimplificadoDashboard({
   const totalIva = ivaTrim.reduce((a, b) => a + b, 0);
   const totalSS = ssQuarters.reduce((a, b) => a + b, 0);
 
-  const rendimentoColectavel = totalFat * coef * (1 - isencao) + outrosRend;
+  // Despesas justificadas extra para o teste dos 15% (e-Fatura, rendas, 1,5% VPT...) — manual
+  const despesas15Extra = Number(settings?.despesas_15_extra ?? 0);
+  const [despesas15ExtraInput, setDespesas15ExtraInput] = useState<number>(despesas15Extra);
+  useEffect(() => {
+    setDespesas15ExtraInput(Number(settings?.despesas_15_extra ?? 0));
+  }, [settings?.despesas_15_extra]);
+
+  // Art. 31.º n.os 13/14 CIRS: coeficientes 0,75 e 0,35 exigem 15% de despesas justificadas;
+  // a diferença em falta é acrescida ao rendimento tributável.
+  const d15 = calcDespesas15({
+    rendimentoBruto: totalFat,
+    coeficiente: coef,
+    segurancaSocial: totalSS,
+    despesasAtividade: totalDesp + outrasValor,
+    despesasExtra: despesas15Extra,
+  });
+  const temAcrescimo15 = d15.aplicavel && d15.acrescimo > 0;
+
+  const rendimentoBaseSimplificado = totalFat * coef + d15.acrescimo;
+  const rendimentoColectavel = rendimentoBaseSimplificado * (1 - isencao) + outrosRend;
   const irsEstimado = calcIRS(rendimentoColectavel);
   // O reembolso nunca pode exceder a retenção na fonte e pagamentos por conta
   const capReembolso = (v: number) => Math.max(v, -retencoes);
@@ -387,8 +407,11 @@ export default function TISimplificadoDashboard({
                   descricao: isencao > 0
                     ? `Rendimento coletável (${(coef * 100).toLocaleString("pt-PT")}% da faturação, coeficiente do regime simplificado, com ${(isencao * 100).toLocaleString("pt-PT")}% isento pelo benefício de IRS)`
                     : `Rendimento coletável (${(coef * 100).toLocaleString("pt-PT")}% da faturação, coeficiente do regime simplificado)`,
-                  valor: rendimentoColectavel - outrosRend,
+                  valor: totalFat * coef * (1 - isencao),
                 },
+                ...(temAcrescimo15 ? [
+                  { descricao: "Acréscimo por despesas abaixo de 15% da faturação (art. 31.º n.º 13 CIRS)", valor: d15.acrescimo * (1 - isencao) },
+                ] : []),
                 ...(temOutrosRend ? [
                   { descricao: "Outros rendimentos (somam ao rendimento coletável)", valor: outrosRend },
                   { descricao: "Rendimento coletável total", valor: rendimentoColectavel },
@@ -757,11 +780,26 @@ export default function TISimplificadoDashboard({
           />
         )}
 
-        <div className={cn("grid grid-cols-2 gap-3 mt-4 auto-rows-fr", temOutrosRend ? "md:grid-cols-7" : "md:grid-cols-6")}>
+        <div
+          className={cn(
+            "grid grid-cols-2 gap-3 mt-4 auto-rows-fr",
+            temOutrosRend && temAcrescimo15
+              ? "md:grid-cols-8"
+              : temOutrosRend || temAcrescimo15
+                ? "md:grid-cols-7"
+                : "md:grid-cols-6",
+          )}
+        >
           <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
             <div className="text-[11px] text-muted-foreground">Faturação</div>
             <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
           </div>
+          {temAcrescimo15 && (
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Acréscimo (15% de despesas)</div>
+              <div className="text-lg font-bold tabular-nums text-amber-700">+{fmtEur(d15.acrescimo)}</div>
+            </div>
+          )}
           {temOutrosRend && (
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Outros rendimentos</div>
@@ -796,6 +834,86 @@ export default function TISimplificadoDashboard({
           </div>
         </div>
       </div>
+
+      {/* Art. 31.º n.os 13/14 CIRS — cumprimento dos 15% de despesas (coeficientes 0,75 e 0,35) */}
+      {d15.aplicavel && (
+        <div className="col-span-12 rounded-xl border bg-card p-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h4 className="font-semibold text-sm">Cumprimento dos 15% de despesas</h4>
+              {!exporting && (
+                <p className="text-[11px] text-muted-foreground max-w-3xl">
+                  Art. 31.º n.º 13 e 14 do CIRS: com coeficiente {coef.toLocaleString("pt-PT")} é preciso justificar despesas
+                  de pelo menos 15% da faturação. Contam a dedução de {fmtEur(DEDUCAO_ESPECIFICA_15)} (ou a Segurança Social, se
+                  superior), as despesas da análise e as despesas extra abaixo. O que faltar soma ao rendimento coletável.
+                </p>
+              )}
+            </div>
+            {!exporting && (
+              <label
+                className="flex items-center gap-2 text-sm"
+                title="Despesas da atividade no e-Fatura que não estão na análise, rendas, 1,5% do VPT de imóveis afetos, etc."
+              >
+                <span className="text-muted-foreground">Outras despesas justificadas (e-Fatura)</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={Number.isFinite(despesas15ExtraInput) ? despesas15ExtraInput : 0}
+                  onChange={(e) => setDespesas15ExtraInput(Number(e.target.value))}
+                  onBlur={() => {
+                    const v = Math.max(0, Number(despesas15ExtraInput) || 0);
+                    setDespesas15ExtraInput(v);
+                    if (v !== despesas15Extra) upsertSettings.mutate({ despesas_15_extra: v });
+                  }}
+                  className="w-32 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </label>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-4 auto-rows-fr">
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Rendimento sujeito</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(totalFat)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">15% exigido</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(d15.exigido)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">
+                {d15.deducaoEspecificaOrigem === "ss" ? "Segurança Social (dedução)" : "Dedução específica"}
+              </div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(d15.deducaoEspecifica)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Despesas consideradas</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(d15.despesas)}</div>
+            </div>
+            <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
+              <div className="text-[11px] text-muted-foreground">Total justificado</div>
+              <div className="text-lg font-bold tabular-nums">{fmtEur(d15.justificado)}</div>
+            </div>
+            <div
+              className={cn(
+                "rounded-lg border bg-background p-3 ring-1 min-h-[78px] h-full flex flex-col justify-center",
+                d15.cumpre ? "ring-emerald-200 dark:ring-emerald-900/40" : "ring-amber-200 dark:ring-amber-900/40",
+              )}
+            >
+              <div className={cn("text-[11px]", d15.cumpre ? "text-emerald-700" : "text-amber-700")}>
+                {d15.cumpre ? "Cumpre os 15%" : `Faltam ${fmtEur(d15.emFalta)}`}
+              </div>
+              <div className={cn("text-lg font-bold tabular-nums", d15.cumpre ? "text-emerald-700" : "text-amber-700")}>
+                {d15.cumpre ? "Sem acréscimo" : `+${fmtEur(d15.acrescimo)}`}
+              </div>
+              {!d15.cumpre && (
+                <div className="text-[10px] text-muted-foreground">acrescido ao rendimento coletável</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Simulação: IRS regime organizado (com base no resultado líquido) */}
       <div className="col-span-12 rounded-xl border bg-card p-4">

@@ -119,6 +119,9 @@ Dashboards por regime:
   coletável nos dois regimes; a zero não aparecem nos resultados nem no PDF.
   "Retenção na fonte e pagamentos por conta" = conta 241 (incl. 2414): o maior entre a soma dos trimestres
   importados e o **Acumulado** do último balancete (`ret_241_acum`), para cobrir trimestres não importados.
+  **Cumprimento dos 15% de despesas** (art. 31.º n.º 13/14 CIRS, só coeficientes 0,75/0,35; `src/lib/despesas15.ts`):
+  exigido = 15% da faturação; justificado = max(4.104 €, SS) + despesas + outras despesas + «Outras despesas justificadas
+  (e-Fatura)» (`despesas_15_extra`); a falta é acrescida ao rendimento coletável do IRS Simplificado (resultado vai para o PDF).
 - **TI Organizado** (`TIOrganizadoDashboard.tsx`): balancete XLSX, IVA trimestral editável com
   reposição do automático (delta 2436−2437), outras despesas, simulador organizado vs simplificado.
 - **Empresas / SQ** (`EmpresasDashboard.tsx`): rendimentos, FSE, gastos com pessoal, depreciações,
