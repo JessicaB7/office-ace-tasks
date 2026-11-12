@@ -4,7 +4,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { hojeISO, fmtPedido } from "@/lib/pedidosCliente";
+import { hojeISO, fmtPedido, candidatosParaColunas, celulasAPedir, type PedidoCandidato } from "@/lib/pedidosCliente";
+import { cn } from "@/lib/utils";
 
 /** Formulário curto do «Pedido ao cliente» (popover da célula). */
 export function PedidoClienteForm({ title, initialDate, initialNota, hasPedido, onSave, onClear, onClose }: {
@@ -44,21 +45,16 @@ export function PedidoClienteForm({ title, initialDate, initialNota, hasPedido, 
   );
 }
 
-export interface PedidoCandidate {
-  id: string;
-  name: string;
-  /** Data de um pedido já registado nesta coluna (se houver). */
-  pedidoEm?: string | null;
-}
-
-/** Marcar «Pedido ao cliente» numa coluna para vários clientes de uma vez. */
-export function PedidoLoteDialog({ open, onOpenChange, column, candidates, onConfirm }: {
+/** «Pedir documentos»: regista o pedido ao cliente em uma ou mais colunas, para vários clientes de uma vez. */
+export function PedirDocumentosDialog({ open, onOpenChange, columns, candidates, onConfirm }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  column: string;
-  candidates: PedidoCandidate[];
-  onConfirm: (clientIds: string[], date: string, nota: string) => Promise<void> | void;
+  /** Colunas do separador atual (o índice é a posição). */
+  columns: string[];
+  candidates: PedidoCandidato[];
+  onConfirm: (cells: { clientId: string; col: number }[], date: string, nota: string) => Promise<void> | void;
 }) {
+  const [cols, setCols] = useState<number[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [date, setDate] = useState(hojeISO());
   const [nota, setNota] = useState("");
@@ -66,13 +62,18 @@ export function PedidoLoteDialog({ open, onOpenChange, column, candidates, onCon
   const [filtro, setFiltro] = useState("");
 
   useEffect(() => {
-    if (open) { setSelected(new Set()); setDate(hojeISO()); setNota(""); setFiltro(""); }
-  }, [open, column]);
+    if (open) { setCols([]); setSelected(new Set()); setDate(hojeISO()); setNota(""); setFiltro(""); }
+  }, [open]);
 
+  const toggleCol = (i: number) => setCols((c) => (c.includes(i) ? c.filter((x) => x !== i) : [...c, i].sort((a, b) => a - b)));
+
+  const comColunas = useMemo(() => candidatosParaColunas(candidates, cols), [candidates, cols]);
   const visiveis = useMemo(() => {
     const q = filtro.trim().toLowerCase();
-    return q ? candidates.filter((c) => c.name.toLowerCase().includes(q)) : candidates;
-  }, [candidates, filtro]);
+    return q ? comColunas.filter((c) => c.name.toLowerCase().includes(q)) : comColunas;
+  }, [comColunas, filtro]);
+  const cells = useMemo(() => celulasAPedir(comColunas, selected, cols), [comColunas, selected, cols]);
+  const nClientes = new Set(cells.map((c) => c.clientId)).size;
 
   const toggle = (id: string) => setSelected((s) => {
     const n = new Set(s);
@@ -87,57 +88,96 @@ export function PedidoLoteDialog({ open, onOpenChange, column, candidates, onCon
   });
 
   const confirm = async () => {
-    if (selected.size === 0 || !date) return;
+    if (cells.length === 0 || !date) return;
     setSaving(true);
     try {
-      await onConfirm([...selected], date, nota.trim());
+      await onConfirm(cells, date, nota.trim());
       onOpenChange(false);
     } finally {
       setSaving(false);
     }
   };
 
+  const pedidosJa = (c: PedidoCandidato) => cols.map((i) => c.porFazer[i]).filter(Boolean) as string[];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>⏳ Pedido ao cliente — {column}</DialogTitle>
-          <DialogDescription>Escolhe os clientes a quem pediste documentos. A célula fica «pedido» até a marcares como feita.</DialogDescription>
+          <DialogTitle>Pedir documentos ao cliente</DialogTitle>
+          <DialogDescription>
+            Regista que pediste documentos. Quando os documentos chegarem, carrega na célula como sempre — o pedido desaparece sozinho.
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label htmlFor="lote-data" className="text-xs">Data do pedido</Label>
-            <Input id="lote-data" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-8 text-sm" />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="lote-nota" className="text-xs">O que se pediu (opcional)</Label>
-            <Input id="lote-nota" value={nota} onChange={(e) => setNota(e.target.value)} maxLength={200} className="h-8 text-sm" />
+
+        <div className="space-y-2">
+          <div className="text-sm font-semibold">1. Que documentos pediste?</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {columns.map((col, i) => {
+              const on = cols.includes(i);
+              return (
+                <button key={col} type="button" onClick={() => toggleCol(i)} aria-pressed={on}
+                  className={cn("flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium text-left transition-colors",
+                    on ? "border-primary bg-primary/10 text-primary" : "bg-card hover:bg-muted")}>
+                  <Checkbox checked={on} tabIndex={-1} aria-hidden className="pointer-events-none" />
+                  <span className="truncate">{col}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
-        <Input placeholder="Filtrar clientes..." value={filtro} onChange={(e) => setFiltro(e.target.value)} className="h-8 text-sm" />
-        <div className="border rounded-lg max-h-72 overflow-y-auto divide-y">
-          {visiveis.length === 0 ? (
-            <div className="px-3 py-6 text-center text-sm text-muted-foreground">Sem clientes por fazer nesta coluna</div>
+
+        <div className="space-y-2">
+          <div className="text-sm font-semibold">2. A que clientes?</div>
+          {cols.length === 0 ? (
+            <div className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+              Escolhe primeiro os documentos acima.
+            </div>
           ) : (
             <>
-              <label className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-muted/40 cursor-pointer">
-                <Checkbox checked={allVisible} onCheckedChange={toggleAll} />
-                Selecionar todos ({visiveis.length})
-              </label>
-              {visiveis.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted/30">
-                  <Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggle(c.id)} />
-                  <span className="flex-1 truncate">{c.name}</span>
-                  {c.pedidoEm && <span className="text-xs text-muted-foreground">⏳ {fmtPedido(c.pedidoEm)}</span>}
-                </label>
-              ))}
+              <Input placeholder="Procurar cliente..." value={filtro} onChange={(e) => setFiltro(e.target.value)} className="h-9 text-sm" />
+              <div className="border rounded-lg max-h-64 overflow-y-auto divide-y">
+                {visiveis.length === 0 ? (
+                  <div className="px-3 py-6 text-center text-sm text-muted-foreground">Não há clientes com estes documentos por fazer neste mês</div>
+                ) : (
+                  <>
+                    <label className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-muted/40 cursor-pointer">
+                      <Checkbox checked={allVisible} onCheckedChange={toggleAll} />
+                      Selecionar todos ({visiveis.length})
+                    </label>
+                    {visiveis.map((c) => {
+                      const ja = pedidosJa(c);
+                      return (
+                        <label key={c.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-muted/30">
+                          <Checkbox checked={selected.has(c.id)} onCheckedChange={() => toggle(c.id)} />
+                          <span className="flex-1 truncate">{c.name}</span>
+                          {ja.length > 0 && <span className="text-xs text-muted-foreground">já pedido {fmtPedido(ja[0])}</span>}
+                        </label>
+                      );
+                    })}
+                  </>
+                )}
+              </div>
             </>
           )}
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="pedir-data" className="text-sm font-semibold">3. Data do pedido</Label>
+            <Input id="pedir-data" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9 text-sm" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="pedir-nota" className="text-sm font-semibold">Nota (opcional)</Label>
+            <Input id="pedir-nota" value={nota} onChange={(e) => setNota(e.target.value)} maxLength={200}
+              placeholder="ex.: faturas de compras de outubro" className="h-9 text-sm" />
+          </div>
+        </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={confirm} disabled={saving || selected.size === 0 || !date}>
-            Marcar pedido{selected.size > 0 ? ` (${selected.size})` : ""}
+          <Button onClick={confirm} disabled={saving || cells.length === 0 || !date}>
+            Registar pedido ({nClientes})
           </Button>
         </DialogFooter>
       </DialogContent>

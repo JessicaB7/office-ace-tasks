@@ -3,7 +3,8 @@ import { REGIME_TIPO } from "@/lib/obligationManuals";
 import { useState, useEffect, useMemo } from "react";
 import { ativoNoMes, monthOf } from "@/lib/clientSaida";
 import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
-import { Search, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCheck, PartyPopper, ArrowUpRight, MessageSquare, Hourglass } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCheck, PartyPopper, ArrowUpRight, MessageSquare, Hourglass, FileQuestion } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,8 +14,8 @@ import MonthlyNoteCell from "@/components/MonthlyNoteCell";
 import { getInitials, getAvatarPalette, shortName } from "@/lib/avatar";
 import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable, isColumnOffMonth, columnLabel } from "@/lib/contabilidadesConfig";
 import { toast } from "sonner";
-import { PedidoClienteForm, PedidoLoteDialog } from "@/components/PedidoCliente";
-import { temPedido, pedidoAtrasado, pedidoLabel, diasAEspera, contarPedidos } from "@/lib/pedidosCliente";
+import { PedidoClienteForm, PedirDocumentosDialog } from "@/components/PedidoCliente";
+import { temPedido, pedidoAtrasado, pedidoLabel, diasAEspera, contarPedidos, type PedidoCandidato } from "@/lib/pedidosCliente";
 
 const STATUS_FILTER_STORAGE_KEY = "contabilidadesStatusFilter";
 
@@ -32,6 +33,8 @@ const REGIME_TABS: { id: string; label: string }[] = [
   { id: "organizada", label: "TI Organizado" },
   { id: "empresas", label: "Empresas" },
 ];
+
+const AJUDA_PEDIDO = "Quando os documentos chegarem, carrega na célula como sempre — o pedido desaparece sozinho.";
 
 const fmtWhen = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleString("pt-PT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
@@ -92,9 +95,9 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
   const upsert = useUpsertObligation();
   const [showDone, setShowDone] = useState(false);
-  // Popover do «Pedido ao cliente» aberto (chave "clientId|coluna") e coluna do pedido em lote.
+  // Popover do «Pedido ao cliente» aberto (chave "clientId|coluna") e janela «Pedir documentos».
   const [pedidoOpen, setPedidoOpen] = useState<string | null>(null);
-  const [loteCol, setLoteCol] = useState<number | null>(null);
+  const [pedirOpen, setPedirOpen] = useState(false);
 
   const config = SUB_PAGE_CONFIG[activeTab];
   const columns = config?.columns;
@@ -291,12 +294,11 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
       .then(() => toast(date ? "Pedido ao cliente registado" : "Pedido removido"))
       .catch(() => toast.error("Não foi possível guardar o pedido."));
   };
-  const marcarPedidoLote = async (clientIds: string[], date: string, nota: string) => {
-    if (loteCol === null) return;
-    const i = loteCol;
+  const registarPedidos = async (cells: { clientId: string; col: number }[], date: string, nota: string) => {
     try {
-      await Promise.all(clientIds.map((id) => savePedido(id, i, date, nota)));
-      toast(`${columns![i]}: pedido registado para ${clientIds.length} cliente${clientIds.length === 1 ? "" : "s"}`);
+      await Promise.all(cells.map(({ clientId, col }) => savePedido(clientId, col, date, nota)));
+      const n = new Set(cells.map((c) => c.clientId)).size;
+      toast(`Pedido registado para ${n} cliente${n === 1 ? "" : "s"}`);
     } catch {
       toast.error("Não foi possível registar todos os pedidos.");
     }
@@ -334,6 +336,20 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   const displayedClients = statusFilter === "all" || noTasksTab ? filteredClients
     : statusFilter === "pedidos" ? filteredClients.filter((c) => pedidoCells(c).length > 0)
     : filteredClients.filter((c: any) => getClientTier(c) === statusFilter);
+
+  // Janela «Pedir documentos»: todos os clientes do separador (ignora pesquisa e responsável),
+  // com as colunas aplicáveis ainda por fazer no mês.
+  const pedirCandidatos: PedidoCandidato[] = !pedirOpen || !config || !hasMultiColumns ? [] : activeClients
+    .filter(config.filter)
+    .map((c) => {
+      const porFazer: Record<number, string | null> = {};
+      columns!.forEach((col, i) => {
+        const o = colMaps[i]?.[c.id];
+        if (isColumnApplicable(c, col, referenceMonth) && o?.status !== "concluida") porFazer[i] = temPedido(o) ? o.pedido_cliente_em : null;
+      });
+      return { id: c.id, name: c.name, porFazer };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "pt"));
 
   // Notas mensais só fazem sentido nos separadores em galeria (têm ficha do cliente).
   const showNotes = hasGallery;
@@ -426,11 +442,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
               <div key={col} className="flex-1 min-w-0 flex items-center justify-center gap-0.5">
                 <span className="truncate">{col}</span>
                 <ManualLink obligationType={colOblTypes[i]} tipoContabilidade={REGIME_TIPO[activeTab]} />
-                <button type="button" onClick={() => setLoteCol(i)} title={`Pedido ao cliente em lote — ${col}`}
-                  aria-label={`Pedido ao cliente em lote — ${col}`}
-                  className="p-0.5 rounded text-muted-foreground/50 hover:text-primary hover:bg-muted transition-colors">
-                  <Hourglass className="w-3 h-3" />
-                </button>
               </div>
             ))}
           </div>
@@ -503,18 +514,19 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
                 const key = `${client.id}|${i}`;
                 const nota = obl?.pedido_cliente_nota ? ` — ${obl.pedido_cliente_nota}` : "";
                 const title = pedido
-                  ? `${label}: pedido ao cliente há ${diasAEspera(pedido)} dia(s)${nota} (clicar quando chegar para marcar como feito; clique direito para editar o pedido)`
+                  ? `${label}: pedido ao cliente há ${diasAEspera(pedido)} dia(s)${nota} (clicar quando chegar para marcar como feito; ⏳ ou clique direito para editar o pedido)`
                   : isDone ? `${label}: feito${whoDid(obl) ? ` — ${whoDid(obl)}` : ""} (clicar para desmarcar)`
-                  : started ? `${label}: em andamento (clicar para marcar como feito; clique direito: pedido ao cliente)`
-                  : `Marcar ${label} como feito (clique direito: pedido ao cliente)`;
+                  : started ? `${label}: em andamento (clicar para marcar como feito; ⏳ ou clique direito: pedido ao cliente)`
+                  : `Marcar ${label} como feito (⏳ ou clique direito: pedido ao cliente)`;
                 return (
                   <Popover key={col} open={pedidoOpen === key} onOpenChange={(o) => setPedidoOpen(o ? key : null)}>
-                    <PopoverTrigger asChild>
+                    <div className="group/cell relative flex-1 min-w-0 flex">
                       <button type="button"
-                        onClick={(e) => { e.preventDefault(); toggleObl(client.id, colOblTypes[i], colMaps[i], label); }}
+                        onClick={() => toggleObl(client.id, colOblTypes[i], colMaps[i], label)}
                         onContextMenu={(e) => { if (isDone) return; e.preventDefault(); setPedidoOpen(key); }}
                         title={title}
-                        className={cn("flex-1 min-w-0 truncate text-xs font-medium px-2 py-1 rounded-full border transition-colors",
+                        className={cn("w-full min-w-0 truncate text-xs font-medium px-2 py-1 rounded-full border transition-colors",
+                          pedido ? "pr-6" : !isDone && "[@media(hover:none)]:pr-6",
                           isDone ? "bg-success/15 text-success border-success/30 hover:bg-success/25"
                             : atrasado ? "bg-destructive/10 text-destructive border-destructive/40 border-dashed hover:bg-destructive/20"
                             : pedido ? "bg-primary/10 text-primary border-primary/40 border-dashed hover:bg-primary/20"
@@ -522,7 +534,17 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
                             : "bg-muted text-muted-foreground border-transparent hover:border-success hover:text-success")}>
                         {pedido ? pedidoLabel(pedido) : label}
                       </button>
-                    </PopoverTrigger>
+                      {/* Forma visível de chegar ao pedido (além do clique direito): aparece ao passar o rato; sempre visível em ecrã táctil. */}
+                      <PopoverTrigger asChild>
+                        <button type="button" title="Pedido ao cliente" aria-label={`Pedido ao cliente — ${client.name} · ${label}`}
+                          className={cn("absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded-full transition-opacity hover:bg-background/80",
+                            isDone ? "hidden"
+                              : pedido ? "opacity-100 text-current"
+                              : "opacity-0 text-muted-foreground group-hover/cell:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100")}>
+                          <Hourglass className="w-3 h-3" />
+                        </button>
+                      </PopoverTrigger>
+                    </div>
                     <PopoverContent align="center" className="w-72 p-3">
                       <PedidoClienteForm title={`${client.name} · ${label}`}
                         initialDate={pedido} initialNota={pedido ? obl?.pedido_cliente_nota : ""} hasPedido={!!pedido}
@@ -552,10 +574,10 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
     );
   };
 
-  const StatCard = ({ value, label, filter, tone, hint }: { value: number; label: string; filter: StatusFilter; tone: string; hint?: string }) => {
+  const StatCard = ({ value, label, filter, tone, hint, tip }: { value: number; label: string; filter: StatusFilter; tone: string; hint?: string; tip?: string }) => {
     const active = statusFilter === filter;
     return (
-      <button type="button" onClick={() => changeStatusFilter(active ? "all" : filter)} aria-pressed={active}
+      <button type="button" onClick={() => changeStatusFilter(active ? "all" : filter)} aria-pressed={active} title={tip}
         className={cn("flex-1 min-w-[120px] text-left rounded-xl border px-4 py-3 transition-colors",
           active ? "border-primary bg-primary/5 ring-1 ring-primary" : "bg-card hover:bg-muted/40")}>
         <div className={cn("text-2xl font-bold leading-none", tone)}>{value}</div>
@@ -623,8 +645,12 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
           <StatCard value={tierCounts.done} label="Fechados" filter="done" tone="text-success" />
           <StatCard value={pedidos.total} label={pedidos.total === 1 ? "pedido à espera" : "pedidos à espera"} filter="pedidos"
             tone={pedidos.atrasados > 0 ? "text-destructive" : "text-primary"}
-            hint={pedidos.atrasados > 0 ? `${pedidos.atrasados} há mais de 5 dias` : undefined} />
+            hint={pedidos.atrasados > 0 ? `${pedidos.atrasados} há mais de 5 dias` : undefined}
+            tip={AJUDA_PEDIDO} />
         </div>
+      )}
+      {progress && pedidos.total > 0 && (
+        <p className="-mt-2 text-xs text-muted-foreground">⏳ {AJUDA_PEDIDO}</p>
       )}
 
       <div className="flex gap-3 items-center flex-wrap">
@@ -632,6 +658,12 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input type="text" placeholder="Pesquisar cliente..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
+        {hasMultiColumns && !noTasksTab && (
+          <Button type="button" variant="outline" onClick={() => setPedirOpen(true)}
+            className="border-primary text-primary hover:bg-primary/10 hover:text-primary">
+            <FileQuestion className="w-4 h-4" /> Pedir documentos
+          </Button>
+        )}
         <div className="flex gap-1.5 flex-wrap" role="group" aria-label="Responsável">
           <button type="button" onClick={() => setCollabFilter("all")} aria-pressed={collabFilter === "all"}
             className={cn("px-3 py-1.5 text-sm rounded-full border transition-colors",
@@ -681,12 +713,8 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
       )}
 
       {hasMultiColumns && !noTasksTab && (
-        <PedidoLoteDialog open={loteCol !== null} onOpenChange={(o) => { if (!o) setLoteCol(null); }}
-          column={loteCol !== null ? columns![loteCol] : ""}
-          candidates={loteCol === null ? [] : filteredClients
-            .filter((c) => isColumnApplicable(c, columns![loteCol], referenceMonth) && colMaps[loteCol][c.id]?.status !== "concluida")
-            .map((c) => ({ id: c.id, name: c.name, pedidoEm: temPedido(colMaps[loteCol][c.id]) ? colMaps[loteCol][c.id].pedido_cliente_em : null }))}
-          onConfirm={marcarPedidoLote} />
+        <PedirDocumentosDialog open={pedirOpen} onOpenChange={setPedirOpen}
+          columns={columns!} candidates={pedirCandidatos} onConfirm={registarPedidos} />
       )}
 
       <ClientDetailDialog client={selectedClient} open={!!selectedClient} onClose={() => setSelectedClient(null)} allowDelete={false} />

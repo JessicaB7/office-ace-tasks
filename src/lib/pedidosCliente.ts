@@ -55,3 +55,26 @@ export function contarPedidos(obls: (PedidoObl | null | undefined)[], today: Dat
   }
   return { total, atrasados };
 }
+
+/** Cliente na janela «Pedir documentos»: colunas (índice) ainda por fazer no mês
+ * → data de um pedido já registado nessa coluna (ou null). */
+export interface PedidoCandidato {
+  id: string;
+  name: string;
+  porFazer: Record<number, string | null>;
+}
+
+/** Clientes com pelo menos uma das colunas escolhidas por fazer. */
+export const candidatosParaColunas = (cands: PedidoCandidato[], cols: number[]): PedidoCandidato[] =>
+  cands.filter((c) => cols.some((i) => i in c.porFazer));
+
+/** Células a gravar: cada cliente escolhido × cada coluna escolhida que ele tem por fazer. */
+export function celulasAPedir(cands: PedidoCandidato[], clientIds: Iterable<string>, cols: number[]) {
+  const ids = new Set(clientIds);
+  const out: { clientId: string; col: number }[] = [];
+  for (const c of cands) {
+    if (!ids.has(c.id)) continue;
+    for (const i of cols) if (i in c.porFazer) out.push({ clientId: c.id, col: i });
+  }
+  return out;
+}
