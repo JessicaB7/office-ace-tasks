@@ -1,3 +1,5 @@
+import ManualLink from "@/components/ManualLink";
+import { REGIME_TIPO } from "@/lib/obligationManuals";
 import { useState, useEffect, useMemo } from "react";
 import { ativoNoMes, monthOf } from "@/lib/clientSaida";
 import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
@@ -371,7 +373,12 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
       {hasMultiColumns && !noTasksTab && (
         <>
           <div className="flex gap-1.5 shrink-0 w-[55%] max-w-4xl">
-            {columns!.map((col) => <div key={col} className="flex-1 min-w-0 truncate text-center">{col}</div>)}
+            {columns!.map((col, i) => (
+              <div key={col} className="flex-1 min-w-0 flex items-center justify-center gap-0.5">
+                <span className="truncate">{col}</span>
+                <ManualLink obligationType={colOblTypes[i]} tipoContabilidade={REGIME_TIPO[activeTab]} />
+              </div>
+            ))}
           </div>
           {isAdmin && <div className="w-24 shrink-0 text-center">Fechado em</div>}
           <div className="w-7 shrink-0" />

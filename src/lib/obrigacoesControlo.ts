@@ -1,7 +1,10 @@
 /** Controlo interno das Obrigações Mensais: que obrigações cada cliente tem num
  * mês de referência e quando cada uma conta como feita — as mesmas regras dos
  * separadores de ObrigacoesView (filtros de cliente, meses trimestrais e
- * colunas status/extra_done). Puro, sem side effects. */
+ * colunas status/extra_done). Puro, sem side effects.
+ * (Copiado tal e qual para supabase/functions/_shared/lib/ — ver sharedLib.test.ts.) */
+
+import { DEADLINE_KEYS as K, defaultDayResolver, type DayResolver } from "./deadlineOverrides.ts";
 
 export interface ObrigacaoTask {
   /** Separador das Obrigações Mensais (id do subPage em ObrigacoesView). */
@@ -54,41 +57,43 @@ const isQuarterEnd = (month: string) => monthIndex(month) % 3 === 2;
 
 /** Data "YYYY-MM-DD" do dia `day` do mês `monthIdx` (pode passar de 11 — avança o ano);
  * dias acima do fim do mês ficam no último dia. */
-const ymd = (year: number, monthIdx: number, day: number) => {
+const ymd = (year: number, monthIdx: number, day: number, key?: string, dayFor: DayResolver = defaultDayResolver) => {
   const first = new Date(year, monthIdx, 1);
   const last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
-  const d = Math.min(day, last);
+  // Prorrogação do prazo nesse mês (fiscal_deadline_overrides), quando há chave.
+  const d = key ? dayFor(key, first.getFullYear(), first.getMonth(), day) : Math.min(day, last);
   return `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 };
 
 /** Prazo legal de uma obrigação para o mês de referência `month` — os mesmos prazos
- * dos separadores das Obrigações Mensais e do "O meu dia". */
-export const deadlineFor = (c: any, type: string, field: "status" | "extra", month: string): string => {
+ * dos separadores das Obrigações Mensais e do "O meu dia". Com `dayFor`, aplica as
+ * prorrogações (fiscal_deadline_overrides). */
+export const deadlineFor = (c: any, type: string, field: "status" | "extra", month: string, dayFor: DayResolver = defaultDayResolver): string => {
   const y = Number(month.slice(0, 4));
   const m = monthIndex(month);
   const qEnd = m - (m % 3) + 2;
   switch (type) {
-    case "SAFT": return ymd(y, m + 1, m + 1 === 3 ? 8 : 5); // em Abril o prazo é dia 8
-    case "salarios": return c.salarios === "Sim até ao fim do mês" ? ymd(y, m + 1, 31) : ymd(y, m + 1, 25);
+    case "SAFT": return ymd(y, m + 1, m + 1 === 3 ? 8 : 5, K.SAFT, dayFor); // em Abril o prazo é dia 8
+    case "salarios": return c.salarios === "Sim até ao fim do mês" ? ymd(y, m + 1, 31) : ymd(y, m + 1, 25, K.SALARIOS_PROC, dayFor);
     // Guia até dia 10; pagamento AT até dia 20, pagamento SS até dia 25.
-    case "DMR_AT": return ymd(y, m + 1, field === "status" ? 10 : 20);
-    case "DMR_SS": return ymd(y, m + 1, field === "status" ? 10 : 25);
-    case "SS_TI": return ymd(y, m + 1, 20);
-    case "SS_TI_DT": return ymd(y, m, 31); // último dia do próprio mês (Jan/Abr/Jul/Out)
-    case "IVA": return c.iva === "Trimestral" ? ymd(y, qEnd + 2, 20) : ymd(y, m + 2, 20);
-    case "IVA_recapitulativa": return c.recapitulativa === "Trimestral" ? ymd(y, qEnd + 1, 20) : ymd(y, m + 1, 20);
-    case "retencao_fonte": return ymd(y, m + 1, 20);
+    case "DMR_AT": return field === "status" ? ymd(y, m + 1, 10, K.DMR_AT_GUIA, dayFor) : ymd(y, m + 1, 20, K.DMR_AT_PAG, dayFor);
+    case "DMR_SS": return field === "status" ? ymd(y, m + 1, 10, K.DMR_SS_GUIA, dayFor) : ymd(y, m + 1, 25, K.DMR_SS_PAG, dayFor);
+    case "SS_TI": return ymd(y, m + 1, 20, K.SS_TI_PAG, dayFor);
+    case "SS_TI_DT": return ymd(y, m, 31, K.SS_TI_DT, dayFor); // último dia do próprio mês (Jan/Abr/Jul/Out)
+    case "IVA": return c.iva === "Trimestral" ? ymd(y, qEnd + 2, 20, K.IVA_TRIMESTRAL, dayFor) : ymd(y, m + 2, 20, K.IVA_MENSAL, dayFor);
+    case "IVA_recapitulativa": return c.recapitulativa === "Trimestral" ? ymd(y, qEnd + 1, 20, K.RECAP_TRIMESTRAL, dayFor) : ymd(y, m + 1, 20, K.RECAP_MENSAL, dayFor);
+    case "retencao_fonte": return ymd(y, m + 1, 20, K.RETENCAO, dayFor);
     default: return ymd(y, m + 1, 20);
   }
 };
 
 /** Obrigações do cliente no mês de referência (vazio se o contrato ainda não tinha começado). */
-export const obrigacoesForClient = (c: any, month: string): ObrigacaoTask[] => {
+export const obrigacoesForClient = (c: any, month: string, dayFor: DayResolver = defaultDayResolver): ObrigacaoTask[] => {
   if (c.inicio_contrato && c.inicio_contrato.slice(0, 7) > month.slice(0, 7)) return [];
   const m = monthIndex(month);
   const out: ObrigacaoTask[] = [];
   const add = (group: string, label: string, type: string, field: "status" | "extra" = "status", meta: Record<string, string> = {}) =>
-    out.push({ group, label, type, field, meta, deadline: deadlineFor(c, type, field, month) });
+    out.push({ group, label, type, field, meta, deadline: deadlineFor(c, type, field, month, dayFor) });
 
   if (c.saft && c.saft !== "Não Aplicável") add("SAFT", "SAFT", "SAFT", "status", { modo: saftModo(c) });
   if (hasSalarios(c)) {

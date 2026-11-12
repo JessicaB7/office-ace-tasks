@@ -28,6 +28,8 @@ import {
   Bot,
   StickyNote,
   Scale,
+  History,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -150,6 +152,14 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
       { kind: "item", item: { id: "consultorias_painel", label: "Painel de consultorias", icon: MessageSquareQuote, adminOnly: true } },
       { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
       { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
+      { kind: "item", item: { id: "registo_alteracoes", label: "Registo de alterações", icon: History, adminOnly: true } },
+    ],
+  },
+  {
+    title: "Definições",
+    icon: Settings,
+    entries: [
+      { kind: "item", item: { id: "definicoes_manuais", label: "Manuais", icon: BookOpen, adminOnly: true } },
     ],
   },
 ];

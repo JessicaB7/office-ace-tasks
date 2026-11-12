@@ -73,10 +73,13 @@ interface ClientListViewProps {
   onOpenAnalysis?: (id: string) => void;
   /** Cliente cuja ficha deve abrir automaticamente (ex.: ao concluir um novo cliente). */
   openClientId?: string | null;
+  /** Separador da ficha a abrir com openClientId (ex.: "historico"). */
+  openClientTab?: string | null;
   onClientOpened?: () => void;
 }
 
-const ClientListView = ({ onOpenAnalysis, openClientId, onClientOpened }: ClientListViewProps) => {
+const ClientListView = ({ onOpenAnalysis, openClientId, openClientTab, onClientOpened }: ClientListViewProps) => {
+  const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
   const { data: clients = [], isLoading } = useClients();
   const { data: collaborators = [] } = useCollaborators();
   const [search, setSearch] = useState("");
@@ -102,16 +105,16 @@ const ClientListView = ({ onOpenAnalysis, openClientId, onClientOpened }: Client
 
   const missingCount = clients.filter((c: any) => clientStatus(c) === "ativo" && getMissingFields(c).length > 0).length;
 
-  const openNew = () => { setSelectedClient(null); setDialogOpen(true); };
-  const openEdit = (c: any) => { setSelectedClient(c); setDialogOpen(true); };
+  const openNew = () => { setInitialTab(undefined); setSelectedClient(null); setDialogOpen(true); };
+  const openEdit = (c: any, tab?: string) => { setInitialTab(tab); setSelectedClient(c); setDialogOpen(true); };
 
   useEffect(() => {
     if (!openClientId) return;
     const c = clients.find((cl: any) => cl.id === openClientId);
     if (!c) return; // espera que a lista (re)carregue com o cliente novo
-    openEdit(c);
+    openEdit(c, openClientTab || undefined);
     onClientOpened?.();
-  }, [openClientId, clients, onClientOpened]);
+  }, [openClientId, openClientTab, clients, onClientOpened]);
 
   const activeClients = clients.filter((c: any) => clientStatus(c) === "ativo");
 
@@ -218,6 +221,7 @@ const ClientListView = ({ onOpenAnalysis, openClientId, onClientOpened }: Client
         client={selectedClient}
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
+        initialTab={initialTab}
       />
     </div>
   );

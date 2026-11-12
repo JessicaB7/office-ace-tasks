@@ -1,3 +1,4 @@
+import ManualLink from "@/components/ManualLink";
 import { useState, useEffect, useMemo } from "react";
 import { ativoNoMes, monthOf } from "@/lib/clientSaida";
 import { useClients, useUpsertClient, useCollaborators, useDeadlineOverrides, useMonthlyObligations, useUpsertObligation, useObligationMessage, useSaveObligationMessage } from "@/hooks/useSupabaseQuery";
@@ -334,6 +335,9 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
     return list;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeClients, activeTab, subFilter, search, collabFilter, ssTiTab, showProgramaFaturacao, programaSearch, ivaFlexIds]);
+
+  // Tipo de obrigação do separador atual — para o ícone do manual do Notion em cada cliente.
+  const manualType = isDMR ? dmrTab : isSSTI ? ssTiTab : (activeTab === "IVA" && subFilter === "OSS") ? "IVA_OSS" : activeTab;
 
   const oblMap = useMemo(() => {
     const map: Record<string, any> = {};
@@ -950,9 +954,12 @@ const ObrigacoesView = ({ subPage, nav }: ObrigacoesViewProps) => {
                       </td>
                     )}
                     <td className={cn("px-4 py-3 font-medium", rowDone && "line-through text-muted-foreground")}>
-                      <button type="button" onClick={() => setSelectedClient(client)} className="hover:underline text-left">
-                        {client.name}
-                      </button>
+                      <span className="inline-flex items-center gap-1">
+                        <button type="button" onClick={() => setSelectedClient(client)} className="hover:underline text-left">
+                          {client.name}
+                        </button>
+                        <ManualLink obligationType={manualType} tipoContabilidade={client.tipo_contabilidade} />
+                      </span>
                     </td>
                     {showNif && <td className="px-4 py-3 text-muted-foreground">{client.nif || "—"}</td>}
                     <td className="px-4 py-3">

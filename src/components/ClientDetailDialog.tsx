@@ -10,6 +10,10 @@ import { useClientConsultoriaForms } from "@/hooks/useConsultoriaForms";
 import { useQueryClient } from "@tanstack/react-query";
 import { useClientOffboarding } from "@/hooks/useOffboardings";
 import ClientSaidaTab from "@/components/ClientSaidaTab";
+import ClientHistoricoTab from "@/components/ClientHistoricoTab";
+import AuditTable from "@/components/AuditTable";
+import { useAuditLog } from "@/hooks/useAuditLog";
+import { useAuth } from "@/hooks/useAuth";
 
 const TIPO_CONTAB_OPTIONS = [
   { value: "SQ", label: "Empresa (SQ)" },
@@ -135,11 +139,21 @@ interface ClientDetailDialogProps {
   open: boolean;
   onClose: () => void;
   allowDelete?: boolean;
+  /** Separador a abrir (ex.: "historico" vindo de uma notificação de seguimento). */
+  initialTab?: string;
 }
 
 const inputClass = "w-full px-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-ring";
 
-const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: ClientDetailDialogProps) => {
+/** Separador "Alterações" (só admin): registo de alterações deste cliente. */
+const ClientAlteracoesTab = ({ clientId }: { clientId: string }) => {
+  const { data: entries = [], isLoading } = useAuditLog({ clientId });
+  if (isLoading) return <p className="text-sm text-muted-foreground text-center py-6">A carregar...</p>;
+  return <div className="pt-2"><AuditTable entries={entries} /></div>;
+};
+
+const ClientDetailDialog = ({ client, open, onClose, allowDelete = true, initialTab }: ClientDetailDialogProps) => {
+  const { isAdmin } = useAuth();
   const { data: collaborators = [] } = useCollaborators();
   const upsert = useUpsertClient();
   const remove = useDeleteClient();
@@ -191,8 +205,8 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
     } else {
       setForm(emptyForm);
     }
-    setActiveTab("dados");
-  }, [client]);
+    setActiveTab(client && initialTab ? initialTab : "dados");
+  }, [client, initialTab]);
 
   if (!open) return null;
 
@@ -267,7 +281,7 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-foreground/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card rounded-2xl border shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
+      <div className="relative bg-card rounded-2xl border shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto animate-fade-in">
         <div className="flex items-center justify-between p-5 border-b">
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-bold">{isEditing ? "Ficha de Cliente" : "Novo Cliente"}</h3>
@@ -288,12 +302,14 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="px-5">
-            <TabsList className="w-full">
+            <TabsList className="w-full h-auto flex-wrap">
               <TabsTrigger value="dados" className="flex-1">Dados</TabsTrigger>
               <TabsTrigger value="enquadramento" className="flex-1">Enquadramento</TabsTrigger>
               {isEditing && <TabsTrigger value="obrigacoes" className="flex-1">Obrigações fiscais</TabsTrigger>}
               {consultoriaForms.length > 0 && <TabsTrigger value="consultoria" className="flex-1">Consultoria</TabsTrigger>}
               {isEditing && offboarding && <TabsTrigger value="saida" className="flex-1">Saída</TabsTrigger>}
+              {isEditing && <TabsTrigger value="historico" className="flex-1">Histórico</TabsTrigger>}
+              {isEditing && isAdmin && <TabsTrigger value="alteracoes" className="flex-1">Alterações</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="dados" className="space-y-4 pt-2">
@@ -481,6 +497,18 @@ const ClientDetailDialog = ({ client, open, onClose, allowDelete = true }: Clien
             {isEditing && offboarding && (
               <TabsContent value="saida">
                 <ClientSaidaTab offboarding={offboarding} />
+              </TabsContent>
+            )}
+
+            {isEditing && (
+              <TabsContent value="historico">
+                <ClientHistoricoTab clientId={client.id} />
+              </TabsContent>
+            )}
+
+            {isEditing && isAdmin && (
+              <TabsContent value="alteracoes">
+                <ClientAlteracoesTab clientId={client.id} />
               </TabsContent>
             )}
           </Tabs>

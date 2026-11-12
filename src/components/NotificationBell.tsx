@@ -19,6 +19,11 @@ const typeIcon: Record<string, string> = {
   calendly_lead: "📅",
   iva_entregue: "🧾",
   consultoria_form_submitted: "⚡",
+  ss_isencao: "⏳",
+  mapas_por_enviar: "🗺️",
+  toconline_erros: "⚠️",
+  seguimento_contacto: "📞",
+  teste: "🔔",
   info: "ℹ️",
 };
 

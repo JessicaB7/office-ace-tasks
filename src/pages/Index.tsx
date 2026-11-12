@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import AppSidebar from "@/components/AppSidebar";
 import DashboardView from "@/components/DashboardView";
 import TaskListView from "@/components/TaskListView";
@@ -33,6 +34,8 @@ import AssociatedTasksDialog from "@/components/AssociatedTasksDialog";
 import SessionConfirmationReminder from "@/components/comercial/SessionConfirmationReminder";
 import NewTasksReminder from "@/components/NewTasksReminder";
 import { useAuth } from "@/hooks/useAuth";
+import RegistoAlteracoesView from "@/components/RegistoAlteracoesView";
+import DefinicoesManuaisView from "@/components/DefinicoesManuaisView";
 
 const Index = () => {
   const { isAdmin } = useAuth();
@@ -43,6 +46,10 @@ const Index = () => {
   const [editingTask, setEditingTask] = useState<any | null>(null);
   const [analysisClientId, setAnalysisClientId] = useState<string | null>(null);
   const [openClientId, setOpenClientId] = useState<string | null>(null);
+  const [openClientTab, setOpenClientTab] = useState<string | null>(null);
+  const [viewParams, setViewParams] = useState<Record<string, string>>({});
+  const location = useLocation();
+  const navigate = useNavigate();
   const [contabNav, setContabNav] = useState<ContabilidadesNav | null>(null);
   const [obrigNav, setObrigNav] = useState<ObrigacoesNav | null>(null);
   const [obrigCtlNav, setObrigCtlNav] = useState<ObrigacoesControloNav | null>(null);
@@ -60,6 +67,23 @@ const Index = () => {
     setObrigCtlNav(null);
     setActiveView(view);
   };
+
+  // Ligações diretas (notificações, push e emails): /?view=...&client=...&tab=...
+  useEffect(() => {
+    const p = new URLSearchParams(location.search);
+    const view = p.get("view");
+    if (!view) return;
+    const params = Object.fromEntries(p.entries());
+    if (view === "clients" && p.get("client")) {
+      setOpenClientTab(p.get("tab"));
+      handleOpenClient(p.get("client")!);
+    } else {
+      handleSidebarNav(view);
+    }
+    setViewParams(params);
+    navigate("/", { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   const handleNewTask = () => {
     setEditingTask(null);
@@ -105,7 +129,8 @@ const Index = () => {
           <ClientListView
             onOpenAnalysis={(id) => setAnalysisClientId(id)}
             openClientId={openClientId}
-            onClientOpened={() => setOpenClientId(null)}
+            openClientTab={openClientTab}
+            onClientOpened={() => { setOpenClientId(null); setOpenClientTab(null); }}
           />
         )}
         {activeView === "clients" && analysisClientId && <ClientAnalysisView clientId={analysisClientId} onBack={() => setAnalysisClientId(null)} />}
@@ -117,6 +142,8 @@ const Index = () => {
         {activeView === "calendar" && <FiscalCalendarView />}
         {activeView === "notas" && <NotasView />}
         {activeView === "dividas" && <DividasView />}
+        {activeView === "registo_alteracoes" && isAdmin && <RegistoAlteracoesView />}
+        {activeView === "definicoes_manuais" && isAdmin && <DefinicoesManuaisView />}
       </main>
       <TaskFormDialog open={dialogOpen} task={editingTask} onClose={() => setDialogOpen(false)} />
       <DailyTasksReminderDialog onViewTasks={() => setActiveView("tasks")} />
