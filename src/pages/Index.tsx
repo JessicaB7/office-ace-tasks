@@ -42,6 +42,7 @@ import DefinicoesNotificacoesView from "@/components/DefinicoesNotificacoesView"
 import PushPrompt from "@/components/PushPrompt";
 import AssistenteFlutuante from "@/components/AssistenteFlutuante";
 import TarefasPeriodicasView from "@/components/TarefasPeriodicasView";
+import ResumoDiaView from "@/components/ResumoDiaView";
 
 const Index = () => {
   const { isAdmin } = useAuth();
@@ -159,6 +160,7 @@ const Index = () => {
           <MapasTrimestraisView initialYear={viewParams.year ? Number(viewParams.year) : undefined} initialQ={viewParams.q ? Number(viewParams.q) : undefined} />
         )}
         {activeView === "resumo" && <AdminWeeklySummary />}
+        {activeView === "resumo_dia" && isAdmin && <ResumoDiaView initialDate={viewParams.date} />}
         {activeView === "collaborators" && <CollaboratorListView />}
         {activeView === "calendar" && <FiscalCalendarView />}
         {activeView === "notas" && <NotasView />}

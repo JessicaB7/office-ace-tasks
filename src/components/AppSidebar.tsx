@@ -31,6 +31,7 @@ import {
   Settings,
   Bell,
   Repeat,
+  CalendarCheck,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -155,6 +156,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
       { kind: "item", item: { id: "comercial", label: "Painel comercial", icon: TrendingUp, adminOnly: true } },
       { kind: "item", item: { id: "consultorias_painel", label: "Painel de consultorias", icon: MessageSquareQuote, adminOnly: true } },
       { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
+      { kind: "item", item: { id: "resumo_dia", label: "Resumo do dia", icon: CalendarCheck, adminOnly: true } },
       { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
     ],
   },

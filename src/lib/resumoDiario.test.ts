@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  buildResumoDiario, isDiaUtil, isGestaoMensal, lisbonDay, lisbonHour, mapaUtilizadores, obrigacaoLabel,
+  addDiasYmd, buildResumoDiario, isDiaUtil, resumoDiaLink, resumoNotificacaoTexto, isGestaoMensal, lisbonDay, lisbonHour, mapaUtilizadores, obrigacaoLabel,
   type RDColaborador,
 } from "./resumoDiario";
 
@@ -126,5 +126,24 @@ describe("buildResumoDiario", () => {
     expect(ana.emAtraso[0].prazo).toBe("01/11");
     expect(ana.totalFeito).toBe(0);
     expect(r.totais.emAtraso).toBe(12);
+  });
+});
+
+describe("notificação", () => {
+  it("texto curto por colaborador (primeiro nome) e ligação", () => {
+    const r = buildResumoDiario({
+      dia: DIA, collaborators: colabs, adminUserIds: ["u-admin"], clients,
+      tarefasConcluidas: [
+        { id: "t1", title: "A", status: "concluida", due_date: null, collaborator_id: "c-ana", client_id: null, updated_at: "2026-11-12T10:00:00Z" },
+        { id: "t2", title: "B", status: "concluida", due_date: null, collaborator_id: "c-ana", client_id: null, updated_at: "2026-11-12T11:00:00Z" },
+      ],
+      tarefasAbertas: [], obrigacoes: [], contactos: [],
+    });
+    expect(resumoNotificacaoTexto(r)).toBe("Ana: 2 · Jéssica: 0 · Soraia: 0");
+    expect(resumoDiaLink(DIA)).toBe("/?view=resumo_dia&date=2026-11-12");
+  });
+  it("addDiasYmd atravessa meses", () => {
+    expect(addDiasYmd("2026-11-30", 1)).toBe("2026-12-01");
+    expect(addDiasYmd("2026-03-01", -1)).toBe("2026-02-28");
   });
 });

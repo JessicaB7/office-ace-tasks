@@ -57,8 +57,8 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
 1. **Visão geral** — landing "O meu dia" (`DashboardView.tsx`): métricas pessoais, prazos da semana.
 2. **Comercial** — pipeline (Kanban), leads, propostas enviadas, follow ups, scripts.
 3. **Clientes** — dados, gestão mensal (contabilidades), obrigações, fecho do mês, mapas trimestrais, extratos, TOConline (fila, procedimentos, automações com erro), análise financeira.
-4. **Gestão de negócio** (admin) — painel, painel comercial, painel de consultorias, colaboradores, resumo mensal,
-   registo de alterações.
+4. **Gestão de negócio** (admin) — painel, painel comercial, painel de consultorias, colaboradores, resumo do dia,
+   resumo mensal.
 5. **Definições** — Notificações (todos) e Manuais (admin).
 
 ## 7. Módulos
@@ -179,7 +179,7 @@ Dashboards por regime:
   por hook**, nunca reutilizar nomes de canal.
 - Email transacional via Resend com fila (`enqueue_email`, `read_email_batch`, `email_queue_dispatch`),
   supressão (`suppressed_emails`) e unsubscribe (`email_unsubscribe_tokens`).
-  Funções: `send-transactional-email`, `process-email-queue`, `send-daily-summary`,
+  Funções: `send-transactional-email`, `process-email-queue`,
   `send-weekly-digest`, `handle-email-suppression`, `handle-email-unsubscribe`,
   `preview-transactional-email`. Templates em `supabase/functions/_shared/transactional-email-templates/`.
 
@@ -241,14 +241,16 @@ Dashboards por regime:
   colaborador na vista de Colaboradores (`push_devices_by_user`, admin).
 - Ligações diretas: `/?view=<vista>&client=<id>&tab=<separador>` (tratadas no `Index.tsx`).
 
-### Resumo diário da equipa (`send-daily-summary`)
-- Dias úteis às 19:00 de Lisboa (cron 18:00/19:00 UTC seg–sex com verificação da hora; `{ force: true }` para teste).
-  Email à(s) admin(s) (por «tu») + notificação in-app: por colaborador, tarefas concluídas, células da Gestão Mensal e
-  obrigações marcadas no dia (`monthly_obligations.completed_at/completed_by`, agrupadas por cliente), contactos
-  registados e tarefas com prazo ultrapassado (total + lista); ativos sem nada → «Sem registos hoje».
-  Lógica pura em `src/lib/resumoDiario.ts` (cópia em `_shared/lib/`). Renderiza o template e põe na fila (`enqueue_email`).
-- Envio real depende do secret `RESEND_API_KEY` no projeto Supabase (sem ele o `process-email-queue` responde 500
-  «Server configuration error» e a fila não anda) e do domínio `notify.contabilistaexplica.pt` verificado no Resend.
+### Resumo do dia da equipa (vista `resumo_dia` + `send-daily-summary`) — só na app, sem email
+- Vista admin-only **«Resumo do dia»** (Gestão de negócio, `ResumoDiaView.tsx`): data escolhida (por omissão hoje,
+  setas dia anterior/seguinte, `?date=YYYY-MM-DD`), totais do escritório no topo e um cartão por colaborador com
+  tarefas concluídas (com cliente), Gestão Mensal e obrigações marcadas no dia (`monthly_obligations.completed_at/
+  completed_by`, agrupadas por cliente), contactos registados e tarefas com prazo ultrapassado (estado atual).
+  Calculado no cliente (TanStack Query) com a lógica pura de `src/lib/resumoDiario.ts` (cópia em `_shared/lib/`).
+- `send-daily-summary`: dias úteis às 19:00 de Lisboa (cron 18:00/19:00 UTC seg–sex com verificação da hora;
+  `{ force: true }` para teste). **Não envia email**: cria só a notificação in-app «Resumo do dia» para as admins,
+  com os registos por colaborador («Ana: 5 · Diogo: 3 · Angela: 0», `resumoNotificacaoTexto`) e
+  `link = /?view=resumo_dia&date=YYYY-MM-DD`.
 
 ### Relatório semanal (`send-weekly-digest`)
 - Segunda às 08:00 de Lisboa (cron 07:00/08:00 UTC com verificação da hora). Mantém o resumo de tarefas por

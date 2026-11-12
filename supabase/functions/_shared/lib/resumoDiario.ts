@@ -1,5 +1,5 @@
-/** Resumo diário da equipa (email à admin às 19:00 de Lisboa, dias úteis).
- * Lógica pura — usada pela edge function `send-daily-summary` através da cópia em
+/** Resumo diário da equipa (vista «Resumo do dia» da admin + notificação in-app às 19:00 de Lisboa, dias úteis).
+ * Lógica pura — usada pela vista ResumoDiaView e pela edge function `send-daily-summary` através da cópia em
  * supabase/functions/_shared/lib/resumoDiario.ts (o teste sharedLib.test.ts exige que sejam iguais). */
 
 export interface RDColaborador { id: string; name: string; user_id: string | null; active: boolean }
@@ -97,6 +97,13 @@ export function obrigacaoLabel(type: string): string {
 
 /** "nov." a partir de "2026-11-01". */
 export const mesCurto = (referenceMonth: string): string => `${MESES[Number(referenceMonth.slice(5, 7)) - 1] ?? "?"}.`;
+
+/** Soma n dias a uma data "YYYY-MM-DD". */
+export const addDiasYmd = (ymd: string, n: number): string => {
+  const d = new Date(`${ymd}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
 
 const fmtDia = (ymd: string) => `${ymd.slice(8, 10)}/${ymd.slice(5, 7)}`;
 
@@ -219,3 +226,13 @@ export function buildResumoDiario(input: {
     },
   };
 }
+
+/** Mensagem curta da notificação: registos do dia por colaborador ("Ana: 5 · Diogo: 3 · Angela: 0"). */
+export function resumoNotificacaoTexto(r: RDResumo): string {
+  return r.colaboradores
+    .map((c) => `${c.id === NAO_IDENTIFICADO ? "Não identificado" : c.nome.split(" ")[0]}: ${c.totalFeito}`)
+    .join(" · ");
+}
+
+/** Ligação para a vista «Resumo do dia» numa data. */
+export const resumoDiaLink = (dia: string): string => `/?view=resumo_dia&date=${dia}`;
