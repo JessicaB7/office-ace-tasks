@@ -30,7 +30,6 @@ import {
   Scale,
   History,
   Settings,
-  Map as MapIcon,
   Bell,
   Repeat,
   type LucideIcon,
@@ -120,7 +119,6 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
         },
       },
       { kind: "item", item: { id: "fecho_mes", label: "Fecho do mês", icon: Gauge } },
-      { kind: "item", item: { id: "mapas_trimestrais", label: "Mapas trimestrais", icon: MapIcon } },
       { kind: "item", item: { id: "extratos", label: "Extratos Bancários", icon: Banknote } },
       {
         kind: "group",

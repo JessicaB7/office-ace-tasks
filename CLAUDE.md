@@ -212,6 +212,8 @@ Dashboards por regime:
 ### Mapas trimestrais por enviar
 - `MapasTrimestraisView` (Clientes): `client_financial_settings` do ano, colunas `mapa_qN_enviado/data` e
   `relatorio_qN_entregue/data`; marcação individual e em lote; contador "X de Y". Regras em `src/lib/mapasTrimestrais.ts`.
+  Retirada da barra lateral (12/11/2026, a pedido da admin); a vista continua acessível por `?view=mapas_trimestrais`
+  (ligações das notificações e do relatório semanal).
 
 ### Alertas diários (`run_daily_alerts`, pg_cron `run-daily-alerts`, 08:00 Lisboa)
 - Isenção SS (`clients.seguranca_social_isencao_fim`): 60 dias antes notifica responsável + admin; 15 dias antes
