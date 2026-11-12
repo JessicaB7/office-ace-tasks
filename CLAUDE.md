@@ -241,6 +241,15 @@ Dashboards por regime:
   colaborador na vista de Colaboradores (`push_devices_by_user`, admin).
 - Ligações diretas: `/?view=<vista>&client=<id>&tab=<separador>` (tratadas no `Index.tsx`).
 
+### Resumo diário da equipa (`send-daily-summary`)
+- Dias úteis às 19:00 de Lisboa (cron 18:00/19:00 UTC seg–sex com verificação da hora; `{ force: true }` para teste).
+  Email à(s) admin(s) (por «tu») + notificação in-app: por colaborador, tarefas concluídas, células da Gestão Mensal e
+  obrigações marcadas no dia (`monthly_obligations.completed_at/completed_by`, agrupadas por cliente), contactos
+  registados e tarefas com prazo ultrapassado (total + lista); ativos sem nada → «Sem registos hoje».
+  Lógica pura em `src/lib/resumoDiario.ts` (cópia em `_shared/lib/`). Renderiza o template e põe na fila (`enqueue_email`).
+- Envio real depende do secret `RESEND_API_KEY` no projeto Supabase (sem ele o `process-email-queue` responde 500
+  «Server configuration error» e a fila não anda) e do domínio `notify.contabilistaexplica.pt` verificado no Resend.
+
 ### Relatório semanal (`send-weekly-digest`)
 - Segunda às 08:00 de Lisboa (cron 07:00/08:00 UTC com verificação da hora). Mantém o resumo de tarefas por
   colaborador e acrescenta o relatório do escritório para a admin + versão resumida para quem ativar

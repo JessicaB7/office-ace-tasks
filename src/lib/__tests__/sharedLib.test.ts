@@ -2,10 +2,10 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import path from "path";
 
-// As edge functions (relatório semanal) usam cópias destes ficheiros em
+// As edge functions (relatório semanal, resumo diário) usam cópias destes ficheiros em
 // supabase/functions/_shared/lib/. Se este teste falhar, copiar de novo:
-//   cp src/lib/{deadlineOverrides,obrigacoesControlo,clientSaida,fechoMes,clientContacts}.ts supabase/functions/_shared/lib/
-const FILES = ["deadlineOverrides.ts", "obrigacoesControlo.ts", "clientSaida.ts", "fechoMes.ts", "clientContacts.ts"];
+//   cp src/lib/{deadlineOverrides,obrigacoesControlo,clientSaida,fechoMes,clientContacts,resumoDiario}.ts supabase/functions/_shared/lib/
+const FILES = ["deadlineOverrides.ts", "obrigacoesControlo.ts", "clientSaida.ts", "fechoMes.ts", "clientContacts.ts", "resumoDiario.ts"];
 const root = path.resolve(__dirname, "../../..");
 
 describe("cópias partilhadas com as edge functions", () => {
