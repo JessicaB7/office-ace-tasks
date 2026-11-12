@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ClientDetailDialog from "@/components/ClientDetailDialog";
 import ClientesEntradaSaidaCard from "@/components/ClientesEntradaSaidaCard";
 import IsencoesSSCard from "@/components/IsencoesSSCard";
+import FechoMesCard from "@/components/FechoMesCard";
 import { getInitials, getAvatarPalette } from "@/lib/avatar";
 import { DEADLINE_KEYS as K, makeDayResolver } from "@/lib/deadlineOverrides";
 import { referenceLabel, relativeDeadline, shortDate, type DeadlineTone } from "@/lib/deadlineLabels";
@@ -76,7 +77,7 @@ const getFridaysInMonth = (year: number, monthIndex: number): number[] => {
   return fridays;
 };
 
-const DashboardView = () => {
+const DashboardView = ({ onNavigate }: { onNavigate?: (view: string) => void }) => {
   const { user, isAdmin } = useAuth();
   const { data: tasks = [], isLoading } = useTasks();
   const { data: clients = [] } = useClients();
@@ -516,6 +517,8 @@ const DashboardView = () => {
 
       {renderDeadlineSection(weekDeadlines, "Prazos desta Semana", "primary", "120ms")}
       {renderDeadlineSection(nextWeekDeadlines, "Prazos da Próxima Semana", "muted", "180ms")}
+
+      <FechoMesCard onOpen={onNavigate ? () => onNavigate("fecho_mes") : undefined} />
 
       <IsencoesSSCard onOpenClient={setSelectedClient} />
 

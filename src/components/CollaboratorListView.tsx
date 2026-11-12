@@ -4,7 +4,8 @@ import { useCollaborators, useUpsertCollaborator, useDeleteCollaborator, useTask
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Collaborator } from "@/types/database";
-import { Search, Plus, UserCircle, X, Key, Eye, EyeOff } from "lucide-react";
+import { Search, Plus, UserCircle, X, Key, Eye, EyeOff, BellRing, BellOff } from "lucide-react";
+import { usePushDevicesByUser } from "@/hooks/useNotificationPreferences";
 import { useToast } from "@/hooks/use-toast";
 import CollaboratorDetailDialog from "./CollaboratorDetailDialog";
 import CollaboratorClientsDialog from "./CollaboratorClientsDialog";
@@ -16,6 +17,7 @@ const CollaboratorListView = () => {
   const { data: tasks = [] } = useTasks();
   const { data: clients = [] } = useClients();
   const { isAdmin } = useAuth();
+  const { data: pushByUser } = usePushDevicesByUser(isAdmin);
   const upsert = useUpsertCollaborator();
   const remove = useDeleteCollaborator();
   const { toast } = useToast();
@@ -169,6 +171,19 @@ const CollaboratorListView = () => {
                     <h3 className="font-semibold text-sm">{collab.name}</h3>
                     <p className="text-xs text-muted-foreground">{collab.role}</p>
                   </div>
+                  {isAdmin && pushByUser && (() => {
+                    const p = collab.user_id ? pushByUser.get(collab.user_id) : undefined;
+                    return p ? (
+                      <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-success/15 text-success"
+                        title={`Notificações ativas em ${p.dispositivos} ${p.dispositivos === 1 ? "dispositivo" : "dispositivos"}`}>
+                        <BellRing className="w-3 h-3" /> {p.dispositivos}
+                      </span>
+                    ) : (
+                      <span className="ml-auto inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground" title="Sem notificações ativas no telemóvel">
+                        <BellOff className="w-3 h-3" />
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">{collab.email}</p>
                 

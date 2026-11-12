@@ -31,6 +31,7 @@ import {
   History,
   Settings,
   Map as MapIcon,
+  Bell,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -116,6 +117,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
           ],
         },
       },
+      { kind: "item", item: { id: "fecho_mes", label: "Fecho do mês", icon: Gauge } },
       { kind: "item", item: { id: "mapas_trimestrais", label: "Mapas trimestrais", icon: MapIcon } },
       { kind: "item", item: { id: "extratos", label: "Extratos Bancários", icon: Banknote } },
       {
@@ -162,6 +164,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
     title: "Definições",
     icon: Settings,
     entries: [
+      { kind: "item", item: { id: "definicoes_notificacoes", label: "Notificações", icon: Bell } },
       { kind: "item", item: { id: "definicoes_manuais", label: "Manuais", icon: BookOpen, adminOnly: true } },
     ],
   },

@@ -38,6 +38,9 @@ import RegistoAlteracoesView from "@/components/RegistoAlteracoesView";
 import DefinicoesManuaisView from "@/components/DefinicoesManuaisView";
 import ToconlineAutomacoesView from "@/components/toconline/ToconlineAutomacoesView";
 import MapasTrimestraisView from "@/components/financial/MapasTrimestraisView";
+import FechoMesView from "@/components/FechoMesView";
+import DefinicoesNotificacoesView from "@/components/DefinicoesNotificacoesView";
+import PushPrompt from "@/components/PushPrompt";
 
 const Index = () => {
   const { isAdmin } = useAuth();
@@ -108,7 +111,7 @@ const Index = () => {
           <NotificationBell />
         </div>
         {activeView === "business" && isAdmin && <BusinessOverviewView onNavigate={setActiveView} />}
-        {activeView === "dashboard" && <DashboardView />}
+        {activeView === "dashboard" && <DashboardView onNavigate={handleSidebarNav} />}
         {activeView === "comercial" && isAdmin && <ComercialView />}
         {activeView === "leads" && <LeadsView />}
         {activeView === "propostas" && <PropostasView />}
@@ -140,6 +143,7 @@ const Index = () => {
         {activeView === "toconline_fila" && <ToconlineFilaView />}
         {activeView === "toconline_procedimentos" && <ToconlineProcedimentosView />}
         {activeView === "toconline_automacoes" && <ToconlineAutomacoesView />}
+        {activeView === "fecho_mes" && <FechoMesView onOpenObrigacao={(g, month, search) => { setObrigNav({ month, search }); setActiveView(`obrigacoes_${g}`); }} />}
         {activeView === "mapas_trimestrais" && (
           <MapasTrimestraisView initialYear={viewParams.year ? Number(viewParams.year) : undefined} initialQ={viewParams.q ? Number(viewParams.q) : undefined} />
         )}
@@ -150,12 +154,14 @@ const Index = () => {
         {activeView === "dividas" && <DividasView />}
         {activeView === "registo_alteracoes" && isAdmin && <RegistoAlteracoesView />}
         {activeView === "definicoes_manuais" && isAdmin && <DefinicoesManuaisView />}
+        {activeView === "definicoes_notificacoes" && <DefinicoesNotificacoesView />}
       </main>
       <TaskFormDialog open={dialogOpen} task={editingTask} onClose={() => setDialogOpen(false)} />
       <DailyTasksReminderDialog onViewTasks={() => setActiveView("tasks")} />
       <AssociatedTasksDialog />
       <SessionConfirmationReminder onViewLeads={() => setActiveView("leads")} />
       <NewTasksReminder onOpenTask={handleEditTask} />
+      <PushPrompt />
       {isAdmin && (
         <ObrigacoesPrazoReminder onOpen={(group, month) => { setObrigCtlNav({ month, group }); setActiveView("obrigacoes_controlo"); }} />
       )}
