@@ -245,6 +245,8 @@ Dashboards por regime:
   pedido de pendentes (por "tu", nunca envia), pergunta livre e dúvidas de processos (só com `manual_pages`).
   **Nunca** enviar `senha_at`, `senha_ss`, `senha_faturacao`, `via_ctt_senha`, `via_ctt_resposta`, `chave_ss`,
   `utilizador_faturacao`, `niss` ao modelo. Cada uso em `assistant_log` (sem conteúdo).
+  Na app só é usado no ícone flutuante (processos) e no Robot da análise — o separador «Assistente» da ficha do
+  cliente foi retirado (12/11/2026, a pedido da admin).
 - `sync-manuais` (secret `NOTION_TOKEN`, pg_cron diário `sync-manuais`) copia as páginas-filhas de
   «Manual · Técnica de contabilidade» para `manual_pages`. Ícone flutuante `AssistenteFlutuante`.
 
