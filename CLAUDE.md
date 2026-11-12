@@ -187,7 +187,8 @@ Dashboards por regime:
 - `audit_log` + trigger `audit_clients` em `clients`: responsável, mensalidade, estado, tipo de contabilidade,
   criação/eliminação e senhas (`senha_at`, `senha_ss`, `senha_faturacao`, `via_ctt_senha`, `chave_ss`) — das senhas
   **nunca** se guarda o valor, só "senha alterada". Leitura só admin: separador «Alterações» na ficha e página
-  «Registo de alterações» (Gestão de negócio). Rótulos em `src/lib/auditLabels.ts`.
+  «Registo de alterações» (`?view=registo_alteracoes`; retirada da barra lateral a 12/11/2026). Rótulos em
+  `src/lib/auditLabels.ts`.
 
 ### Histórico de contactos
 - `client_contacts` (tipo email/chamada/whatsapp/reuniao/pedido_documentos/outro, data, resumo, `seguimento_em`).

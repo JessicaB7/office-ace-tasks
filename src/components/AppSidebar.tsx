@@ -28,7 +28,6 @@ import {
   Bot,
   StickyNote,
   Scale,
-  History,
   Settings,
   Bell,
   Repeat,
@@ -157,7 +156,6 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
       { kind: "item", item: { id: "consultorias_painel", label: "Painel de consultorias", icon: MessageSquareQuote, adminOnly: true } },
       { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },
       { kind: "item", item: { id: "resumo", label: "Resumo Mensal", icon: BarChart3, adminOnly: true } },
-      { kind: "item", item: { id: "registo_alteracoes", label: "Registo de alterações", icon: History, adminOnly: true } },
     ],
   },
   {
