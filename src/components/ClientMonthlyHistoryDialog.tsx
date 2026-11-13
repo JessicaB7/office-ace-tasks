@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { X, Check, ChevronLeft, ChevronRight, Play, Square, User, History, ArrowLeft, Building2, StickyNote } from "lucide-react";
+import { X, Check, ChevronLeft, ChevronRight, Play, Square, User, History, ArrowLeft, Building2, StickyNote, Hourglass } from "lucide-react";
 import {
   useClientObligationsHistory, useCollaborators, useUpsertObligation, useUpsertClient,
   useRunningTimeEntry, useStartTimer, useStopTimer,
@@ -15,6 +15,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { isColumnApplicable, isColumnOffMonth, isObligationSatisfied } from "@/lib/contabilidadesConfig";
 import { useClientFinancialSettings } from "@/hooks/useClientFinancials";
 import { format, parseISO } from "date-fns";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PedidoClienteForm } from "@/components/PedidoCliente";
+import { temPedido, pedidoAtrasado, diasAEspera, fmtPedido, hojeISO } from "@/lib/pedidosCliente";
 
 const MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -247,9 +254,17 @@ const TimerSection = ({ clientId, clientName, collaboratorId }: { clientId: stri
 /** Célula de uma obrigação (Empresas, aba completa) — estado com 3 opções
  * (Não iniciado / Em andamento / Concluído) mais uma nota ao lado, em vez do
  * simples visto usado nos outros regimes. */
-const ObligationStatusCell = ({ existing, onUpdate }: { existing: any | undefined; onUpdate: (patch: { status?: string; notes?: string | null }) => void }) => {
+const ObligationStatusCell = ({ existing, onUpdate, pedidoTitle, onPedido }: {
+  existing: any | undefined;
+  onUpdate: (patch: { status?: string; notes?: string | null }) => void;
+  /** «Pedido ao cliente» desta célula (⏳): título do popover e gravação (date = null remove). */
+  pedidoTitle?: string;
+  onPedido?: (date: string | null, nota: string | null) => void;
+}) => {
   const status = normalizeStatus(existing?.status);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [pedidoOpen, setPedidoOpen] = useState(false);
+  const pedido = temPedido(existing) ? (existing.pedido_cliente_em as string) : null;
   const [notesValue, setNotesValue] = useState(existing?.notes || "");
 
   useEffect(() => {
@@ -290,6 +305,160 @@ const ObligationStatusCell = ({ existing, onUpdate }: { existing: any | undefine
           />
         </PopoverContent>
       </Popover>
+      {onPedido && status !== "concluida" && (
+        <Popover open={pedidoOpen} onOpenChange={setPedidoOpen}>
+          <PopoverTrigger asChild>
+            <button type="button" title={pedido ? `Pedido ao cliente em ${fmtPedido(pedido)}${existing?.pedido_cliente_nota ? ` — ${existing.pedido_cliente_nota}` : ""}` : "Pedido ao cliente"}
+              className={cn("shrink-0 p-0.5 inline-flex items-center gap-0.5 text-[10px] font-medium rounded",
+                pedido ? (pedidoAtrasado(pedido) ? "text-destructive" : "text-warning") : "text-muted-foreground/30 hover:text-muted-foreground")}>
+              <Hourglass className="w-3.5 h-3.5" />{pedido && fmtPedido(pedido)}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-3" align="center">
+            <PedidoClienteForm title={pedidoTitle ?? ""} initialDate={pedido} initialNota={pedido ? existing?.pedido_cliente_nota : ""}
+              hasPedido={!!pedido} onSave={(d, n) => onPedido(d, n)} onClear={() => onPedido(null, null)} onClose={() => setPedidoOpen(false)} />
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  );
+};
+
+/** «Pedido de documentos» na página do cliente: pedidos em aberto e registo de um novo pedido
+ * (várias colunas do mesmo mês de uma vez). */
+interface OblPedido {
+  id?: string;
+  reference_month: string;
+  obligation_type: string;
+  status?: string | null;
+  pedido_cliente_em?: string | null;
+  pedido_cliente_nota?: string | null;
+}
+const PedidosClienteSection = ({ client, columns, colOblTypes, obligations, defaultMonth, onSave }: {
+  client: Record<string, unknown>;
+  columns: string[];
+  colOblTypes: string[];
+  obligations: OblPedido[];
+  defaultMonth: string;
+  onSave: (cells: { monthKey: string; col: number }[], date: string | null, nota: string | null) => Promise<void>;
+}) => {
+  const [aberto, setAberto] = useState(false);
+  const [mes, setMes] = useState(defaultMonth);
+  const [cols, setCols] = useState<number[]>([]);
+  const [date, setDate] = useState(hojeISO());
+  const [nota, setNota] = useState("");
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { setMes(defaultMonth); }, [defaultMonth]);
+
+  const find = (monthKey: string, i: number) => obligations.find((o) => o.reference_month === monthKey && o.obligation_type === colOblTypes[i]);
+  const abertos = obligations
+    .filter((o) => temPedido(o) && colOblTypes.includes(o.obligation_type))
+    .sort((a, b) => String(a.pedido_cliente_em).localeCompare(String(b.pedido_cliente_em)));
+  const porFazer = columns
+    .map((col, i) => ({ col, i, o: find(mes, i) }))
+    .filter(({ col, o }) => isColumnApplicable(client, col, mes) && o?.status !== "concluida");
+  // Mês de referência e os 5 anteriores.
+  const meses = Array.from({ length: 6 }, (_, k) => {
+    const d = new Date(Number(defaultMonth.slice(0, 4)), Number(defaultMonth.slice(5, 7)) - 1 - k, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const nomeMes = (m: string) => `${MONTH_NAMES[Number(m.slice(5, 7)) - 1]} ${m.slice(0, 4)}`;
+
+  const registar = async () => {
+    if (!cols.length || !date) return;
+    setSaving(true);
+    try {
+      await onSave(cols.map((col) => ({ monthKey: mes, col })), date, nota.trim() || null);
+      toast("Pedido ao cliente registado");
+      setAberto(false); setCols([]); setNota(""); setDate(hojeISO());
+    } catch {
+      toast.error("Não foi possível registar o pedido.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-card rounded-2xl border p-5 space-y-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="font-semibold text-sm flex items-center gap-2"><Hourglass className="w-4 h-4 text-primary" /> Pedido de documentos</h3>
+        <Button size="sm" variant={aberto ? "ghost" : "default"} onClick={() => setAberto((v) => !v)}>
+          {aberto ? "Cancelar" : "Pedir documentos"}
+        </Button>
+      </div>
+
+      {aberto && (
+        <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Mês</Label>
+              <select value={mes} onChange={(e) => { setMes(e.target.value); setCols([]); }}
+                className="h-8 text-sm px-2 rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring">
+                {meses.map((m) => <option key={m} value={m}>{nomeMes(m)}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ped-data" className="text-xs">Data do pedido</Label>
+              <Input id="ped-data" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-8 text-sm w-40" />
+            </div>
+            <div className="space-y-1 flex-1 min-w-[200px]">
+              <Label htmlFor="ped-nota" className="text-xs">O que se pediu (opcional)</Label>
+              <Input id="ped-nota" value={nota} onChange={(e) => setNota(e.target.value)} maxLength={200}
+                placeholder="ex.: faturas de compras e extrato de outubro" className="h-8 text-sm" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Documentos de</Label>
+            {porFazer.length === 0 ? <p className="text-xs text-muted-foreground">Tudo feito neste mês.</p> : (
+              <div className="flex flex-wrap gap-3">
+                {porFazer.map(({ col, i, o }) => (
+                  <label key={col} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                    <Checkbox checked={cols.includes(i)} onCheckedChange={(v) => setCols((c) => (v ? [...c, i] : c.filter((x) => x !== i)))} />
+                    {col}
+                    {temPedido(o) && <span className="text-[10px] text-warning">(pedido {fmtPedido(o.pedido_cliente_em)})</span>}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <Button size="sm" onClick={registar} disabled={!cols.length || !date || saving}>
+              Registar pedido{cols.length ? ` (${cols.length})` : ""}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {abertos.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Sem pedidos à espera do cliente.</p>
+      ) : (
+        <div className="divide-y">
+          {abertos.map((o) => {
+            const i = colOblTypes.indexOf(o.obligation_type);
+            const dias = diasAEspera(o.pedido_cliente_em);
+            const atrasado = pedidoAtrasado(o.pedido_cliente_em);
+            return (
+              <div key={o.id} className="flex items-center gap-3 py-1.5 text-sm">
+                <Hourglass className={cn("w-3.5 h-3.5 shrink-0", atrasado ? "text-destructive" : "text-warning")} />
+                <span className="min-w-0 flex-1">
+                  <span className="font-medium">{columns[i]} · {nomeMes(o.reference_month)}</span>
+                  <span className="text-xs text-muted-foreground block truncate">
+                    pedido {fmtPedido(o.pedido_cliente_em)}{o.pedido_cliente_nota ? ` · ${o.pedido_cliente_nota}` : ""}
+                  </span>
+                </span>
+                <span className={cn("text-xs font-semibold tabular-nums", atrasado ? "text-destructive" : "text-muted-foreground")}>
+                  {dias === 0 ? "hoje" : `${dias} ${dias === 1 ? "dia" : "dias"}`}
+                </span>
+                <button type="button" className="text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => onSave([{ monthKey: o.reference_month, col: i }], null, null).then(() => toast("Pedido removido")).catch(() => toast.error("Não foi possível remover o pedido."))}>
+                  Remover
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <p className="text-[11px] text-muted-foreground">Quando os documentos chegarem, marca a tarefa como concluída — o pedido desaparece sozinho.</p>
     </div>
   );
 };
@@ -409,6 +578,24 @@ const ClientMonthlyHistoryDialog = ({
     }, { onSuccess: invalidateHistory });
   };
 
+  // «Pedido ao cliente» numa célula (date = null remove), mantendo o estado.
+  const savePedidos = async (cells: { monthKey: string; col: number }[], date: string | null, nota: string | null) => {
+    if (!client) return;
+    await Promise.all(cells.map(({ monthKey, col }) => {
+      const existing = obligations.find((o: OblPedido) => o.reference_month === monthKey && o.obligation_type === colOblTypes[col]);
+      return upsert.mutateAsync({
+        ...(existing?.id ? { id: existing.id } : {}),
+        client_id: client.id,
+        obligation_type: colOblTypes[col],
+        reference_month: monthKey,
+        status: existing?.status ?? "pendente",
+        pedido_cliente_em: date,
+        pedido_cliente_nota: date ? nota : null,
+      });
+    }));
+    invalidateHistory();
+  };
+
   if (!open || !client) return null;
 
   if (variant === "page") {
@@ -472,6 +659,12 @@ const ClientMonthlyHistoryDialog = ({
             )}
           </div>
         </div>
+
+        {hasMultiColumns && (
+          <PedidosClienteSection client={client} columns={columns!} colOblTypes={colOblTypes} obligations={obligations}
+            defaultMonth={referenceMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`}
+            onSave={savePedidos} />
+        )}
 
         <div className="bg-card rounded-2xl border p-5 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -537,6 +730,10 @@ const ClientMonthlyHistoryDialog = ({
                                 <ObligationStatusCell
                                   existing={existing}
                                   onUpdate={(patch) => updateCell(row.key, colOblTypes[i], existing, patch)}
+                                  pedidoTitle={`${columns![i]} · ${row.label}`}
+                                  onPedido={(date, nota) => savePedidos([{ monthKey: row.key, col: i }], date, nota)
+                                    .then(() => toast(date ? "Pedido ao cliente registado" : "Pedido removido"))
+                                    .catch(() => toast.error("Não foi possível guardar o pedido."))}
                                 />
                               ) : isColumnOffMonth(client, columns![i], row.key) ? null : (
                                 <span className="text-[10px] text-muted-foreground/60 italic" title="Não se aplica a este cliente">

@@ -241,6 +241,11 @@ Dashboards por regime:
   tarefas abertas e em atraso (`useControloTarefasAbertas`), % do fecho; linha de totais. **Passagem de
   clientes** (`PASSAGEM`, interpretação a confirmar): mudanças de responsável de «Jéssica Brandão» para outra pessoa no
   `audit_log` desde 01/11/2026 e ainda fora dela; meta 25 até 31/12/2026.
+- **Pendências por obrigação** (mês de referência): Gestão mensal por coluna (`pendenciasGestaoMensal`: Vendas, Compras, Bancos,
+  Salários, Depreciações, E-Fatura, IVA — mesmas regras da Gestão mensal, `isColumnApplicable`; lista de quem falta com ⏳ e
+  ligação à Gestão mensal já filtrada, prop `onOpenGestaoMensal`) e obrigações fiscais (`fecho.porObrigacao`, com semáforo e prazo).
+- **Pedidos ao cliente** (`pedidosAbertos`): todos os pedidos em aberto (célula por concluir, cliente ativo) — em aberto, há mais
+  de 5 dias, clientes, por responsável e os 8 mais antigos. O nº «Pedidos > 5 dias» saiu dos Clientes em risco (continua na pontuação).
 - Sem secção de dinheiro (passou para «Negócio»).
 
 ### Negócio (admin) — `NegocioView`, `src/lib/carteira.ts` (fonte única de avenças/clientes/entradas/saídas)
@@ -266,6 +271,9 @@ Dashboards por regime:
   «Pedir documentos» na barra de cima (`PedirDocumentosDialog`: várias colunas × vários clientes por fazer, data, nota). Mais de 5 dias
   → tom `destructive`. Clicar na célula marca como feito e o trigger `monthly_obligations_clear_pedido` limpa o pedido
   (Desfazer repõe-no). Cartão «X pedidos à espera» filtra os clientes com pedido. Não cria tarefas.
+- Na página do cliente da Gestão mensal (`ClientMonthlyHistoryDialog`, variante `page`): cartão «Pedido de documentos»
+  (pedidos em aberto do cliente com dias e Remover; «Pedir documentos» → mês, data, nota e colunas por fazer) e ⏳ em cada
+  célula da tabela de meses (popover `PedidoClienteForm`).
 
 ### Notificações no telemóvel
 - `notification_preferences` (por pessoa): controlam o **push** (o sino recebe sempre); o trigger

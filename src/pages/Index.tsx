@@ -140,6 +140,7 @@ const Index = () => {
           <ControloView
             onOpenClient={(id, tab) => handleOpenClient(id, tab ?? null)}
             onOpenObrigacao={(g, month, search) => { setObrigNav({ month, search }); setActiveView(`obrigacoes_${g}`); }}
+            onOpenGestaoMensal={(t, month, search) => { setContabNav({ month, search }); setActiveView(`contabilidades_${t}`); }}
             onNavigate={handleSidebarNav}
           />
         )}

@@ -4,6 +4,8 @@
  * 2. Clientes em risco: dívida AT/SS, pedidos ao cliente há mais de 5 dias, tarefas em atraso, em saída.
  * 3. Equipa: clientes em carteira, avença gerida, carga ponderada, tarefas abertas/em atraso, % do mês;
  *    passagem de clientes.
+ * 4. Pendências por obrigação: colunas da Gestão Mensal (Vendas, Compras, …) do mês de referência.
+ * 5. Pedidos ao cliente: todos os pedidos de documentos em aberto.
  * O dinheiro (avenças, entradas/saídas, médias) está em `carteira.ts` (página «Negócio»).
  */
 
@@ -13,6 +15,7 @@ import { defaultDayResolver, type DayResolver } from "./deadlineOverrides.ts";
 import { diasAte, type FechoResultado } from "./fechoMes.ts";
 import { temPedido, pedidoAtrasado, diasAEspera } from "./pedidosCliente.ts";
 import { contaNoMes, mensalidadeNoMes, type AlteracaoMensalidade } from "./carteira.ts";
+import { SUB_PAGE_CONFIG, obligationTypesFor, isColumnApplicable } from "./contabilidadesConfig.ts";
 
 export { shiftMes, mesDe } from "./carteira.ts";
 
@@ -339,4 +342,111 @@ export function calcularPassagem(
     .map((a) => ({ clientId: a.registo_id, nome: byId.get(a.registo_id)?.name ?? a.registo_nome ?? "—", para: a.valor_novo, em: String(a.alterado_em).slice(0, 10) }))
     .sort((a, b) => b.em.localeCompare(a.em));
   return { feitos, meta: cfg.meta, ate: cfg.ate, diasRestantes: diasAte(today, cfg.ate) };
+}
+
+// ---------------------------------------------------------------- 4. Pendências por obrigação (Gestão Mensal)
+
+/** Regimes da Gestão Mensal com colunas (o «TI Simplificado - Isento» não tem tarefas mensais). */
+export const REGIMES_GM = ["TI_iva", "organizada", "empresas"] as const;
+export const REGIME_GM_LABEL: Record<string, string> = { TI_iva: "TI RS c/ IVA", organizada: "TI CO", empresas: "Empresas" };
+/** Ordem das colunas na página (a mesma da Gestão Mensal). */
+export const COLUNAS_GM = ["Vendas", "Compras", "Bancos", "Salários", "Depreciações", "E-Fatura", "IVA"];
+
+export interface PendenciaGMItem {
+  client: ClienteCtl;
+  /** Separador da Gestão Mensal (`TI_iva` / `organizada` / `empresas`). */
+  regime: string;
+  type: string;
+  status: string | null;
+  pedidoEm: string | null;
+  pedidoNota: string | null;
+}
+export interface PendenciaGM {
+  coluna: string;
+  total: number;
+  feitas: number;
+  pct: number;
+  emFalta: PendenciaGMItem[];
+}
+
+/**
+ * Por coluna da Gestão Mensal: quantos clientes a têm no mês, quantos já a fizeram e quem falta.
+ * Mesmas regras da Gestão Mensal: clientes ativos no mês (`ativoNoMes`), colunas que não se aplicam
+ * ao cliente não contam (`isColumnApplicable`), feito = `status === "concluida"`.
+ */
+export function pendenciasGestaoMensal(clients: ClienteCtl[], obligations: ObrigacaoLinha[], month: string): PendenciaGM[] {
+  const byKey = new Map<string, ObrigacaoLinha>();
+  obligations
+    .filter((o) => ym(String(o.reference_month)) === ym(month))
+    .forEach((o) => byKey.set(`${o.client_id}|${o.obligation_type}`, o));
+
+  const porColuna = new Map<string, { total: number; feitas: number; emFalta: PendenciaGMItem[] }>();
+  for (const regime of REGIMES_GM) {
+    const cfg = SUB_PAGE_CONFIG[regime];
+    const types = obligationTypesFor(regime, cfg);
+    for (const c of clients) {
+      if (!ativoNoMes(c, month) || !cfg.filter(c)) continue;
+      (cfg.columns ?? []).forEach((col, i) => {
+        if (!isColumnApplicable(c, col, month)) return;
+        const o = byKey.get(`${c.id}|${types[i]}`);
+        const g = porColuna.get(col) ?? { total: 0, feitas: 0, emFalta: [] };
+        g.total++;
+        if (o?.status === "concluida") g.feitas++;
+        else g.emFalta.push({
+          client: c, regime, type: types[i], status: (o?.status as string) ?? null,
+          pedidoEm: (o?.pedido_cliente_em as string) ?? null, pedidoNota: (o?.pedido_cliente_nota as string) ?? null,
+        });
+        porColuna.set(col, g);
+      });
+    }
+  }
+  return COLUNAS_GM.filter((col) => porColuna.has(col)).map((coluna) => {
+    const g = porColuna.get(coluna)!;
+    g.emFalta.sort((a, b) => String(a.client.name).localeCompare(String(b.client.name), "pt"));
+    return { coluna, total: g.total, feitas: g.feitas, pct: g.total ? Math.round((g.feitas / g.total) * 100) : 100, emFalta: g.emFalta };
+  });
+}
+
+/** Nome legível de um `obligation_type` da Gestão Mensal: «Vendas · Empresas»; outros tipos ficam limpos. */
+export function rotuloObrigacao(type: string): { coluna: string; regime: string | null; texto: string } {
+  for (const regime of REGIMES_GM) {
+    const cfg = SUB_PAGE_CONFIG[regime];
+    const i = obligationTypesFor(regime, cfg).indexOf(type);
+    if (i >= 0) {
+      const coluna = cfg.columns![i];
+      return { coluna, regime, texto: `${coluna} · ${REGIME_GM_LABEL[regime]}` };
+    }
+  }
+  const texto = type.replace(/^contabilidade_/, "").replace(/_/g, " ");
+  return { coluna: texto, regime: null, texto };
+}
+
+// ---------------------------------------------------------------- 5. Pedidos ao cliente
+
+export interface PedidoAberto {
+  client: ClienteCtl;
+  obl: PedidoCtl;
+  dias: number;
+  atrasado: boolean;
+  /** Separador da Gestão Mensal, se for uma coluna da Gestão Mensal. */
+  regime: string | null;
+  rotulo: string;
+}
+
+/** Pedidos ao cliente ainda em aberto (célula por concluir, cliente ativo), do mais antigo para o mais recente. */
+export function pedidosAbertos(clients: ClienteCtl[], pedidos: PedidoCtl[], today: string): PedidoAberto[] {
+  const hoje = new Date(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 1, Number(today.slice(8, 10)), 12);
+  const byId = new Map(clients.map((c) => [c.id, c]));
+  const out: PedidoAberto[] = [];
+  for (const o of pedidos) {
+    if (!temPedido(o) || o.status === "concluida") continue;
+    const c = byId.get(o.client_id);
+    if (!c || !c.active || c.status === "inativo") continue;
+    const r = rotuloObrigacao(o.obligation_type);
+    out.push({
+      client: c, obl: o, dias: diasAEspera(o.pedido_cliente_em!, hoje), atrasado: pedidoAtrasado(o.pedido_cliente_em!, hoje),
+      regime: r.regime, rotulo: r.texto,
+    });
+  }
+  return out.sort((a, b) => b.dias - a.dias || String(a.client.name).localeCompare(String(b.client.name), "pt"));
 }

@@ -6,6 +6,9 @@ import {
   calcularPassagem,
   tarefaEmAtraso,
   shiftMes,
+  pendenciasGestaoMensal,
+  pedidosAbertos,
+  rotuloObrigacao,
   type ClienteCtl,
 } from "./controlo";
 import { computeFecho } from "./fechoMes";
@@ -139,5 +142,51 @@ describe("calcularPassagem", () => {
     expect(r.feitos.map((f) => f.clientId)).toEqual(["1"]);
     expect(r.meta).toBe(25);
     expect(r.diasRestantes).toBe(49);
+  });
+});
+
+describe("pendenciasGestaoMensal", () => {
+  it("conta por coluna, ignora colunas que não se aplicam e lista quem falta com o pedido", () => {
+    const emp = cli({ id: "e1", name: "Beta", tipo_contabilidade: "SQ", iva: "Trimestral", salarios: "Não tem", ativos: false });
+    const emp2 = cli({ id: "e2", name: "Alfa", tipo_contabilidade: "SQ", iva: "Mensal", salarios: "Tem", ativos: false });
+    const sai = cli({ id: "e3", name: "Saiu", tipo_contabilidade: "SQ", iva: "Mensal", ultimo_mes_responsabilidade: "2026-09-01" });
+    const obls = [
+      { client_id: "e1", obligation_type: "contabilidade_empresas_vendas", reference_month: "2026-10-01", status: "concluida" },
+      { client_id: "e2", obligation_type: "contabilidade_empresas_compras", reference_month: "2026-10-01", status: "pendente", pedido_cliente_em: "2026-11-03", pedido_cliente_nota: "faturas" },
+      { client_id: "e2", obligation_type: "contabilidade_empresas_vendas", reference_month: "2026-09-01", status: "concluida" },
+    ];
+    const r = pendenciasGestaoMensal([emp, emp2, sai], obls, "2026-10-01");
+    const vendas = r.find((g) => g.coluna === "Vendas")!;
+    expect(vendas).toMatchObject({ total: 2, feitas: 1, pct: 50 });
+    expect(vendas.emFalta.map((f) => f.client.name)).toEqual(["Alfa"]);
+    const compras = r.find((g) => g.coluna === "Compras")!;
+    expect(compras.emFalta.map((f) => f.client.name)).toEqual(["Alfa", "Beta"]);
+    expect(compras.emFalta[0]).toMatchObject({ regime: "empresas", pedidoEm: "2026-11-03", pedidoNota: "faturas" });
+    // Salários: só a Alfa tem; IVA: outubro não é fim de trimestre para a Beta
+    expect(r.find((g) => g.coluna === "Salários")!.total).toBe(1);
+    expect(r.find((g) => g.coluna === "IVA")!.total).toBe(1);
+    expect(r.find((g) => g.coluna === "Depreciações")).toBeUndefined();
+    expect(r.map((g) => g.coluna)).toEqual(["Vendas", "Compras", "Bancos", "Salários", "IVA"]);
+  });
+});
+
+describe("pedidosAbertos", () => {
+  it("só pedidos em aberto de clientes ativos, do mais antigo para o mais recente", () => {
+    const a = cli({ id: "a1", name: "Ana" });
+    const b = cli({ id: "b1", name: "Bruno", status: "inativo" });
+    const pedidos = [
+      { id: "p1", client_id: "a1", obligation_type: "contabilidade_empresas_compras", status: "pendente", pedido_cliente_em: "2026-11-10" },
+      { id: "p2", client_id: "a1", obligation_type: "contabilidade_TI_iva_vendas", status: null, pedido_cliente_em: "2026-11-01" },
+      { id: "p3", client_id: "a1", obligation_type: "contabilidade_empresas_bancos", status: "concluida", pedido_cliente_em: "2026-11-01" },
+      { id: "p4", client_id: "b1", obligation_type: "contabilidade_empresas_bancos", status: "pendente", pedido_cliente_em: "2026-11-01" },
+    ];
+    const r = pedidosAbertos([a, b], pedidos, TODAY);
+    expect(r.map((p) => p.obl.id)).toEqual(["p2", "p1"]);
+    expect(r[0]).toMatchObject({ dias: 11, atrasado: true, regime: "TI_iva", rotulo: "Vendas · TI RS c/ IVA" });
+    expect(r[1]).toMatchObject({ dias: 2, atrasado: false, regime: "empresas" });
+  });
+  it("rotuloObrigacao limpa tipos fora da Gestão Mensal", () => {
+    expect(rotuloObrigacao("contabilidade_organizada_e_fatura").texto).toBe("E-Fatura · TI CO");
+    expect(rotuloObrigacao("IVA")).toMatchObject({ regime: null, texto: "IVA" });
   });
 });

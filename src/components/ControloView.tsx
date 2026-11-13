@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Activity, AlertTriangle, ArrowUpRight, Gauge, RefreshCw, Users } from "lucide-react";
+import { Activity, AlertTriangle, ArrowUpRight, ClipboardList, Gauge, Hourglass, RefreshCw, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -15,7 +15,7 @@ import { useOffboardings } from "@/hooks/useOffboardings";
 import { comUltimoMes } from "@/lib/carteira";
 import { makeDayResolver } from "@/lib/deadlineOverrides";
 import { computeFecho, mesReferenciaPadrao, diasAte, type FechoEmFalta, type Semaforo } from "@/lib/fechoMes";
-import { fmtPrazo, todayYmd } from "@/lib/obrigacoesControlo";
+import { fmtPrazo, todayYmd, OBRIGACAO_GROUPS } from "@/lib/obrigacoesControlo";
 import { fmtPedido } from "@/lib/pedidosCliente";
 import { SEMAFORO_CLASSES, prazoTexto } from "@/components/FechoMesView";
 import {
@@ -25,6 +25,9 @@ import {
   calcularPassagem,
   calcularRisco,
   mesDe,
+  pedidosAbertos,
+  pendenciasGestaoMensal,
+  REGIME_GM_LABEL,
   pesoCliente,
   proximosPrazos,
   shiftMes,
@@ -32,6 +35,8 @@ import {
   type ClienteCtl,
   type MotivoRisco,
   type ObrigacaoLinha,
+  type PedidoAberto,
+  type PendenciaGMItem,
   type TarefaCtl,
   type RiscoCliente,
 } from "@/lib/controlo";
@@ -67,6 +72,8 @@ interface Props {
   onOpenClient: (clientId: string, tab?: string) => void;
   onOpenObrigacao: (groupId: string, month: string, clientName?: string) => void;
   onNavigate: (view: string) => void;
+  /** Abre a Gestão Mensal no separador do regime, no mês, já filtrada pelo cliente. */
+  onOpenGestaoMensal: (regime: string, month: string, clientName?: string) => void;
 }
 
 const Secao = ({ titulo, icon: Icon, children, className }: { titulo: string; icon: typeof Gauge; children: ReactNode; className?: string }) => (
@@ -99,7 +106,7 @@ const Cel = ({ children, onClick, className }: { children: ReactNode; onClick?: 
 );
 
 /** Página «Controlo» — página inicial da admin. */
-const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate }: Props) => {
+const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate, onOpenGestaoMensal }: Props) => {
   const today = todayYmd();
   const mesAtual = mesDe(today);
   const mesRef = mesReferenciaPadrao();
@@ -150,6 +157,14 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate }: Props) => {
     abertas: equipa.reduce((s, l) => s + l.tarefasAbertas.length, 0),
     atraso: equipa.reduce((s, l) => s + l.tarefasAtraso.length, 0),
   }), [equipa]);
+  const pendGM = useMemo(() => pendenciasGestaoMensal(clients, obligations, mesRef), [clients, obligations, mesRef]);
+  const pedAbertos = useMemo(() => pedidosAbertos(clients, pedidos, today), [clients, pedidos, today]);
+  const pedAtrasados = pedAbertos.filter((p) => p.atrasado);
+  const pedPorResp = useMemo(() => {
+    const m = new Map<string, PedidoAberto[]>();
+    pedAbertos.forEach((p) => { const k = p.client.responsavel_id || "none"; m.set(k, [...(m.get(k) ?? []), p]); });
+    return [...m.entries()];
+  }, [pedAbertos]);
   const adminCol = collaborators.find((c) => c.name === PASSAGEM.deNome);
   const passagem = useMemo(() => calcularPassagem(audit, clients, adminCol?.id ?? null, today), [audit, clients, adminCol, today]);
 
@@ -199,6 +214,25 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate }: Props) => {
         onClick: irPara(() => (c ? onOpenClient(c.id) : onNavigate("tasks"))),
       };
     });
+
+  const linhasGM = (l: PendenciaGMItem[]): Linha[] =>
+    l.map((f) => linhaCliente(f.client, {
+      key: `${f.client.id}|${f.type}`,
+      motivo: [REGIME_GM_LABEL[f.regime], f.status === "em_andamento" ? "em curso" : null,
+        f.pedidoEm ? `⏳ pedido ${fmtPedido(f.pedidoEm)}${f.pedidoNota ? ` (${f.pedidoNota})` : ""}` : null].filter(Boolean).join(" · "),
+      onClick: irPara(() => onOpenGestaoMensal(f.regime, mesRef, f.client.name)),
+    }));
+  const linhasPedidos = (l: PedidoAberto[]): Linha[] =>
+    l.map((p) => linhaCliente(p.client, {
+      key: p.obl.id,
+      motivo: `${p.rotulo} · pedido ${fmtPedido(p.obl.pedido_cliente_em!)}${p.obl.pedido_cliente_nota ? ` · ${p.obl.pedido_cliente_nota}` : ""}`,
+      valor: p.dias === 0 ? "hoje" : `${p.dias} ${p.dias === 1 ? "dia" : "dias"}`,
+      tom: p.atrasado ? "destructive" : "muted",
+      onClick: irPara(() => (p.regime
+        ? onOpenGestaoMensal(p.regime, String(p.obl.reference_month ?? mesRef).slice(0, 10), p.client.name)
+        : onOpenClient(p.client.id))),
+    }));
+  const nomeGrupo = (id: string) => OBRIGACAO_GROUPS.find((g) => g.id === id)?.label ?? id;
 
   const totalFecho = fecho.total;
   const ndivida = new Set([...risco.porMotivo.divida_at, ...risco.porMotivo.divida_ss].map((r) => r.client.id)).size;
@@ -283,21 +317,12 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate }: Props) => {
 
           {/* 2. CLIENTES EM RISCO */}
           <Secao titulo="Clientes em risco" icon={AlertTriangle}>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Numero valor={risco.clientes.length} label="Total" tom={risco.clientes.length ? "destructive" : "success"}
                 onClick={() => abrir({ titulo: "Clientes em risco", descricao: "Do mais grave para o menos grave.", linhas: linhasRisco(risco.clientes) })} />
               <Numero valor={ndivida} label="Dívida AT/SS" onClick={() => abrir({
                 titulo: "Clientes com dívida à AT ou à SS",
                 linhas: linhasRisco(risco.clientes.filter((r) => r.dividaAT || r.dividaSS)).map((l) => ({ ...l, motivo: risco.clientes.find((r) => r.client.id === l.key)!.motivos.filter((m) => m.tipo.startsWith("divida")).map((m) => m.texto).join(" · "), valor: undefined })),
-              })} />
-              <Numero valor={risco.porMotivo.pedidos.length} label="Pedidos > 5 dias" onClick={() => abrir({
-                titulo: "Pendentes à espera do cliente há mais de 5 dias",
-                linhas: risco.porMotivo.pedidos.flatMap((r) => r.pedidos.map((p) => linhaCliente(r.client, {
-                  key: p.obl.id,
-                  motivo: `${tipoObrigacao(p.obl.obligation_type)} · pedido ${fmtPedido(p.obl.pedido_cliente_em)}${p.obl.pedido_cliente_nota ? ` · ${p.obl.pedido_cliente_nota}` : ""}`,
-                  valor: `${p.dias} dias`,
-                  tom: "warning",
-                }))).sort((a, b) => parseInt(b.valor!) - parseInt(a.valor!)),
               })} />
               <Numero valor={risco.porMotivo.tarefas.length} label="Tarefas em atraso" onClick={() => abrir({
                 titulo: "Clientes com tarefas em atraso",
@@ -329,7 +354,96 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate }: Props) => {
             </div>
           </Secao>
 
-          {/* 3. EQUIPA */}
+          {/* 3. PENDÊNCIAS POR OBRIGAÇÃO */}
+          <Secao titulo={`Pendências por obrigação — ${nomeMes(mesRef)}`} icon={ClipboardList}>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground">Gestão mensal</p>
+              {pendGM.length === 0 && <p className="text-sm text-muted-foreground">Sem tarefas neste mês.</p>}
+              {pendGM.map((g) => (
+                <button key={g.coluna} type="button" disabled={!g.emFalta.length}
+                  onClick={() => abrir({ titulo: `${g.coluna} por fazer — ${nomeMes(mesRef)}`, descricao: "Clica para abrir a Gestão mensal já filtrada pelo cliente.", linhas: linhasGM(g.emFalta) })}
+                  className="w-full text-left hover:bg-muted/40 disabled:hover:bg-transparent rounded px-1 -mx-1 py-0.5">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium flex-1 truncate">{g.coluna}</span>
+                    <span className="text-xs text-muted-foreground">{g.feitas}/{g.total}</span>
+                    <span className={cn("font-semibold tabular-nums w-20 text-right", g.emFalta.length ? "" : "text-success")}>
+                      {g.emFalta.length ? `${g.emFalta.length} em falta` : "feito"}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className={cn("h-full", g.pct >= 90 ? "bg-success" : "bg-primary")} style={{ width: `${g.pct}%` }} />
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground">Obrigações fiscais</p>
+              {fecho.porObrigacao.map((g) => {
+                const s = SEMAFORO_CLASSES[g.semaforo];
+                return (
+                  <button key={g.key} type="button" disabled={!g.pendentes}
+                    onClick={() => abrir({ titulo: `${nomeGrupo(g.key)} em falta — ${nomeMes(mesRef)}`, descricao: prazoTexto(g.proximoPrazo, today), linhas: linhasEmFalta(g.emFalta) })}
+                    className="w-full flex items-center gap-2 text-sm text-left hover:bg-muted/40 disabled:hover:bg-transparent rounded px-1 -mx-1 py-0.5">
+                    <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", s.dot)} title={s.label} />
+                    <span className="font-medium flex-1 truncate">{nomeGrupo(g.key)}</span>
+                    {g.proximoPrazo && <span className="text-xs text-muted-foreground">prazo {fmtPrazo(g.proximoPrazo)}</span>}
+                    <span className="text-xs text-muted-foreground">{g.feitas}/{g.total}</span>
+                    <span className={cn("font-semibold tabular-nums w-20 text-right", g.pendentes ? s.text : "text-success")}>
+                      {g.pendentes ? `${g.pendentes} em falta` : "feito"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </Secao>
+
+          {/* 4. PEDIDOS AO CLIENTE */}
+          <Secao titulo="Pedidos ao cliente" icon={Hourglass}>
+            <div className="grid grid-cols-3 gap-3">
+              <Numero valor={pedAbertos.length} label="Em aberto"
+                onClick={() => abrir({ titulo: "Pedidos ao cliente em aberto", descricao: "Do mais antigo para o mais recente.", linhas: linhasPedidos(pedAbertos) })} />
+              <Numero valor={pedAtrasados.length} label="Há mais de 5 dias" tom={pedAtrasados.length ? "destructive" : "success"}
+                onClick={() => abrir({ titulo: "Pedidos há mais de 5 dias", linhas: linhasPedidos(pedAtrasados) })} />
+              <Numero valor={new Set(pedAbertos.map((p) => p.client.id)).size} label="Clientes"
+                onClick={() => abrir({ titulo: "Pedidos ao cliente em aberto", linhas: linhasPedidos(pedAbertos) })} />
+            </div>
+            {pedPorResp.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground">Por responsável</p>
+                {pedPorResp.sort((a, b) => nomeCol(a[0]).localeCompare(nomeCol(b[0]), "pt")).map(([k, l]) => {
+                  const at = l.filter((p) => p.atrasado).length;
+                  return (
+                    <button key={k} type="button" onClick={() => abrir({ titulo: `Pedidos em aberto — ${nomeCol(k)}`, linhas: linhasPedidos(l) })}
+                      className="w-full flex items-center gap-2 text-sm text-left hover:bg-muted/40 rounded px-1 -mx-1 py-0.5">
+                      <span className="font-medium flex-1 truncate">{nomeCol(k)}</span>
+                      {at > 0 && <span className="text-xs text-destructive">{at} há mais de 5 dias</span>}
+                      <span className="font-semibold tabular-nums w-8 text-right">{l.length}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">Os mais antigos</p>
+              {pedAbertos.length === 0 ? <p className="text-sm text-success py-2">Nenhum pedido à espera.</p> : (
+                <div className="divide-y">
+                  {linhasPedidos(pedAbertos.slice(0, 8)).map((l) => (
+                    <button key={l.key} type="button" onClick={l.onClick}
+                      className="group w-full flex items-center gap-3 py-1.5 text-sm text-left hover:bg-muted/30 rounded">
+                      <span className="min-w-0 flex-1">
+                        <span className="font-medium truncate block">{l.titulo}</span>
+                        <span className="text-xs text-muted-foreground truncate block">{l.motivo}</span>
+                      </span>
+                      <span className={cn("text-xs font-semibold tabular-nums", l.tom && TOM_TEXT[l.tom])}>{l.valor}</span>
+                      <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Secao>
+
+          {/* 5. EQUIPA */}
           <Secao titulo={`Equipa — ${nomeMes(mesAtual)}`} icon={Users} className="xl:col-span-2">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
               <div className="overflow-x-auto lg:col-span-2">
