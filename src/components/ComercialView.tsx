@@ -10,7 +10,9 @@ import { LEAD_STAGES, eur, stageClass, stageLabel, businessTypeLabel } from "./c
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 const ComercialView = () => {
-  const { data: leads = [], isLoading } = useLeads();
+  // Só as leads da pipeline (Comercial → Leads, segmento «contabilidade»): as consultorias têm painel próprio
+  // e o segmento antigo «comercial» (Calendly até set/2026) não aparece em nenhuma pipeline.
+  const { data: leads = [], isLoading } = useLeads("contabilidade");
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState<number | null>(null);
 
@@ -107,7 +109,7 @@ const ComercialView = () => {
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-sm text-muted-foreground">Atividade e resultados das leads da pipeline</p>
+          <p className="text-sm text-muted-foreground">Atividade e resultados das leads da pipeline de contabilidade (as consultorias estão no separador «Consultorias»)</p>
         </div>
         <div className="flex items-center gap-2">
           <Select value={month === null ? "all" : String(month)} onValueChange={(v) => setMonth(v === "all" ? null : Number(v))}>
