@@ -3,8 +3,7 @@ import { REGIME_TIPO } from "@/lib/obligationManuals";
 import { useState, useEffect, useMemo } from "react";
 import { ativoNoMes, monthOf } from "@/lib/clientSaida";
 import { useClients, useCollaborators, useMonthlyObligations, useUpsertObligation } from "@/hooks/useSupabaseQuery";
-import { Search, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCheck, PartyPopper, ArrowUpRight, MessageSquare, Hourglass, FileQuestion } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, ChevronLeft, ChevronRight, ChevronDown, Check, CheckCheck, PartyPopper, ArrowUpRight, MessageSquare, Hourglass } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,8 +13,8 @@ import MonthlyNoteCell from "@/components/MonthlyNoteCell";
 import { getInitials, getAvatarPalette, shortName } from "@/lib/avatar";
 import { SUB_PAGE_CONFIG, isObligationSatisfied, isColumnApplicable, isColumnOffMonth, columnLabel } from "@/lib/contabilidadesConfig";
 import { toast } from "sonner";
-import { PedidoClienteForm, PedirDocumentosDialog } from "@/components/PedidoCliente";
-import { temPedido, pedidoAtrasado, pedidoLabel, diasAEspera, contarPedidos, type PedidoCandidato } from "@/lib/pedidosCliente";
+import { PedidoClienteForm } from "@/components/PedidoCliente";
+import { temPedido, pedidoAtrasado, pedidoLabel, diasAEspera, contarPedidos } from "@/lib/pedidosCliente";
 
 const STATUS_FILTER_STORAGE_KEY = "contabilidadesStatusFilter";
 
@@ -95,9 +94,8 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   const { data: obligations = [], isLoading: loadingObl } = useMonthlyObligations(referenceMonth);
   const upsert = useUpsertObligation();
   const [showDone, setShowDone] = useState(false);
-  // Popover do «Pedido ao cliente» aberto (chave "clientId|coluna") e janela «Pedir documentos».
+  // Popover do «Pedido ao cliente» aberto (chave "clientId|coluna").
   const [pedidoOpen, setPedidoOpen] = useState<string | null>(null);
-  const [pedirOpen, setPedirOpen] = useState(false);
 
   const config = SUB_PAGE_CONFIG[activeTab];
   const columns = config?.columns;
@@ -294,15 +292,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
       .then(() => toast(date ? "Pedido ao cliente registado" : "Pedido removido"))
       .catch(() => toast.error("Não foi possível guardar o pedido."));
   };
-  const registarPedidos = async (cells: { clientId: string; col: number }[], date: string, nota: string) => {
-    try {
-      await Promise.all(cells.map(({ clientId, col }) => savePedido(clientId, col, date, nota)));
-      const n = new Set(cells.map((c) => c.clientId)).size;
-      toast(`Pedido registado para ${n} cliente${n === 1 ? "" : "s"}`);
-    } catch {
-      toast.error("Não foi possível registar todos os pedidos.");
-    }
-  };
 
   const whoDid = (obl: any) => {
     if (!obl?.completed_at) return "";
@@ -336,20 +325,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
   const displayedClients = statusFilter === "all" || noTasksTab ? filteredClients
     : statusFilter === "pedidos" ? filteredClients.filter((c) => pedidoCells(c).length > 0)
     : filteredClients.filter((c: any) => getClientTier(c) === statusFilter);
-
-  // Janela «Pedir documentos»: todos os clientes do separador (ignora pesquisa e responsável),
-  // com as colunas aplicáveis ainda por fazer no mês.
-  const pedirCandidatos: PedidoCandidato[] = !pedirOpen || !config || !hasMultiColumns ? [] : activeClients
-    .filter(config.filter)
-    .map((c) => {
-      const porFazer: Record<number, string | null> = {};
-      columns!.forEach((col, i) => {
-        const o = colMaps[i]?.[c.id];
-        if (isColumnApplicable(c, col, referenceMonth) && o?.status !== "concluida") porFazer[i] = temPedido(o) ? o.pedido_cliente_em : null;
-      });
-      return { id: c.id, name: c.name, porFazer };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name, "pt"));
 
   // Notas mensais só fazem sentido nos separadores em galeria (têm ficha do cliente).
   const showNotes = hasGallery;
@@ -658,12 +633,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input type="text" placeholder="Pesquisar cliente..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border bg-card focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
-        {hasMultiColumns && !noTasksTab && (
-          <Button type="button" variant="outline" onClick={() => setPedirOpen(true)}
-            className="border-primary text-primary hover:bg-primary/10 hover:text-primary">
-            <FileQuestion className="w-4 h-4" /> Pedir documentos
-          </Button>
-        )}
         <div className="flex gap-1.5 flex-wrap" role="group" aria-label="Responsável">
           <button type="button" onClick={() => setCollabFilter("all")} aria-pressed={collabFilter === "all"}
             className={cn("px-3 py-1.5 text-sm rounded-full border transition-colors",
@@ -710,11 +679,6 @@ const ContabilidadesView = ({ subPage, onSubPageChange, nav }: ContabilidadesVie
           </button>
           {showDone && renderList(doneRows)}
         </div>
-      )}
-
-      {hasMultiColumns && !noTasksTab && (
-        <PedirDocumentosDialog open={pedirOpen} onOpenChange={setPedirOpen}
-          columns={columns!} candidates={pedirCandidatos} onConfirm={registarPedidos} />
       )}
 
       <ClientDetailDialog client={selectedClient} open={!!selectedClient} onClose={() => setSelectedClient(null)} allowDelete={false} />

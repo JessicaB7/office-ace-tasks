@@ -267,8 +267,8 @@ Dashboards por regime:
 
 ### Gestão Mensal — «Pedido ao cliente» (`ContabilidadesView`, `src/lib/pedidosCliente.ts`)
 - Cada célula pode ficar «⏳ pedido dd/mm» (`monthly_obligations.pedido_cliente_em` + `pedido_cliente_nota`): clique direito
-  na célula ou o ⏳ que aparece ao passar o rato (sempre visível em táctil) abre o popover (data, nota, remover); botão
-  «Pedir documentos» na barra de cima (`PedirDocumentosDialog`: várias colunas × vários clientes por fazer, data, nota). Mais de 5 dias
+  na célula ou o ⏳ que aparece ao passar o rato (sempre visível em táctil) abre o popover (data, nota, remover); sem botão
+  «Pedir documentos» na página do separador (retirado a 13/11/2026; o pedido em lote faz-se na página do cliente). Mais de 5 dias
   → tom `destructive`. Clicar na célula marca como feito e o trigger `monthly_obligations_clear_pedido` limpa o pedido
   (Desfazer repõe-no). Cartão «X pedidos à espera» filtra os clientes com pedido. Não cria tarefas.
 - Na página do cliente da Gestão mensal (`ClientMonthlyHistoryDialog`, variante `page`): cartão «Pedido de documentos»
