@@ -110,7 +110,7 @@ const OnboardingDetailDialog = ({ onboarding: o, onClose, onOpenClient }: Props)
         nif: answers.nif || null,
         niss: answers.niss || null,
         email: answers.email || o.lead?.email || null,
-        phone: o.lead?.phone || null,
+        phone: answers.telefone || o.lead?.phone || null,
         address: [answers.morada, [answers.codigo_postal, answers.localidade].filter(Boolean).join(" ")].filter(Boolean).join(", ") || null,
         programa_faturacao: answers.usa_programa === "sim" ? answers.programa || null : null,
         mensalidade: o.lead?.estimated_value ?? null,

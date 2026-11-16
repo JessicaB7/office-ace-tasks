@@ -25,7 +25,7 @@ export type FieldDef = {
   key: string;
   label: string;
   hint?: string;
-  kind: "text" | "email" | "textarea" | "yesno";
+  kind: "text" | "email" | "tel" | "textarea" | "yesno";
   required?: boolean;
   /** Senhas: guardadas à parte, só o admin as vê. */
   secret?: boolean;
@@ -44,6 +44,7 @@ export const FORM_FIELDS: FieldDef[] = [
   { key: "localidade", label: "Localidade", kind: "text", required: true, types: ALL },
   { key: "email", label: "E-mail", kind: "email", required: true, types: TI },
   { key: "email", label: "E-mail de contacto", kind: "email", required: true, types: ["empresa"] },
+  { key: "telefone", label: "Contacto telefónico", hint: "Ex.: 912 345 678", kind: "tel", required: true, types: ALL },
   { key: "cartao_cidadao", label: "Cartão de Cidadão", hint: "Números e letras", kind: "text", required: true, types: TI },
   { key: "nif", label: "NIF", kind: "text", required: true, types: TI },
   { key: "senha_at", label: "Senha das Finanças", kind: "text", required: true, secret: true, types: TI },

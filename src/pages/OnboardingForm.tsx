@@ -47,6 +47,7 @@ const OnboardingForm = () => {
       const v = (values[f.key] || "").trim();
       if (f.required && !v) next[f.key] = "Campo obrigatório";
       else if (v && f.kind === "email" && !EMAIL_RE.test(v)) next[f.key] = "E-mail inválido";
+      else if (v && f.kind === "tel" && !/^\+?[\d\s().-]{9,20}$/.test(v)) next[f.key] = "Contacto inválido";
       else if (v.length > 2000) next[f.key] = "Texto demasiado longo";
     }
     setErrors(next);
@@ -110,7 +111,8 @@ const OnboardingForm = () => {
         ) : (
           <Input
             id={id}
-            type={f.kind === "email" ? "email" : "text"}
+            type={f.kind === "email" ? "email" : f.kind === "tel" ? "tel" : "text"}
+            inputMode={f.kind === "tel" ? "tel" : undefined}
             autoComplete="off"
             value={values[f.key] || ""}
             onChange={(e) => set(f.key, e.target.value)}
