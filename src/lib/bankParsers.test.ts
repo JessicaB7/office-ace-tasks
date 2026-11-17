@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { fixMojibake, parseBankText } from "./bankParsers";
+import { fixMojibake, parseBankText, pdfSemTexto } from "./bankParsers";
 
 describe("fixMojibake", () => {
   test("repara UTF-8 lido como Windows-1252", () => {
@@ -123,5 +123,51 @@ describe("Crédito Agrícola", () => {
     expect(p.transactions[4].dataValor.getDate()).toBe(10);
     expect(p.saldoInicial).toBe(404.12);
     expect(p.saldoFinal).toBe(260.78);
+  });
+});
+
+describe("Bankinter", () => {
+  test("contas à ordem: ano do saldo inicial, descritivo em 2 linhas, ignora conta corrente", () => {
+    const text = [
+      "Extracto N° 327/203296715/02/26 EMPRESA TESTE LDA",
+      "NIB: 0269 0327 00203296715 77 IBAN: PT50 0269 0327 0020 3296 7157 7 SWIFT/BIC: BKBKPTPL",
+      "Pag. 2 de 3",
+      "CONTAS À ORDEM",
+      "Data Descritivo Data Movimento Saldo",
+      "Valor Cred. / Deb.",
+      "Saldo em 2026/02/01 50.429,59",
+      "02/02 Comissao imobilizacao 327203296749 2026-01-01 a 01/02 -7,59 50.422,00",
+      "2026-01-31",
+      "02/02 Trf a credito sepa+ - acbf - p-bankinter- 02/02 3.000,00 53.422,00",
+      "19/02 Juros devedores 02/02 203,20 53.625,20",
+      "23/02 Trf a credito sepa+ - centro de reciclagem de - po 23/02 629,20 54.254,40",
+      "cf2602206",
+      "27/02 Transferências imediatas - ordenados - salarios fevereiro 27/02 -9.764,56 44.489,84",
+      "Saldo em 2026/02/28 44.489,84",
+      "CONTAS CORRENTES BANCÁRIAS",
+      "Encargos e Despesas",
+      "02/02 Comissao imobilizacao 327203296749 2026-01-01 a 01/02 0 -7,59",
+      "www.bankinter.pt",
+      "Bankinter, S.A. - Sede: Paseo de la Castellana",
+    ].join("\n");
+    const p = parseBankText(text);
+    expect(p.bank).toBe("Bankinter");
+    expect(p.transactions.map((t) => t.movimento)).toEqual([-7.59, 3000, 203.2, 629.2, -9764.56]);
+    expect(p.transactions[0].descricao).toBe("Comissao imobilizacao 327203296749 2026-01-01 a 2026-01-31");
+    expect(p.transactions[3].descricao).toBe("Trf a credito sepa+ - centro de reciclagem de - po cf2602206");
+    expect(p.transactions[2].dataMov.getDate()).toBe(19);
+    expect(p.transactions[2].dataValor.getDate()).toBe(2);
+    expect(p.transactions[0].dataMov.getFullYear()).toBe(2026);
+    expect(p.saldoInicial).toBe(50429.59);
+    expect(p.saldoFinal).toBe(44489.84);
+    const soma = p.transactions.reduce((s, t) => s + t.movimento, 0);
+    expect(+(p.saldoInicial! + soma).toFixed(2)).toBe(p.saldoFinal);
+  });
+});
+
+describe("pdfSemTexto", () => {
+  test("deteta PDF só com imagem (2ª via) e aceita PDF com texto", () => {
+    expect(pdfSemTexto("2ªVIA\n2ªVIA\n2ªVIA", 3)).toBe(true);
+    expect(pdfSemTexto("Saldo em 2026/02/01 50.429,59\n02/02 Comissao imobilizacao 327203296749 01/02 -7,59 50.422,00", 1)).toBe(false);
   });
 });

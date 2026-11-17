@@ -17,7 +17,7 @@ import {
 } from "@/lib/bankParsers";
 import { isStaleChunkError, recoverFromStaleChunk } from "@/lib/staleChunk";
 
-const BANCOS = ["Auto", "Abanca", "ActivoBank", "BPI", "CGD", "Crédito Agrícola", "Genérico", "Millennium", "Novo Banco", "Revolut", "Santander"];
+const BANCOS = ["Auto", "Abanca", "ActivoBank", "Bankinter", "BPI", "CGD", "Crédito Agrícola", "Genérico", "Millennium", "Novo Banco", "Revolut", "Santander"];
 
 const parseInputDate = (value: string) => {
   const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -35,6 +35,7 @@ const fmtDate = (d: Date) => {
 
 const ExtratosBancariosView = () => {
   const [loading, setLoading] = useState(false);
+  const [ocrInfo, setOcrInfo] = useState<string>("");
   const [bankHint, setBankHint] = useState<string>(() => {
     try {
       const saved = localStorage.getItem("extratos-bank-hint");
@@ -67,8 +68,21 @@ const ExtratosBancariosView = () => {
       const ext = file.name.toLowerCase().split(".").pop();
       let result;
       if (ext === "pdf") {
-        const text = await extractPdfText(file, password);
+        let usouOcr = false;
+        const text = await extractPdfText(file, password, (pagina, total) => {
+          usouOcr = true;
+          setOcrInfo(pagina === 0 ? "PDF sem texto (imagem) — a preparar leitura…" : `A ler o texto da imagem: página ${pagina} de ${total}…`);
+        });
         result = parseBankText(text, bankHint === "Auto" ? null : bankHint);
+        if (usouOcr && result.transactions.length > 0) {
+          const soma = result.transactions.reduce((s, t) => s + t.movimento, 0);
+          const bate =
+            result.saldoInicial !== undefined &&
+            result.saldoFinal !== undefined &&
+            Math.abs(result.saldoInicial + soma - result.saldoFinal) < 0.005;
+          if (bate) toast.info("PDF lido por reconhecimento de imagem — os saldos batem certo.");
+          else toast.warning("PDF lido por reconhecimento de imagem e os saldos não batem certo: confirme os valores com o extrato.");
+        }
       } else if (ext === "xlsx" || ext === "xls" || ext === "csv") {
         result = await parseSpreadsheet(file);
         if (bankHint !== "Auto") result.bank = bankHint;
@@ -103,6 +117,7 @@ const ExtratosBancariosView = () => {
       }
     } finally {
       setLoading(false);
+      setOcrInfo("");
     }
   };
 
@@ -228,6 +243,7 @@ const ExtratosBancariosView = () => {
               <div className="flex items-center gap-2">
                 <Input type="file" accept=".pdf,.xlsx,.xls,.csv" onChange={handleFile} disabled={loading} />
                 {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                {loading && ocrInfo && <span className="text-xs text-muted-foreground">{ocrInfo}</span>}
               </div>
               {fileName && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">

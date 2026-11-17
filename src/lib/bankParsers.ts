@@ -25,6 +25,8 @@ const BANK_KEYWORDS: Record<string, string[]> = {
   Abanca: ["abanca", "pt5001703"],
   ActivoBank: ["activobank", "activo bank"],
   "Crédito Agrícola": ["crédito agrícola", "creditoagricola", "cccmptpl"],
+  // Só identificadores do próprio extrato ("bankinter" sozinho aparece em descrições de outros bancos)
+  Bankinter: ["bkbkptpl", "bankinter, s.a.", "www.bankinter.pt"],
 };
 
 export function detectBank(text: string): string | null {
@@ -114,7 +116,11 @@ function parseAmountPT(s: string): number | null {
 }
 
 // ---------- PDF text extraction ----------
-export async function extractPdfText(file: File, password?: string): Promise<string> {
+export async function extractPdfText(
+  file: File,
+  password?: string,
+  onOcrProgress?: (pagina: number, total: number) => void,
+): Promise<string> {
   const pdfjs: any = await import("pdfjs-dist");
   // Use bundled worker
   // @ts-ignore
@@ -150,7 +156,18 @@ export async function extractPdfText(file: File, password?: string): Promise<str
       if (line) lines.push(line);
     }
   }
-  return lines.join("\n");
+  const text = lines.join("\n");
+  if (!pdfSemTexto(text, pdf.numPages)) return text;
+  // PDF digitalizado / "2ª via" (texto desenhado como imagem): reconhecimento de texto (OCR) no navegador.
+  onOcrProgress?.(0, pdf.numPages);
+  const { ocrPdfPages } = await import("./pdfOcr");
+  return ocrPdfPages(pdf, onOcrProgress);
+}
+
+// Menos de ~40 letras/números por página = o PDF não tem camada de texto útil.
+export function pdfSemTexto(text: string, numPages: number): boolean {
+  const chars = text.replace(/2.?VIA/gi, "").replace(/[^\p{L}\p{N}]/gu, "").length;
+  return chars < 40 * Math.max(1, numPages);
 }
 
 // ---------- Generic line-based parser ----------
@@ -1222,6 +1239,76 @@ function parseCreditoAgricola(text: string): ParsedStatement {
   return { bank: "Crédito Agrícola", transactions: txs, saldoInicial, saldoFinal };
 }
 
+// ---------- Bankinter parser ----------
+// Secção "CONTAS À ORDEM": "Saldo em AAAA/MM/DD SALDO" (inicial e final) e linhas
+// "DD/MM DESCRITIVO DD/MM MOVIMENTO SALDO" (data, descritivo, data valor, movimento c/ sinal, saldo).
+// O descritivo pode continuar na linha seguinte (sem valores). O ano vem do "Saldo em" inicial.
+// Depois do saldo final ignora-se o resto (conta corrente / "Encargos e Despesas" repetem débitos já na conta).
+function parseBankinter(text: string): ParsedStatement {
+  const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const num = (s: string) => {
+    const neg = /^[-−–]/.test(s);
+    const v = Number(s.replace(/^[-−–]\s*/, "").replace(/\./g, "").replace(",", "."));
+    return neg ? -v : v;
+  };
+  const reAmt = "[-−–]?\\s?\\d{1,3}(?:\\.\\d{3})*,\\d{2}";
+  const reSaldo = new RegExp(`^Saldo em (\\d{4})[/-](\\d{2})[/-](\\d{2})\\s+(${reAmt})$`, "i");
+  const reRow = new RegExp(`^(\\d{2})/(\\d{2})\\s+(.+?)\\s+(\\d{2})/(\\d{2})\\s+(${reAmt})\\s+(${reAmt})$`);
+  const isNoise = (l: string) =>
+    /^(Extracto|Pag\.|Data\b|Valor\b|CONTAS?\b|Moeda|www\.|Bankinter|Membro|2.?VIA|Total\b)/i.test(l);
+
+  const txs: BankTransaction[] = [];
+  let saldoInicial: number | undefined;
+  let saldoFinal: number | undefined;
+  let saldo: number | null = null;
+  let anoIni = new Date().getFullYear();
+  let mesIni = 1;
+  let last: BankTransaction | null = null;
+
+  const dateFor = (d: string, m: string) => {
+    const mes = Number(m);
+    return makeDateOnly(mes < mesIni ? anoIni + 1 : anoIni, mes, Number(d));
+  };
+
+  for (const line of lines) {
+    const ms = line.match(reSaldo);
+    if (ms) {
+      if (saldoInicial === undefined) {
+        anoIni = Number(ms[1]);
+        mesIni = Number(ms[2]);
+        saldoInicial = num(ms[4]);
+        saldo = saldoInicial;
+        last = null;
+        continue;
+      }
+      saldoFinal = num(ms[4]);
+      break;
+    }
+    if (saldoInicial === undefined) continue;
+    const m = line.match(reRow);
+    if (m) {
+      const [, d, mo, desc, dv, mv, valor, novoSaldoRaw] = m;
+      const impresso = num(valor);
+      const novoSaldo = num(novoSaldoRaw);
+      let movimento = impresso;
+      if (saldo !== null) {
+        const delta = Math.round((novoSaldo - saldo) * 100) / 100;
+        // O delta confirma o sinal; se o valor impresso não bater (erro de leitura), fica o impresso.
+        if (Math.abs(Math.abs(delta) - Math.abs(impresso)) < 0.005) movimento = delta;
+      }
+      saldo = novoSaldo;
+      last = { dataMov: dateFor(d, mo), dataValor: dateFor(dv, mv), descricao: desc.replace(/\s+[—–]$/, "").trim(), movimento };
+      txs.push(last);
+      continue;
+    }
+    if (isNoise(line)) { last = null; continue; }
+    if (last && !/\d,\d{2}\b/.test(line)) last.descricao = `${last.descricao} ${line}`.trim();
+    else last = null;
+  }
+  if (saldoFinal === undefined && saldo !== null && txs.length) saldoFinal = saldo;
+  return { bank: "Bankinter", transactions: txs, saldoInicial, saldoFinal };
+}
+
 const isSantanderCartaoCredito = (text: string): boolean =>
   /SANTANDER\s+BUSINESS/i.test(text) &&
   /DETALHE\s+DE\s+MOVIMENTOS/i.test(text) &&
@@ -1245,6 +1332,7 @@ export function parseBankText(text: string, bankHint?: string | null): ParsedSta
   if (bank === "Abanca") return parseAbanca(text);
   if (bank === "ActivoBank") return parseActivoBank(text);
   if (bank === "Crédito Agrícola") return parseCreditoAgricola(text);
+  if (bank === "Bankinter") return parseBankinter(text);
 
   if (bank === "Novo Banco") {
     if (/Consulta\s+de\s+movimentos/i.test(text) || /\b\d{2}-\d{2}-\d{4}\b/.test(text)) {
