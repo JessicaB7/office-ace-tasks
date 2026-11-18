@@ -48,7 +48,7 @@ export function useDeleteOnboarding() {
   });
 }
 
-/** Senhas do formulário — a RLS só as devolve ao admin. */
+/** Senhas do formulário — toda a equipa as vê; só a admin as altera. */
 export function useOnboardingSecrets(onboardingId: string | null, enabled: boolean) {
   return useQuery({
     queryKey: ["client_onboarding_secrets", onboardingId],

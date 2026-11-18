@@ -159,6 +159,8 @@ Dashboards por regime:
   «DATA_INICIO», «VALOR»/«VALOR_EXTENSO» = mensalidade da lead + IVA, «DATA_CONTRATO», «GERENTE_*»), nos TI copia o
   Gestor de Negócio, grava `contrato_preparado_at`/`contrato_ficheiro`, marca `pasta_drive` e notifica as admins.
   Falta de dados → `contrato_erro` (visível no processo). Modelos na forma feminina; `genero.py` passa a masculino.
+- Senhas do formulário (`client_onboarding_secrets`): **toda a equipa as vê** no processo (18/11/2026, a pedido da admin);
+  só a admin as altera. Ao ligar o processo ao cliente são copiadas para a ficha (trigger `copy_onboarding_secrets_to_client`).
 
 ### Clientes e colaboradores
 - `clients.status`: `ativo` / `a_sair` / `inativo` (filtros na lista). **Mensalidade** e

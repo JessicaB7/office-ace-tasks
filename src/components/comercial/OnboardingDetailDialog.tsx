@@ -51,7 +51,7 @@ const OnboardingDetailDialog = ({ onboarding: o, onClose, onOpenClient }: Props)
   const update = useUpdateOnboarding();
   const remove = useDeleteOnboarding();
   const upsertClient = useUpsertClient();
-  const { data: secrets } = useOnboardingSecrets(o?.id ?? null, isAdmin && !!o?.submitted_at);
+  const { data: secrets } = useOnboardingSecrets(o?.id ?? null, !!o?.submitted_at);
   const [notes, setNotes] = useState("");
 
   useEffect(() => setNotes(o?.notes || ""), [o?.id, o?.notes]);
@@ -224,11 +224,7 @@ const OnboardingDetailDialog = ({ onboarding: o, onClose, onOpenClient }: Props)
                     {f.label} {f.secret && <Lock className="w-3 h-3" />}
                   </dt>
                   <dd className="text-sm whitespace-pre-wrap break-words">
-                    {f.secret
-                      ? isAdmin
-                        ? secretValues[f.key] || "—"
-                        : <span className="text-muted-foreground italic">Visível apenas para o admin</span>
-                      : answerLabel(f, answers[f.key])}
+                    {f.secret ? secretValues[f.key] || "—" : answerLabel(f, answers[f.key])}
                   </dd>
                 </div>
               ))}
