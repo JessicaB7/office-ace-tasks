@@ -44,7 +44,7 @@ const ESTADO_CLASS: Record<EstadoAtualizacao, string> = {
   pendente: "bg-muted text-muted-foreground",
   aceite: "bg-success/15 text-success",
   recusado: "bg-destructive/15 text-destructive",
-  mantem: "bg-secondary text-secondary-foreground",
+  mantem: "bg-success/15 text-success",
 };
 
 const inputCls = "py-1.5 px-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30";
@@ -216,7 +216,7 @@ const MensalidadesView = ({ onOpenClient }: Props) => {
             <Kpi label="Mensagens enviadas" valor={`${resumo.enviadas} de ${resumo.comProposta}`} />
             <Kpi label="Aceites" valor={resumo.aceites} tom={resumo.aceites ? "success" : undefined} />
             <Kpi label="Recusados" valor={resumo.recusados} tom={resumo.recusados ? "destructive" : undefined} />
-            <Kpi label="Mantêm" valor={resumo.mantem} sub="sem aumento" />
+            <Kpi label="Mantêm" valor={resumo.mantem} sub="sem aumento" tom={resumo.mantem ? "success" : undefined} />
             <Kpi label="Aumento se aceitarem" valor={eurSinal(resumo.aumentoPotencial)} sub="por mês, sem as recusadas" />
             <Kpi label="Aumento já aceite" valor={eurSinal(resumo.aumentoAceite)} sub="por mês" tom={resumo.aumentoAceite ? "success" : undefined} />
           </div>
