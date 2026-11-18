@@ -269,6 +269,7 @@ const MensalidadesView = ({ onOpenClient }: Props) => {
                     <th className="font-medium py-2">Cliente</th>
                     <th className="font-medium py-2">Responsável</th>
                     <th className="font-medium py-2">Tipo</th>
+                    <th className="font-medium py-2">Início do contrato</th>
                     <th className="font-medium py-2 text-right">Mensalidade atual</th>
                     <th className="font-medium py-2 text-right">Mensalidade nova</th>
                     <th className="font-medium py-2 text-right">Aumento</th>
@@ -293,6 +294,7 @@ const MensalidadesView = ({ onOpenClient }: Props) => {
                         </td>
                         <td className="py-1.5 pr-2 text-muted-foreground whitespace-nowrap">{nomeCol(l.client.responsavel_id)}</td>
                         <td className="py-1.5 pr-2 text-muted-foreground whitespace-nowrap">{l.client.tipo_contabilidade || "—"}</td>
+                        <td className="py-1.5 pr-2 text-muted-foreground whitespace-nowrap tabular-nums">{l.client.inicio_contrato ? `${l.client.inicio_contrato.slice(8, 10)}/${l.client.inicio_contrato.slice(5, 7)}/${l.client.inicio_contrato.slice(0, 4)}` : "—"}</td>
                         <td className="py-1.5 pr-2 text-right tabular-nums">{eur(l.atual)}</td>
                         <td className="py-1.5 pr-2 text-right">
                           <CampoValor valor={l.nova} disabled={!!aplicada}
@@ -333,7 +335,7 @@ const MensalidadesView = ({ onOpenClient }: Props) => {
                     );
                   })}
                   {filtradas.length === 0 && (
-                    <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">Nenhum cliente com estes filtros.</td></tr>
+                    <tr><td colSpan={10} className="py-8 text-center text-muted-foreground">Nenhum cliente com estes filtros.</td></tr>
                   )}
                 </tbody>
               </table>

@@ -25,6 +25,7 @@ export interface ClienteMensalidade {
   tipo_contabilidade?: string | null;
   mensalidade?: number | string | null;
   responsavel_id?: string | null;
+  inicio_contrato?: string | null;
 }
 
 export interface LinhaMensalidade<C extends ClienteMensalidade = ClienteMensalidade> {
