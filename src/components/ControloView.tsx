@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Activity, AlertTriangle, ArrowUpRight, ClipboardList, Gauge, Hourglass, RefreshCw, Users } from "lucide-react";
+import { Activity, ArrowUpRight, ClipboardList, Gauge, Hourglass, RefreshCw, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -23,7 +23,6 @@ import {
   PESO_TIPO,
   calcularEquipa,
   calcularPassagem,
-  calcularRisco,
   mesDe,
   pedidosAbertos,
   pendenciasGestaoMensal,
@@ -33,12 +32,10 @@ import {
   shiftMes,
   tarefaEmAtraso,
   type ClienteCtl,
-  type MotivoRisco,
   type ObrigacaoLinha,
   type PedidoAberto,
   type PendenciaGMItem,
   type TarefaCtl,
-  type RiscoCliente,
 } from "@/lib/controlo";
 
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
@@ -129,7 +126,6 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate, onOpenGestaoM
   const clients = qClients.data ?? NADA;
   const collaborators = qCollabs.data ?? NADA;
   const abertas = qTarefas.data ?? NADA;
-  const tarefas = useMemo(() => abertas.filter((t) => tarefaEmAtraso(t, today)), [abertas, today]);
   const pedidos = qPedidos.data ?? NADA;
   const obligations: ObrigacaoLinha[] = qObl.data ?? NADA;
   const audit = qAudit.data ?? NADA;
@@ -143,7 +139,6 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate, onOpenGestaoM
     [clients, obligations, mesRef, today, dayFor],
   );
   const prazos = useMemo(() => proximosPrazos(clients, obligations, mesesPrazos, today, dayFor), [clients, obligations, mesesPrazos, today, dayFor]);
-  const risco = useMemo(() => calcularRisco(clients, tarefas, pedidos, today), [clients, tarefas, pedidos, today]);
   // Equipa: clientes em carteira e avenças com as regras de carteira.ts (as mesmas da página «Negócio»).
   const carteira = useMemo(() => comUltimoMes(clients, qSaidas.data ?? NADA), [clients, qSaidas.data]);
   const equipa = useMemo(
@@ -195,12 +190,6 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate, onOpenGestaoM
           onClick: irPara(() => onOpenObrigacao(f.task.group, mesRef, f.client.name)),
         };
       });
-  const linhasRisco = (l: RiscoCliente[], so?: MotivoRisco): Linha[] =>
-    l.map((r) => linhaCliente(r.client, {
-      motivo: (so ? r.motivos.filter((m) => m.tipo === so) : r.motivos).map((m) => m.texto).join(" · "),
-      valor: so ? undefined : `${r.pontos} pts`,
-      tom: r.pontos >= 6 ? "destructive" : r.pontos >= 3 ? "warning" : "muted",
-    }, r.emSaida && (!so || so === "saida") ? "saida" : undefined));
   const linhasTarefas = (l: TarefaCtl[], abertas = false): Linha[] =>
     l.map((t) => {
       const c = t.client_id ? clientById.get(t.client_id) : null;
@@ -235,7 +224,6 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate, onOpenGestaoM
   const nomeGrupo = (id: string) => OBRIGACAO_GROUPS.find((g) => g.id === id)?.label ?? id;
 
   const totalFecho = fecho.total;
-  const ndivida = new Set([...risco.porMotivo.divida_at, ...risco.porMotivo.divida_ss].map((r) => r.client.id)).size;
   const passPct = Math.min(100, Math.round((passagem.feitos.length / passagem.meta) * 100));
 
   return (
@@ -254,7 +242,7 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate, onOpenGestaoM
       {erro && <p className="text-sm text-destructive">Erro ao carregar dados: {erro.message}</p>}
 
       {loading ? <p className="text-center py-12 text-muted-foreground">A carregar...</p> : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 gap-5">
           {/* 1. TRABALHO DO MÊS */}
           <Secao titulo={`Trabalho do mês — obrigações de ${nomeMes(mesRef)}`} icon={Gauge}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -315,46 +303,7 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate, onOpenGestaoM
             </p>
           </Secao>
 
-          {/* 2. CLIENTES EM RISCO */}
-          <Secao titulo="Clientes em risco" icon={AlertTriangle}>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Numero valor={risco.clientes.length} label="Total" tom={risco.clientes.length ? "destructive" : "success"}
-                onClick={() => abrir({ titulo: "Clientes em risco", descricao: "Do mais grave para o menos grave.", linhas: linhasRisco(risco.clientes) })} />
-              <Numero valor={ndivida} label="Dívida AT/SS" onClick={() => abrir({
-                titulo: "Clientes com dívida à AT ou à SS",
-                linhas: linhasRisco(risco.clientes.filter((r) => r.dividaAT || r.dividaSS)).map((l) => ({ ...l, motivo: risco.clientes.find((r) => r.client.id === l.key)!.motivos.filter((m) => m.tipo.startsWith("divida")).map((m) => m.texto).join(" · "), valor: undefined })),
-              })} />
-              <Numero valor={risco.porMotivo.tarefas.length} label="Tarefas em atraso" onClick={() => abrir({
-                titulo: "Clientes com tarefas em atraso",
-                linhas: linhasTarefas(risco.porMotivo.tarefas.flatMap((r) => r.tarefas.map((t) => t.task))),
-              })} />
-              <Numero valor={risco.porMotivo.saida.length} label="Em saída" onClick={() => abrir({ titulo: "Clientes em saída", linhas: linhasRisco(risco.porMotivo.saida, "saida") })} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground mb-1">Os 10 casos mais graves</p>
-              {risco.clientes.length === 0 ? <p className="text-sm text-success py-2">Nenhum cliente em risco.</p> : (
-                <div className="divide-y">
-                  {risco.clientes.slice(0, 10).map((r, i) => (
-                    <button key={r.client.id} type="button" onClick={() => onOpenClient(r.client.id, r.emSaida ? "saida" : undefined)}
-                      className="group w-full flex items-center gap-3 py-1.5 text-sm text-left hover:bg-muted/30 rounded">
-                      <span className="w-5 text-xs text-muted-foreground tabular-nums">{i + 1}.</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="font-medium truncate block">{r.client.name}</span>
-                        <span className="text-xs text-muted-foreground truncate block">{nomeCol(r.client.responsavel_id)} · {r.motivos.map((m) => m.texto).join(" · ")}</span>
-                      </span>
-                      <span className={cn("text-xs font-semibold tabular-nums", r.pontos >= 6 ? "text-destructive" : r.pontos >= 3 ? "text-warning" : "text-muted-foreground")}>{r.pontos} pts</span>
-                      <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100" />
-                    </button>
-                  ))}
-                </div>
-              )}
-              <p className="text-[11px] text-muted-foreground mt-2">
-                Pontuação: dívida AT 3 · dívida SS 3 · cada pedido &gt; 5 dias 2 (máx. 6) · cada tarefa em atraso 1 (máx. 4, +1 se alguma tiver mais de 30 dias) · em saída 2.
-              </p>
-            </div>
-          </Secao>
-
-          {/* 3. PENDÊNCIAS POR OBRIGAÇÃO */}
+          {/* 2. PENDÊNCIAS POR OBRIGAÇÃO */}
           <Secao titulo={`Pendências por obrigação — ${nomeMes(mesRef)}`} icon={ClipboardList}>
             <div className="space-y-1">
               <p className="text-xs font-semibold text-muted-foreground">Gestão mensal</p>
@@ -397,7 +346,7 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate, onOpenGestaoM
             </div>
           </Secao>
 
-          {/* 4. PEDIDOS AO CLIENTE */}
+          {/* 3. PEDIDOS AO CLIENTE */}
           <Secao titulo="Pedidos ao cliente" icon={Hourglass}>
             <div className="grid grid-cols-3 gap-3">
               <Numero valor={pedAbertos.length} label="Em aberto"
@@ -443,8 +392,8 @@ const ControloView = ({ onOpenClient, onOpenObrigacao, onNavigate, onOpenGestaoM
             </div>
           </Secao>
 
-          {/* 5. EQUIPA */}
-          <Secao titulo={`Equipa — ${nomeMes(mesAtual)}`} icon={Users} className="xl:col-span-2">
+          {/* 4. EQUIPA */}
+          <Secao titulo={`Equipa — ${nomeMes(mesAtual)}`} icon={Users}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
               <div className="overflow-x-auto lg:col-span-2">
                 <table className="w-full text-sm">

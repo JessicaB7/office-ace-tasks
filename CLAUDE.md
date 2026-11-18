@@ -247,8 +247,8 @@ Dashboards por regime:
   ninguém navegou). Dados com `staleTime 0`/`refetchOnMount 'always'`, sem polling. Cada número abre um dialog com a lista.
 - **Trabalho do mês**: `computeFecho` do mês de referência (semáforo por responsável) + `proximosPrazos` (3 prazos ≥ hoje
   com pendentes, juntando os meses ref−1, ref e atual — o IVA trimestral/mensal vence 2 meses depois).
-- **Clientes em risco** (`calcularRisco`, só `active`): dívida AT 3, dívida SS 3 (`com_divida`), pedidos ao cliente > 5 dias
-  2 cada (máx. 6), tarefas em atraso 1 cada (máx. 4, +1 se > 30 dias), em saída 2; top 10 por pontos, nº de motivos, dias.
+- **Clientes em risco**: retirado do Controlo (18/11/2026, a pedido da admin); `calcularRisco` mantém-se em `src/lib/controlo.ts`.
+  As secções do Controlo ocupam a linha toda (uma por linha).
 - **Equipa** (tabela única da equipa na app; `calcularEquipa`): clientes em carteira no mês (`contaNoMes` de `carteira.ts`,
   com `comUltimoMes`), avença gerida (soma = «Avenças mensais» do Negócio), carga `PESO_TIPO` (SQ 3, TI CO 2, TI RS 1),
   tarefas abertas e em atraso (`useControloTarefasAbertas`), % do fecho; linha de totais. **Passagem de
@@ -258,7 +258,7 @@ Dashboards por regime:
   Salários, Depreciações, E-Fatura, IVA — mesmas regras da Gestão mensal, `isColumnApplicable`; lista de quem falta com ⏳ e
   ligação à Gestão mensal já filtrada, prop `onOpenGestaoMensal`) e obrigações fiscais (`fecho.porObrigacao`, com semáforo e prazo).
 - **Pedidos ao cliente** (`pedidosAbertos`): todos os pedidos em aberto (célula por concluir, cliente ativo) — em aberto, há mais
-  de 5 dias, clientes, por responsável e os 8 mais antigos. O nº «Pedidos > 5 dias» saiu dos Clientes em risco (continua na pontuação).
+  de 5 dias, clientes, por responsável e os 8 mais antigos. 
 - Sem secção de dinheiro (passou para «Negócio»).
 
 ### Negócio (admin) — `NegocioView`, `src/lib/carteira.ts` (fonte única de avenças/clientes/entradas/saídas)
