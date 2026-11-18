@@ -36,6 +36,7 @@ import DefinicoesManuaisView from "@/components/DefinicoesManuaisView";
 import ToconlineAutomacoesView from "@/components/toconline/ToconlineAutomacoesView";
 import MapasTrimestraisView from "@/components/financial/MapasTrimestraisView";
 import FechoMesView from "@/components/FechoMesView";
+import ObrigacoesPontuaisView from "@/components/ObrigacoesPontuaisView";
 import DefinicoesNotificacoesView from "@/components/DefinicoesNotificacoesView";
 import PushPrompt from "@/components/PushPrompt";
 import AssistenteFlutuante from "@/components/AssistenteFlutuante";
@@ -177,6 +178,7 @@ const Index = () => {
         {activeView === "toconline_fila" && <ToconlineFilaView />}
         {activeView === "toconline_procedimentos" && <ToconlineProcedimentosView />}
         {activeView === "toconline_automacoes" && <ToconlineAutomacoesView />}
+        {activeView === "pontuais" && <ObrigacoesPontuaisView />}
         {activeView === "fecho_mes" && <FechoMesView onOpenObrigacao={(g, month, search) => { setObrigNav({ month, search }); setActiveView(`obrigacoes_${g}`); }} />}
         {activeView === "mapas_trimestrais" && (
           <MapasTrimestraisView initialYear={viewParams.year ? Number(viewParams.year) : undefined} initialQ={viewParams.q ? Number(viewParams.q) : undefined} />

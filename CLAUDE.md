@@ -94,6 +94,11 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
   execução mensal em `monthly_obligations`.
 - **IVA Periódica trimestral**: cabeçalho navega por trimestres ("1º Trimestre (Jan–Mar)"), passos de
   3 meses; os registos vivem nos meses canónicos de fim de trimestre (Mar/Jun/Set/Dez).
+- **Obrigações pontuais** (vista `pontuais`, `ObrigacoesPontuaisView`, regras em `src/lib/obrigacoesPontuais.ts`): por ano,
+  separadores «Pagamentos por conta — TI» (TI RS + TI CO, até 20 jul/set/dez), «Pagamentos por conta — Empresas» (SQ, até
+  15 jul/set/dez), «Entidade contratante» (todos) e «SS contabilidade organizada» (só TI CO). Registos em `monthly_obligations`
+  com `reference_month = AAAA-01-01` e tipos `pontual_ppc_1..3`, `pontual_entidade_contratante`, `pontual_ss_co`; nota do
+  cliente guardada na 1.ª coluna do separador. Não entram no Fecho do mês nem no Controlo.
 
 ### Extratos bancários (`src/lib/bankParsers.ts`, `ExtratosBancariosView.tsx`)
 - Parsers de PDF/XLSX: **Revolut, Santander Business, Novo Banco, Abanca, BPI** (incl. cartão de crédito), BCP, **Crédito Agrícola**.

@@ -33,6 +33,7 @@ import {
   CalendarCheck,
   Activity,
   Euro,
+  CalendarRange,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -131,6 +132,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
         },
       },
       { kind: "item", item: { id: "fecho_mes", label: "Fecho do mês", icon: Gauge } },
+      { kind: "item", item: { id: "pontuais", label: "Obrigações pontuais", icon: CalendarRange } },
       { kind: "item", item: { id: "extratos", label: "Extratos Bancários", icon: Banknote } },
       {
         kind: "group",
