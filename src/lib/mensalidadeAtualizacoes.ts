@@ -1,7 +1,8 @@
 // Atualização de mensalidades (Gestão de negócio, admin) — regras puras, sem efeitos laterais.
 // Uma proposta por cliente e por mês de início («a_partir_de»): mensalidade nova, mensagem enviada e resposta.
 
-export type EstadoAtualizacao = "pendente" | "aceite" | "recusado";
+/** «mantem» = o cliente fica com a mesma mensalidade (sem proposta de aumento nem mensagem). */
+export type EstadoAtualizacao = "pendente" | "aceite" | "recusado" | "mantem";
 
 export interface PropostaMensalidade {
   id: string;
@@ -62,7 +63,7 @@ export function aumento(atual: number, nova: number | null): { valor: number; pc
 export const proximoJaneiro = (today: string): string => `${Number(today.slice(0, 4)) + 1}-01-01`;
 
 export const estadoDe = (p: PropostaMensalidade | null): EstadoAtualizacao | null =>
-  p ? ((["pendente", "aceite", "recusado"] as const).find((e) => e === p.estado) ?? "pendente") : null;
+  p ? ((["pendente", "aceite", "recusado", "mantem"] as const).find((e) => e === p.estado) ?? "pendente") : null;
 
 /** Junta os clientes ativos com a proposta do mês escolhido. */
 export function montarLinhas<C extends ClienteMensalidade>(clients: C[], propostas: PropostaMensalidade[], aPartirDe: string): LinhaMensalidade<C>[] {
@@ -99,9 +100,11 @@ export function filtrarLinhas<L extends LinhaMensalidade>(linhas: L[], f: Filtro
     if (f.tipo && (l.client.tipo_contabilidade || "") !== f.tipo) return false;
     const est = estadoDe(l.proposta);
     if (f.estado && f.estado !== "todos") {
-      if (f.estado === "sem_proposta" ? l.nova !== null : est !== f.estado || l.nova === null) return false;
+      if (f.estado === "sem_proposta") { if (l.nova !== null || est === "mantem") return false; }
+      else if (f.estado === "mantem") { if (est !== "mantem") return false; }
+      else if (est !== f.estado || l.nova === null) return false;
     }
-    if (f.soPorEnviar && (l.nova === null || !!l.proposta?.mensagem_enviada_em)) return false;
+    if (f.soPorEnviar && (l.nova === null || est === "mantem" || !!l.proposta?.mensagem_enviada_em)) return false;
     if (q && !norm(l.client.name).includes(q) && !String(l.client.nif ?? "").includes(q)) return false;
     return true;
   });
@@ -114,6 +117,8 @@ export interface ResumoMensalidades {
   aceites: number;
   recusados: number;
   pendentes: number;
+  /** Clientes que mantêm a mensalidade. */
+  mantem: number;
   /** Aumento mensal se todas as propostas forem aceites (exceto as já recusadas). */
   aumentoPotencial: number;
   /** Aumento mensal das propostas aceites. */
@@ -121,9 +126,9 @@ export interface ResumoMensalidades {
 }
 
 export function resumir(linhas: LinhaMensalidade[]): ResumoMensalidades {
-  const com = linhas.filter((l) => l.nova !== null);
-  const dif = (l: LinhaMensalidade) => (l.nova ?? l.atual) - l.atual;
   const est = (l: LinhaMensalidade) => estadoDe(l.proposta);
+  const com = linhas.filter((l) => l.nova !== null && est(l) !== "mantem");
+  const dif = (l: LinhaMensalidade) => (l.nova ?? l.atual) - l.atual;
   return {
     total: linhas.length,
     comProposta: com.length,
@@ -131,6 +136,7 @@ export function resumir(linhas: LinhaMensalidade[]): ResumoMensalidades {
     aceites: com.filter((l) => est(l) === "aceite").length,
     recusados: com.filter((l) => est(l) === "recusado").length,
     pendentes: com.filter((l) => est(l) === "pendente").length,
+    mantem: linhas.filter((l) => est(l) === "mantem").length,
     aumentoPotencial: com.filter((l) => est(l) !== "recusado").reduce((s, l) => s + dif(l), 0),
     aumentoAceite: com.filter((l) => est(l) === "aceite").reduce((s, l) => s + dif(l), 0),
   };
@@ -140,6 +146,6 @@ export function resumir(linhas: LinhaMensalidade[]): ResumoMensalidades {
 export function preencherEmMassa(linhas: LinhaMensalidade[], pct: number): { clientId: string; nova: number }[] {
   if (!Number.isFinite(pct)) return [];
   return linhas
-    .filter((l) => l.nova === null && l.atual > 0)
+    .filter((l) => l.nova === null && l.atual > 0 && estadoDe(l.proposta) !== "mantem")
     .map((l) => ({ clientId: l.client.id, nova: novaComPercentagem(l.atual, pct) }));
 }

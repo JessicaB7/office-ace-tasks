@@ -70,7 +70,7 @@ describe("linhas, filtros e resumo", () => {
 
   test("resumo", () => {
     expect(resumir(linhas)).toEqual({
-      total: 4, comProposta: 3, enviadas: 2, aceites: 1, recusados: 1, pendentes: 1,
+      total: 4, comProposta: 3, enviadas: 2, aceites: 1, recusados: 1, pendentes: 1, mantem: 0,
       aumentoPotencial: 15, aumentoAceite: 10,
     });
   });
@@ -78,5 +78,30 @@ describe("linhas, filtros e resumo", () => {
   test("preenchimento em massa só nas linhas sem valor e com mensalidade", () => {
     const l = montarLinhas([cli("1"), cli("6", { mensalidade: 80 }), cli("7", { mensalidade: 0 })], [prop("1")], "2027-01-01");
     expect(preencherEmMassa(l, 5)).toEqual([{ clientId: "6", nova: 84 }]);
+  });
+});
+
+describe("estado «mantem»", () => {
+  const cli = (id: string, m: number) => ({ id, name: id, status: "ativo", mensalidade: m });
+  const prop = (client_id: string, extra: Record<string, unknown>) => ({
+    id: client_id, client_id, mensalidade_atual: null, mensalidade_nova: null, a_partir_de: "2027-01-01",
+    mensagem_enviada_em: null, estado: "pendente", estado_em: null, aplicada_em: null, notas: null, ...extra,
+  });
+  const linhas = montarLinhas(
+    [cli("a", 100), cli("b", 100), cli("c", 100)],
+    [prop("a", { estado: "mantem" }), prop("b", { mensalidade_nova: 110 })],
+    "2027-01-01",
+  );
+  test("conta à parte e não entra no aumento nem no «por enviar»", () => {
+    const r = resumir(linhas);
+    expect(r.mantem).toBe(1);
+    expect(r.comProposta).toBe(1);
+    expect(r.aumentoPotencial).toBe(10);
+    expect(filtrarLinhas(linhas, { soPorEnviar: true }).map((l) => l.client.id)).toEqual(["b"]);
+    expect(filtrarLinhas(linhas, { estado: "mantem" }).map((l) => l.client.id)).toEqual(["a"]);
+    expect(filtrarLinhas(linhas, { estado: "sem_proposta" }).map((l) => l.client.id)).toEqual(["c"]);
+  });
+  test("o preenchimento em massa salta quem mantém", () => {
+    expect(preencherEmMassa(linhas, 10).map((p) => p.clientId)).toEqual(["c"]);
   });
 });

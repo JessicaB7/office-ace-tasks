@@ -277,6 +277,7 @@ Dashboards por regime:
   no mês, avenças, peso e avença média; o total bate com «Avenças mensais».
 
 ### Atualização de mensalidades (`mensalidades`, admin) — `MensalidadesView`, `src/lib/mensalidadeAtualizacoes.ts`
+- Estado **«Mantém»** (`mantem`): o cliente fica com a mesma mensalidade — sem mensalidade nova nem mensagem; não conta em «por enviar», no aumento nem no preenchimento em massa (cartão «Mantêm»). Escrever uma mensalidade nova volta a «Pendente».
 - Tabela `mensalidade_atualizacoes` (só admin): uma proposta por cliente × `a_partir_de` (1.º dia do mês, seletor no topo;
   por omissão janeiro do ano seguinte) com mensalidade atual (retrato), nova, `mensagem_enviada_em`, `estado`
   pendente/aceite/recusado (`estado_em`), notas e `aplicada_em`. Só clientes ativos; filtros, cartões e preenchimento em massa

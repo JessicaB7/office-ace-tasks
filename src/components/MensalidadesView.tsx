@@ -39,11 +39,12 @@ const eurSinal = (v: number) => (v > 0 ? `+${eur(v)}` : eur(v));
 const fmtDia = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 const NADA: never[] = [];
 
-const ESTADO_LABEL: Record<EstadoAtualizacao, string> = { pendente: "Pendente", aceite: "Aceite", recusado: "Recusado" };
+const ESTADO_LABEL: Record<EstadoAtualizacao, string> = { pendente: "Pendente", aceite: "Aceite", recusado: "Recusado", mantem: "Mantém" };
 const ESTADO_CLASS: Record<EstadoAtualizacao, string> = {
   pendente: "bg-muted text-muted-foreground",
   aceite: "bg-success/15 text-success",
   recusado: "bg-destructive/15 text-destructive",
+  mantem: "bg-secondary text-secondary-foreground",
 };
 
 const inputCls = "py-1.5 px-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30";
@@ -184,7 +185,7 @@ const MensalidadesView = ({ onOpenClient }: Props) => {
     if (l.proposta?.aplicada_em && novo !== "aceite") {
       toast.warning("A mensalidade da ficha já foi atualizada e não é revertida. Corrige-a na ficha do cliente se for preciso.");
     }
-    salvar(l, { estado: novo, estado_em: novo === "pendente" ? null : today });
+    salvar(l, { estado: novo, estado_em: novo === "pendente" ? null : today, ...(novo === "mantem" ? { mensalidade_nova: null, mensagem_enviada_em: null } : {}) });
   };
 
   return (
@@ -210,11 +211,12 @@ const MensalidadesView = ({ onOpenClient }: Props) => {
 
       {loading ? <p className="text-center py-12 text-muted-foreground">A carregar...</p> : (
         <>
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
             <Kpi label="Com proposta" valor={`${resumo.comProposta} de ${resumo.total}`} sub="clientes ativos" />
             <Kpi label="Mensagens enviadas" valor={`${resumo.enviadas} de ${resumo.comProposta}`} />
             <Kpi label="Aceites" valor={resumo.aceites} tom={resumo.aceites ? "success" : undefined} />
             <Kpi label="Recusados" valor={resumo.recusados} tom={resumo.recusados ? "destructive" : undefined} />
+            <Kpi label="Mantêm" valor={resumo.mantem} sub="sem aumento" />
             <Kpi label="Aumento se aceitarem" valor={eurSinal(resumo.aumentoPotencial)} sub="por mês, sem as recusadas" />
             <Kpi label="Aumento já aceite" valor={eurSinal(resumo.aumentoAceite)} sub="por mês" tom={resumo.aumentoAceite ? "success" : undefined} />
           </div>
@@ -239,6 +241,7 @@ const MensalidadesView = ({ onOpenClient }: Props) => {
                 <option value="pendente">Pendente</option>
                 <option value="aceite">Aceite</option>
                 <option value="recusado">Recusado</option>
+                <option value="mantem">Mantém</option>
               </select>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={soPorEnviar} onChange={(e) => setSoPorEnviar(e.target.checked)} className="h-4 w-4 accent-primary" />
@@ -293,7 +296,7 @@ const MensalidadesView = ({ onOpenClient }: Props) => {
                         <td className="py-1.5 pr-2 text-right tabular-nums">{eur(l.atual)}</td>
                         <td className="py-1.5 pr-2 text-right">
                           <CampoValor valor={l.nova} disabled={!!aplicada}
-                            onSave={(v) => salvar(l, { mensalidade_nova: v, ...(v === null && est === "aceite" ? { estado: "pendente", estado_em: null } : {}) })} />
+                            onSave={(v) => salvar(l, { mensalidade_nova: v, ...((v === null && est === "aceite") || (v !== null && est === "mantem") ? { estado: "pendente", estado_em: null } : {}) })} />
                         </td>
                         <td className={cn("py-1.5 pr-2 text-right tabular-nums whitespace-nowrap", a && a.valor > 0 && "text-success", a && a.valor < 0 && "text-destructive")}>
                           {a ? <>{eurSinal(a.valor)}{a.pct !== null && <span className="text-xs text-muted-foreground"> ({a.pct.toFixed(1).replace(".", ",")}%)</span>}</> : "—"}
@@ -307,13 +310,15 @@ const MensalidadesView = ({ onOpenClient }: Props) => {
                           </label>
                         </td>
                         <td className="py-1.5 pr-2 whitespace-nowrap">
-                          {l.nova === null && !l.proposta ? <span className="text-xs text-muted-foreground">Sem proposta</span> : (
+                          {(
                             <div className="flex items-center gap-2">
-                              <select value={est ?? "pendente"} onChange={(e) => mudarEstado(l, e.target.value as EstadoAtualizacao)}
+                              <select value={l.nova === null && est !== "mantem" ? "" : (est ?? "pendente")} onChange={(e) => e.target.value && mudarEstado(l, e.target.value as EstadoAtualizacao)}
                                 className={cn(inputCls, "py-1 text-xs font-medium", est && ESTADO_CLASS[est])}>
-                                <option value="pendente">{ESTADO_LABEL.pendente}</option>
+                                {l.nova === null && est !== "mantem" && <option value="">Sem proposta</option>}
+                                <option value="mantem">{ESTADO_LABEL.mantem}</option>
+                                <option value="pendente" disabled={l.nova === null}>{ESTADO_LABEL.pendente}</option>
                                 <option value="aceite" disabled={l.nova === null}>{ESTADO_LABEL.aceite}</option>
-                                <option value="recusado">{ESTADO_LABEL.recusado}</option>
+                                <option value="recusado" disabled={l.nova === null}>{ESTADO_LABEL.recusado}</option>
                               </select>
                               {aplicada
                                 ? <span className="text-[11px] text-success">aplicada em {fmtDia(aplicada.slice(0, 10))}</span>
