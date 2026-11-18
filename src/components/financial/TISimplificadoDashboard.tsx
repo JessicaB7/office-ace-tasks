@@ -21,34 +21,14 @@ import {
 } from "./financialMath";
 import { cn } from "@/lib/utils";
 import { RobotButton } from "./RobotAnaliseDialog";
+import { calcIRS } from "@/lib/irs";
+import { IrsConjuntoSection, irsConjuntoDados, irsConjuntoParaRegime, irsConjuntoLinhasRobot } from "./IrsConjuntoSection";
 import { NotasIrsField } from "./NotasIrsField";
 import { calcDespesas15, DEDUCAO_ESPECIFICA_15 } from "@/lib/despesas15";
 
 const IVA_VENDAS = ["24331111", "24333311", "24341331"];
 const IVA_COMPRAS = ["24323111", "24323211", "24323311", "24342"];
 
-// Escalões IRS 2026 — método "taxa × rendimento − parcela a abater"
-const IRS_BRACKETS: { upTo: number; rate: number; abate: number }[] = [
-  { upTo: 8342, rate: 0.125, abate: 0 },
-  { upTo: 12587, rate: 0.157, abate: 266.94 },
-  { upTo: 17838, rate: 0.212, abate: 959.26 },
-  { upTo: 23089, rate: 0.241, abate: 1476.45 },
-  { upTo: 29397, rate: 0.311, abate: 3092.77 },
-  { upTo: 43090, rate: 0.349, abate: 4209.94 },
-  { upTo: 46566, rate: 0.431, abate: 7743.27 },
-  { upTo: 86634, rate: 0.446, abate: 8441.48 },
-  { upTo: Infinity, rate: 0.48, abate: 11387.17 },
-];
-
-function calcIRS(rendimentoColectavel: number): number {
-  if (rendimentoColectavel <= 0) return 0;
-  for (const b of IRS_BRACKETS) {
-    if (rendimentoColectavel <= b.upTo) {
-      return Math.max(0, rendimentoColectavel * b.rate - b.abate);
-    }
-  }
-  return 0;
-}
 
 const cents = (value: number) => Math.round(value * 100) / 100;
 const sameCurrency = (a: number, b: number) => Math.abs(cents(a) - cents(b)) <= 0.01;
@@ -297,6 +277,11 @@ export default function TISimplificadoDashboard({
   const irsOrganizadoLiquido = capReembolso(irsOrganizado - deducoes - retencoes);
   const diffRegimes = irsLiquido - irsOrganizadoLiquido;
 
+  // IRS em conjunto (quociente conjugal) — opção por ano, com os dados do cônjuge
+  const conjunto = irsConjuntoDados(settings);
+  const conjuntoSimplificado = irsConjuntoParaRegime(conjunto, rendimentoColectavel, deducoes, retencoes);
+  const conjuntoOrganizado = irsConjuntoParaRegime(conjunto, rendimentoColectavelOrganizado, deducoes, retencoes);
+
 
   const chartData = MONTHS_PT.map((m, i) => ({
     mes: m,
@@ -433,6 +418,14 @@ export default function TISimplificadoDashboard({
               ],
               nota: "simulação com os valores até ao momento",
             },
+            ...(conjunto.ativo ? [{
+              imposto: "IRS em conjunto (com o cônjuge) — estimativa",
+              linhas: [
+                ...irsConjuntoLinhasRobot("Regime simplificado", conjuntoSimplificado),
+                ...irsConjuntoLinhasRobot("Contabilidade organizada", conjuntoOrganizado),
+              ],
+              nota: "tributação conjunta: soma dos rendimentos coletáveis, escalões aplicados a metade e imposto × 2",
+            }] : []),
           ],
         }} />
         <Button onClick={exportPDF} disabled={exporting} size="sm" variant="outline">
@@ -967,6 +960,18 @@ export default function TISimplificadoDashboard({
           <span className="text-base font-bold tabular-nums">{fmtEur(Math.abs(diffRegimes))}</span>
         </div>
       </div>
+
+      <IrsConjuntoSection
+        settings={settings}
+        onSave={(patch) => upsertSettings.mutate(patch)}
+        exporting={exporting}
+        deducoesTitular={deducoes}
+        retencoesTitular={retencoes}
+        regimes={[
+          { label: "Regime simplificado", rcTitular: rendimentoColectavel },
+          { label: "Contabilidade organizada", rcTitular: rendimentoColectavelOrganizado },
+        ]}
+      />
 
     </div>
     </div>

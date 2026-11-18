@@ -124,6 +124,11 @@ export type Database = {
           outras_despesas_valor: number
           despesas_15_extra: number
           outros_rendimentos_valor: number
+          irs_conjunto: boolean
+          conjuge_rendimento: number
+          conjuge_rendimento_tipo: string
+          conjuge_retencoes: number
+          conjuge_deducoes: number
           relatorio_q1_data: string | null
           relatorio_q1_entregue: boolean
           relatorio_q2_data: string | null
@@ -180,6 +185,11 @@ export type Database = {
           outras_despesas_valor?: number
           despesas_15_extra?: number
           outros_rendimentos_valor?: number
+          irs_conjunto?: boolean
+          conjuge_rendimento?: number
+          conjuge_rendimento_tipo?: string
+          conjuge_retencoes?: number
+          conjuge_deducoes?: number
           relatorio_q1_data?: string | null
           relatorio_q1_entregue?: boolean
           relatorio_q2_data?: string | null
@@ -236,6 +246,11 @@ export type Database = {
           outras_despesas_valor?: number
           despesas_15_extra?: number
           outros_rendimentos_valor?: number
+          irs_conjunto?: boolean
+          conjuge_rendimento?: number
+          conjuge_rendimento_tipo?: string
+          conjuge_retencoes?: number
+          conjuge_deducoes?: number
           relatorio_q1_data?: string | null
           relatorio_q1_entregue?: boolean
           relatorio_q2_data?: string | null

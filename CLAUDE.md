@@ -129,6 +129,12 @@ Dashboards por regime:
   **Cumprimento dos 15% de despesas** (art. 31.º n.º 13/14 CIRS, só coeficientes 0,75/0,35; `src/lib/despesas15.ts`):
   exigido = 15% da faturação; justificado = max(4.587,09 €, SS) + despesas + outras despesas + «Outras despesas justificadas
   (e-Fatura)» (`despesas_15_extra`); a falta é acrescida ao rendimento coletável do IRS Simplificado (resultado vai para o PDF).
+- **IRS em conjunto** (TI RS e TI CO, `IrsConjuntoSection.tsx`, regra em `src/lib/irs.ts` com os escalões 2026 e `calcIRS`):
+  opção por ano «Simular IRS em conjunto» (`client_financial_settings.irs_conjunto`) com rendimentos do cônjuge
+  (`conjuge_rendimento` + `conjuge_rendimento_tipo`: «Trabalho dependente (bruto)» → dedução específica max(4.587,09 €; 11%),
+  ou «Já coletável»), `conjuge_retencoes` e `conjuge_deducoes` (default 250 €). Quociente conjugal (art. 69.º CIRS):
+  coleta = 2 × IRS(RC do casal ÷ 2) − deduções dos dois − retenções dos dois (reembolso limitado às retenções). Mostra os dois
+  regimes e a comparação com a tributação separada; vai para o PDF e para o Robot só quando ativo.
 - **TI Organizado** (`TIOrganizadoDashboard.tsx`): balancete XLSX, IVA trimestral editável com
   reposição do automático (delta 2436−2437), outras despesas, simulador organizado vs simplificado.
 - **Empresas / SQ** (`EmpresasDashboard.tsx`): rendimentos, FSE, gastos com pessoal, depreciações,
