@@ -55,8 +55,9 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
 
 ## 6. Navegação (setores) — `src/components/AppSidebar.tsx`
 
-0. **Gestão de negócio** (admin; primeiro setor da barra, só a admin o vê), 5 entradas sem números repetidos:
+0. **Gestão de negócio** (admin; primeiro setor da barra, só a admin o vê), 6 entradas sem números repetidos:
    «Controlo» (`controlo`, página inicial da admin — só o que precisa de atenção), «Negócio» (`business`, carteira e avenças),
+   «Atualização de mensalidades» (`mensalidades`),
    «Comercial» (`comercial`, separadores Pipeline / Consultorias), «Resumo do dia» (`resumo_dia`), «Colaboradores»
    (`collaborators`, só gestão). Vistas antigas redirecionadas em `src/lib/vistas.ts` (`resolverVista`, usado no
    `handleSidebarNav` do `Index`): `resumo` → `business`; `consultorias_painel` → `comercial` + separador `consultorias`
@@ -272,6 +273,17 @@ Dashboards por regime:
   `inicio_contrato` no mês; **saída** = último mês de responsabilidade no mês anterior. Inativos sem data não contam como
   saída em nenhum mês (nunca usar `updated_at`). Mensalidade de um mês passado = a atual, salvo alterações do `audit_log`
   depois desse mês. Média só com avença > 0.
+- **Avenças por colaborador** (`avencasPorColaborador` em `carteira.ts`): por responsável atual do cliente, clientes em carteira
+  no mês, avenças, peso e avença média; o total bate com «Avenças mensais».
+
+### Atualização de mensalidades (`mensalidades`, admin) — `MensalidadesView`, `src/lib/mensalidadeAtualizacoes.ts`
+- Tabela `mensalidade_atualizacoes` (só admin): uma proposta por cliente × `a_partir_de` (1.º dia do mês, seletor no topo;
+  por omissão janeiro do ano seguinte) com mensalidade atual (retrato), nova, `mensagem_enviada_em`, `estado`
+  pendente/aceite/recusado (`estado_em`), notas e `aplicada_em`. Só clientes ativos; filtros, cartões e preenchimento em massa
+  (+% arredondado ao euro, só linhas sem valor).
+- **Aceite** → `aplicar_atualizacoes_mensalidade()` (SECURITY DEFINER) muda `clients.mensalidade` quando `a_partir_de` ≤ hoje
+  (Lisboa): logo pelo trigger, ou pelo pg_cron diário `aplicar-atualizacoes-mensalidade` (00:15 UTC). Fica no `audit_log`
+  (o Negócio conta a partir da data em que a ficha mudou). Não reverte se a linha deixar de estar aceite.
 
 ### Fecho do mês (`src/lib/fechoMes.ts`, `FechoMesView`, `FechoMesCard`)
 - Mês de referência = anterior. Usa `obrigacoesForClient`/`isObrigacaoDone`/`ativoNoMes`; `deadlineFor` aceita um

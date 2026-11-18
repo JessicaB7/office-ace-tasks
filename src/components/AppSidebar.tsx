@@ -34,6 +34,7 @@ import {
   Activity,
   Euro,
   CalendarRange,
+  BadgeEuro,
   type LucideIcon,
 } from "lucide-react";
 import logoWhite from "@/assets/logo-white.png";
@@ -60,6 +61,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
     entries: [
       { kind: "item", item: { id: "controlo", label: "Controlo", icon: Activity, adminOnly: true } },
       { kind: "item", item: { id: "business", label: "Negócio", icon: Euro, adminOnly: true } },
+      { kind: "item", item: { id: "mensalidades", label: "Atualização de mensalidades", icon: BadgeEuro, adminOnly: true } },
       { kind: "item", item: { id: "comercial", label: "Comercial", icon: TrendingUp, adminOnly: true } },
       { kind: "item", item: { id: "resumo_dia", label: "Resumo do dia", icon: CalendarCheck, adminOnly: true } },
       { kind: "item", item: { id: "collaborators", label: "Colaboradores", icon: Users, adminOnly: true } },

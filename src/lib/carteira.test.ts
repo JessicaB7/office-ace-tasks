@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  avencasPorColaborador,
   calcularCarteira,
   comUltimoMes,
   contaNoMes,
@@ -150,5 +151,32 @@ describe("evolucaoAnual e estado", () => {
     const s = estadoCarteira([cli({ id: "1" }), cli({ id: "2", status: "a_sair", mensalidade: 70 }), cli({ id: "3", status: null, active: false })]);
     expect([s.ativos.length, s.aSair.length, s.inativos.length]).toEqual([1, 1, 1]);
     expect(s.valorEmRisco).toBe(70);
+  });
+});
+
+describe("avencasPorColaborador", () => {
+  it("agrupa por responsável, soma igual ao total e ordena por valor", () => {
+    const clients = [
+      cli({ id: "1", responsavel_id: "a", mensalidade: 100 }),
+      cli({ id: "2", responsavel_id: "a", mensalidade: 0 }),
+      cli({ id: "3", responsavel_id: "b", mensalidade: 300 }),
+      cli({ id: "4", responsavel_id: null, mensalidade: 50 }),
+      cli({ id: "5", responsavel_id: "b", status: "inativo", active: false, mensalidade: 999 }),
+    ];
+    const m = calcularCarteira(clients, [], "2026-11-01");
+    const l = avencasPorColaborador(m);
+    expect(l.map((x) => x.key)).toEqual(["b", "a", "none"]);
+    expect(l.reduce((s, x) => s + x.valor, 0)).toBe(m.total);
+    const a = l.find((x) => x.key === "a")!;
+    expect(a.clientes.length).toBe(2);
+    expect(a.media).toBe(100);
+    expect(l[0].peso).toBeCloseTo(300 / 450, 5);
+  });
+
+  it("usa a mensalidade do mês (registo de alterações)", () => {
+    const clients = [cli({ id: "1", responsavel_id: "a", mensalidade: 120 })];
+    const audit = [{ registo_id: "1", campo: "mensalidade", valor_antigo: "100", alterado_em: "2026-11-10T10:00:00Z" }];
+    expect(avencasPorColaborador(calcularCarteira(clients, audit, "2026-10-01"))[0].valor).toBe(100);
+    expect(avencasPorColaborador(calcularCarteira(clients, audit, "2026-11-01"))[0].valor).toBe(120);
   });
 });

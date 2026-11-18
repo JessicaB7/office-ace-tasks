@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { ArrowUpRight, ChevronLeft, ChevronRight, Euro, LineChart as LineChartIcon, PieChart, RefreshCw, TrendingDown, UserMinus, UserPlus } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight, Euro, Users, LineChart as LineChartIcon, PieChart, RefreshCw, TrendingDown, UserMinus, UserPlus } from "lucide-react";
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -7,6 +7,7 @@ import { useControloAudit, useControloClients, useControloCollaborators } from "
 import { useOffboardings } from "@/hooks/useOffboardings";
 import { todayYmd } from "@/lib/obrigacoesControlo";
 import {
+  avencasPorColaborador,
   calcularCarteira,
   comUltimoMes,
   estadoCarteira,
@@ -89,6 +90,7 @@ const NegocioView = ({ onOpenClient }: Props) => {
     () => evolucaoAnual(carteira, auditMens, ano, mesAtual).map((p) => ({ ...p, name: MESES_CURTOS[Number(p.mes.slice(5, 7)) - 1] })),
     [carteira, auditMens, ano, mesAtual],
   );
+  const porColab = useMemo(() => avencasPorColaborador(m), [m]);
   const estado = useMemo(() => estadoCarteira(carteira), [carteira]);
   const semData = useMemo(() => inativosSemData(carteira), [carteira]);
 
@@ -228,6 +230,58 @@ const NegocioView = ({ onOpenClient }: Props) => {
               )}
             </Cartao>
           </div>
+
+          {/* Avenças por colaborador */}
+          <Cartao titulo={`Avenças por colaborador — ${nomeMes(mes)}`} icon={Users} extra="responsável atual do cliente">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-muted-foreground text-left">
+                    <th className="font-medium py-1">Colaborador</th>
+                    <th className="font-medium py-1 text-right">Clientes</th>
+                    <th className="font-medium py-1 text-right">Avenças</th>
+                    <th className="font-medium py-1 w-28 pl-3">Peso</th>
+                    <th className="font-medium py-1 text-right">Avença média</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {porColab.map((g) => {
+                    const pct = Math.round(g.peso * 100);
+                    const nome = g.key === "none" ? "Sem responsável" : nomeCol(g.key);
+                    return (
+                      <tr key={g.key}>
+                        <td className="py-1.5 font-medium">
+                          <button type="button" className="hover:underline underline-offset-2 text-left"
+                            onClick={() => setDetalhe({ titulo: `Avenças de ${nome} — ${nomeMes(mes)} ${ano}`, descricao: `Total ${eur(g.valor)}.`, linhas: porValor(g.clientes).map((c) => linhaCliente(c)) })}>
+                            {nome}
+                          </button>
+                        </td>
+                        <td className="py-1.5 text-right tabular-nums">{g.clientes.length}</td>
+                        <td className="py-1.5 text-right tabular-nums font-semibold">{eur(g.valor)}</td>
+                        <td className="py-1.5 pl-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden"><div className="h-full bg-primary" style={{ width: `${pct}%` }} /></div>
+                            <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{pct}%</span>
+                          </div>
+                        </td>
+                        <td className="py-1.5 text-right tabular-nums">{g.media ? eur(g.media) : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t">
+                    <td className="py-1.5 font-semibold">Total</td>
+                    <td className="py-1.5 text-right tabular-nums font-semibold">{m.clientes.length}</td>
+                    <td className="py-1.5 text-right tabular-nums font-semibold">{eur(m.total)}</td>
+                    <td />
+                    <td className="py-1.5 text-right tabular-nums font-semibold">{eur(m.media)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <p className="text-[11px] text-muted-foreground">Avenças sem IVA, agrupadas pelo responsável que o cliente tem hoje na ficha. A avença média conta só os clientes com avença maior que zero.</p>
+          </Cartao>
 
           {/* Entradas e saídas do mês */}
           <div className="grid gap-5 md:grid-cols-2">

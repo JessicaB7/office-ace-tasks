@@ -1041,6 +1041,62 @@ export type Database = {
           },
         ]
       }
+      mensalidade_atualizacoes: {
+        Row: {
+          a_partir_de: string
+          aplicada_em: string | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          estado: string
+          estado_em: string | null
+          id: string
+          mensagem_enviada_em: string | null
+          mensalidade_atual: number | null
+          mensalidade_nova: number | null
+          notas: string | null
+          updated_at: string
+        }
+        Insert: {
+          a_partir_de: string
+          aplicada_em?: string | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          estado?: string
+          estado_em?: string | null
+          id?: string
+          mensagem_enviada_em?: string | null
+          mensalidade_atual?: number | null
+          mensalidade_nova?: number | null
+          notas?: string | null
+          updated_at?: string
+        }
+        Update: {
+          a_partir_de?: string
+          aplicada_em?: string | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          estado?: string
+          estado_em?: string | null
+          id?: string
+          mensagem_enviada_em?: string | null
+          mensalidade_atual?: number | null
+          mensalidade_nova?: number | null
+          notas?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensalidade_atualizacoes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_obligations: {
         Row: {
           client_id: string

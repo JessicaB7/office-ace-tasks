@@ -206,6 +206,43 @@ export function calcularCarteira<T extends ClienteCarteira>(clients: T[], audit:
   };
 }
 
+// ---------------------------------------------------------------- avenças por colaborador
+
+export interface AvencaColaborador<T extends ClienteCarteira = ClienteCarteira> {
+  /** id do responsável ou "none" (sem responsável). */
+  key: string;
+  clientes: T[];
+  valor: number;
+  /** Média só dos clientes com avença > 0. */
+  media: number;
+  /** Fração do total do mês (0–1). */
+  peso: number;
+}
+
+/**
+ * Avenças do mês agrupadas pelo responsável atual do cliente (o mesmo total que «Avenças mensais»).
+ * Ordenado por valor, do maior para o menor.
+ */
+export function avencasPorColaborador<T extends ClienteCarteira>(m: CarteiraMes<T>): AvencaColaborador<T>[] {
+  const grupos = new Map<string, T[]>();
+  m.clientes.forEach((c) => {
+    const k = c.responsavel_id || "none";
+    grupos.set(k, [...(grupos.get(k) ?? []), c]);
+  });
+  return [...grupos.entries()]
+    .map(([key, clientes]) => {
+      const valor = clientes.reduce((s, c) => s + m.valor(c), 0);
+      return {
+        key,
+        clientes,
+        valor,
+        media: media(clientes.map(m.valor).filter((v) => v > 0)),
+        peso: m.total ? valor / m.total : 0,
+      };
+    })
+    .sort((a, b) => b.valor - a.valor || a.clientes.length - b.clientes.length);
+}
+
 // ---------------------------------------------------------------- evolução anual
 
 export interface PontoEvolucao {

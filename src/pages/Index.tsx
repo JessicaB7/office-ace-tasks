@@ -19,6 +19,7 @@ import ClientAnalysisView from "@/components/ClientAnalysisView";
 import AnaliseFinanceiraView from "@/components/AnaliseFinanceiraView";
 import NotificationBell from "@/components/NotificationBell";
 import NegocioView from "@/components/NegocioView";
+import MensalidadesView from "@/components/MensalidadesView";
 import ComercialPainelView from "@/components/ComercialPainelView";
 import LeadsView from "@/components/comercial/LeadsView";
 import PropostasView from "@/components/comercial/PropostasView";
@@ -146,6 +147,7 @@ const Index = () => {
           />
         )}
         {activeView === "business" && isAdmin && <NegocioView onOpenClient={(id, tab) => handleOpenClient(id, tab ?? null)} />}
+        {activeView === "mensalidades" && isAdmin && <MensalidadesView onOpenClient={(id, tab) => handleOpenClient(id, tab ?? null)} />}
         {activeView === "dashboard" && <DashboardView onNavigate={handleSidebarNav} />}
         {activeView === "comercial" && isAdmin && <ComercialPainelView initialTab={vistaTab} />}
         {activeView === "leads" && <LeadsView />}
