@@ -1,3 +1,4 @@
+import { calcRetencoesIrs } from "@/lib/retencoesIrs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { filtrarRubricasPdf, colunasPdf } from "@/lib/pdfKpis";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -148,19 +149,15 @@ export default function TIOrganizadoDashboard({
     upsertSettings.mutate({ [`iva_q${i + 1}`]: null } as any);
   };
 
-  // Retenção na fonte e pagamentos por conta (241: 2414 retenções + pagamentos por conta) — soma anual em módulo.
-  const retencoes241 = (() => {
-    let total = 0;
-    for (const [key, val] of map.entries()) {
-      const [, code] = key.split(":");
-      if (code.startsWith("241")) total += Math.abs(val);
-    }
-    // O acumulado do último balancete cobre trimestres que não tenham sido importados.
-    return Math.max(total, Number(settings?.ret_241_acum ?? 0));
-  })();
-  const retencoesManual = Number(settings?.irs_retencoes ?? 0);
-  const retencoes = retencoes241 > 0 ? retencoes241 : retencoesManual;
-  const retencoesSource: "auto" | "manual" = retencoes241 > 0 ? "auto" : "manual";
+  // Retenção na fonte e pagamentos por conta: conta 241 do balancete (ou manual) + pagamentos por conta pagos fora do TOConline.
+  const ret = calcRetencoesIrs(map, settings);
+  const retencoesManual = ret.manual;
+  const retencoes = ret.total;
+  const retencoesSource = ret.source;
+  const [ppcInput, setPpcInput] = useState<number>(ret.ppcForaToc);
+  useEffect(() => {
+    setPpcInput(Number(settings?.ppc_pagos_fora_toc ?? 0));
+  }, [settings?.ppc_pagos_fora_toc]);
   const [retencoesInput, setRetencoesInput] = useState<number>(retencoesManual);
   useEffect(() => {
     setRetencoesInput(Number(settings?.irs_retencoes ?? 0));
@@ -553,6 +550,33 @@ export default function TIOrganizadoDashboard({
             <div>
               <h4 className="font-semibold text-sm">Retenção na fonte e pagamentos por conta</h4>
               <p className="text-xs text-muted-foreground mt-1">Conta 241 · soma anual das retenções por terceiros e pagamentos por conta.</p>
+              {!exporting && (
+                <label className="mt-2 flex items-center gap-2 text-sm" title="Pagamentos por conta de IRS já pagos (ver no Portal das Finanças) que não estão lançados no TOConline. Somam à conta 241.">
+                  <span className="text-muted-foreground">Pagamentos por conta pagos (fora do TOConline)</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={Number.isFinite(ppcInput) ? ppcInput : 0}
+                    onChange={(e) => setPpcInput(Number(e.target.value))}
+                    onBlur={() => {
+                      const v = Math.max(0, Number(ppcInput) || 0);
+                      if (v !== ret.ppcForaToc) upsertSettings.mutate({ ppc_pagos_fora_toc: v });
+                    }}
+                    className="w-32 py-1.5 px-2 rounded-lg border bg-background text-sm tabular-nums text-right focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </label>
+              )}
+              {!exporting && ret.avisoDuplicado && (
+                <p className="text-[11px] text-warning mt-1">
+                  O balancete já tem {fmtEur(ret.outras241)} noutras subcontas da 241 (pagamentos por conta lançados?) — confirma para não contar a dobrar.
+                </p>
+              )}
+              {!exporting && ret.ppcForaToc > 0 && (
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  {retencoesSource === "auto" ? "Conta 241" : "Valor manual"}: {fmtEur(retencoesSource === "auto" ? ret.conta241 : ret.manual)} + pagamentos por conta: {fmtEur(ret.ppcForaToc)}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               {!exporting && retencoesSource === "manual" && (
@@ -667,6 +691,9 @@ export default function TIOrganizadoDashboard({
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Retenção na fonte e pagamentos por conta</div>
               <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(retencoes)}</div>
+            {!exporting && ret.ppcForaToc > 0 && (
+              <div className="text-[10px] text-muted-foreground">inclui {fmtEur(ret.ppcForaToc)} de pagamentos por conta fora do TOConline</div>
+            )}
             </div>
             <div className={cn("rounded-lg border bg-background p-3 ring-1 min-h-[78px] h-full flex flex-col justify-center", irsOrganizadoLiquido >= 0 ? "ring-amber-200 dark:ring-amber-900/40" : "ring-emerald-200 dark:ring-emerald-900/40")}>
               <div className={cn("text-[11px]", irsOrganizadoLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>
@@ -726,6 +753,9 @@ export default function TIOrganizadoDashboard({
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">Retenção na fonte e pagamentos por conta</div>
               <div className="text-lg font-bold tabular-nums text-emerald-700">−{fmtEur(retencoes)}</div>
+            {!exporting && ret.ppcForaToc > 0 && (
+              <div className="text-[10px] text-muted-foreground">inclui {fmtEur(ret.ppcForaToc)} de pagamentos por conta fora do TOConline</div>
+            )}
             </div>
             <div className={cn("rounded-lg border bg-background p-3 ring-1 min-h-[78px] h-full flex flex-col justify-center", irsSimplificadoLiquido >= 0 ? "ring-amber-200 dark:ring-amber-900/40" : "ring-emerald-200 dark:ring-emerald-900/40")}>
               <div className={cn("text-[11px]", irsSimplificadoLiquido >= 0 ? "text-amber-700" : "text-emerald-700")}>

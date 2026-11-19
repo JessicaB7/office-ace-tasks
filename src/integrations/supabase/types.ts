@@ -106,6 +106,7 @@ export type Database = {
           irc_regime: string
           irs_deducoes_colecta: number
           irs_retencoes: number
+          ppc_pagos_fora_toc: number
           iva_monthly: Json | null
           iva_q1: number | null
           iva_q2: number | null
@@ -167,6 +168,7 @@ export type Database = {
           irc_regime?: string
           irs_deducoes_colecta?: number
           irs_retencoes?: number
+          ppc_pagos_fora_toc?: number
           iva_monthly?: Json | null
           iva_q1?: number | null
           iva_q2?: number | null
@@ -228,6 +230,7 @@ export type Database = {
           irc_regime?: string
           irs_deducoes_colecta?: number
           irs_retencoes?: number
+          ppc_pagos_fora_toc?: number
           iva_monthly?: Json | null
           iva_q1?: number | null
           iva_q2?: number | null

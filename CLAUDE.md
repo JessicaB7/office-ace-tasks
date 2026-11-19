@@ -132,6 +132,9 @@ Dashboards por regime:
   coletável nos dois regimes; a zero não aparecem nos resultados nem no PDF.
   "Retenção na fonte e pagamentos por conta" = conta 241 (incl. 2414): o maior entre a soma dos trimestres
   importados e o **Acumulado** do último balancete (`ret_241_acum`), para cobrir trimestres não importados.
+  **Pagamentos por conta pagos (fora do TOConline)** (`ppc_pagos_fora_toc`, TI RS e TI CO, `src/lib/retencoesIrs.ts`): valor
+  manual visto no Portal que **soma** à 241 (ou ao manual); entra no total do PDF/Robot e no limite do reembolso, sem linha à
+  parte; aviso se o balancete já tiver outras subcontas da 241 além da 2414 (risco de contar a dobrar).
   **Cumprimento dos 15% de despesas** (art. 31.º n.º 13/14 CIRS, só coeficientes 0,75/0,35; `src/lib/despesas15.ts`):
   exigido = 15% da faturação; justificado = max(4.587,09 €, SS) + despesas + outras despesas + «Outras despesas justificadas
   (e-Fatura)» (`despesas_15_extra`); a falta é acrescida ao rendimento coletável do IRS Simplificado (resultado vai para o PDF).

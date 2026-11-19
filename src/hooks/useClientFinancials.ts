@@ -31,6 +31,8 @@ export type FinancialSettings = {
   ta_rate_viaturas: number;
   despesas_nao_aceites: number;
   irs_retencoes: number;
+  /** Pagamentos por conta de IRS pagos que não estão lançados no TOConline. */
+  ppc_pagos_fora_toc: number;
   irs_deducoes_colecta: number;
   ss_q1: number;
   ss_q2: number;
@@ -138,6 +140,7 @@ export function useClientFinancialSettings(clientId: string, year: number) {
         ta_rate_viaturas: 0.10,
         despesas_nao_aceites: 0,
         irs_retencoes: 0,
+        ppc_pagos_fora_toc: 0,
         irs_deducoes_colecta: 250,
         ss_q1: 0,
         ss_q2: 0,
