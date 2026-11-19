@@ -1,8 +1,9 @@
 // Custo e lucro por colaborador (Colaboradores, admin) — regras puras, sem efeitos laterais.
-// Custo mensal para a empresa = salário bruto × 14 ÷ 12 (subsídios de férias e de Natal) × (1 + TSU 23,75%)
-// + subsídio de alimentação mensal. Lucro = avenças geridas no mês (carteira.ts) − custo mensal.
+// Custo mensal para a empresa = salário bruto × (1 + encargos 25%) + subsídio de alimentação mensal
+// (encargos assumidos em 25% do salário bruto, a pedido da admin, 19/11/2026). Lucro = avenças geridas no mês (carteira.ts) − custo mensal.
 
-export const TSU_EMPREGADOR = 0.2375;
+/** Encargos da entidade patronal assumidos sobre o salário bruto. */
+export const ENCARGOS_SALARIO = 0.25;
 
 export interface CustoColaboradorInput {
   salario_bruto?: number | string | null;
@@ -14,10 +15,10 @@ const n = (v: unknown) => {
   return Number.isFinite(x) && x > 0 ? x : 0;
 };
 
-/** Custo mensal médio (14 meses repartidos por 12, com a TSU da entidade patronal). */
+/** Custo mensal: salário bruto + 25% de encargos + subsídio de alimentação. */
 export function custoMensal(c: CustoColaboradorInput | null | undefined): number {
   const bruto = n(c?.salario_bruto);
-  return (bruto * 14) / 12 * (1 + TSU_EMPREGADOR) + n(c?.subsidio_alimentacao);
+  return bruto * (1 + ENCARGOS_SALARIO) + n(c?.subsidio_alimentacao);
 }
 
 export interface LucroColaborador {

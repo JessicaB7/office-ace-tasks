@@ -2,8 +2,8 @@ import { describe, expect, test } from "vitest";
 import { custoMensal, lucroPorColaborador, totalLucro } from "../custoColaborador";
 
 describe("custoMensal", () => {
-  test("bruto × 14/12 × 1,2375 + subsídio de alimentação", () => {
-    expect(custoMensal({ salario_bruto: 1200, subsidio_alimentacao: 200 })).toBeCloseTo(1200 * 14 / 12 * 1.2375 + 200, 6);
+  test("bruto × 1,25 + subsídio de alimentação", () => {
+    expect(custoMensal({ salario_bruto: 1200, subsidio_alimentacao: 200 })).toBeCloseTo(1200 * 1.25 + 200, 6);
   });
   test("sem dados → 0", () => {
     expect(custoMensal(null)).toBe(0);
@@ -21,7 +21,7 @@ describe("lucroPorColaborador", () => {
 
   test("lucro = avenças − custo; colaborador sem clientes fica negativo", () => {
     const a = linhas.find((l) => l.key === "a")!;
-    expect(a.custo).toBeCloseTo(1000 * 14 / 12 * 1.2375, 6);
+    expect(a.custo).toBeCloseTo(1250, 6);
     expect(a.lucro).toBeCloseTo(3000 - a.custo, 6);
     expect(a.margem).toBeCloseTo(a.lucro / 3000, 6);
     const b = linhas.find((l) => l.key === "b")!;

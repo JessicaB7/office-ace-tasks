@@ -193,7 +193,7 @@ Dashboards por regime:
 - Vista de colaboradores (admin): fichas, novo colaborador, códigos de acesso, estado das notificações e
   ligação «Ver clientes por tipo» (dialog). Quadro **«Custo e lucro por colaborador»** (`CustoColaboradoresSection`,
   `src/lib/custoColaborador.ts`, tabela admin-only `collaborator_custos`; 19/11/2026): salário bruto e subsídio de alimentação mensais
-  editáveis; custo mensal = bruto × 14 ÷ 12 × (1 + TSU 23,75%) + subsídio; lucro = avenças do mês atual dos clientes de que é
+  editáveis; custo mensal = bruto × 1,25 (encargos assumidos em 25% do bruto) + subsídio; lucro = avenças do mês atual dos clientes de que é
   responsável (`avencasPorColaborador`, = Negócio) − custo; margem. Tarefas e carga continuam no Controlo → Equipa.
 
 ### Tarefas periódicas (`task_recurrences`, `src/lib/taskRecurrence.ts`)

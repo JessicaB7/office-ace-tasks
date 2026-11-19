@@ -7,7 +7,7 @@ import { useControloAudit, useControloClients } from "@/hooks/useControlo";
 import { useOffboardings } from "@/hooks/useOffboardings";
 import { todayYmd } from "@/lib/obrigacoesControlo";
 import { avencasPorColaborador, calcularCarteira, comUltimoMes, mesDe } from "@/lib/carteira";
-import { custoMensal, lucroPorColaborador, totalLucro, TSU_EMPREGADOR, type CustoColaboradorInput } from "@/lib/custoColaborador";
+import { custoMensal, lucroPorColaborador, totalLucro, ENCARGOS_SALARIO, type CustoColaboradorInput } from "@/lib/custoColaborador";
 import type { Collaborator } from "@/types/database";
 
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
@@ -90,8 +90,8 @@ export default function CustoColaboradoresSection({ collaborators }: { collabora
       <div className="mb-3">
         <h3 className="font-semibold">Custo e lucro por colaborador</h3>
         <p className="text-xs text-muted-foreground mt-1">
-          Avenças dos clientes de que é responsável em {MESES[Number(mes.slice(5, 7)) - 1]} (as mesmas do «Negócio»). Custo mensal = salário bruto × 14 ÷ 12
-          × (1 + TSU {Math.round(TSU_EMPREGADOR * 10000) / 100}%) + subsídio de alimentação mensal. Lucro = avenças − custo.
+          Avenças dos clientes de que é responsável em {MESES[Number(mes.slice(5, 7)) - 1]} (as mesmas do «Negócio»). Custo mensal = salário bruto
+          + {Math.round(ENCARGOS_SALARIO * 100)}% de encargos + subsídio de alimentação mensal. Lucro = avenças − custo.
         </p>
       </div>
       {loading ? (
