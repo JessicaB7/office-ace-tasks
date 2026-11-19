@@ -262,9 +262,12 @@ Ex.: movimento 22/10 «COMPRA DIGITALELEVATION» −1 476,00 € ↔ PF 2026/172
 1. **Bancos → Reconciliações → Reconciliações Bancárias**. Filtros: Ano, Mês, Conta bancária; à esquerda
    **Estado: Não reconciliado** e **Tipo de movimento: Saída**; à direita o separador **Pagamentos**.
 2. Para cada débito por reconciliar, procurar a FC do fornecedor (mesmo valor; data da fatura igual ou uns dias antes).
-3. FC sem pagamento: **Gerar Pagamento** na FC → **Sugestões para criação de documentos** → escolher o **débito certo**
-   (a sugestão automática pode trazer outro débito com o mesmo valor) → **Criar 1 pagamento** → PF por transferência
-   com a data do débito.
+3. À direita, separador **Pagamentos** com **Estado Reconciliações: Não reconciliado** — as FC do mês sem pagamento
+   aparecem com o link **Gerar Pagamento**. Clicar → **Sugestões para criação de documentos** → marcar o **débito certo**
+   (confirmar data, descrição e valor; pode haver outro débito com o mesmo valor) → **«Finalizar na contabilidade»
+   desmarcado** → **Criar 1 pagamento**. O PF fica criado e reconciliado com o débito (ex.: Marta Lobo, PF 2026/186–190).
+   «Não foram encontradas sugestões» = não há débito nessa conta (ex.: pago com outro cartão) → fica por reconciliar.
+   O débito pode ser do mês seguinte (ex.: Google de 31/10 debitado a 05/11) — aceitar a sugestão na mesma.
 4. Confirmar que o movimento e o PF ficam emparelhados (os totais dos dois lados do rodapé batem).
 5. **Não finalizar** os PF — a utilizadora finaliza.
 
