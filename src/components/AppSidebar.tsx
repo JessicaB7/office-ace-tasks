@@ -40,6 +40,7 @@ import {
 import logoWhite from "@/assets/logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useAcessoMensalidades } from "@/hooks/useAcessoMensalidades";
 import { useContabilidadesPending } from "@/hooks/useContabilidadesPending";
 import { useOnboardings } from "@/hooks/useOnboardings";
 import { useToconlineJobs } from "@/hooks/useToconlineJobs";
@@ -50,7 +51,7 @@ interface AppSidebarProps {
   onNewTask: () => void;
 }
 
-type Item = { id: string; label: string; icon?: LucideIcon; adminOnly?: boolean };
+type Item = { id: string; label: string; icon?: LucideIcon; adminOnly?: boolean; /** Só para colaboradores com acesso delegado (a admin vê-o na Gestão de negócio). */ delegadoMensalidades?: boolean };
 type Group = { id: string; label: string; icon: LucideIcon; adminOnly?: boolean; items: Item[] };
 type Entry = { kind: "item"; item: Item } | { kind: "group"; group: Group };
 
@@ -87,6 +88,7 @@ const SECTIONS: { title: string; icon: LucideIcon; entries: Entry[] }[] = [
       { kind: "item", item: { id: "followups", label: "Follow ups", icon: CalendarClock } },
       { kind: "item", item: { id: "novos_clientes", label: "Novos clientes", icon: UserCheck } },
       { kind: "item", item: { id: "scripts", label: "Scripts", icon: MessageSquareQuote } },
+      { kind: "item", item: { id: "mensalidades", label: "Atualização de mensalidades", icon: BadgeEuro, delegadoMensalidades: true } },
     ],
   },
   {
@@ -185,6 +187,7 @@ const sectionHasView = (section: { entries: Entry[] }, view: string) =>
 const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
 
   const { user, isAdmin, signOut } = useAuth();
+  const acessoMensalidades = useAcessoMensalidades();
   const { totalPending: contabTotalPending } = useContabilidadesPending();
   const { data: onboardings = [] } = useOnboardings();
   const { data: toconlineJobs = [] } = useToconlineJobs();
@@ -302,7 +305,9 @@ const AppSidebar = ({ activeView, onViewChange }: AppSidebarProps) => {
       <nav className="flex-1 px-3 pb-4 overflow-y-auto overflow-x-hidden">
         {SECTIONS.map((section) => {
           const entries = section.entries.filter((e) =>
-            e.kind === "item" ? !e.item.adminOnly || isAdmin : !e.group.adminOnly || isAdmin
+            e.kind === "item"
+              ? e.item.delegadoMensalidades ? acessoMensalidades.delegado : !e.item.adminOnly || isAdmin
+              : !e.group.adminOnly || isAdmin
           );
           if (entries.length === 0) return null;
           const sectionOpen = collapsed || !!openSections[section.title];

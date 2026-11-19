@@ -625,6 +625,7 @@ export type Database = {
       }
       collaborators: {
         Row: {
+          acesso_mensalidades: boolean
           active: boolean
           created_at: string
           email: string
@@ -636,6 +637,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          acesso_mensalidades?: boolean
           active?: boolean
           created_at?: string
           email: string
@@ -647,6 +649,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          acesso_mensalidades?: boolean
           active?: boolean
           created_at?: string
           email?: string

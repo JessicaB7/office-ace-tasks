@@ -57,7 +57,7 @@ Secrets das Edge Functions: `RESEND_API_KEY`, `CALENDLY_API_TOKEN`, `SUPABASE_SE
 
 0. **Gestão de negócio** (admin; primeiro setor da barra, só a admin o vê), 6 entradas sem números repetidos:
    «Controlo» (`controlo`, página inicial da admin — só o que precisa de atenção), «Negócio» (`business`, carteira e avenças),
-   «Atualização de mensalidades» (`mensalidades`),
+   «Atualização de mensalidades» (`mensalidades`; também para colaboradores com acesso delegado),
    «Comercial» (`comercial`, separadores Pipeline / Consultorias), «Resumo do dia» (`resumo_dia`), «Colaboradores»
    (`collaborators`, só gestão). Vistas antigas redirecionadas em `src/lib/vistas.ts` (`resolverVista`, usado no
    `handleSidebarNav` do `Index`): `resumo` → `business`; `consultorias_painel` → `comercial` + separador `consultorias`
@@ -281,7 +281,10 @@ Dashboards por regime:
 
 ### Atualização de mensalidades (`mensalidades`, admin) — `MensalidadesView`, `src/lib/mensalidadeAtualizacoes.ts`
 - Estado **«Mantém»** (`mantem`): o cliente fica com a mesma mensalidade — sem mensalidade nova nem mensagem; não conta em «por enviar», no aumento nem no preenchimento em massa (cartão «Mantêm»). Escrever uma mensalidade nova volta a «Pendente».
-- Tabela `mensalidade_atualizacoes` (só admin): uma proposta por cliente × `a_partir_de` (1.º dia do mês, seletor no topo;
+- **Acesso delegado**: `collaborators.acesso_mensalidades` (só a admin altera) dá a vista a colaboradores — RLS via
+  `pode_gerir_mensalidades(uid)` (admin ou delegado ativo), entrada «Atualização de mensalidades» no setor Comercial da barra
+  (`delegadoMensalidades`, hook `useAcessoMensalidades`). Ativo para a **Angela** (envia as mensagens, 19/11/2026).
+- Tabela `mensalidade_atualizacoes` (admin e delegados): uma proposta por cliente × `a_partir_de` (1.º dia do mês, seletor no topo;
   por omissão janeiro do ano seguinte) com mensalidade atual (retrato), nova, `mensagem_enviada_em`, `estado`
   pendente/aceite/recusado (`estado_em`), notas e `aplicada_em`. Só clientes ativos; filtros, cartões e preenchimento em massa
   (+% arredondado ao euro, só linhas sem valor).

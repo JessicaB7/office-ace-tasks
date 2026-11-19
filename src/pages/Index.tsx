@@ -33,6 +33,7 @@ import AssociatedTasksDialog from "@/components/AssociatedTasksDialog";
 import SessionConfirmationReminder from "@/components/comercial/SessionConfirmationReminder";
 import NewTasksReminder from "@/components/NewTasksReminder";
 import { useAuth } from "@/hooks/useAuth";
+import { useAcessoMensalidades } from "@/hooks/useAcessoMensalidades";
 import DefinicoesManuaisView from "@/components/DefinicoesManuaisView";
 import ToconlineAutomacoesView from "@/components/toconline/ToconlineAutomacoesView";
 import MapasTrimestraisView from "@/components/financial/MapasTrimestraisView";
@@ -48,6 +49,7 @@ import { resolverVista } from "@/lib/vistas";
 
 const Index = () => {
   const { isAdmin } = useAuth();
+  const acessoMensalidades = useAcessoMensalidades();
   const [activeView, setActiveView] = useState("dashboard");
 
 
@@ -147,7 +149,7 @@ const Index = () => {
           />
         )}
         {activeView === "business" && isAdmin && <NegocioView onOpenClient={(id, tab) => handleOpenClient(id, tab ?? null)} />}
-        {activeView === "mensalidades" && isAdmin && <MensalidadesView onOpenClient={(id, tab) => handleOpenClient(id, tab ?? null)} />}
+        {activeView === "mensalidades" && acessoMensalidades.pode && <MensalidadesView onOpenClient={(id, tab) => handleOpenClient(id, tab ?? null)} />}
         {activeView === "dashboard" && <DashboardView onNavigate={handleSidebarNav} />}
         {activeView === "comercial" && isAdmin && <ComercialPainelView initialTab={vistaTab} />}
         {activeView === "leads" && <LeadsView />}
