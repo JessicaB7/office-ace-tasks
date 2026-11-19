@@ -260,8 +260,7 @@ export default function TISimplificadoDashboard({
   });
   const temAcrescimo15 = d15.aplicavel && d15.acrescimo > 0;
 
-  const rendimentoBaseSimplificado = totalFat * coef + d15.acrescimo;
-  const benSimpl = aplicarBeneficioIrs(rendimentoBaseSimplificado, outrosRend, beneficio);
+  const benSimpl = aplicarBeneficioIrs({ bruto: totalFat, coeficiente: coef, acrescimo: d15.acrescimo, outros: outrosRend }, beneficio);
   const rendimentoColectavel = benSimpl.coletavel;
   const irsEstimado = benSimpl.coleta;
   // O reembolso nunca pode exceder a retenção na fonte e pagamentos por conta
@@ -271,7 +270,7 @@ export default function TISimplificadoDashboard({
 
   // Simulação regime organizado: tributação sobre o resultado líquido
   const resultadoOrganizado = resultado;
-  const benOrg = aplicarBeneficioIrs(Math.max(0, resultadoOrganizado), outrosRend, beneficio);
+  const benOrg = aplicarBeneficioIrs({ bruto: Math.max(0, resultadoOrganizado), outros: outrosRend }, beneficio);
   const rendimentoColectavelOrganizado = benOrg.coletavel;
   const irsOrganizado = benOrg.coleta;
   const irsOrganizadoLiquido = capReembolso(irsOrganizado - deducoes - retencoes);
@@ -387,15 +386,15 @@ export default function TISimplificadoDashboard({
             {
               imposto: "IRS (regime simplificado) — estimativa",
               linhas: [
+                ...(isencao > 0 ? [
+                  { descricao: `Faturação isenta — ${rotuloBeneficio(beneficio)}${beneficio.tipo === "jovem" ? ` (limite 55 × IAS = ${LIMITE_IRS_JOVEM.toLocaleString("pt-PT", { minimumFractionDigits: 2 })} €)` : ""}`, valor: benSimpl.isento },
+                ] : []),
                 {
-                  descricao: `Rendimento (${(coef * 100).toLocaleString("pt-PT")}% da faturação, coeficiente do regime simplificado)`,
-                  valor: totalFat * coef,
+                  descricao: `Rendimento coletável (${(coef * 100).toLocaleString("pt-PT")}% da faturação${isencao > 0 ? " não isenta" : ""}, coeficiente do regime simplificado)`,
+                  valor: benSimpl.atividade,
                 },
                 ...(temAcrescimo15 ? [
-                  { descricao: "Acréscimo por despesas abaixo de 15% da faturação (art. 31.º n.º 13 CIRS)", valor: d15.acrescimo },
-                ] : []),
-                ...(isencao > 0 ? [
-                  { descricao: `Rendimento isento — ${rotuloBeneficio(beneficio)}${beneficio.tipo === "jovem" ? ` (limite 55 × IAS = ${LIMITE_IRS_JOVEM.toLocaleString("pt-PT", { minimumFractionDigits: 2 })} €)` : ""}`, valor: benSimpl.isento },
+                  { descricao: "Acréscimo por despesas abaixo de 15% da faturação (art. 31.º n.º 13 CIRS)", valor: benSimpl.acrescimo },
                 ] : []),
                 ...(temOutrosRend ? [
                   { descricao: "Outros rendimentos (somam ao rendimento coletável)", valor: outrosRend },
@@ -403,7 +402,11 @@ export default function TISimplificadoDashboard({
                 ...(temOutrosRend || isencao > 0 ? [
                   { descricao: "Rendimento coletável total", valor: rendimentoColectavel },
                 ] : []),
-                { descricao: isencao > 0 && beneficio.tipo === "jovem" ? "IRS calculado (taxa determinada com os rendimentos isentos)" : "IRS calculado", valor: irsEstimado },
+                ...(isencao > 0 && beneficio.tipo === "jovem" ? [
+                  { descricao: "Rendimento para determinação da taxa (coletável + isentos)", valor: benSimpl.baseTaxa },
+                  { descricao: "Imposto correspondente a rendimentos isentos (abatido)", valor: benSimpl.impostoIsentos },
+                ] : []),
+                { descricao: "IRS calculado", valor: irsEstimado },
                 { descricao: "Deduções à coleta", valor: deducoes },
                 { descricao: "Retenção na fonte e pagamentos por conta", valor: retencoes },
                 { descricao: irsLiquido >= 0 ? "IRS a pagar" : "IRS a receber", valor: Math.abs(irsLiquido) },

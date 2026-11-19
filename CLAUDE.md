@@ -136,10 +136,11 @@ Dashboards por regime:
   manual visto no Portal que **soma** à 241 (ou ao manual); entra no total do PDF/Robot e no limite do reembolso, sem linha à
   parte; aviso se o balancete já tiver outras subcontas da 241 além da 2414 (risco de contar a dobrar).
   **Benefício de IRS** (`clients.irs_isencao_pct` + `clients.irs_beneficio` jovem/regressar, `src/lib/irsBeneficio.ts`, TI RS e TI CO):
-  **IRS Jovem** (art. 12.º-B: 100% 1.º ano, 75% 2.º–4.º, 50% 5.º–7.º, 25% 8.º–10.º) com o isento **limitado a 55 × IAS**
+  **IRS Jovem** (art. 12.º-B, sobre o rendimento bruto: 100% 1.º ano, 75% 2.º–4.º, 50% 5.º–7.º, 25% 8.º–10.º) com o isento **limitado a 55 × IAS**
   (IAS 2026 = 537,13 € → 29 542,15 €) e **englobamento para a taxa** (coleta = IRS(total) × não isento ÷ total); **Programa
-  Regressar** 50% sem limite nem englobamento. No simplificado a isenção (e o limite) incide sobre o rendimento **depois do coeficiente**
-  (faturação × coeficiente + acréscimo dos 15%), nunca sobre a faturação bruta (decisão da admin, 19/11/2026). No IRS em conjunto entra só o rendimento não isento (aproximação).
+  Regressar** 50% sem limite nem englobamento. No simplificado a isenção (e o limite) incide sobre a **faturação bruta**; o coeficiente
+  aplica-se só à parte não isenta e a base da taxa = coletável + isento bruto (confirmado com uma liquidação real de 2025:
+  29 265 € × 50% = 14 632,50 isento; 14 632,50 × 0,35 = 5 121,37 coletável; taxa sobre 19 753,87). No IRS em conjunto entra só o rendimento não isento (aproximação).
   **Cumprimento dos 15% de despesas** (art. 31.º n.º 13/14 CIRS, só coeficientes 0,75/0,35; `src/lib/despesas15.ts`):
   exigido = 15% da faturação; justificado = max(4.587,09 €, SS) + despesas + outras despesas + «Outras despesas justificadas
   (e-Fatura)» (`despesas_15_extra`); a falta é acrescida ao rendimento coletável do IRS Simplificado (resultado vai para o PDF).

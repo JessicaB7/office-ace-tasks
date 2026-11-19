@@ -242,11 +242,11 @@ export default function TIOrganizadoDashboard({
 
   // O reembolso nunca pode exceder a retenção na fonte e pagamentos por conta
   const capReembolso = (v: number) => Math.max(v, -retencoes);
-  const benOrg = aplicarBeneficioIrs(Math.max(0, resultado), outrosRend, beneficio);
+  const benOrg = aplicarBeneficioIrs({ bruto: Math.max(0, resultado), outros: outrosRend }, beneficio);
   const rendimentoColectavelOrganizado = benOrg.coletavel;
   const irsOrganizado = benOrg.coleta;
   const irsOrganizadoLiquido = capReembolso(irsOrganizado - deducoes - retencoes);
-  const benSimpl = aplicarBeneficioIrs(totalFat * coef, outrosRend, beneficio);
+  const benSimpl = aplicarBeneficioIrs({ bruto: totalFat, coeficiente: coef, outros: outrosRend }, beneficio);
   const rendimentoColectavel = benSimpl.coletavel;
   const irsSimplificado = benSimpl.coleta;
   const irsSimplificadoLiquido = capReembolso(irsSimplificado - deducoes - retencoes);
@@ -336,7 +336,11 @@ export default function TIOrganizadoDashboard({
                 ...(temOutrosRend || isencao > 0 ? [
                   { descricao: "Rendimento coletável total", valor: rendimentoColectavelOrganizado },
                 ] : []),
-                { descricao: isencao > 0 && beneficio.tipo === "jovem" ? "IRS calculado (taxa determinada com os rendimentos isentos)" : "IRS calculado", valor: irsOrganizado },
+                ...(isencao > 0 && beneficio.tipo === "jovem" ? [
+                  { descricao: "Rendimento para determinação da taxa (coletável + isentos)", valor: benOrg.baseTaxa },
+                  { descricao: "Imposto correspondente a rendimentos isentos (abatido)", valor: benOrg.impostoIsentos },
+                ] : []),
+                { descricao: "IRS calculado", valor: irsOrganizado },
                 { descricao: "Deduções à coleta", valor: deducoes },
                 { descricao: "Retenção na fonte e pagamentos por conta", valor: retencoes },
                 { descricao: irsOrganizadoLiquido >= 0 ? "IRS a pagar" : "IRS a receber", valor: Math.abs(irsOrganizadoLiquido) },
