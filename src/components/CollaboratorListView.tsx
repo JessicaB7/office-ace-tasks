@@ -8,6 +8,7 @@ import { usePushDevicesByUser } from "@/hooks/useNotificationPreferences";
 import { useToast } from "@/hooks/use-toast";
 import CollaboratorDetailDialog from "./CollaboratorDetailDialog";
 import CollaboratorClientsDialog from "./CollaboratorClientsDialog";
+import CustoColaboradoresSection from "./CustoColaboradoresSection";
 
 const emptyCollab = { name: "", email: "", role: "técnico", specialty: "", access_code: "" };
 
@@ -168,6 +169,8 @@ const CollaboratorListView = () => {
           {filtered.length === 0 && <div className="col-span-full text-center py-12 text-muted-foreground">Nenhum colaborador encontrado</div>}
         </div>
       )}
+
+      {isAdmin && !isLoading && <CustoColaboradoresSection collaborators={collaborators} />}
 
       {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">

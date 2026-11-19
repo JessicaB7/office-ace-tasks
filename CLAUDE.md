@@ -183,8 +183,11 @@ Dashboards por regime:
   (boas-vindas +2 d, contacto 30 d, ponto de situação 60 d; `tasks.onboarding_id/onboarding_step`); concluir a tarefa
   marca o campo no onboarding e vice-versa. Dashboard da admin: clientes em saída (x/9), saídas por motivo (12 meses),
   clientes novos (60 dias).
-- Vista de colaboradores (admin): só gestão — fichas, novo colaborador, códigos de acesso, estado das notificações e
-  ligação «Ver clientes por tipo» (dialog). **Sem números** (clientes, €, tarefas): estão só no Controlo → Equipa.
+- Vista de colaboradores (admin): fichas, novo colaborador, códigos de acesso, estado das notificações e
+  ligação «Ver clientes por tipo» (dialog). Quadro **«Custo e lucro por colaborador»** (`CustoColaboradoresSection`,
+  `src/lib/custoColaborador.ts`, tabela admin-only `collaborator_custos`; 19/11/2026): salário bruto e subsídio de alimentação mensais
+  editáveis; custo mensal = bruto × 14 ÷ 12 × (1 + TSU 23,75%) + subsídio; lucro = avenças do mês atual dos clientes de que é
+  responsável (`avencasPorColaborador`, = Negócio) − custo; margem. Tarefas e carga continuam no Controlo → Equipa.
 
 ### Tarefas periódicas (`task_recurrences`, `src/lib/taskRecurrence.ts`)
 - No dialog de tarefa, campo **«Repetir»**: semanal / mensal / trimestral / anual, «a cada N», dia do mês

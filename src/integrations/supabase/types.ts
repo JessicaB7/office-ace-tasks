@@ -623,6 +623,27 @@ export type Database = {
         }
         Relationships: []
       }
+      collaborator_custos: {
+        Row: {
+          collaborator_id: string
+          salario_bruto: number
+          subsidio_alimentacao: number
+          updated_at: string
+        }
+        Insert: {
+          collaborator_id: string
+          salario_bruto?: number
+          subsidio_alimentacao?: number
+          updated_at?: string
+        }
+        Update: {
+          collaborator_id?: string
+          salario_bruto?: number
+          subsidio_alimentacao?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       collaborators: {
         Row: {
           acesso_mensalidades: boolean
