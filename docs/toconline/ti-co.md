@@ -248,3 +248,29 @@ pagamentos — deixar como estão, sem classificar, e não contam como dúvida (
 
 **Confirmação:** não é preciso pedir — classificar e guardar sem perguntar.
 No Resultado: mês, n.º de faturas "Sim, total" e "Não", e as que ficaram por classificar (com o motivo).
+
+## 7. Reconciliação bancária (pagamentos das compras)
+
+**Aplica-se a:** clientes TI CO com conta bancária no TOConline. Exemplo da utilizadora: Marta Lobo, Montepio,
+outubro de 2026 (19/11/2026).
+
+**Ideia:** cada débito do extrato que corresponde a uma compra lançada (FC) fica com um **pagamento (PF)** ligado a
+essa FC, com a **data do débito**, e o PF fica reconciliado com o movimento do extrato.
+Ex.: movimento 22/10 «COMPRA DIGITALELEVATION» −1 476,00 € ↔ PF 2026/172 → FC 2026/198 (BNC 10/5).
+
+**Passos**
+1. **Bancos → Reconciliações → Reconciliações Bancárias**. Filtros: Ano, Mês, Conta bancária; à esquerda
+   **Estado: Não reconciliado** e **Tipo de movimento: Saída**; à direita o separador **Pagamentos**.
+2. Para cada débito por reconciliar, procurar a FC do fornecedor (mesmo valor; data da fatura igual ou uns dias antes).
+3. FC sem pagamento: **Gerar Pagamento** na FC → **Sugestões para criação de documentos** → escolher o **débito certo**
+   (a sugestão automática pode trazer outro débito com o mesmo valor) → **Criar 1 pagamento** → PF por transferência
+   com a data do débito.
+4. Confirmar que o movimento e o PF ficam emparelhados (os totais dos dois lados do rodapé batem).
+5. **Não finalizar** os PF — a utilizadora finaliza.
+
+**Não lançar / deixar por reconciliar** (indicar no resumo):
+- comissões e imposto do selo do banco (COM SERV ESTR, I.SELO OP.BANC., I.S. COM. MAN. CTA PACOTE…);
+- movimentos sem fatura de compra lançada (transferências, MB WAY, etc.) — não criar documentos.
+
+**No fim:** resumo por mês com os PF criados (fornecedor, FC, valor, data do débito) e os movimentos que ficaram por
+reconciliar.
