@@ -56,6 +56,8 @@ export function rendimentoColetavelConjuge(valor: number, tipo: ConjugeTipoRendi
 export type IrsConjuntoInput = {
   /** Rendimento coletável do titular (já com coeficiente/resultado, benefícios e outros rendimentos). */
   rcTitular: number;
+  /** Rendimentos isentos do titular (IRS Jovem, brutos) englobados só para determinar a taxa. */
+  isentosTitular?: number;
   deducoesTitular: number;
   retencoesTitular: number;
   conjuge: {
@@ -72,7 +74,9 @@ export type IrsConjuntoResult = {
   rcTotal: number;
   /** Rendimento coletável ÷ 2 — é a este valor que se aplicam os escalões. */
   quociente: number;
-  /** Coleta = 2 × IRS(quociente). */
+  /** Rendimentos isentos englobados para a taxa (IRS Jovem). */
+  isentos: number;
+  /** Coleta = 2 × IRS((RC + isentos) ÷ 2) × RC ÷ (RC + isentos). */
   coleta: number;
   deducoes: number;
   retencoes: number;
@@ -82,6 +86,10 @@ export type IrsConjuntoResult = {
   /** separado − conjunto: positivo = o conjunto poupa este valor. */
   poupancaConjunto: number;
 };
+
+/** Rendimentos isentos englobados para a taxa: a coleta fica só com a parte do rendimento coletável. */
+const coletaComIsentos = (importancia: number, coletavel: number, base: number): number =>
+  base > 0 ? (importancia * coletavel) / base : 0;
 
 export function calcIrsConjunto(input: IrsConjuntoInput): IrsConjuntoResult {
   const rcTitular = Math.max(0, input.rcTitular);
@@ -94,14 +102,16 @@ export function calcIrsConjunto(input: IrsConjuntoInput): IrsConjuntoResult {
   const dedC = Math.max(0, input.conjuge.deducoes);
   const retC = Math.max(0, input.conjuge.retencoes);
 
+  const isentos = Math.max(0, input.isentosTitular ?? 0);
   const rcTotal = rcTitular + rcConjuge;
-  const quociente = rcTotal / 2;
-  const coleta = 2 * calcIRS(quociente);
+  const base = rcTotal + isentos;
+  const quociente = base / 2;
+  const coleta = coletaComIsentos(2 * calcIRS(quociente), rcTotal, base);
   const deducoes = dedT + dedC;
   const retencoes = retT + retC;
   const liquido = irsLiquido(coleta, deducoes, retencoes);
 
-  const sepTitular = irsLiquido(calcIRS(rcTitular), dedT, retT);
+  const sepTitular = irsLiquido(coletaComIsentos(calcIRS(rcTitular + isentos), rcTitular, rcTitular + isentos), dedT, retT);
   const sepConjuge = irsLiquido(calcIRS(rcConjuge), dedC, retC);
   const sepTotal = sepTitular + sepConjuge;
 
@@ -109,6 +119,7 @@ export function calcIrsConjunto(input: IrsConjuntoInput): IrsConjuntoResult {
     rcConjuge,
     deducaoEspecificaConjuge: deducaoEspecifica,
     rcTotal,
+    isentos,
     quociente,
     coleta,
     deducoes,

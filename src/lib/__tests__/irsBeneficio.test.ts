@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { calcIRS } from "../irs";
+import { calcIRS, calcIrsConjunto } from "../irs";
 import { aplicarBeneficioIrs, LIMITE_IRS_JOVEM, lerSeletorBeneficio, valorSeletorBeneficio } from "../irsBeneficio";
 
 describe("aplicarBeneficioIrs", () => {
@@ -48,5 +48,21 @@ describe("aplicarBeneficioIrs", () => {
     expect(valorSeletorBeneficio({ tipo: "jovem", pct: 0 })).toBe("0");
     expect(lerSeletorBeneficio("regressar:0.5")).toEqual({ tipo: "regressar", pct: 0.5 });
     expect(lerSeletorBeneficio("0").pct).toBe(0);
+  });
+});
+
+describe("IRS em conjunto com IRS Jovem", () => {
+  test("isentos do titular entram só na taxa", () => {
+    const r = calcIrsConjunto({
+      rcTitular: 5121.375, isentosTitular: 14632.5, deducoesTitular: 0, retencoesTitular: 0,
+      conjuge: { rendimento: 10000, tipo: "coletavel", deducoes: 0, retencoes: 0 },
+    });
+    const base = 5121.375 + 10000 + 14632.5;
+    expect(r.coleta).toBeCloseTo(2 * calcIRS(base / 2) * (15121.375 / base), 6);
+    expect(r.separado.titular).toBeCloseTo(calcIRS(19753.875) * 5121.375 / 19753.875, 6);
+  });
+  test("sem isentos fica igual ao quociente conjugal normal", () => {
+    const r = calcIrsConjunto({ rcTitular: 20000, deducoesTitular: 0, retencoesTitular: 0, conjuge: { rendimento: 10000, tipo: "coletavel", deducoes: 0, retencoes: 0 } });
+    expect(r.coleta).toBeCloseTo(2 * calcIRS(15000), 6);
   });
 });

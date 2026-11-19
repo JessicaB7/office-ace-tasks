@@ -278,8 +278,8 @@ export default function TISimplificadoDashboard({
 
   // IRS em conjunto (quociente conjugal) — opção por ano, com os dados do cônjuge
   const conjunto = irsConjuntoDados(settings);
-  const conjuntoSimplificado = irsConjuntoParaRegime(conjunto, rendimentoColectavel, deducoes, retencoes);
-  const conjuntoOrganizado = irsConjuntoParaRegime(conjunto, rendimentoColectavelOrganizado, deducoes, retencoes);
+  const conjuntoSimplificado = irsConjuntoParaRegime(conjunto, rendimentoColectavel, deducoes, retencoes, benSimpl.baseTaxa - benSimpl.coletavel);
+  const conjuntoOrganizado = irsConjuntoParaRegime(conjunto, rendimentoColectavelOrganizado, deducoes, retencoes, benOrg.baseTaxa - benOrg.coletavel);
 
 
   const chartData = MONTHS_PT.map((m, i) => ({
@@ -997,8 +997,8 @@ export default function TISimplificadoDashboard({
         deducoesTitular={deducoes}
         retencoesTitular={retencoes}
         regimes={[
-          { label: "Regime simplificado", rcTitular: rendimentoColectavel },
-          { label: "Contabilidade organizada", rcTitular: rendimentoColectavelOrganizado },
+          { label: "Regime simplificado", rcTitular: rendimentoColectavel, isentosTitular: benSimpl.baseTaxa - benSimpl.coletavel },
+          { label: "Contabilidade organizada", rcTitular: rendimentoColectavelOrganizado, isentosTitular: benOrg.baseTaxa - benOrg.coletavel },
         ]}
       />
 

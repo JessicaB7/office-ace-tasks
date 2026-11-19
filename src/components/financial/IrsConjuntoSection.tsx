@@ -9,6 +9,8 @@ export type IrsConjuntoRegime = {
   label: string;
   /** Rendimento coletável do titular neste regime. */
   rcTitular: number;
+  /** Isentos do IRS Jovem englobados para a taxa. */
+  isentosTitular?: number;
 };
 
 export type IrsConjuntoDados = {
@@ -35,8 +37,9 @@ export function irsConjuntoParaRegime(
   rcTitular: number,
   deducoesTitular: number,
   retencoesTitular: number,
+  isentosTitular = 0,
 ): IrsConjuntoResult {
-  return calcIrsConjunto({ rcTitular, deducoesTitular, retencoesTitular, conjuge: dados.conjuge });
+  return calcIrsConjunto({ rcTitular, isentosTitular, deducoesTitular, retencoesTitular, conjuge: dados.conjuge });
 }
 
 /** Linhas para o Robot (texto ao cliente) — só quando o IRS em conjunto está ativo. */
@@ -178,7 +181,7 @@ export function IrsConjuntoSection({
 
       {dados.ativo &&
         regimes.map((reg) => {
-          const r = irsConjuntoParaRegime(dados, reg.rcTitular, deducoesTitular, retencoesTitular);
+          const r = irsConjuntoParaRegime(dados, reg.rcTitular, deducoesTitular, retencoesTitular, reg.isentosTitular);
           return (
             <div key={reg.label} className="mt-4">
               <div className="text-xs font-medium text-muted-foreground mb-2">{reg.label}</div>

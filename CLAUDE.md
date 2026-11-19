@@ -140,7 +140,8 @@ Dashboards por regime:
   (IAS 2026 = 537,13 € → 29 542,15 €) e **englobamento para a taxa** (coleta = IRS(total) × não isento ÷ total); **Programa
   Regressar** 50% sem limite nem englobamento. No simplificado a isenção (e o limite) incide sobre a **faturação bruta**; o coeficiente
   aplica-se só à parte não isenta e a base da taxa = coletável + isento bruto (confirmado com uma liquidação real de 2025:
-  29 265 € × 50% = 14 632,50 isento; 14 632,50 × 0,35 = 5 121,37 coletável; taxa sobre 19 753,87). No IRS em conjunto entra só o rendimento não isento (aproximação).
+  29 265 € × 50% = 14 632,50 isento; 14 632,50 × 0,35 = 5 121,37 coletável; taxa sobre 19 753,87). No IRS em conjunto os isentos também são englobados para a taxa:
+  coleta = 2 × IRS((RC casal + isentos) ÷ 2) × RC ÷ (RC + isentos).
   **Cumprimento dos 15% de despesas** (art. 31.º n.º 13/14 CIRS, só coeficientes 0,75/0,35; `src/lib/despesas15.ts`):
   exigido = 15% da faturação; justificado = max(4.587,09 €, SS) + despesas + outras despesas + «Outras despesas justificadas
   (e-Fatura)» (`despesas_15_extra`); a falta é acrescida ao rendimento coletável do IRS Simplificado (resultado vai para o PDF).
