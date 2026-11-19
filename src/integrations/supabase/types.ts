@@ -454,6 +454,7 @@ export type Database = {
           inicio_contrato: string | null
           irs_coeficiente: number
           irs_isencao_pct: number
+          irs_beneficio: string
           iva: string | null
           iva_oss: string | null
           mensalidade: number | null
@@ -507,6 +508,7 @@ export type Database = {
           inicio_contrato?: string | null
           irs_coeficiente?: number
           irs_isencao_pct?: number
+          irs_beneficio?: string
           iva?: string | null
           iva_oss?: string | null
           mensalidade?: number | null
@@ -560,6 +562,7 @@ export type Database = {
           inicio_contrato?: string | null
           irs_coeficiente?: number
           irs_isencao_pct?: number
+          irs_beneficio?: string
           iva?: string | null
           iva_oss?: string | null
           mensalidade?: number | null

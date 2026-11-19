@@ -1,3 +1,4 @@
+import { aplicarBeneficioIrs, beneficioDoCliente, lerSeletorBeneficio, OPCOES_BENEFICIO, rotuloBeneficio, valorSeletorBeneficio, LIMITE_IRS_JOVEM, type BeneficioIrs } from "@/lib/irsBeneficio";
 import { calcRetencoesIrs } from "@/lib/retencoesIrs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { filtrarRubricasPdf, colunasPdf } from "@/lib/pdfKpis";
@@ -24,7 +25,6 @@ import {
 } from "./financialMath";
 import { cn } from "@/lib/utils";
 import { RobotButton } from "./RobotAnaliseDialog";
-import { calcIRS } from "@/lib/irs";
 import { IrsConjuntoSection, irsConjuntoDados, irsConjuntoParaRegime, irsConjuntoLinhasRobot } from "./IrsConjuntoSection";
 import { NotasIrsField } from "./NotasIrsField";
 
@@ -214,15 +214,15 @@ export default function TIOrganizadoDashboard({
   useEffect(() => {
     setCoef(Number(client?.irs_coeficiente ?? 0.75));
   }, [client?.irs_coeficiente]);
-  // Benefício de IRS (ex.: Programa Regressar 50%, IRS Jovem): fração do rendimento isenta
-  const [isencao, setIsencao] = useState<number>(Number(client?.irs_isencao_pct ?? 0));
+  // Benefício de IRS (IRS Jovem com limite 55 × IAS e englobamento para a taxa, ou Programa Regressar 50%)
+  const [beneficio, setBeneficio] = useState<BeneficioIrs>(beneficioDoCliente(client));
   useEffect(() => {
-    setIsencao(Number(client?.irs_isencao_pct ?? 0));
-  }, [client?.irs_isencao_pct]);
-  const saveIsencao = async (val: number) => {
-    const safe = isFinite(val) ? Math.max(0, Math.min(1, val)) : 0;
-    setIsencao(safe);
-    const { error } = await supabase.from("clients").update({ irs_isencao_pct: safe }).eq("id", clientId);
+    setBeneficio(beneficioDoCliente({ irs_isencao_pct: client?.irs_isencao_pct, irs_beneficio: client?.irs_beneficio }));
+  }, [client?.irs_isencao_pct, client?.irs_beneficio]);
+  const isencao = beneficio.pct;
+  const saveBeneficio = async (b: BeneficioIrs) => {
+    setBeneficio(b);
+    const { error } = await supabase.from("clients").update({ irs_isencao_pct: b.pct, irs_beneficio: b.tipo }).eq("id", clientId);
     if (error) toast.error("Erro a guardar benefício IRS");
     else {
       qc.invalidateQueries({ queryKey: ["clients"] });
@@ -242,11 +242,13 @@ export default function TIOrganizadoDashboard({
 
   // O reembolso nunca pode exceder a retenção na fonte e pagamentos por conta
   const capReembolso = (v: number) => Math.max(v, -retencoes);
-  const rendimentoColectavelOrganizado = Math.max(0, resultado) * (1 - isencao) + outrosRend;
-  const irsOrganizado = calcIRS(rendimentoColectavelOrganizado);
+  const benOrg = aplicarBeneficioIrs(Math.max(0, resultado), outrosRend, beneficio);
+  const rendimentoColectavelOrganizado = benOrg.coletavel;
+  const irsOrganizado = benOrg.coleta;
   const irsOrganizadoLiquido = capReembolso(irsOrganizado - deducoes - retencoes);
-  const rendimentoColectavel = totalFat * coef * (1 - isencao) + outrosRend;
-  const irsSimplificado = calcIRS(rendimentoColectavel);
+  const benSimpl = aplicarBeneficioIrs(totalFat * coef, outrosRend, beneficio);
+  const rendimentoColectavel = benSimpl.coletavel;
+  const irsSimplificado = benSimpl.coleta;
   const irsSimplificadoLiquido = capReembolso(irsSimplificado - deducoes - retencoes);
   const diffRegimes = irsSimplificadoLiquido - irsOrganizadoLiquido;
 
@@ -324,12 +326,17 @@ export default function TIOrganizadoDashboard({
             {
               imposto: "IRS (contabilidade organizada) — estimativa",
               linhas: [
-                { descricao: isencao > 0 ? `Rendimento coletável (resultado, com ${(isencao * 100).toLocaleString("pt-PT")}% isento pelo benefício de IRS)` : "Rendimento coletável (resultado)", valor: Math.max(0, resultado) * (1 - isencao) },
+                { descricao: isencao > 0 ? "Rendimento (resultado)" : "Rendimento coletável (resultado)", valor: Math.max(0, resultado) },
+                ...(isencao > 0 ? [
+                  { descricao: `Rendimento isento — ${rotuloBeneficio(beneficio)}${beneficio.tipo === "jovem" ? ` (limite 55 × IAS = ${LIMITE_IRS_JOVEM.toLocaleString("pt-PT", { minimumFractionDigits: 2 })} €)` : ""}`, valor: benOrg.isento },
+                ] : []),
                 ...(temOutrosRend ? [
                   { descricao: "Outros rendimentos (somam ao rendimento coletável)", valor: outrosRend },
+                ] : []),
+                ...(temOutrosRend || isencao > 0 ? [
                   { descricao: "Rendimento coletável total", valor: rendimentoColectavelOrganizado },
                 ] : []),
-                { descricao: "IRS calculado", valor: irsOrganizado },
+                { descricao: isencao > 0 && beneficio.tipo === "jovem" ? "IRS calculado (taxa determinada com os rendimentos isentos)" : "IRS calculado", valor: irsOrganizado },
                 { descricao: "Deduções à coleta", valor: deducoes },
                 { descricao: "Retenção na fonte e pagamentos por conta", valor: retencoes },
                 { descricao: irsOrganizadoLiquido >= 0 ? "IRS a pagar" : "IRS a receber", valor: Math.abs(irsOrganizadoLiquido) },
@@ -340,7 +347,7 @@ export default function TIOrganizadoDashboard({
               imposto: "Comparação: contabilidade organizada vs regime simplificado",
               linhas: [
                 { descricao: irsOrganizadoLiquido >= 0 ? "Contabilidade organizada — IRS a pagar" : "Contabilidade organizada — IRS a receber", valor: Math.abs(irsOrganizadoLiquido) },
-                { descricao: `Regime simplificado — rendimento coletável (faturação × ${coef.toLocaleString("pt-PT")}${isencao > 0 ? `, com ${(isencao * 100).toLocaleString("pt-PT")}% isento` : ""}${temOutrosRend ? ", mais outros rendimentos" : ""})`, valor: rendimentoColectavel },
+                { descricao: `Regime simplificado — rendimento coletável (faturação × ${coef.toLocaleString("pt-PT")}${isencao > 0 ? `, ${rotuloBeneficio(beneficio)}` : ""}${temOutrosRend ? ", mais outros rendimentos" : ""})`, valor: rendimentoColectavel },
                 { descricao: irsSimplificadoLiquido >= 0 ? "Regime simplificado — IRS a pagar" : "Regime simplificado — IRS a receber", valor: Math.abs(irsSimplificadoLiquido) },
                 { descricao: diffRegimes === 0 ? "Ambos os regimes dão o mesmo IRS" : diffRegimes > 0 ? "Poupança estimada por estar na contabilidade organizada" : "O regime simplificado daria menos IRS, em", valor: Math.abs(diffRegimes) },
               ],
@@ -652,15 +659,11 @@ export default function TIOrganizadoDashboard({
               <label className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">Benefício IRS</span>
                 <select
-                  value={isencao}
-                  onChange={(e) => saveIsencao(Number(e.target.value))}
+                  value={valorSeletorBeneficio(beneficio)}
+                  onChange={(e) => saveBeneficio(lerSeletorBeneficio(e.target.value))}
                   className="py-1.5 px-2 rounded-lg border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 >
-                  <option value={0}>Sem benefício</option>
-                  <option value={0.25}>25% isento (IRS Jovem)</option>
-                  <option value={0.5}>50% isento (Regressar / IRS Jovem)</option>
-                  <option value={0.75}>75% isento (IRS Jovem)</option>
-                  <option value={1}>100% isento (IRS Jovem)</option>
+                  {OPCOES_BENEFICIO.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </label>
             )}
@@ -738,7 +741,7 @@ export default function TIOrganizadoDashboard({
             )}
             <div className="rounded-lg border bg-background p-3 min-h-[78px] h-full flex flex-col justify-center">
               <div className="text-[11px] text-muted-foreground">
-                Rendimento colectável{isencao > 0 && ` (${(isencao * 100).toLocaleString("pt-PT")}% isento)`}
+                Rendimento colectável{isencao > 0 && ` (${rotuloBeneficio(beneficio)})`}
               </div>
               <div className="text-lg font-bold tabular-nums">{fmtEur(rendimentoColectavel)}</div>
             </div>
